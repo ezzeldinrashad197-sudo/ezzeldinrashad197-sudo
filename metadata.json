@@ -1,0 +1,8 @@
+{
+  "name": "StructuSight",
+  "description": "StructuSight — Engineering Intelligence Platform. SEE STRUCTURE. BUILD BETTER. Transforms raw project logs into executive intelligence, KPI dashboards, SLA compliance analysis, and submittal tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

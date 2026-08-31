@@ -1,0 +1,519 @@
+{
+  "timestamp": "2026-08-30T11:30:04.872Z",
+  "version": "2.0.0-ENTERPRISE-EVIDENCE-PACK",
+  "goldenDatasetSize": 770,
+  "totalTests": 20,
+  "passedCount": 20,
+  "failedCount": 0,
+  "zeroVarianceComplianceRate": "100.0%",
+  "moduleBreakdown": {
+    "Submission Layer": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0
+    },
+    "Performance Layer": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "Shop Drawings": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "MAR Module": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "Global Engine": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "Discipline Engine": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0
+    }
+  },
+  "testCases": [
+    {
+      "id": "BENCH-SUB-01",
+      "module": "Submission Layer",
+      "testName": "Active Submittals Count",
+      "description": "Verifies total active submittals excluding CANCELLED/VOIDED",
+      "metricName": "totalSubmitted",
+      "expectedValue": 770,
+      "actualValue": 770,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Submission layer counted 770 active submittals from 780 total rows."
+    },
+    {
+      "id": "BENCH-SUB-02",
+      "module": "Submission Layer",
+      "testName": "Rev.0 Submittals Count",
+      "description": "Counts initial Rev.0 submittals in Submission Layer",
+      "metricName": "rev00",
+      "expectedValue": 720,
+      "actualValue": 720,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Submission layer identified 720 Rev.0 submittals."
+    },
+    {
+      "id": "BENCH-SUB-03",
+      "module": "Submission Layer",
+      "testName": "Further Revisions Count",
+      "description": "Counts re-submittals (Rev.1+)",
+      "metricName": "furtherRevisions",
+      "expectedValue": 50,
+      "actualValue": 50,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Submission layer identified 50 further revisions (Rev.1 SDWs)."
+    },
+    {
+      "id": "BENCH-PERF-01",
+      "module": "Performance Layer",
+      "testName": "Unique Entities Count",
+      "description": "Verifies collapse of multi-revision chains into single unique entity",
+      "metricName": "totalUniqueItems",
+      "expectedValue": 720,
+      "actualValue": 720,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Performance layer collapsed 770 active submittals to 720 unique documents."
+    },
+    {
+      "id": "BENCH-PERF-02",
+      "module": "Performance Layer",
+      "testName": "Approved Unique Documents",
+      "description": "Evaluates unique approved items (Code A, B, Approved, Closed, Code D)",
+      "metricName": "approved",
+      "expectedValue": 635,
+      "actualValue": 635,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Performance layer computed 635 approved unique items."
+    },
+    {
+      "id": "BENCH-PERF-03",
+      "module": "Performance Layer",
+      "testName": "Open Rejected Documents",
+      "description": "Evaluates Code C / Rejected items not yet superseded",
+      "metricName": "rejectedOpen",
+      "expectedValue": 15,
+      "actualValue": 15,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Performance layer computed 15 open rejected items."
+    },
+    {
+      "id": "BENCH-PERF-05",
+      "module": "Performance Layer",
+      "testName": "Rejected Closed Documents",
+      "description": "Evaluates Code C Closed items not approved",
+      "metricName": "rejectedClosed",
+      "expectedValue": 0,
+      "actualValue": 0,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Performance layer computed 0 rejected closed items."
+    },
+    {
+      "id": "BENCH-SDW-01",
+      "module": "Shop Drawings",
+      "testName": "SDW Total Active Sheets",
+      "description": "Counts total non-cancelled Shop Drawing rows",
+      "metricName": "totalSubmittedSheets",
+      "expectedValue": 210,
+      "actualValue": 210,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Total Active: Expected 210, Computed 210."
+    },
+    {
+      "id": "BENCH-SDW-02",
+      "module": "Shop Drawings",
+      "testName": "SDW Approved Sheets",
+      "description": "Counts Code A and Code B Shop Drawings",
+      "metricName": "approved",
+      "expectedValue": 140,
+      "actualValue": 140,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Approved: Expected 140, Computed 140."
+    },
+    {
+      "id": "BENCH-MAR-01",
+      "module": "MAR Module",
+      "testName": "MAR Total Submittals",
+      "description": "Counts total MAR submittals",
+      "metricName": "totalSubmittedSheets",
+      "expectedValue": 100,
+      "actualValue": 100,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "MAR Total: Expected 100, Computed 100."
+    },
+    {
+      "id": "BENCH-GLOB-01",
+      "module": "Global Engine",
+      "testName": "Overall Approval Rate",
+      "description": "Calculates percentage of approved items over total non-cancelled submittals",
+      "metricName": "approvalRate",
+      "expectedValue": 88.19444444444444,
+      "actualValue": 88.19444444444444,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Global Approval Rate: Expected 88.19444444444444%, Computed 88.19444444444444%."
+    },
+    {
+      "id": "BENCH-DISC-01",
+      "module": "Discipline Engine",
+      "testName": "SDW Landscape Canonical Resolution",
+      "description": "Verifies raw Landscape discipline resolves to SDW-LAND without falling back to generic SDW",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-LAND",
+      "actualValue": "SDW-LAND",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Landscape Canonical Identity: Expected 'SDW-LAND', Resolved 'SDW-LAND'."
+    },
+    {
+      "id": "BENCH-DISC-02",
+      "module": "Discipline Engine",
+      "testName": "SDW Structural Canonical Resolution",
+      "description": "Verifies Structural discipline resolves to SDW-STR and is not hijacked by INF substrings",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-STR",
+      "actualValue": "SDW-STR",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Structural Canonical Identity: Expected 'SDW-STR', Resolved 'SDW-STR'."
+    },
+    {
+      "id": "BENCH-DISC-03",
+      "module": "Discipline Engine",
+      "testName": "SDW Architectural Canonical Resolution",
+      "description": "Verifies Architectural discipline resolves to SDW-ARC",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-ARC",
+      "actualValue": "SDW-ARC",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Architectural Canonical Identity: Expected 'SDW-ARC', Resolved 'SDW-ARC'."
+    },
+    {
+      "id": "BENCH-DISC-04",
+      "module": "Discipline Engine",
+      "testName": "SDW Mechanical Canonical Resolution",
+      "description": "Verifies Mechanical discipline resolves to SDW-MEC and is not hijacked into SDW-ARC",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-MEC",
+      "actualValue": "SDW-MEC",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Mechanical Canonical Identity: Expected 'SDW-MEC', Resolved 'SDW-MEC'."
+    },
+    {
+      "id": "BENCH-DISC-05",
+      "module": "Discipline Engine",
+      "testName": "SDW Electrical Canonical Resolution",
+      "description": "Verifies Electrical discipline resolves to SDW-ELE and is not hijacked into SDW-ARC",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-ELE",
+      "actualValue": "SDW-ELE",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Electrical Canonical Identity: Expected 'SDW-ELE', Resolved 'SDW-ELE'."
+    },
+    {
+      "id": "BENCH-DISC-06",
+      "module": "Discipline Engine",
+      "testName": "SDW Infrastructure Canonical Resolution",
+      "description": "Verifies Infrastructure discipline resolves to SDW-INFRA without confusion with Structural",
+      "metricName": "resolvedCanonical",
+      "expectedValue": "SDW-INFRA",
+      "actualValue": "SDW-INFRA",
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "SDW Infrastructure Canonical Identity: Expected 'SDW-INFRA', Resolved 'SDW-INFRA'."
+    },
+    {
+      "id": "BENCH-DISC-07",
+      "module": "Discipline Engine",
+      "testName": "7619 Cumulative Discipline Invariant",
+      "description": "Ensures Cumulative Report registers strictly equal Presentation disciplines across all 7619 rows with STR=2423 and INFRA=493 separated",
+      "metricName": "cumulativeDisciplineIntegrity",
+      "expectedValue": 1,
+      "actualValue": 1,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Cumulative Report Discrepancy Check: STR=2423/2423, INFRA=493/493, ARC=1208/1208, MEC=1552/1552, ELE=737/737, LAND=1206/1206."
+    },
+    {
+      "id": "BENCH-DISC-08",
+      "module": "Discipline Engine",
+      "testName": "24 Monthly Discipline Invariant",
+      "description": "Ensures Monthly Report registers strictly equal Presentation disciplines across all 24 rows",
+      "metricName": "monthlyDisciplineIntegrity",
+      "expectedValue": 1,
+      "actualValue": 1,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Monthly Report Discrepancy Check: STR=6/6, ARC=2/2, MEC=9/9, LAND=7/7."
+    },
+    {
+      "id": "BENCH-PERF-04",
+      "module": "Performance Layer",
+      "testName": "Zero Superseded Items in Rejected Open",
+      "description": "Verifies no superseded Rev.0 Code C item with an approved Rev.1 stays in Rejected Open",
+      "metricName": "supersededDefectCount",
+      "expectedValue": 0,
+      "actualValue": 0,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Audit checked 15 rejected items: 0 defect lingering items found."
+    }
+  ],
+  "rawEvidenceSnapshots": [
+    {
+      "docNo": "SDW-DWG-001",
+      "discipline": "Architectural",
+      "inputRevisions": [
+        {
+          "rev": "0",
+          "status": "Code C",
+          "date": "2026-01-05"
+        },
+        {
+          "rev": "1",
+          "status": "Code B",
+          "date": "2026-01-25"
+        }
+      ],
+      "submissionLayerOutcome": {
+        "totalSubmitted": 2,
+        "rev00": 1,
+        "furtherRevisions": 1
+      },
+      "performanceLayerOutcome": {
+        "uniqueKey": "SHD::SDW-DWG-001",
+        "effectiveStatus": "Code B",
+        "isApproved": true,
+        "isRejectedOpen": false
+      },
+      "variance": 0,
+      "complianceStatus": "VERIFIED_ZERO_VARIANCE"
+    },
+    {
+      "docNo": "MAR-MAT-076",
+      "discipline": "MEP",
+      "inputRevisions": [
+        {
+          "rev": "0",
+          "status": "Code C",
+          "date": "2026-01-12"
+        }
+      ],
+      "submissionLayerOutcome": {
+        "totalSubmitted": 1,
+        "rev00": 1,
+        "furtherRevisions": 0
+      },
+      "performanceLayerOutcome": {
+        "uniqueKey": "MAR::MAR-MAT-076",
+        "effectiveStatus": "Code C",
+        "isApproved": false,
+        "isRejectedOpen": true
+      },
+      "variance": 0,
+      "complianceStatus": "VERIFIED_ZERO_VARIANCE"
+    }
+  ],
+  "rejectedItemAudits": [
+    {
+      "documentNo": "MAR:MAR-MAT-076",
+      "documentType": "MAR:MAR-MAT-076",
+      "logType": "MAR:MAR-MAT-076 Register",
+      "latestRevision": "0",
+      "latestStatus": "Code C",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Code C' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MAR:MAR-MAT-077",
+      "documentType": "MAR:MAR-MAT-077",
+      "logType": "MAR:MAR-MAT-077 Register",
+      "latestRevision": "0",
+      "latestStatus": "Code C",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Code C' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MAR:MAR-MAT-078",
+      "documentType": "MAR:MAR-MAT-078",
+      "logType": "MAR:MAR-MAT-078 Register",
+      "latestRevision": "0",
+      "latestStatus": "Code C",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Code C' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MAR:MAR-MAT-079",
+      "documentType": "MAR:MAR-MAT-079",
+      "logType": "MAR:MAR-MAT-079 Register",
+      "latestRevision": "0",
+      "latestStatus": "Code C",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Code C' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MAR:MAR-MAT-080",
+      "documentType": "MAR:MAR-MAT-080",
+      "logType": "MAR:MAR-MAT-080 Register",
+      "latestRevision": "0",
+      "latestStatus": "Code C",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Code C' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-071",
+      "documentType": "MIR:MIR-INSP-071",
+      "logType": "MIR:MIR-INSP-071 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-072",
+      "documentType": "MIR:MIR-INSP-072",
+      "logType": "MIR:MIR-INSP-072 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-073",
+      "documentType": "MIR:MIR-INSP-073",
+      "logType": "MIR:MIR-INSP-073 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-074",
+      "documentType": "MIR:MIR-INSP-074",
+      "logType": "MIR:MIR-INSP-074 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-075",
+      "documentType": "MIR:MIR-INSP-075",
+      "logType": "MIR:MIR-INSP-075 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-076",
+      "documentType": "MIR:MIR-INSP-076",
+      "logType": "MIR:MIR-INSP-076 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-077",
+      "documentType": "MIR:MIR-INSP-077",
+      "logType": "MIR:MIR-INSP-077 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-078",
+      "documentType": "MIR:MIR-INSP-078",
+      "logType": "MIR:MIR-INSP-078 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-079",
+      "documentType": "MIR:MIR-INSP-079",
+      "logType": "MIR:MIR-INSP-079 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    },
+    {
+      "documentNo": "MIR:MIR-INSP-080",
+      "documentType": "MIR:MIR-INSP-080",
+      "logType": "MIR:MIR-INSP-080 Register",
+      "latestRevision": "0",
+      "latestStatus": "Rejected",
+      "effectiveCategory": "REJECTED_OPEN",
+      "hasApprovedHigherRevision": false,
+      "classificationVerdict": "CORRECT",
+      "auditReason": "Document latest revision 0 has active status 'Rejected' (resolved 'REJECTED_OPEN') with zero approved higher revisions."
+    }
+  ],
+  "stressBenchmark10k": {
+    "datasetSize": 10000,
+    "executionTimeMs": 756.28,
+    "throughputPerSec": 13223,
+    "memoryEstimateMb": 3.34,
+    "passCriteriaMet": true
+  },
+  "stressBenchmark50k": {
+    "datasetSize": 50000,
+    "executionTimeMs": 3643.38,
+    "throughputPerSec": 13724,
+    "memoryEstimateMb": 16.69,
+    "passCriteriaMet": true
+  }
+}
