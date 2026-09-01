@@ -52,22 +52,24 @@ export default function EngineeringItemDatasetView({ data }: EngineeringItemData
   const exportCSV = () => {
     const headers = ['BusinessEntityKey', 'Drawing Number', 'First Historical Revision Ever Found', 'First Historical Submission Date', 'Historical Classification', 'Why this Classification was selected'];
     const rows = filteredItems.map(i => [
-      i.businessEntityKey,
-      i.drawingNo,
-      i.firstHistoricalRevision,
-      i.firstSubmissionDate,
-      i.historicalClassification,
-      `"${i.ruleApplied} - ${i.explanation}"`
+      `"${(i.businessEntityKey || '').replace(/"/g, '""')}"`,
+      `"${(i.drawingNo || '').replace(/"/g, '""')}"`,
+      `"${(i.firstHistoricalRevision || '').replace(/"/g, '""')}"`,
+      `"${(i.firstSubmissionDate || '').replace(/"/g, '""')}"`,
+      `"${(i.historicalClassification || '').replace(/"/g, '""')}"`,
+      `"${(`${i.ruleApplied || ''} - ${i.explanation || ''}`).replace(/"/g, '""')}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `engineering_item_dataset_str_${Date.now()}.csv`);
+    link.href = url;
+    link.download = `engineering_item_dataset_str_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

@@ -237,6 +237,7 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
 
           // Letters Specific Columns
           const colSubject = getColIdx(["subject"]);
+          const colContractorRef = getColIdx(["contractor ref", "contractor reference", "contractor transmittal", "contractor letter ref"]);
           const colDistributions = getColIdx(["distributions"]);
           const colActionRequired = getColIdx(["action required"]);
           const colHyperlink = getColIdx(["hyperlink"]);
@@ -287,9 +288,20 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
             const responseDate = formatDate(
               colResponseDate >= 0 ? r[colResponseDate] : "",
             );
+            const rawDocNo = colDocNo >= 0 ? String(r[colDocNo] || "").trim() : "";
+            const rawNcrRef = colNcrRef >= 0 ? String(r[colNcrRef] || "").trim() : "";
+            const rawSubject = colSubject >= 0 ? String(r[colSubject] || "").trim() : "";
+            const rawContractorRef = colContractorRef >= 0 ? String(r[colContractorRef] || "").trim() : "";
+
+            // Retain all rows that have ANY document identifier, reference, subject, or dates
+            // Only skip completely blank ghost rows that have NO identifier, NO dates, and NO content
             if (
               !submissionDate &&
               !responseDate &&
+              !rawDocNo &&
+              !rawNcrRef &&
+              !rawContractorRef &&
+              !rawSubject &&
               colNcrRef === -1 &&
               !sheetName.toUpperCase().includes("NCR")
             )

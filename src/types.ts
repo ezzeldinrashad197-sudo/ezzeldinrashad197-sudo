@@ -184,4 +184,83 @@ export interface KPIStats {
   isWorkloadReconciled?: boolean;
   isCurrentStateReconciled?: boolean;
   reconciliationPassed?: boolean;
+
+  // 6. Mandatory Missing-Sequence & Population Integrity Control
+  expectedPopulation?: number;       // Expected sequential items count (Max - Min + 1)
+  actualRev0Population?: number;     // Actual Rev 00 population found
+  missingSequenceCount?: number;     // Expected Population - Actual Rev 00 Population (Delta)
+  missingSequenceIds?: string[];     // Sample/All missing formatted document IDs
+  sequenceGapsCount?: number;        // Number of sequence gap intervals
+  sequenceAuditReconciled?: boolean; // true if missingSequenceCount === 0
+}
+
+export type SequenceDiscrepancyType = 
+  | 'MISSING_SEQUENCE_RECORD'     // Expected in sequence (Min..Max) but completely missing from Rev 00 / dataset
+  | 'ID_ONLY_BLANK_RECORD'        // ID present in source rows but row contains no business data (status/dates/code)
+  | 'DROPPED_DURING_PIPELINE'     // Present in raw source/parsed but dropped in pipeline
+  | 'DUPLICATE_RECORD'            // Same DocNo + Rev multiple times
+  | 'FURTHER_REV_WITHOUT_REV0'    // Entity appeared first at Rev 01/02 without Rev 00
+  | 'MALFORMED_IDENTIFIER'        // Doc number does not follow expected naming pattern
+  | 'SEQUENCE_GAP'                // Contiguous range of missing numbers
+  | 'EXCLUDED_RULE';              // Filtered by explicit rule
+
+export interface SequenceGap {
+  fromNumber: number;
+  toNumber: number;
+  count: number;
+  formattedRange: string;
+  sampleMissingIds: string[];
+}
+
+export interface RegisterSequenceAudit {
+  docType: string;               // e.g. "WIR-SUR", "SDW-STR", etc.
+  prefix: string;                // e.g. "WIR-SUR-"
+  paddingLength: number;         // e.g. 5
+  minSequence: number;           // e.g. 1
+  maxSequence: number;           // e.g. 2000
+  expectedPopulation: number;    // e.g. 2000 (max - min + 1)
+  actualRev0Population: number;  // e.g. 1998
+  actualUniquePopulation: number;// e.g. 1998
+  totalWorkloadRows: number;     // e.g. 2045
+  furtherRevRows: number;        // e.g. 47
+  
+  missingCount: number;          // e.g. 2 (Only truly missing IDs from the dataset)
+  missingIds: string[];          // ["WIR-SUR-00009", "WIR-SUR-00045"]
+  sequenceGaps: SequenceGap[];
+  blankOrIdOnlyCount: number;    // Count of rows where ID exists in source but business payload is blank
+  blankOrIdOnlyRecords: { docNo: string; rowId: string; seqNumber: number; reason: string }[];
+  duplicateRecords: { docNo: string; rev: string; count: number; ids: string[] }[];
+  furtherRevWithoutRev0: { docNo: string; firstRecordedRev: string; count: number }[];
+  malformedIds: string[];
+  isSequenceFullyReconciled: boolean; // true if missingCount === 0 && duplicateRecords.length === 0
+  deltaExplanation: string;      // Human-readable English summary of the delta
+  deltaExplanationAr: string;    // Human-readable Arabic summary of the delta
+}
+
+export interface SequenceAuditResult {
+  totalExpectedPopulation: number;
+  totalActualRev0Population: number;
+  totalMissingCount: number;
+  totalBlankOrIdOnlyCount: number;
+  totalDuplicatesCount: number;
+  totalFurtherRevWithoutRev0: number;
+  allMissingIds: { docType: string; docNo: string; seqNumber: number }[];
+  allBlankOrIdOnlyRecords: { docType: string; docNo: string; seqNumber: number; rowId: string; reason: string }[];
+  registerAudits: Record<string, RegisterSequenceAudit>;
+  overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY';
+  summaryNarrative: string;
+  summaryNarrativeAr: string;
+}
+
+export interface ForensicLedgerEntry {
+  id: string;
+  docNo: string;
+  rev: string;
+  docType: string;
+  sourceLocation: string;
+  parsedStatus: string;
+  canonicalStatus: string;
+  disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'ID_ONLY_BLANK_RECORD' | 'BLANK_RECORD' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE';
+  dispositionReason: string;
+  dispositionReasonAr: string;
 }

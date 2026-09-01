@@ -1,9 +1,10 @@
-import { SubmittalRow, KPIStats } from '../types';
+import { SubmittalRow, KPIStats, RegisterSequenceAudit } from '../types';
 import { compareRevisions, isValidRevision } from './analyticsCore';
 import { getRevisionWeight } from './revisionResolver';
 import { getStatusCodeCategory, classifyNcrStatus, normalizeCanonicalString, classifySubmission, classifyRow } from './statusResolver';
+import { auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger, isBlankOrIdOnlyRow } from './sequenceAuditEngine';
 
-export { getStatusCodeCategory, classifyNcrStatus, normalizeCanonicalString, classifySubmission, classifyRow };
+export { getStatusCodeCategory, classifyNcrStatus, normalizeCanonicalString, classifySubmission, classifyRow, auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger, isBlankOrIdOnlyRow };
 
 export interface DataQualityIssue {
   id: string;
@@ -20,6 +21,8 @@ export interface DataQualityLedger {
   futureDatesCount: number;
   duplicateKeysCount: number;
   invalidRevisionsCount: number;
+  blankRowWithIdCount: number;
+  blankRowWithIdRecords: SubmittalRow[];
   totalIssuesCount: number;
 }
 
@@ -45,6 +48,7 @@ export interface CanonicalRecord {
 
 export interface CanonicalKPIResult extends KPIStats {
   dataQuality: DataQualityLedger;
+  sequenceAudit?: import('../types').SequenceAuditResult;
 }
 
 /**
@@ -224,6 +228,8 @@ export function calculateCanonicalKPIs(
   let futureDatesCount = 0;
   let duplicateKeysCount = 0;
   let invalidRevisionsCount = 0;
+  let blankRowWithIdCount = 0;
+  const blankRowWithIdRecords: SubmittalRow[] = [];
 
   const validRows: SubmittalRow[] = [];
   const seenKeyRevs = new Set<string>();
@@ -232,6 +238,20 @@ export function calculateCanonicalKPIs(
     const key = getBusinessEntityKey(r);
     const rev = (r.rev || '').trim();
     const keyRev = `${key}__REV__${rev}`;
+
+    if (isBlankOrIdOnlyRow(r)) {
+      blankStatusCount++;
+      blankRowWithIdCount++;
+      blankRowWithIdRecords.push(r);
+      issues.push({ 
+        id: r.id, 
+        businessEntityKey: key, 
+        issueType: 'BLANK_STATUS', 
+        description: `ID-only / Blank Record Exception: Document ${r.docNo || r.id} is present in source register but contains no business data (status, dates, code). Excluded from active KPI population.`, 
+        row: r 
+      });
+      return; // Exclude from active workload and KPI metrics calculation as a Data Quality Exception
+    }
 
     if (!r.submissionDate) {
       missingDatesCount++;
@@ -274,8 +294,12 @@ export function calculateCanonicalKPIs(
     futureDatesCount,
     duplicateKeysCount,
     invalidRevisionsCount,
+    blankRowWithIdCount,
+    blankRowWithIdRecords,
     totalIssuesCount: issues.length,
   };
+
+  const comprehensiveAudit = runComprehensiveSequenceAudit(rowsToUse);
 
   if (validRows.length === 0) {
     return {
@@ -323,6 +347,7 @@ export function calculateCanonicalKPIs(
       isCurrentStateReconciled: true,
       reconciliationPassed: true,
       dataQuality,
+      sequenceAudit: comprehensiveAudit,
     };
   }
 
@@ -546,6 +571,35 @@ export function calculateCanonicalKPIs(
     isCurrentStateReconciled,
     reconciliationPassed,
     dataQuality,
+
+    // 5. Sequence Integrity & Population Control
+    expectedPopulation: (() => {
+      const primaryDocType = rowsToUse[0]?.documentType || rowsToUse[0]?.logType || 'DOC-GEN';
+      const seqAudit = auditRegisterSequence(primaryDocType, rowsToUse);
+      return seqAudit.expectedPopulation;
+    })(),
+    actualRev0Population: totalSheetsRev0,
+    missingSequenceCount: (() => {
+      const primaryDocType = rowsToUse[0]?.documentType || rowsToUse[0]?.logType || 'DOC-GEN';
+      const seqAudit = auditRegisterSequence(primaryDocType, rowsToUse);
+      return seqAudit.missingCount;
+    })(),
+    missingSequenceIds: (() => {
+      const primaryDocType = rowsToUse[0]?.documentType || rowsToUse[0]?.logType || 'DOC-GEN';
+      const seqAudit = auditRegisterSequence(primaryDocType, rowsToUse);
+      return seqAudit.missingIds;
+    })(),
+    sequenceGapsCount: (() => {
+      const primaryDocType = rowsToUse[0]?.documentType || rowsToUse[0]?.logType || 'DOC-GEN';
+      const seqAudit = auditRegisterSequence(primaryDocType, rowsToUse);
+      return seqAudit.sequenceGaps.length;
+    })(),
+    sequenceAuditReconciled: (() => {
+      const primaryDocType = rowsToUse[0]?.documentType || rowsToUse[0]?.logType || 'DOC-GEN';
+      const seqAudit = auditRegisterSequence(primaryDocType, rowsToUse);
+      return seqAudit.isSequenceFullyReconciled;
+    })(),
+    sequenceAudit: comprehensiveAudit,
   };
 }
 

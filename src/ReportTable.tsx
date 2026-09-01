@@ -7,7 +7,8 @@ import {
   getBusinessEntityKey, 
   getStatusCodeCategory, 
   getRevisionWeight, 
-  resolveRowDiscipline 
+  resolveRowDiscipline,
+  runComprehensiveSequenceAudit
 } from './utils/calculations';
 import { useLanguage } from './utils/i18n';
 import {
@@ -29,6 +30,7 @@ import {
   CheckCircle2,
   AlertTriangle, 
   ShieldAlert, 
+  ShieldCheck,
   Clock, 
   Layers, 
   ArrowRight,
@@ -139,6 +141,10 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
        const stats = calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), rawDataset || data);
        return stats;
   }, [filteredData, rawDataset, data]);
+
+  const sequenceAuditResult = useMemo(() => {
+    return runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'));
+  }, [filteredData]);
 
   // Executive Summary & Health Check Calculation
   const healthData = useMemo(() => {
@@ -496,6 +502,96 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         rows.filter(r => getStatusCodeCategory(r) === 'REJECTED_CLOSED').forEach(r => extracted.push(mapToDrillDownItem(r, false)));
         break;
       }
+      case 'missingSequence': {
+        if (docTypeFilter === 'ALL') {
+          sequenceAuditResult.allMissingIds.forEach(m => {
+            extracted.push({
+              id: m.docNo,
+              docNo: m.docNo,
+              rev: '00 (Missing)',
+              subject: `Expected Sequence Gap in ${m.docType} (Seq #${m.seqNumber})`,
+              trade: 'Sequence Control',
+              discipline: resolveRowDiscipline({ documentType: m.docType } as any),
+              submissionDate: '-',
+              status: 'MISSING_SEQUENCE',
+              statusCategory: 'UNCLASSIFIED',
+              actionOwner: 'Missing from Register',
+              delayDays: 0,
+              isOverdue: false,
+              isLatest: false,
+              allRevisions: []
+            });
+          });
+        } else {
+          const regAudit = sequenceAuditResult.registerAudits[docTypeFilter];
+          if (regAudit) {
+            regAudit.missingIds.forEach(mid => {
+              extracted.push({
+                id: mid,
+                docNo: mid,
+                rev: '00 (Missing)',
+                subject: `Expected Rev.00 Sequence Gap in ${docTypeFilter} (Range ${regAudit.prefix}${regAudit.minSequence} → ${regAudit.prefix}${regAudit.maxSequence})`,
+                trade: 'Sequence Control',
+                discipline: resolveRowDiscipline({ documentType: docTypeFilter } as any),
+                submissionDate: '-',
+                status: 'MISSING_SEQUENCE',
+                statusCategory: 'UNCLASSIFIED',
+                actionOwner: 'Missing from Register',
+                delayDays: 0,
+                isOverdue: false,
+                isLatest: false,
+                allRevisions: []
+              });
+            });
+          }
+        }
+        break;
+      }
+      case 'idOnlyBlankRecords': {
+        if (docTypeFilter === 'ALL') {
+          sequenceAuditResult.allBlankOrIdOnlyRecords.forEach(b => {
+            extracted.push({
+              id: b.docNo,
+              docNo: b.docNo,
+              rev: '00 (Blank Data)',
+              subject: `ID-only / Blank Record Exception in ${b.docType} (Seq #${b.seqNumber}) - Physical Row ID: ${b.rowId}`,
+              trade: 'Data Quality Exception',
+              discipline: resolveRowDiscipline({ documentType: b.docType } as any),
+              submissionDate: '-',
+              status: 'ID_ONLY_BLANK_EXCEPTION',
+              statusCategory: 'UNCLASSIFIED',
+              actionOwner: 'Source Register Row (Blank Payload)',
+              delayDays: 0,
+              isOverdue: false,
+              isLatest: false,
+              allRevisions: []
+            });
+          });
+        } else {
+          const regAudit = sequenceAuditResult.registerAudits[docTypeFilter];
+          if (regAudit) {
+            regAudit.blankOrIdOnlyRecords.forEach(b => {
+              extracted.push({
+                id: b.docNo,
+                docNo: b.docNo,
+                rev: '00 (Blank Data)',
+                subject: `ID-only / Blank Record Exception in ${docTypeFilter} (Seq #${b.seqNumber}) - Physical Row ID: ${b.rowId}`,
+                trade: 'Data Quality Exception',
+                discipline: resolveRowDiscipline({ documentType: docTypeFilter } as any),
+                submissionDate: '-',
+                status: 'ID_ONLY_BLANK_EXCEPTION',
+                statusCategory: 'UNCLASSIFIED',
+                actionOwner: 'Source Register Row (Blank Payload)',
+                delayDays: 0,
+                isOverdue: false,
+                isLatest: false,
+                allRevisions: []
+              });
+            });
+          }
+        }
+        break;
+      }
       default: {
         rows.forEach(r => extracted.push(mapToDrillDownItem(r, false)));
         break;
@@ -527,27 +623,32 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   };
 
   const handleExportDrillDownCSV = (itemsToExport: DrillDownItem[]) => {
+    if (!itemsToExport || itemsToExport.length === 0) return;
     const headers = ['#', 'Document Number', 'Revision', 'Subject / Description', 'Trade / Discipline', 'Status / Code', 'Action Owner', 'Submission Date', 'Response Date', 'Delay Days'];
     const rows = itemsToExport.map((it, idx) => [
       idx + 1,
-      `"${it.docNo}"`,
-      `"${it.rev}"`,
+      `"${(it.docNo || '').replace(/"/g, '""')}"`,
+      `"${(it.rev || '').replace(/"/g, '""')}"`,
       `"${(it.subject || '').replace(/"/g, '""')}"`,
-      `"${it.trade} - ${it.discipline}"`,
-      `"${it.status}"`,
-      `"${it.actionOwner}"`,
-      `"${it.submissionDate}"`,
-      `"${it.responseDate || ''}"`,
-      it.delayDays
+      `"${(`${it.trade || ''} - ${it.discipline || ''}`).replace(/"/g, '""')}"`,
+      `"${(it.status || '').replace(/"/g, '""')}"`,
+      `"${(it.actionOwner || '').replace(/"/g, '""')}"`,
+      `"${(it.submissionDate || '').replace(/"/g, '""')}"`,
+      `"${(it.responseDate || '').replace(/"/g, '""')}"`,
+      it.delayDays ?? 0
     ]);
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `DrillDown_${drillDownModal?.docType || 'Report'}_${drillDownModal?.metricKey || 'Data'}.csv`);
+    link.href = url;
+    const safeDoc = (drillDownModal?.docType || 'Report').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeMetric = (drillDownModal?.metricKey || 'Data').replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.download = `DrillDown_${safeDoc}_${safeMetric}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Executive Dynamic Recommendations
@@ -689,6 +790,110 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                 </p>
             </div>
        </div>
+
+       {/* POPULATION & SEQUENCE INTEGRITY GOVERNANCE CARD */}
+       {(sequenceAuditResult.totalMissingCount > 0 || sequenceAuditResult.totalBlankOrIdOnlyCount > 0) && (
+         <div className="bg-amber-50/90 border-2 border-amber-300 rounded-xl p-5 shadow-sm text-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+               <div className="p-2.5 bg-amber-200 text-amber-900 rounded-lg shrink-0 mt-0.5">
+                  <ShieldAlert className="w-5 h-5 text-amber-900" />
+               </div>
+               <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                     <h4 className="font-bold text-sm text-amber-950 uppercase tracking-wider">
+                        {language === 'ar' ? 'حوكمة مطابقة الأعداد واكتشاف الفجوات المتسلسلة' : 'Sequence Population Integrity & Gap Detection Control'}
+                     </h4>
+                     {sequenceAuditResult.totalMissingCount > 0 && (
+                       <span className="px-2 py-0.5 bg-rose-600 text-white rounded text-[11px] font-bold">
+                          {sequenceAuditResult.totalMissingCount} {language === 'ar' ? 'فجوات متسلسلة مفقودة' : 'Missing Sequence Gaps'}
+                       </span>
+                     )}
+                     {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 && (
+                       <span className="px-2 py-0.5 bg-sky-700 text-white rounded text-[11px] font-bold">
+                          {sequenceAuditResult.totalBlankOrIdOnlyCount} {language === 'ar' ? 'سجلات بالمعرّف فقط (بيانات فارغة)' : 'ID-Only / Blank Records'}
+                       </span>
+                     )}
+                  </div>
+                  <p className="text-xs text-amber-900 mt-1 font-medium leading-relaxed">
+                     {language === 'ar' ? sequenceAuditResult.summaryNarrativeAr : sequenceAuditResult.summaryNarrative}
+                  </p>
+                  
+                  {/* Missing Sequence IDs sample */}
+                  {sequenceAuditResult.allMissingIds.length > 0 && (
+                     <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="text-[11px] font-bold text-rose-900">{language === 'ar' ? 'عينة الأرقام المفقودة:' : 'Missing IDs:'}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                           {sequenceAuditResult.allMissingIds.slice(0, 5).map((mItem, mIdx) => (
+                              <button
+                                key={mIdx}
+                                type="button"
+                                onClick={() => handleCopySingleDoc(mItem.docNo)}
+                                className="px-2 py-0.5 bg-white text-rose-800 border border-rose-300 rounded font-mono text-[11px] font-bold hover:bg-rose-50 transition-colors flex items-center gap-1 cursor-pointer"
+                                title={language === 'ar' ? 'انقر للنسخ' : 'Click to copy'}
+                              >
+                                {copiedDocId === mItem.docNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-rose-600" />}
+                                {mItem.docNo}
+                              </button>
+                           ))}
+                           {sequenceAuditResult.allMissingIds.length > 5 && (
+                              <span className="text-[11px] font-bold text-rose-800">
+                                +{sequenceAuditResult.allMissingIds.length - 5} {language === 'ar' ? 'أخرى' : 'more'}
+                              </span>
+                           )}
+                        </div>
+                     </div>
+                  )}
+
+                  {/* ID-Only Blank Records sample */}
+                  {sequenceAuditResult.allBlankOrIdOnlyRecords.length > 0 && (
+                     <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="text-[11px] font-bold text-sky-900">{language === 'ar' ? 'سجلات موجودة ببيانات فارغة:' : 'ID-Only / Blank Records:'}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                           {sequenceAuditResult.allBlankOrIdOnlyRecords.slice(0, 5).map((bItem, bIdx) => (
+                              <button
+                                key={bIdx}
+                                type="button"
+                                onClick={() => handleCopySingleDoc(bItem.docNo)}
+                                className="px-2 py-0.5 bg-white text-sky-900 border border-sky-300 rounded font-mono text-[11px] font-bold hover:bg-sky-50 transition-colors flex items-center gap-1 cursor-pointer"
+                                title={language === 'ar' ? 'انقر للنسخ' : 'Click to copy'}
+                              >
+                                {copiedDocId === bItem.docNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-sky-600" />}
+                                {bItem.docNo}
+                              </button>
+                           ))}
+                           {sequenceAuditResult.allBlankOrIdOnlyRecords.length > 5 && (
+                              <span className="text-[11px] font-bold text-sky-800">
+                                +{sequenceAuditResult.allBlankOrIdOnlyRecords.length - 5} {language === 'ar' ? 'أخرى' : 'more'}
+                              </span>
+                           )}
+                        </div>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0">
+               {sequenceAuditResult.totalMissingCount > 0 && (
+                 <button
+                    type="button"
+                    onClick={() => openDrillDown('ALL', 'missingSequence', 'All Missing Sequence Numbers', 'جميع الأرقام المتسلسلة المفقودة')}
+                    className="px-3.5 py-2 bg-rose-900 text-white rounded-lg hover:bg-rose-800 transition-colors text-xs font-bold shadow-xs cursor-pointer"
+                 >
+                    {language === 'ar' ? 'فحص الفجوات المفقودة' : 'Inspect Missing Gaps'}
+                 </button>
+               )}
+               {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 && (
+                 <button
+                    type="button"
+                    onClick={() => openDrillDown('ALL', 'idOnlyBlankRecords', 'ID-Only Blank Quality Records', 'السجلات ذات المعرّف فقط والبيانات الفارغة')}
+                    className="px-3.5 py-2 bg-sky-900 text-white rounded-lg hover:bg-sky-800 transition-colors text-xs font-bold shadow-xs cursor-pointer"
+                 >
+                    {language === 'ar' ? 'فحص السجلات الفارغة' : 'Inspect Blank Records'}
+                 </button>
+               )}
+            </div>
+         </div>
+       )}
 
        {/* 2. EXECUTIVE CORE KPI METRIC CARDS */}
        <div id="report-kpi-grid" className="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -1080,14 +1285,26 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         </td>
 
                         <td className={tdClass}>
-                          <button
-                            type="button"
-                            onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
-                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
-                            title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
-                          >
-                            {row.stats.totalSheetsRev0}
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
+                              className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
+                              title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
+                            >
+                              {row.stats.totalSheetsRev0}
+                            </button>
+                            {sequenceAuditResult.registerAudits[row.documentType]?.missingCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => openDrillDown(row.documentType, 'missingSequence', `${row.documentType} — Missing Sequence IDs (${sequenceAuditResult.registerAudits[row.documentType].missingCount})`, `${row.documentType} — الأرقام المتسلسلة المفقودة`)}
+                                className="px-1.5 py-0.5 text-[9px] bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 rounded font-bold cursor-pointer transition-transform hover:scale-105"
+                                title={language === 'ar' ? `تنبيه: متوقع ${sequenceAuditResult.registerAudits[row.documentType].expectedPopulation} ومفقود ${sequenceAuditResult.registerAudits[row.documentType].missingCount} (انقر للفحص)` : `Expected ${sequenceAuditResult.registerAudits[row.documentType].expectedPopulation}, missing ${sequenceAuditResult.registerAudits[row.documentType].missingCount} (Click to inspect)`}
+                              >
+                                !{sequenceAuditResult.registerAudits[row.documentType].missingCount}
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         <td className={tdClass}>
@@ -1327,13 +1544,25 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         </button>
                       </td>
                       <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
-                        <button
-                          type="button"
-                          onClick={() => openDrillDown('ALL', 'rev00', 'All Revision 00 Submittals', 'إجمالي معاملات مراجعة 00')}
-                          className="hover:underline cursor-pointer"
-                        >
-                          {globalStats.totalSheetsRev0}
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown('ALL', 'rev00', 'All Revision 00 Submittals', 'إجمالي معاملات مراجعة 00')}
+                            className="hover:underline cursor-pointer font-bold"
+                          >
+                            {globalStats.totalSheetsRev0}
+                          </button>
+                          {sequenceAuditResult.totalMissingCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown('ALL', 'missingSequence', `All Missing Sequence IDs (${sequenceAuditResult.totalMissingCount})`, 'جميع الأرقام المتسلسلة المفقودة')}
+                              className="px-1.5 py-0.5 text-[9px] bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 rounded font-bold cursor-pointer transition-transform hover:scale-105"
+                              title={language === 'ar' ? `تنبيه: إجمالي الفجوات المتسلسلة المفقودة ${sequenceAuditResult.totalMissingCount} (انقر للفحص)` : `Total missing sequence IDs: ${sequenceAuditResult.totalMissingCount} (Click to inspect)`}
+                            >
+                              !{sequenceAuditResult.totalMissingCount}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
                         <button
