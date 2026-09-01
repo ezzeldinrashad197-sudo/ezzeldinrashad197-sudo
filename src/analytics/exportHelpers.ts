@@ -868,9 +868,28 @@ export const addExecutiveOverviewSlide = (
         ? `• حالة الأعمال النشطة: ${dashData.globalStats.overdue} من أصل ${activeItems} معاملة نشطة متأخرة متجاوزة للمدة (${overduePct}% من المعاملات النشطة تشمل ${dashData.globalStats.rejectedOpen} مرفوض مفتوح و ${dashData.globalStats.pending} معلق).`
         : `• Active Backlog Status: ${dashData.globalStats.overdue} of ${activeItems} active items are overdue (${overduePct}% of active items comprising ${dashData.globalStats.rejectedOpen} rejected open and ${dashData.globalStats.pending} pending review).`;
 
-    const obsText3 = isArabic
-        ? `• دورات المراجعة: تشكل المراجعات المتكررة ${(dashData.globalStats.totalSubmittedSheets > 0 ? (dashData.globalStats.totalSheetsFurtherRev / dashData.globalStats.totalSubmittedSheets * 100) : 0).toFixed(1)}% من إجمالي حجم العمل المستندي للمشروع.`
-        : `• Cycle Analysis: Resubmissions represent ${(dashData.globalStats.totalSubmittedSheets > 0 ? (dashData.globalStats.totalSheetsFurtherRev / dashData.globalStats.totalSubmittedSheets * 100) : 0).toFixed(1)}% of total document workload, demonstrating significant rework volume.`;
+    const resubPct = dashData.globalStats.totalSubmittedSheets > 0 
+        ? (dashData.globalStats.totalSheetsFurtherRev / dashData.globalStats.totalSubmittedSheets * 100) 
+        : 0;
+
+    let obsText3 = '';
+    if (isArabic) {
+        if (resubPct === 0) {
+            obsText3 = '• دورات المراجعة: نسبة المراجعات المتكررة تبلغ 0.0% من إجمالي حجم العمل، مما يشير إلى اعتماد التقديمات من المرة الأولى وعدم وجود أعمال إعادة تقديم أو تعديل مسجلة في البيانات الحالية.';
+        } else if (resubPct < 15) {
+            obsText3 = `• دورات المراجعة: تشكل المراجعات المتكررة ${resubPct.toFixed(1)}% من إجمالي حجم العمل، مما يعكس دورات مراجعة وتعديلات محدودة ومستقرة لتسوية الملاحظات الفنية.`;
+        } else {
+            obsText3 = `• دورات المراجعة: تشكل المراجعات المتكررة ${resubPct.toFixed(1)}% من إجمالي حجم العمل المستندي للمشروع، مما يعكس حجماً كبيراً من الأعمال المعاد تقديمها لتسوية الملاحظات الفنية السابقة.`;
+        }
+    } else {
+        if (resubPct === 0) {
+            obsText3 = '• Cycle Analysis: Resubmissions represent 0.0% of document workload, indicating first-time submission throughput with zero measurable rework in the current dataset.';
+        } else if (resubPct < 15) {
+            obsText3 = `• Cycle Analysis: Resubmissions represent ${resubPct.toFixed(1)}% of total document workload, reflecting a controlled and minimal revision cycle volume.`;
+        } else {
+            obsText3 = `• Cycle Analysis: Resubmissions represent ${resubPct.toFixed(1)}% of total document workload, demonstrating a substantial volume of rework to clear engineering comments.`;
+        }
+    }
 
     slide.addText(`${obsText1}\n\n${obsText2}\n\n${obsText3}`, {
         x: 3.8, y: botY + 0.38, w: 5.6, h: 1.75,

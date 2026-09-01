@@ -207,11 +207,20 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           arSummary = `حالة المشروع تحت المستوى المقبول والآمن بتقييم حرج قدره (${score}/100) نتيجة لارتفاع معدل رفض المستندات أو بطء عمليات المراجعة، مما أدى إلى تراكم ${totalOverdue} معاملة متأخرة متجاوزة للمدة المحددة، ${worstTypeLabelAr}. يتطلب هذا تدخلاً إدارياً فورياً لتسريع دورات المراجعة.`;
       }
 
+      // Add Data Completeness / Sequence Integrity disclosure if missing sequences are detected
+      if (sequenceAuditResult.totalMissingCount > 0) {
+          const compPct = sequenceAuditResult.totalExpectedPopulation > 0 
+              ? ((sequenceAuditResult.totalActualRev0Population / sequenceAuditResult.totalExpectedPopulation) * 100).toFixed(1)
+              : '0.0';
+          enSummary += ` (Data Scope Notice: Evaluated ${globalStats.totalSubmittedSheets} valid records present in register. ${sequenceAuditResult.totalMissingCount} expected sequence records are unsubmitted/missing across registers [${compPct}% completeness]).`;
+          arSummary += ` (تنبيه نطاق البيانات: تم تدقيق ${globalStats.totalSubmittedSheets} معاملة واردة بالسجل الفعلي. يوجد ${sequenceAuditResult.totalMissingCount} رقماً متسلسلاً مفقوداً عبر السجلات [نسبة الاكتمال: ${compPct}%]).`;
+      }
+
       return {
           en: enSummary,
           ar: arSummary
       };
-  }, [globalStats, healthData.score, byDocType]);
+  }, [globalStats, healthData.score, byDocType, sequenceAuditResult]);
 
   // Intelligent dynamic trend and progress indicators
   const trends = useMemo(() => {
@@ -927,9 +936,18 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         {trends.approvalTrend >= 0 ? `↑ +${trends.approvalTrend}%` : `↓ ${trends.approvalTrend}%`}
                     </span>
                 </div>
-                <span className={`text-[10px] font-semibold ${globalStats.approvalRate >= 80 ? 'text-emerald-500' : 'text-amber-600'}`}>
-                    {globalStats.approvalRate >= 80 ? (language === 'ar' ? 'المستهدف: محقق (80%+)' : 'Target met: 80%+') : (language === 'ar' ? 'دون المستهدف (80%+)' : 'Below target (80%+)')}
-                </span>
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                    <span className={`text-[10px] font-semibold ${globalStats.approvalRate >= 80 ? 'text-emerald-500' : 'text-amber-600'}`}>
+                        {globalStats.approvalRate >= 80 ? (language === 'ar' ? 'المستهدف: محقق (80%+)' : 'Target met: 80%+') : (language === 'ar' ? 'دون المستهدف (80%+)' : 'Below target (80%+)')}
+                    </span>
+                    {sequenceAuditResult.totalMissingCount > 0 && (
+                        <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 inline-block" title={language === 'ar' ? 'تنبيه: النسبة تنطبق على المعاملات الواردة بالسجل الفعلي فقط' : 'Note: Rate applies strictly to evaluated records present in register'}>
+                            {language === 'ar' 
+                                ? `نطاق البيانات: ${globalStats.totalUniqueDrawings}/${sequenceAuditResult.totalExpectedPopulation} متوقع` 
+                                : `Data Scope: ${globalStats.totalUniqueDrawings}/${sequenceAuditResult.totalExpectedPopulation} expected`}
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Active Items (Pending + Rejected Open) */}
@@ -1019,9 +1037,25 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                         <p className="text-sm text-slate-600 leading-relaxed">
                             {language === 'ar' ? (
-                                <>معدل الاعتماد التراكمي الحالي يبلغ <strong className="text-slate-800">{globalStats.approvalRate.toFixed(1)}%</strong>. {globalStats.approvalRate >= 80 ? 'هذا يتجاوز النسبة المستهدفة البالغة 80% ويعكس نسبة تصفية وحسم متقدمة للمعاملات الهندسية (شاملة المراجعات المعتمدة لاحقاً).' : 'هذا يقل عن النسبة المستهدفة (80%)، مما يشير إلى الحاجة لتسريع معالجة المعاملات العالقة والمرفوضة.'}</>
+                                <>
+                                    معدل الاعتماد التراكمي الحالي يبلغ <strong className="text-slate-800">{globalStats.approvalRate.toFixed(1)}%</strong>
+                                    {sequenceAuditResult.totalMissingCount > 0 && (
+                                        <span className="text-amber-800 text-xs font-semibold block mt-0.5">
+                                            (تنبيه نطاق البيانات: النسبة تنطبق على الـ {globalStats.totalUniqueDrawings} بنداً فريداً الواردة بالسجل الفعلي فقط؛ يوجد {sequenceAuditResult.totalMissingCount} رقماً متسلسلاً مفقوداً من أصل {sequenceAuditResult.totalExpectedPopulation} متوقع).
+                                        </span>
+                                    )}
+                                    . {globalStats.approvalRate >= 80 ? 'هذا يتجاوز النسبة المستهدفة البالغة 80% ويعكس نسبة تصفية وحسم متقدمة للمعاملات الهندسية الواردة.' : 'هذا يقل عن النسبة المستهدفة (80%)، مما يشير إلى الحاجة لتسريع معالجة المعاملات العالقة والمرفوضة.'}
+                                </>
                             ) : (
-                                <>Current submittal approval rate is <strong className="text-slate-800">{globalStats.approvalRate.toFixed(1)}%</strong>. {globalStats.approvalRate >= 80 ? 'This satisfies the target threshold of 80% and indicates strong cumulative resolution performance across submittal packages (including resolved revisions).' : 'This falls below the target threshold of 80%, signifying high design return loops and potential coordination deficiencies in submittal packages.'}</>
+                                <>
+                                    Current submittal approval rate is <strong className="text-slate-800">{globalStats.approvalRate.toFixed(1)}%</strong>
+                                    {sequenceAuditResult.totalMissingCount > 0 && (
+                                        <span className="text-amber-800 text-xs font-semibold block mt-0.5">
+                                            (Data Scope Note: Rate applies strictly to the {globalStats.totalUniqueDrawings} unique records present in register; {sequenceAuditResult.totalMissingCount} expected sequence records are unsubmitted/missing out of {sequenceAuditResult.totalExpectedPopulation} expected).
+                                        </span>
+                                    )}
+                                    . {globalStats.approvalRate >= 80 ? 'This satisfies the target threshold of 80% and indicates strong cumulative resolution performance across submitted submittal packages.' : 'This falls below the target threshold of 80%, signifying high design return loops and potential coordination deficiencies in submittal packages.'}
+                                </>
                             )}
                         </p>
                     </div>
@@ -1045,16 +1079,33 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                     })()}
 
                     {/* Bullet 3: Revisions ratio */}
-                    <div className="flex items-start gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                            {language === 'ar' ? (
-                                <>نسبة المراجعات المتكررة تشكل <strong className="text-slate-800">{(globalStats.totalSubmittedSheets > 0 ? (globalStats.totalSheetsFurtherRev / globalStats.totalSubmittedSheets * 100) : 0).toFixed(1)}%</strong> من إجمالي العبء المستندي للمشروع، مما يعكس حجماً كبيراً من الأعمال المعاد تقديمها لتسوية الملاحظات الفنية السابقة.</>
-                            ) : (
-                                <>Cycle Analysis: resubmissions represent <strong className="text-slate-800">{(globalStats.totalSubmittedSheets > 0 ? (globalStats.totalSheetsFurtherRev / globalStats.totalSubmittedSheets * 100) : 0).toFixed(1)}%</strong> of the total document workload, demonstrating a substantial volume of rework to clear engineering comments.</>
-                            )}
-                        </p>
-                    </div>
+                    {(() => {
+                        const resubRate = globalStats.totalSubmittedSheets > 0 ? (globalStats.totalSheetsFurtherRev / globalStats.totalSubmittedSheets * 100) : 0;
+                        return (
+                            <div className="flex items-start gap-2.5">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    {language === 'ar' ? (
+                                        resubRate === 0 ? (
+                                            <>تحليل دورات المراجعة: نسبة المراجعات المتكررة تبلغ <strong className="text-slate-800">0.0%</strong> من إجمالي حجم العمل المستندي، مما يشير إلى اعتماد التقديمات من المرة الأولى وعدم وجود أعمال إعادة تقديم أو تعديل مسجلة في البيانات الحالية.</>
+                                        ) : resubRate < 15 ? (
+                                            <>تحليل دورات المراجعة: تشكل المراجعات المتكررة <strong className="text-slate-800">{resubRate.toFixed(1)}%</strong> من إجمالي حجم العمل المستندي، مما يعكس دورات مراجعة وتعديلات محدودة ومستقرة لتسوية الملاحظات الفنية.</>
+                                        ) : (
+                                            <>تحليل دورات المراجعة: تشكل المراجعات المتكررة <strong className="text-slate-800">{resubRate.toFixed(1)}%</strong> من إجمالي العبء المستندي للمشروع، مما يعكس حجماً كبيراً من الأعمال المعاد تقديمها لتسوية الملاحظات الفنية السابقة.</>
+                                        )
+                                    ) : (
+                                        resubRate === 0 ? (
+                                            <>Cycle Analysis: Resubmissions represent <strong className="text-slate-800">0.0%</strong> of document workload, indicating first-time submission throughput with zero measurable rework in the current dataset.</>
+                                        ) : resubRate < 15 ? (
+                                            <>Cycle Analysis: Resubmissions represent <strong className="text-slate-800">{resubRate.toFixed(1)}%</strong> of total document workload, reflecting a controlled and minimal revision cycle volume.</>
+                                        ) : (
+                                            <>Cycle Analysis: Resubmissions represent <strong className="text-slate-800">{resubRate.toFixed(1)}%</strong> of the total document workload, demonstrating a substantial volume of rework to clear engineering comments.</>
+                                        )
+                                    )}
+                                </p>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
        </div>
@@ -1285,26 +1336,14 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         </td>
 
                         <td className={tdClass}>
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
-                              className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
-                              title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
-                            >
-                              {row.stats.totalSheetsRev0}
-                            </button>
-                            {sequenceAuditResult.registerAudits[row.documentType]?.missingCount > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => openDrillDown(row.documentType, 'missingSequence', `${row.documentType} — Missing Sequence IDs (${sequenceAuditResult.registerAudits[row.documentType].missingCount})`, `${row.documentType} — الأرقام المتسلسلة المفقودة`)}
-                                className="px-1.5 py-0.5 text-[9px] bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 rounded font-bold cursor-pointer transition-transform hover:scale-105"
-                                title={language === 'ar' ? `تنبيه: متوقع ${sequenceAuditResult.registerAudits[row.documentType].expectedPopulation} ومفقود ${sequenceAuditResult.registerAudits[row.documentType].missingCount} (انقر للفحص)` : `Expected ${sequenceAuditResult.registerAudits[row.documentType].expectedPopulation}, missing ${sequenceAuditResult.registerAudits[row.documentType].missingCount} (Click to inspect)`}
-                              >
-                                !{sequenceAuditResult.registerAudits[row.documentType].missingCount}
-                              </button>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
+                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
+                          >
+                            {row.stats.totalSheetsRev0}
+                          </button>
                         </td>
 
                         <td className={tdClass}>

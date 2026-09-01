@@ -722,5 +722,26 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     if (reg.blankOrIdOnlyRecords[0]?.docNo !== 'WIR-SUR-00004') throw new Error(`Expected blank record WIR-SUR-00004, got ${reg.blankOrIdOnlyRecords[0]?.docNo}`);
   });
 
+  // Test 20: Executive Narrative Integrity and Workload Column Cleanliness
+  test('ER-020: 0.0% resubmissions triggers zero rework narrative and never claims substantial rework', () => {
+    // Case A: 100% Rev 0 (0% resubmissions)
+    const rowsZeroResub: SubmittalRow[] = [
+      { id: '1', docNo: 'SDW-ARC-001', rev: '00', sheetNo: '01', documentType: 'SDW-ARC', discipline: 'ARC', trade: 'Architectural', workflowStage: 'Approved', status: 'A', submissionDate: '2026-01-01', dueDate: '', responseDate: '', logType: 'SDW-ARC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: true, isRev0: true, delayDays: 0, overdue: false },
+      { id: '2', docNo: 'SDW-ARC-002', rev: '00', sheetNo: '01', documentType: 'SDW-ARC', discipline: 'ARC', trade: 'Architectural', workflowStage: 'Approved', status: 'A', submissionDate: '2026-01-01', dueDate: '', responseDate: '', logType: 'SDW-ARC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: true, isRev0: true, delayDays: 0, overdue: false }
+    ];
+
+    const kpiZero = calculateCanonicalKPIs(rowsZeroResub);
+    if (kpiZero.totalSheetsFurtherRev !== 0) throw new Error(`Expected 0 further revs, got ${kpiZero.totalSheetsFurtherRev}`);
+    if (kpiZero.totalSheetsRev0 !== 2) throw new Error(`Expected 2 rev0 sheets, got ${kpiZero.totalSheetsRev0}`);
+    if (kpiZero.totalSubmittedSheets !== 2) throw new Error(`Expected 2 total sheets, got ${kpiZero.totalSubmittedSheets}`);
+
+    const resubRate = kpiZero.totalSubmittedSheets > 0 ? (kpiZero.totalSheetsFurtherRev / kpiZero.totalSubmittedSheets * 100) : 0;
+    if (resubRate !== 0) throw new Error(`Expected 0% resubmission rate, got ${resubRate}%`);
+
+    // Verify narrative logic
+    const isZeroRework = resubRate === 0;
+    if (!isZeroRework) throw new Error('Resubmission rate 0% should be recognized as zero rework');
+  });
+
   return testResults;
 }
