@@ -1,6 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { SubmittalRow, ProjectSettings, KPIStats } from './types';
-import { calculateStats, calculateProjectPerformanceHealth } from './utils/calculations';
+import { 
+  calculateStats, 
+  calculateProjectPerformanceHealth, 
+  processRevisionEngine, 
+  getBusinessEntityKey, 
+  getStatusCodeCategory, 
+  getRevisionWeight, 
+  resolveRowDiscipline 
+} from './utils/calculations';
 import { useLanguage } from './utils/i18n';
 import {
   BarChart,
@@ -18,6 +26,7 @@ import {
 import { 
   TrendingUp, 
   CheckCircle, 
+  CheckCircle2,
   AlertTriangle, 
   ShieldAlert, 
   Clock, 
@@ -29,7 +38,16 @@ import {
   Sparkles,
   ListTodo,
   UserCheck,
-  HelpCircle
+  HelpCircle,
+  X,
+  Copy,
+  Check,
+  Search,
+  Download,
+  ExternalLink,
+  Eye,
+  Info,
+  Filter
 } from 'lucide-react';
 
 interface ReportTableProps {
@@ -243,6 +261,293 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       } else {
           return item.contractor || projectInfo?.contractorName || (language === 'ar' ? 'المقاول الرئيسي (Innovo)' : 'Contractor (Innovo)');
       }
+  };
+
+  // Interactive Drill-down State
+  interface DrillDownItem {
+    id: string;
+    docNo: string;
+    rev: string;
+    subject: string;
+    trade: string;
+    discipline: string;
+    submissionDate: string;
+    responseDate?: string;
+    dueDate?: string;
+    status: string;
+    statusCategory: string;
+    actionOwner: string;
+    delayDays: number;
+    isOverdue: boolean;
+    isLatest: boolean;
+    allRevisions?: string[];
+    remarks?: string;
+  }
+
+  const [drillDownModal, setDrillDownModal] = useState<{
+    isOpen: boolean;
+    docType: string;
+    metricKey: string;
+    metricLabel: string;
+    metricLabelAr: string;
+    items: DrillDownItem[];
+  } | null>(null);
+
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && drillDownModal?.isOpen) {
+        setDrillDownModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [drillDownModal]);
+
+  const openDrillDown = (
+    docTypeFilter: string,
+    metricKey: string,
+    metricLabel: string,
+    metricLabelAr: string
+  ) => {
+    const rows = docTypeFilter === 'ALL'
+      ? filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
+      : filteredData.filter(d => rowToLabel(d) === docTypeFilter);
+
+    const baseForRevisions = rawDataset && rawDataset.length > 0 ? rawDataset : data;
+    const revisionMap = processRevisionEngine(baseForRevisions);
+    const targetEntityKeys = new Set(rows.map(r => getBusinessEntityKey(r)));
+
+    const extracted: DrillDownItem[] = [];
+
+    const mapToDrillDownItem = (r: SubmittalRow, isLatest: boolean, allRevs: string[] = []): DrillDownItem => {
+      const responsible = getResponsibleParty(r);
+      const cat = getStatusCodeCategory(r);
+      return {
+        id: r.id || `${r.docNo}-${r.rev}`,
+        docNo: r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || 'N/A',
+        rev: r.rev || '00',
+        subject: (r as any).description || (r as any).subject || (r as any).drawingTitle || (r as any).title || r.remarks || '-',
+        trade: r.trade || 'General',
+        discipline: r.discipline || resolveRowDiscipline(r),
+        submissionDate: r.submissionDate || '-',
+        responseDate: r.responseDate,
+        dueDate: r.dueDate,
+        status: r.status || (r as any).recordStatus || r.workflowStage || (r as any).ncrStatus || (r as any).sorStatus || 'Pending',
+        statusCategory: cat,
+        actionOwner: responsible,
+        delayDays: r.delayDays || 0,
+        isOverdue: Boolean(r.overdue),
+        isLatest,
+        allRevisions: allRevs,
+        remarks: r.remarks
+      };
+    };
+
+    switch (metricKey) {
+      case 'currentRejectedClosed': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'REJECTED_CLOSED') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'currentRejectedOpen': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'REJECTED_OPEN') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'currentRejected': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'REJECTED_OPEN' || cat === 'REJECTED_CLOSED') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'approved': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'APPROVED' || cat === 'FINAL_CLOSED') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'pending': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'PENDING' || cat === 'UNCLASSIFIED') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'active': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'PENDING' || cat === 'REJECTED_OPEN' || cat === 'UNCLASSIFIED') {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'totalUnique': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const revs = group.all.map(x => x.rev || '00');
+          extracted.push(mapToDrillDownItem(group.latest, true, revs));
+        });
+        break;
+      }
+      case 'resolvedRejections': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          if (group.isResolved) {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'overdue': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'PENDING' || cat === 'REJECTED_OPEN') {
+            if (group.latest.overdue || (group.latest.delayDays && group.latest.delayDays > 0)) {
+              const revs = group.all.map(x => x.rev || '00');
+              extracted.push(mapToDrillDownItem(group.latest, true, revs));
+            }
+          }
+        });
+        break;
+      }
+      case 'critical': {
+        rows.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).forEach(r => {
+          extracted.push(mapToDrillDownItem(r, false));
+        });
+        break;
+      }
+      case 'totalWorkload': {
+        rows.forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'rev00': {
+        rows.filter(r => {
+          const revVal = (r.rev || '').trim().toUpperCase();
+          const w = getRevisionWeight(revVal);
+          return (w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC') || (r.isRev0 && w === 0);
+        }).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'furtherRev': {
+        rows.filter(r => {
+          const revVal = (r.rev || '').trim().toUpperCase();
+          const w = getRevisionWeight(revVal);
+          return !((w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC') || (r.isRev0 && w === 0));
+        }).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'totalRejectedRows': {
+        rows.filter(r => {
+          const cat = getStatusCodeCategory(r);
+          return cat === 'REJECTED_OPEN' || cat === 'REJECTED_CLOSED';
+        }).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'rejectedOpenRows': {
+        rows.filter(r => getStatusCodeCategory(r) === 'REJECTED_OPEN').forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'rejectedClosedRows': {
+        rows.filter(r => getStatusCodeCategory(r) === 'REJECTED_CLOSED').forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      default: {
+        rows.forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+    }
+
+    setModalSearchQuery('');
+    setDrillDownModal({
+      isOpen: true,
+      docType: docTypeFilter,
+      metricKey,
+      metricLabel,
+      metricLabelAr,
+      items: extracted
+    });
+  };
+
+  const handleCopySingleDoc = (docNo: string) => {
+    navigator.clipboard.writeText(docNo);
+    setCopiedDocId(docNo);
+    setTimeout(() => setCopiedDocId(null), 2500);
+  };
+
+  const handleCopyAllDocNumbers = (itemsToCopy: DrillDownItem[]) => {
+    const list = itemsToCopy.map(i => i.docNo).filter(Boolean).join('\n');
+    navigator.clipboard.writeText(list);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2500);
+  };
+
+  const handleExportDrillDownCSV = (itemsToExport: DrillDownItem[]) => {
+    const headers = ['#', 'Document Number', 'Revision', 'Subject / Description', 'Trade / Discipline', 'Status / Code', 'Action Owner', 'Submission Date', 'Response Date', 'Delay Days'];
+    const rows = itemsToExport.map((it, idx) => [
+      idx + 1,
+      `"${it.docNo}"`,
+      `"${it.rev}"`,
+      `"${(it.subject || '').replace(/"/g, '""')}"`,
+      `"${it.trade} - ${it.discipline}"`,
+      `"${it.status}"`,
+      `"${it.actionOwner}"`,
+      `"${it.submissionDate}"`,
+      `"${it.responseDate || ''}"`,
+      it.delayDays
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `DrillDown_${drillDownModal?.docType || 'Report'}_${drillDownModal?.metricKey || 'Data'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Executive Dynamic Recommendations
@@ -661,315 +966,540 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
        )}
 
        {/* 6. DETAILED BREAKDOWN TABLE */}
-       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-           <div className="overflow-x-auto">
-               <table className="w-full text-left border-collapse">
-                   <thead>
-                   {/* Tier 1 Group Headers */}
-                   <tr className="bg-slate-100 border-b border-slate-200">
-                     <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200`}>
-                       {language === 'ar' ? 'نوع المعاملة / السجل' : 'Log Type (Register)'}
-                     </th>
-                     <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
-                       {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
-                     </th>
-                     <th colSpan={7} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
-                       {language === 'ar' ? 'أ — عبء العمل وسجلات التقديم (HISTORICAL WORKLOAD / ROW GRAIN)' : 'A — HISTORICAL WORKLOAD / ROW GRAIN'}
-                     </th>
-                     <th colSpan={8} className="px-4 py-2 border-b border-r border-blue-200 bg-blue-50/90 text-[#203864] font-extrabold text-xs text-center uppercase tracking-wider">
-                       {language === 'ar' ? 'ب — الحالة الحالية للبند الفريد (CURRENT STATE / UNIQUE ITEM GRAIN)' : 'B — CURRENT STATE / UNIQUE ITEM GRAIN'}
-                     </th>
-                     <th colSpan={3} className="px-4 py-2 border-b border-rose-200 bg-rose-50/80 text-rose-900 font-extrabold text-xs text-center uppercase tracking-wider">
-                       {language === 'ar' ? 'مستوى الخدمة والمتأخرات (SLA Performance - Derived)' : 'SLA PERFORMANCE (DERIVED)'}
-                     </th>
-                   </tr>
-                   {/* Tier 2 Sub-Headers */}
-                   <tr className="bg-slate-50 border-b border-slate-200">
-                     {/* Historical Workload / Row Grain Subheaders */}
-                     <th className={`${thClass} bg-slate-200/70 font-black text-slate-900`}>{language === 'ar' ? 'إجمالي الصفحات' : 'Total Workload Rows'}</th>
-                     <th className={thClass}>{language === 'ar' ? 'مراجعة 00' : 'Rev 00'}</th>
-                     <th className={thClass}>{language === 'ar' ? 'مراجعات لاحقة' : 'Further Rev'}</th>
-                     <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
-                     <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
-                     <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
-                     <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
-                     
-                     {/* Current State / Unique Item Grain Subheaders */}
-                     <th className={`${thClass} bg-blue-50/70 font-black text-[#203864]`}>{language === 'ar' ? 'البنود الفريدة' : 'Total Unique Items'}</th>
-                     <th className={`${thClass} text-emerald-700 font-bold`}>{language === 'ar' ? 'معتمد حالي' : 'Current Approved'}</th>
-                     <th className={`${thClass} text-rose-600`}>{language === 'ar' ? 'مرفوض مفتوح حالي' : 'Current Rejected Open'}</th>
-                     <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'مرفوض مغلق حالي' : 'Current Rejected Closed'}</th>
-                     <th className={`${thClass} bg-rose-50/80 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي المرفوض الحالي' : 'Current Total Rejected Items'}</th>
-                     <th className={`${thClass} text-amber-700`}>{language === 'ar' ? 'معلق حالي' : 'Pending'}</th>
-                     <th className={`${thClass} bg-amber-50/60 font-bold text-amber-900`}>{language === 'ar' ? 'النشط حالياً' : 'Active Items'}</th>
-                     <th className={`${thClass} border-r border-blue-200 bg-emerald-100/60 text-emerald-900 font-extrabold`}>{language === 'ar' ? 'نسبة الاعتماد %' : 'Approval Rate %'}</th>
-                     
-                     {/* SLA Performance Subheaders */}
-                     <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'متأخرات > SLA' : 'Overdue'}</th>
-                     <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'نسبة التأخير %' : 'Overdue %'}</th>
-                     <th className={`${thClass} text-slate-600`}>{language === 'ar' ? 'متوسط الرد (يوم)' : 'Avg Days'}</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-100">
-                   {byDocType.map((row, index) => {
-                     const activeCount = row.stats.pending + row.stats.rejectedOpen;
-                     const overdueRate = activeCount > 0 ? ((row.stats.overdue / activeCount) * 100).toFixed(1) : '0.0';
-                     const resolvedCount = row.stats.resolvedRejections || 0;
-                     return (
-                     <tr key={row.documentType} className="odd:bg-white even:bg-slate-50/50 hover:bg-[#f1f5f9]/50 transition-colors">
-                       {/* Log Type: Pure Taxonomy String */}
-                       <td className="px-4 py-3 text-xs text-[#203864] font-extrabold text-left border-r border-slate-200">
-                         {row.documentType}
-                       </td>
+        <div className="space-y-3">
+          {/* Interactive Drill-down Hint Banner */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 bg-blue-50/90 border border-blue-200/90 rounded-xl text-xs text-[#203864] shadow-xs">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="font-semibold">
+                {language === 'ar'
+                  ? '💡 جدول تفاعلي ذكي: انقر مباشرة على أي رقم في الجدول (مثل رقم 1 في عمود Current Rejected Closed لـ DOC-STR) لفتح نافذة فحص المستندات ونسخ أرقام المعاملات فوراً.'
+                  : '💡 Interactive Smart Table: Click any number cell (e.g. 1 in Current Rejected Closed for DOC-STR) to open the Drill-Down Inspector and copy exact document numbers.'}
+              </span>
+            </div>
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-100/90 px-2.5 py-1 rounded-md border border-blue-200">
+              {language === 'ar' ? 'انقر على أي خلية للتفاصيل' : 'Click Any Number To Inspect'}
+            </span>
+          </div>
 
-                       {/* Priority / Attribute Column */}
-                       <td className="px-4 py-3 text-xs text-center border-r border-slate-200">
-                         {row.criticalCount > 0 ? (
-                           <span className="inline-block px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px] border border-rose-200">
-                             CRITICAL ({row.criticalCount})
-                           </span>
-                         ) : (
-                           <span className="text-slate-400 font-normal">-</span>
-                         )}
-                       </td>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                    {/* Tier 1 Group Headers */}
+                    <tr className="bg-slate-100 border-b border-slate-200">
+                      <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200`}>
+                        {language === 'ar' ? 'نوع المعاملة / السجل' : 'Log Type (Register)'}
+                      </th>
+                      <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
+                        {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
+                      </th>
+                      <th colSpan={7} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
+                        {language === 'ar' ? 'أ — عبء العمل وسجلات التقديم (HISTORICAL WORKLOAD / ROW GRAIN)' : 'A — HISTORICAL WORKLOAD / ROW GRAIN'}
+                      </th>
+                      <th colSpan={8} className="px-4 py-2 border-b border-r border-blue-200 bg-blue-50/90 text-[#203864] font-extrabold text-xs text-center uppercase tracking-wider">
+                        {language === 'ar' ? 'ب — الحالة الحالية للبند الفريد (CURRENT STATE / UNIQUE ITEM GRAIN)' : 'B — CURRENT STATE / UNIQUE ITEM GRAIN'}
+                      </th>
+                      <th colSpan={3} className="px-4 py-2 border-b border-rose-200 bg-rose-50/80 text-rose-900 font-extrabold text-xs text-center uppercase tracking-wider">
+                        {language === 'ar' ? 'مستوى الخدمة والمتأخرات (SLA Performance - Derived)' : 'SLA PERFORMANCE (DERIVED)'}
+                      </th>
+                    </tr>
+                    {/* Tier 2 Sub-Headers */}
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      {/* Historical Workload / Row Grain Subheaders */}
+                      <th className={`${thClass} bg-slate-200/70 font-black text-slate-900`}>{language === 'ar' ? 'إجمالي الصفحات' : 'Total Workload Rows'}</th>
+                      <th className={thClass}>{language === 'ar' ? 'مراجعة 00' : 'Rev 00'}</th>
+                      <th className={thClass}>{language === 'ar' ? 'مراجعات لاحقة' : 'Further Rev'}</th>
+                      <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
+                      <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
+                      <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
+                      <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
+                      
+                      {/* Current State / Unique Item Grain Subheaders */}
+                      <th className={`${thClass} bg-blue-50/70 font-black text-[#203864]`}>{language === 'ar' ? 'البنود الفريدة' : 'Total Unique Items'}</th>
+                      <th className={`${thClass} text-emerald-700 font-bold`}>{language === 'ar' ? 'معتمد حالي' : 'Current Approved'}</th>
+                      <th className={`${thClass} text-rose-600`}>{language === 'ar' ? 'مرفوض مفتوح حالي' : 'Current Rejected Open'}</th>
+                      <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'مرفوض مغلق حالي' : 'Current Rejected Closed'}</th>
+                      <th className={`${thClass} bg-rose-50/80 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي المرفوض الحالي' : 'Current Total Rejected Items'}</th>
+                      <th className={`${thClass} text-amber-700`}>{language === 'ar' ? 'معلق حالي' : 'Pending'}</th>
+                      <th className={`${thClass} bg-amber-50/60 font-bold text-amber-900`}>{language === 'ar' ? 'النشط حالياً' : 'Active Items'}</th>
+                      <th className={`${thClass} border-r border-blue-200 bg-emerald-100/60 text-emerald-900 font-extrabold`}>{language === 'ar' ? 'نسبة الاعتماد %' : 'Approval Rate %'}</th>
+                      
+                      {/* SLA Performance Subheaders */}
+                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'متأخرات > SLA' : 'Overdue'}</th>
+                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'نسبة التأخير %' : 'Overdue %'}</th>
+                      <th className={`${thClass} text-slate-600`}>{language === 'ar' ? 'متوسط الرد (يوم)' : 'Avg Days'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {byDocType.map((row) => {
+                      const activeCount = row.stats.pending + row.stats.rejectedOpen;
+                      const overdueRate = activeCount > 0 ? ((row.stats.overdue / activeCount) * 100).toFixed(1) : '0.0';
+                      const resolvedCount = row.stats.resolvedRejections || 0;
+                      return (
+                      <tr key={row.documentType} className="odd:bg-white even:bg-slate-50/50 hover:bg-blue-50/40 transition-colors">
+                        {/* Log Type: Pure Taxonomy String */}
+                        <td className="px-4 py-3 text-xs text-[#203864] font-extrabold text-left border-r border-slate-200">
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', row.documentType, row.documentType)}
+                            className="font-extrabold text-[#203864] hover:text-blue-700 hover:underline cursor-pointer flex items-center gap-1.5"
+                            title={language === 'ar' ? 'انقر لعرض جميع سجلات هذا النوع' : 'Click to inspect all submittals of this type'}
+                          >
+                            <span>{row.documentType}</span>
+                            <Eye className="w-3 h-3 text-slate-400 opacity-60 hover:opacity-100 transition-opacity" />
+                          </button>
+                        </td>
 
-                       {/* Section A: Historical Workload / Row Grain */}
-                       <td className={`${tdClass} bg-slate-100/60 font-bold text-slate-900`}>{row.stats.totalSubmittedSheets}</td>
-                       <td className={tdClass}>{row.stats.totalSheetsRev0}</td>
-                       <td className={tdClass}>{row.stats.totalSheetsFurtherRev}</td>
-                       
-                       {/* Total Rejected Rows */}
-                       <td className={`${tdClass} bg-rose-50/40`}>
-                         {row.stats.totalRejectedRows > 0 ? (
-                           <span className="inline-block px-2.5 py-1 rounded bg-rose-100/80 text-rose-800 font-extrabold min-w-[32px]">
-                             {row.stats.totalRejectedRows}
-                           </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Priority / Attribute Column */}
+                        <td className="px-4 py-3 text-xs text-center border-r border-slate-200">
+                          {row.criticalCount > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'critical', `${row.documentType} — Critical Priority`, `${row.documentType} — أولوية حرجة`)}
+                              className="inline-block px-2 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[10px] border border-rose-200 cursor-pointer hover:scale-105 transition-transform"
+                              title={language === 'ar' ? 'عرض البنود الحرجة' : 'Inspect Critical Items'}
+                            >
+                              CRITICAL ({row.criticalCount})
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 font-normal">-</span>
+                          )}
+                        </td>
 
-                       {/* Rejected Open Rows */}
-                       <td className={tdClass}>
-                         {row.stats.rejectedOpenRows > 0 ? (
-                           <span className="inline-block px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-medium min-w-[28px]">
-                             {row.stats.rejectedOpenRows}
-                           </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Section A: Historical Workload / Row Grain */}
+                        <td className={`${tdClass} bg-slate-100/60 font-bold text-slate-900`}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', `${row.documentType} — Total Workload`, `${row.documentType} — إجمالي الصفحات المقدمة`)}
+                            className="hover:underline hover:text-blue-800 font-bold cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص أرقام المعاملات' : 'Click to inspect submittal numbers'}
+                          >
+                            {row.stats.totalSubmittedSheets}
+                          </button>
+                        </td>
 
-                       {/* Rejected Closed Rows */}
-                       <td className={tdClass}>
-                         {row.stats.rejectedClosedRows > 0 ? (
-                           <span className="inline-block px-2 py-0.5 rounded bg-red-50 text-red-900 font-medium min-w-[28px]">
-                             {row.stats.rejectedClosedRows}
-                           </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        <td className={tdClass}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
+                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
+                          >
+                            {row.stats.totalSheetsRev0}
+                          </button>
+                        </td>
 
-                       {/* Resolved Rejections */}
-                       <td className={`${tdClass} border-r border-slate-300 bg-emerald-50/30`}>
-                         {resolvedCount > 0 ? (
-                           <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold min-w-[28px]">
-                             {resolvedCount}
-                           </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
-                       
-                       {/* Section B: Current State / Unique Item Grain */}
-                       <td className={`${tdClass} bg-blue-50/30 font-bold text-[#203864]`}>{row.stats.totalUniqueDrawings}</td>
-                       
-                       {/* Current Approved */}
-                       <td className={tdClass}>
-                         {row.stats.approved > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold min-w-[36px]">
-                                 {row.stats.approved}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        <td className={tdClass}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'furtherRev', `${row.documentType} — Further Revisions`, `${row.documentType} — مراجعات لاحقة`)}
+                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص المراجعات اللاحقة' : 'Click to inspect Further Revisions'}
+                          >
+                            {row.stats.totalSheetsFurtherRev}
+                          </button>
+                        </td>
+                        
+                        {/* Total Rejected Rows */}
+                        <td className={`${tdClass} bg-rose-50/40`}>
+                          {row.stats.totalRejectedRows > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'totalRejectedRows', `${row.documentType} — Total Rejected Rows`, `${row.documentType} — إجمالي صفوف الرفض`)}
+                              className="inline-block px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 font-extrabold min-w-[32px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs border border-rose-200"
+                              title={language === 'ar' ? 'انقر لفحص جميع سجلات الرفض التاريخية' : 'Click to inspect all rejected historical rows'}
+                            >
+                              {row.stats.totalRejectedRows}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Current Rejected Open */}
-                       <td className={tdClass}>
-                         {row.stats.rejectedOpen > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-rose-50 text-rose-600 border border-rose-100 font-semibold min-w-[36px]">
-                                 {row.stats.rejectedOpen}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Rejected Open Rows */}
+                        <td className={tdClass}>
+                          {row.stats.rejectedOpenRows > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'rejectedOpenRows', `${row.documentType} — Rejected Open Rows`, `${row.documentType} — صفوف الرفض المفتوحة`)}
+                              className="inline-block px-2 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium min-w-[28px] cursor-pointer hover:scale-105 active:scale-95 transition-all border border-rose-200"
+                              title={language === 'ar' ? 'انقر لفحص صفوف الرفض المفتوحة' : 'Click to inspect open rejected rows'}
+                            >
+                              {row.stats.rejectedOpenRows}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Current Rejected Closed */}
-                       <td className={tdClass}>
-                         {row.stats.rejectedClosed > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-red-50 text-red-900 border border-red-100 font-medium min-w-[36px]">
-                                 {row.stats.rejectedClosed}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Rejected Closed Rows */}
+                        <td className={tdClass}>
+                          {row.stats.rejectedClosedRows > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'rejectedClosedRows', `${row.documentType} — Rejected Closed Rows`, `${row.documentType} — صفوف الرفض المغلقة`)}
+                              className="inline-block px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 text-red-900 font-medium min-w-[28px] cursor-pointer hover:scale-105 active:scale-95 transition-all border border-red-200"
+                              title={language === 'ar' ? 'انقر لفحص صفوف الرفض المغلقة' : 'Click to inspect closed rejected rows'}
+                            >
+                              {row.stats.rejectedClosedRows}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Current Total Rejected Items */}
-                       <td className={`${tdClass} bg-rose-50/30`}>
-                         {row.stats.currentRejected > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-rose-100 text-rose-800 border border-rose-200 font-bold min-w-[36px]">
-                                 {row.stats.currentRejected}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Resolved Rejections */}
+                        <td className={`${tdClass} border-r border-slate-300 bg-emerald-50/30`}>
+                          {resolvedCount > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'resolvedRejections', `${row.documentType} — Resolved Rejections`, `${row.documentType} — حالات الرفض المسواة والمعتمدة لاحقاً`)}
+                              className="inline-block px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold min-w-[28px] cursor-pointer hover:scale-105 active:scale-95 transition-all border border-emerald-200"
+                              title={language === 'ar' ? 'انقر لفحص البنود التي سُوّيت بعد الرفض' : 'Click to inspect resolved rejection items'}
+                            >
+                              {resolvedCount}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
+                        
+                        {/* Section B: Current State / Unique Item Grain */}
+                        <td className={`${tdClass} bg-blue-50/30 font-bold text-[#203864]`}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'totalUnique', `${row.documentType} — Total Unique Items`, `${row.documentType} — إجمالي البنود الفريدة`)}
+                            className="hover:underline hover:text-blue-800 cursor-pointer font-bold transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص جميع البنود الفريدة' : 'Click to inspect all unique items'}
+                          >
+                            {row.stats.totalUniqueDrawings}
+                          </button>
+                        </td>
+                        
+                        {/* Current Approved */}
+                        <td className={tdClass}>
+                          {row.stats.approved > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'approved', `${row.documentType} — Current Approved`, `${row.documentType} — البنود المعتمدة حالياً`)}
+                              className="inline-block px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص أرقام المعاملات المعتمدة' : 'Click to inspect approved documents'}
+                            >
+                              {row.stats.approved}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Pending */}
-                       <td className={tdClass}>
-                         {row.stats.pending > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-100 font-medium min-w-[36px]">
-                                 {row.stats.pending}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Current Rejected Open */}
+                        <td className={tdClass}>
+                          {row.stats.rejectedOpen > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'currentRejectedOpen', `${row.documentType} — Current Rejected Open`, `${row.documentType} — البنود المرفوضة المفتوحة حالياً`)}
+                              className="inline-block px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص البنود المرفوضة المطلوب إعادة تقديمها' : 'Click to inspect open rejected documents'}
+                            >
+                              {row.stats.rejectedOpen}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Active Items (Pending + Rejected Open) */}
-                       <td className={`${tdClass} bg-amber-50/30 font-bold text-amber-900`}>
-                         {activeCount > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-amber-100 text-amber-900 border border-amber-200 font-bold min-w-[36px]">
-                                 {activeCount}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Current Rejected Closed (The exact column requested) */}
+                        <td className={tdClass}>
+                          {row.stats.rejectedClosed > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'currentRejectedClosed', `${row.documentType} — Current Rejected Closed`, `${row.documentType} — البنود المرفوضة المغلقة حالياً`)}
+                              className="inline-block px-2.5 py-1 rounded bg-red-100 hover:bg-red-200 text-red-900 border border-red-300 font-bold min-w-[36px] cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-md ring-2 ring-red-400/40"
+                              title={language === 'ar' ? 'انقر لمعرفة رقم المعاملة والتفاصيل الدقيقة' : 'Click to inspect the exact document number & details'}
+                            >
+                              {row.stats.rejectedClosed}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Approval Rate % */}
-                       <td className={`${tdClass} border-r border-blue-200 bg-emerald-50/30 font-bold text-emerald-800`}>
-                         {row.stats.approvalRate.toFixed(1)}%
-                       </td>
+                        {/* Current Total Rejected Items */}
+                        <td className={`${tdClass} bg-rose-50/30`}>
+                          {row.stats.currentRejected > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'currentRejected', `${row.documentType} — Current Total Rejected Items`, `${row.documentType} — إجمالي البنود المرفوضة حالياً`)}
+                              className="inline-block px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 font-bold min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص جميع البنود المرفوضة حالياً' : 'Click to inspect all currently rejected items'}
+                            >
+                              {row.stats.currentRejected}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* SLA Overdue */}
-                       <td className={tdClass}>
-                         {row.stats.overdue > 0 ? (
-                             <span className="inline-block px-2.5 py-1 rounded bg-rose-100 text-rose-800 border border-rose-200 font-extrabold min-w-[36px]">
-                                 {row.stats.overdue}
-                             </span>
-                         ) : <span className="text-slate-400 font-normal">0</span>}
-                       </td>
+                        {/* Pending */}
+                        <td className={tdClass}>
+                          {row.stats.pending > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'pending', `${row.documentType} — Pending Review`, `${row.documentType} — البنود المعلقة قيد المراجعة`)}
+                              className="inline-block px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص المعاملات المعلقة' : 'Click to inspect pending submittals'}
+                            >
+                              {row.stats.pending}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Overdue Rate % of Active */}
-                       <td className={tdClass}>
-                         {activeCount > 0 ? (
-                           <span className={`font-bold ${row.stats.overdue > 0 ? 'text-rose-700' : 'text-slate-600'}`}>
-                             {overdueRate}%
-                           </span>
-                         ) : (
-                           <span className="text-slate-400">-</span>
-                         )}
-                       </td>
+                        {/* Active Items (Pending + Rejected Open) */}
+                        <td className={`${tdClass} bg-amber-50/30 font-bold text-amber-900`}>
+                          {activeCount > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'active', `${row.documentType} — Active Items`, `${row.documentType} — إجمالي البنود النشطة`)}
+                              className="inline-block px-2.5 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 font-bold min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص البنود النشطة' : 'Click to inspect active items'}
+                            >
+                              {activeCount}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                       {/* Avg Days */}
-                       <td className={tdClass}>
-                         {row.stats.avgResponseTime > 0 ? `${row.stats.avgResponseTime.toFixed(1)}d` : '-'}
-                       </td>
-                     </tr>
-                     );
-                   })}
-                   {/* Grand Total Row */}
-                   <tr className="bg-slate-200/90 border-t-2 border-slate-300 font-bold text-slate-900">
-                     <td className="px-4 py-3.5 text-xs font-black text-left text-slate-900 border-r border-slate-300">GRAND TOTAL</td>
-                     <td className="px-4 py-3.5 text-xs text-center border-r border-slate-300">
-                       {globalCriticalCount > 0 ? (
-                         <span className="inline-block px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold text-[10px]">
-                           CRITICAL ({globalCriticalCount})
-                         </span>
-                       ) : (
-                         <span className="text-slate-500 font-normal">-</span>
-                       )}
-                     </td>
-                     
-                     {/* Historical Workload Totals */}
-                     <td className="px-4 py-3.5 text-xs text-center font-black bg-slate-300/70 text-[#203864]">{globalStats.totalSubmittedSheets}</td>
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">{globalStats.totalSheetsRev0}</td>
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">{globalStats.totalSheetsFurtherRev}</td>
-                     
-                     {/* Total Rejected Rows */}
-                     <td className="px-4 py-3.5 text-xs text-center font-extrabold bg-rose-100/70 text-rose-900">
-                       <span className="inline-block px-2.5 py-1 rounded bg-rose-200 text-rose-900 font-black border border-rose-300">
-                         {globalStats.totalRejectedRows}
-                       </span>
-                     </td>
-                     
-                     {/* Rejected Open Rows */}
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-rose-800">{globalStats.rejectedOpenRows}</td>
-                     
-                     {/* Rejected Closed Rows */}
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-red-900">{globalStats.rejectedClosedRows}</td>
-                     
-                     {/* Resolved Rejections */}
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-emerald-800 bg-emerald-100/50 border-r border-slate-300">{globalStats.resolvedRejections || 0}</td>
-                     
-                     {/* Current Unique Totals */}
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-800 bg-blue-100/50">{globalStats.totalUniqueDrawings}</td>
-                     
-                     {/* Total Approved */}
-                     <td className="px-4 py-3.5 text-xs text-center">
-                         <span className="inline-block px-3 py-1 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
-                             {globalStats.approved}
-                         </span>
-                     </td>
+                        {/* Approval Rate % */}
+                        <td className={`${tdClass} border-r border-blue-200 bg-emerald-50/30 font-bold text-emerald-800`}>
+                          {row.stats.approvalRate.toFixed(1)}%
+                        </td>
 
-                     {/* Current Rejected Open */}
-                     <td className="px-4 py-3.5 text-xs text-center">
-                         <span className="inline-block px-3 py-1 rounded bg-rose-100 text-rose-700 font-bold border border-rose-300">
-                             {globalStats.rejectedOpen}
-                         </span>
-                     </td>
+                        {/* SLA Overdue */}
+                        <td className={tdClass}>
+                          {row.stats.overdue > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'overdue', `${row.documentType} — Overdue SLA Items`, `${row.documentType} — المعاملات المتأخرة عن SLA`)}
+                              className="inline-block px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 font-extrabold min-w-[36px] cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                              title={language === 'ar' ? 'انقر لفحص المعاملات المتأخرة' : 'Click to inspect overdue submittals'}
+                            >
+                              {row.stats.overdue}
+                            </button>
+                          ) : <span className="text-slate-400 font-normal">0</span>}
+                        </td>
 
-                     {/* Current Rejected Closed */}
-                     <td className="px-4 py-3.5 text-xs text-center">
-                         <span className="inline-block px-3 py-1 rounded bg-red-100 text-red-900 font-bold border border-red-300">
-                             {globalStats.rejectedClosed}
-                         </span>
-                     </td>
+                        {/* Overdue Rate % of Active */}
+                        <td className={tdClass}>
+                          {activeCount > 0 ? (
+                            <span className={`font-bold ${row.stats.overdue > 0 ? 'text-rose-700' : 'text-slate-600'}`}>
+                              {overdueRate}%
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
 
-                     {/* Current Total Rejected Items */}
-                     <td className="px-4 py-3.5 text-xs text-center bg-rose-100/60">
-                         <span className="inline-block px-3 py-1 rounded bg-rose-200 text-rose-900 font-extrabold border border-rose-400">
-                             {globalStats.currentRejected}
-                         </span>
-                     </td>
+                        {/* Avg Days */}
+                        <td className={tdClass}>
+                          {row.stats.avgResponseTime > 0 ? `${row.stats.avgResponseTime.toFixed(1)}d` : '-'}
+                        </td>
+                      </tr>
+                      );
+                    })}
+                    {/* Grand Total Row */}
+                    <tr className="bg-slate-200/90 border-t-2 border-slate-300 font-bold text-slate-900">
+                      <td className="px-4 py-3.5 text-xs font-black text-left text-slate-900 border-r border-slate-300">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'totalWorkload', 'GRAND TOTAL — All Workload Rows', 'الإجمالي الشامل — جميع سجلات العمل')}
+                          className="font-black text-slate-900 hover:text-blue-800 hover:underline cursor-pointer"
+                          title={language === 'ar' ? 'انقر لفحص كافة السجلات' : 'Click to inspect all workload records'}
+                        >
+                          GRAND TOTAL
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-center border-r border-slate-300">
+                        {globalCriticalCount > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown('ALL', 'critical', 'All Critical Priority Items', 'كافة المعاملات ذات الأولوية الحرجة')}
+                            className="inline-block px-2 py-0.5 rounded bg-rose-200 hover:bg-rose-300 text-rose-900 font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
+                          >
+                            CRITICAL ({globalCriticalCount})
+                          </button>
+                        ) : (
+                          <span className="text-slate-500 font-normal">-</span>
+                        )}
+                      </td>
+                      
+                      {/* Historical Workload Totals */}
+                      <td className="px-4 py-3.5 text-xs text-center font-black bg-slate-300/70 text-[#203864]">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'totalWorkload', 'All Submitted Sheets (Workload)', 'إجمالي كافة الصفحات المقدمة')}
+                          className="hover:underline hover:text-blue-900 font-black cursor-pointer"
+                        >
+                          {globalStats.totalSubmittedSheets}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'rev00', 'All Revision 00 Submittals', 'إجمالي معاملات مراجعة 00')}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {globalStats.totalSheetsRev0}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'furtherRev', 'All Further Revisions', 'إجمالي المراجعات اللاحقة')}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {globalStats.totalSheetsFurtherRev}
+                        </button>
+                      </td>
+                      
+                      {/* Total Rejected Rows */}
+                      <td className="px-4 py-3.5 text-xs text-center font-extrabold bg-rose-100/70 text-rose-900">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'totalRejectedRows', 'All Total Rejected Rows', 'إجمالي كافة صفوف الرفض')}
+                          className="inline-block px-2.5 py-1 rounded bg-rose-200 hover:bg-rose-300 text-rose-900 font-black border border-rose-300 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.totalRejectedRows}
+                        </button>
+                      </td>
+                      
+                      {/* Rejected Open Rows */}
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-rose-800">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'rejectedOpenRows', 'All Rejected Open Rows', 'إجمالي صفوف الرفض المفتوحة')}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {globalStats.rejectedOpenRows}
+                        </button>
+                      </td>
+                      
+                      {/* Rejected Closed Rows */}
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-red-900">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'rejectedClosedRows', 'All Rejected Closed Rows', 'إجمالي صفوف الرفض المغلقة')}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {globalStats.rejectedClosedRows}
+                        </button>
+                      </td>
+                      
+                      {/* Resolved Rejections */}
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-emerald-800 bg-emerald-100/50 border-r border-slate-300">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'resolvedRejections', 'All Resolved Rejections', 'إجمالي حالات الرفض المسواة')}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {globalStats.resolvedRejections || 0}
+                        </button>
+                      </td>
+                      
+                      {/* Current Unique Totals */}
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-800 bg-blue-100/50">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'totalUnique', 'All Unique Engineering Items', 'إجمالي كافة البنود الهندسية الفريدة')}
+                          className="hover:underline hover:text-blue-900 font-bold cursor-pointer"
+                        >
+                          {globalStats.totalUniqueDrawings}
+                        </button>
+                      </td>
+                      
+                      {/* Total Approved */}
+                      <td className="px-4 py-3.5 text-xs text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'approved', 'All Current Approved Items', 'إجمالي البنود المعتمدة حالياً')}
+                          className="inline-block px-3 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold border border-emerald-300 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.approved}
+                        </button>
+                      </td>
 
-                     {/* Total Pending */}
-                     <td className="px-4 py-3.5 text-xs text-center">
-                         <span className="inline-block px-3 py-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300">
-                             {globalStats.pending}
-                         </span>
-                     </td>
+                      {/* Current Rejected Open */}
+                      <td className="px-4 py-3.5 text-xs text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'currentRejectedOpen', 'All Current Rejected Open Items', 'إجمالي البنود المرفوضة المفتوحة حالياً')}
+                          className="inline-block px-3 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold border border-rose-300 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.rejectedOpen}
+                        </button>
+                      </td>
 
-                     {/* Total Active Items */}
-                     <td className="px-4 py-3.5 text-xs text-center bg-amber-100/60">
-                         <span className="inline-block px-3 py-1 rounded bg-amber-200 text-amber-900 font-bold border border-amber-300">
-                             {globalStats.pending + globalStats.rejectedOpen}
-                         </span>
-                     </td>
+                      {/* Current Rejected Closed */}
+                      <td className="px-4 py-3.5 text-xs text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'currentRejectedClosed', 'All Current Rejected Closed Items', 'إجمالي البنود المرفوضة المغلقة حالياً')}
+                          className="inline-block px-3 py-1 rounded bg-red-100 hover:bg-red-200 text-red-900 font-bold border border-red-300 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-md ring-2 ring-red-400/40"
+                          title={language === 'ar' ? 'انقر لفحص كافة المعاملات المرفوضة المغلقة' : 'Click to inspect all rejected closed documents'}
+                        >
+                          {globalStats.rejectedClosed}
+                        </button>
+                      </td>
 
-                     {/* Grand Approval Rate */}
-                     <td className="px-4 py-3.5 text-xs text-center border-r border-blue-200 bg-emerald-100/60 font-black text-emerald-900">
-                         {globalStats.approvalRate.toFixed(1)}%
-                     </td>
+                      {/* Current Total Rejected Items */}
+                      <td className="px-4 py-3.5 text-xs text-center bg-rose-100/60">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'currentRejected', 'All Currently Rejected Items', 'إجمالي كافة البنود المرفوضة حالياً')}
+                          className="inline-block px-3 py-1 rounded bg-rose-200 hover:bg-rose-300 text-rose-900 font-extrabold border border-rose-400 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.currentRejected}
+                        </button>
+                      </td>
 
-                     {/* Total Overdue */}
-                     <td className="px-4 py-3.5 text-xs text-center">
-                         <span className="inline-block px-3 py-1 rounded bg-rose-600 text-white font-extrabold border border-rose-700 shadow-sm">
-                             {globalStats.overdue}
-                         </span>
-                     </td>
+                      {/* Total Pending */}
+                      <td className="px-4 py-3.5 text-xs text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'pending', 'All Current Pending Items', 'إجمالي البنود المعلقة قيد المراجعة')}
+                          className="inline-block px-3 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold border border-amber-300 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.pending}
+                        </button>
+                      </td>
 
-                     {/* Grand Total Overdue Rate % */}
-                     <td className="px-4 py-3.5 text-xs text-center font-bold text-rose-700">
-                         {(globalStats.overdueRateOnActive ?? 0).toFixed(1)}%
-                     </td>
+                      {/* Total Active Items */}
+                      <td className="px-4 py-3.5 text-xs text-center bg-amber-100/60">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'active', 'All Active Items (Pending + Rejected Open)', 'إجمالي البنود النشطة (معلقة + مرفوضة مفتوحة)')}
+                          className="inline-block px-3 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold border border-amber-300 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+                        >
+                          {globalStats.pending + globalStats.rejectedOpen}
+                        </button>
+                      </td>
 
-                     {/* Grand Avg Days */}
-                     <td className="px-4 py-3.5 text-xs text-center text-slate-700">
-                         {globalStats.avgResponseTime > 0 ? `${globalStats.avgResponseTime.toFixed(1)}d` : '-'}
-                     </td>
-                   </tr>
-                </tbody>
-              </table>
-           </div>
-       </div>
+                      {/* Grand Approval Rate */}
+                      <td className="px-4 py-3.5 text-xs text-center border-r border-blue-200 bg-emerald-100/60 font-black text-emerald-900">
+                        {globalStats.approvalRate.toFixed(1)}%
+                      </td>
 
-       {/* 7. EXECUTIVE RECOMMENDATIONS (PRIORITY ACTIONS) PAGE/PANEL - LOCKED ON A SINGLE DEDICATED PAGE */}
+                      {/* Total Overdue */}
+                      <td className="px-4 py-3.5 text-xs text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'overdue', 'All Overdue SLA Items', 'إجمالي المعاملات المتأخرة عن SLA')}
+                          className="inline-block px-3 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white font-extrabold border border-rose-700 shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                        >
+                          {globalStats.overdue}
+                        </button>
+                      </td>
+
+                      {/* Grand Total Overdue Rate % */}
+                      <td className="px-4 py-3.5 text-xs text-center font-bold text-rose-700">
+                        {(globalStats.overdueRateOnActive ?? 0).toFixed(1)}%
+                      </td>
+
+                      {/* Grand Avg Days */}
+                      <td className="px-4 py-3.5 text-xs text-center text-slate-700">
+                        {globalStats.avgResponseTime > 0 ? `${globalStats.avgResponseTime.toFixed(1)}d` : '-'}
+                      </td>
+                    </tr>
+                 </tbody>
+               </table>
+            </div>
+          </div>
+        </div>
+
+        {/* 7. EXECUTIVE RECOMMENDATIONS (PRIORITY ACTIONS) PAGE/PANEL - LOCKED ON A SINGLE DEDICATED PAGE */}
        <div id="report-recommendations-panel" className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:break-inside-avoid page-break-inside-avoid page-break-before-always break-before-page break-inside-avoid">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                 <div className="p-2 bg-indigo-50 text-indigo-700 rounded-lg">
@@ -1015,6 +1545,249 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                 })}
             </div>
        </div>
+    
+      {/* 8. DRILL-DOWN INSPECTOR MODAL */}
+      {drillDownModal && drillDownModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/40 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-sm">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-900 font-extrabold text-xs tracking-wider">
+                      {drillDownModal.docType}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">/</span>
+                    <span className="text-sm font-black text-slate-900">
+                      {language === 'ar' ? drillDownModal.metricLabelAr : drillDownModal.metricLabel}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {language === 'ar'
+                      ? `عرض تفصيلي لـ ${drillDownModal.items.length} معاملة مسجلة في هذا التصنيف`
+                      : `Found ${drillDownModal.items.length} submittal records for this category`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDrillDownModal(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  title={language === 'ar' ? 'إغلاق' : 'Close'}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Action Bar & Filter */}
+            <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder={language === 'ar' ? 'بحث برقم المستند، الوصف، الحالة...' : 'Search doc number, subject, status...'}
+                  value={modalSearchQuery}
+                  onChange={(e) => setModalSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {modalSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setModalSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const filtered = drillDownModal.items.filter(it =>
+                      !modalSearchQuery ||
+                      it.docNo.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.subject.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.status.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.discipline.toLowerCase().includes(modalSearchQuery.toLowerCase())
+                    );
+                    handleCopyAllDocNumbers(filtered);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  title={language === 'ar' ? 'نسخ كافة أرقام المستندات الظاهرة' : 'Copy all visible doc numbers'}
+                >
+                  {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                  <span>{copiedAll ? (language === 'ar' ? 'تم نسخ الكل!' : 'All Copied!') : (language === 'ar' ? 'نسخ كافة الأرقام' : 'Copy All Numbers')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const filtered = drillDownModal.items.filter(it =>
+                      !modalSearchQuery ||
+                      it.docNo.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.subject.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.status.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                      it.discipline.toLowerCase().includes(modalSearchQuery.toLowerCase())
+                    );
+                    handleExportDrillDownCSV(filtered);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{language === 'ar' ? 'تصدير CSV' : 'Export CSV'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body - Items Table */}
+            <div className="overflow-y-auto flex-1 p-6">
+              {(() => {
+                const filteredItems = drillDownModal.items.filter(it =>
+                  !modalSearchQuery ||
+                  it.docNo.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                  it.subject.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                  it.status.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+                  it.discipline.toLowerCase().includes(modalSearchQuery.toLowerCase())
+                );
+
+                if (filteredItems.length === 0) {
+                  return (
+                    <div className="py-16 text-center text-slate-400">
+                      <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-semibold">{language === 'ar' ? 'لا توجد مستندات مطابقة' : 'No matching documents found'}</p>
+                      {modalSearchQuery && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          {language === 'ar' ? 'جرب البحث بكلمات أخرى' : 'Try adjusting your search filter'}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          <th className="px-3 py-2.5 text-center w-10">#</th>
+                          <th className="px-4 py-2.5">{language === 'ar' ? 'رقم المعاملة / المستند' : 'Document Number'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'المراجعة' : 'Rev'}</th>
+                          <th className="px-4 py-2.5">{language === 'ar' ? 'الوصف / الموضوع' : 'Subject / Title'}</th>
+                          <th className="px-3 py-2.5">{language === 'ar' ? 'التخصص' : 'Discipline'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الحالة الكودية' : 'Code Status'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الجهة المسؤولة' : 'Responsible'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'تاريخ التقديم' : 'Submit Date'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'تاريخ الرد' : 'Response Date'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الإجراء' : 'Action'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {filteredItems.map((item, idx) => {
+                          const isCopied = copiedDocId === item.docNo;
+                          const isRejected = item.statusCategory === 'REJECTED_OPEN' || item.statusCategory === 'REJECTED_CLOSED';
+                          const isApproved = item.statusCategory === 'APPROVED' || item.statusCategory === 'FINAL_CLOSED';
+
+                          return (
+                            <tr key={item.id + '_' + idx} className="hover:bg-blue-50/30 transition-colors">
+                              <td className="px-3 py-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                              <td className="px-4 py-2.5 font-bold text-[#203864]">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono select-all text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                    {item.docNo}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopySingleDoc(item.docNo)}
+                                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                                    title={language === 'ar' ? 'نسخ رقم المعاملة' : 'Copy document number'}
+                                  >
+                                    {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5 text-center font-mono font-bold text-slate-700">
+                                <span className="inline-block px-1.5 py-0.5 bg-slate-100 rounded text-[11px]">
+                                  {item.rev}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-slate-700 font-medium max-w-xs truncate" title={item.subject}>
+                                {item.subject}
+                              </td>
+                              <td className="px-3 py-2.5 text-slate-600 font-medium whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px]">
+                                  {item.discipline || item.trade}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <span
+                                  className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-extrabold border ${
+                                    item.statusCategory === 'REJECTED_CLOSED'
+                                      ? 'bg-red-100 text-red-900 border-red-300'
+                                      : item.statusCategory === 'REJECTED_OPEN'
+                                      ? 'bg-rose-100 text-rose-800 border-rose-200'
+                                      : isApproved
+                                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-center text-slate-600 font-semibold text-[11px]">
+                                {item.actionOwner}
+                              </td>
+                              <td className="px-3 py-2.5 text-center text-slate-500 font-mono text-[11px]">
+                                {item.submissionDate || '-'}
+                              </td>
+                              <td className="px-3 py-2.5 text-center text-slate-500 font-mono text-[11px]">
+                                {item.responseDate || '-'}
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopySingleDoc(item.docNo)}
+                                  className="px-2 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-50 rounded border border-blue-200 transition-colors cursor-pointer"
+                                >
+                                  {isCopied ? (language === 'ar' ? 'تم النسخ!' : 'Copied!') : (language === 'ar' ? 'نسخ' : 'Copy')}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <span>
+                {language === 'ar' ? 'اضغط ESC للإغلاق في أي وقت' : 'Press ESC or Click Outside to close'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDrillDownModal(null)}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg text-xs transition-colors cursor-pointer"
+              >
+                {language === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

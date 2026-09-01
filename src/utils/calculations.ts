@@ -6,6 +6,7 @@ import {
   getBusinessEntityKey, 
   parseDateTimestamp, 
   calculateCanonicalKPIs,
+  processRevisionEngine,
   calculateStats as calcStatsFoundation,
   calculateNCRStats as calcNCRStatsFoundation,
   calculateSORStats as calcSORStatsFoundation,
@@ -13,7 +14,7 @@ import {
   resolveRowDiscipline,
   resolveCanonicalTrade
 } from "../analytics/calculationFoundation";
-export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, resolveRowDiscipline, resolveCanonicalTrade };
+export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, processRevisionEngine, resolveRowDiscipline, resolveCanonicalTrade };
 import { compareRevisions } from "../analytics/analyticsCore";
 import { compareRevisionsCanonical, getRevisionWeight } from "../analytics/revisionResolver";
 import { mapDocumentToWorkflow } from "./workflowMapping";
