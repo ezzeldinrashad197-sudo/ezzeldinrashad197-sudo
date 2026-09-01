@@ -196,7 +196,6 @@ export interface KPIStats {
 
 export type SequenceDiscrepancyType = 
   | 'MISSING_SEQUENCE_RECORD'     // Expected in sequence (Min..Max) but completely missing from Rev 00 / dataset
-  | 'ID_ONLY_BLANK_RECORD'        // ID present in source rows but row contains no business data (status/dates/code)
   | 'DROPPED_DURING_PIPELINE'     // Present in raw source/parsed but dropped in pipeline
   | 'DUPLICATE_RECORD'            // Same DocNo + Rev multiple times
   | 'FURTHER_REV_WITHOUT_REV0'    // Entity appeared first at Rev 01/02 without Rev 00
@@ -224,11 +223,9 @@ export interface RegisterSequenceAudit {
   totalWorkloadRows: number;     // e.g. 2045
   furtherRevRows: number;        // e.g. 47
   
-  missingCount: number;          // e.g. 2 (Only truly missing IDs from the dataset)
+  missingCount: number;          // e.g. 2
   missingIds: string[];          // ["WIR-SUR-00009", "WIR-SUR-00045"]
   sequenceGaps: SequenceGap[];
-  blankOrIdOnlyCount: number;    // Count of rows where ID exists in source but business payload is blank
-  blankOrIdOnlyRecords: { docNo: string; rowId: string; seqNumber: number; reason: string }[];
   duplicateRecords: { docNo: string; rev: string; count: number; ids: string[] }[];
   furtherRevWithoutRev0: { docNo: string; firstRecordedRev: string; count: number }[];
   malformedIds: string[];
@@ -241,11 +238,9 @@ export interface SequenceAuditResult {
   totalExpectedPopulation: number;
   totalActualRev0Population: number;
   totalMissingCount: number;
-  totalBlankOrIdOnlyCount: number;
   totalDuplicatesCount: number;
   totalFurtherRevWithoutRev0: number;
   allMissingIds: { docType: string; docNo: string; seqNumber: number }[];
-  allBlankOrIdOnlyRecords: { docType: string; docNo: string; seqNumber: number; rowId: string; reason: string }[];
   registerAudits: Record<string, RegisterSequenceAudit>;
   overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY';
   summaryNarrative: string;
@@ -260,7 +255,7 @@ export interface ForensicLedgerEntry {
   sourceLocation: string;
   parsedStatus: string;
   canonicalStatus: string;
-  disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'ID_ONLY_BLANK_RECORD' | 'BLANK_RECORD' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE';
+  disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE';
   dispositionReason: string;
   dispositionReasonAr: string;
 }

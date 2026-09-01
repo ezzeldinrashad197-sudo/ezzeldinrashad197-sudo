@@ -12,35 +12,9 @@ export interface ParsedDocIdentifier {
 }
 
 /**
- * Checks if a row is an ID-only / Blank record (contains a document ID but no business data).
- */
-export const isBlankOrIdOnlyRow = (r: SubmittalRow): boolean => {
-  const status = String(r.status || '').trim().toUpperCase();
-  const recStatus = String(r.recordStatus || '').trim().toUpperCase();
-  const code = String(r.code || '').trim().toUpperCase();
-  const subDate = String(r.submissionDate || '').trim();
-  const respDate = String(r.responseDate || '').trim();
-  const stage = String(r.workflowStage || '').trim().toUpperCase();
-  const action = String(r.action || (r as any).ncrAction || (r as any).sorAction || '').trim().toUpperCase();
-  const ncrStatus = String((r as any).ncrStatus || '').trim().toUpperCase();
-  const sorStatus = String((r as any).sorStatus || '').trim().toUpperCase();
-
-  const hasNoStatus = !status || status === '-' || status === 'N/A' || status === 'NULL' || status === 'UNCLASSIFIED';
-  const hasNoRecStatus = !recStatus || recStatus === '-' || recStatus === 'N/A';
-  const hasNoCode = !code || code === '-' || code === 'N/A' || code === 'NULL';
-  const hasNoDates = !subDate && !respDate;
-  const hasNoAction = !action || action === '-' || action === 'N/A';
-  const hasNoNcr = !ncrStatus && !sorStatus;
-  const hasNoStage = !stage || (stage === 'PENDING' && hasNoDates && hasNoStatus && hasNoCode);
-
-  return hasNoStatus && hasNoRecStatus && hasNoCode && hasNoDates && hasNoAction && hasNoNcr && hasNoStage;
-};
-
-/**
  * Parses a document identifier string to extract its prefix, sequence number, padding length, and suffix.
  * Handles patterns like:
  * - WIR-SUR-00009 -> prefix: "WIR-SUR-", seq: 9, padding: 5, suffix: ""
- * - svgINN-ARC-WIR-SUR-01975 -> prefix: "svgINN-ARC-WIR-SUR-", seq: 1975, padding: 5, suffix: ""
  * - SDW-STR-015 -> prefix: "SDW-STR-", seq: 15, padding: 3, suffix: ""
  * - NCR-0042 -> prefix: "NCR-", seq: 42, padding: 4, suffix: ""
  * - RFI-AR-0001-A -> prefix: "RFI-AR-", seq: 1, padding: 4, suffix: "-A"
@@ -55,7 +29,7 @@ export const parseDocIdentifier = (docNoRaw?: string | null): ParsedDocIdentifie
     return { rawDocNo: '', prefix: '', sequenceNumber: null, paddingLength: 0, suffix: '', isValidPattern: false };
   }
 
-  // Pattern 1: Standard Prefix with trailing numeric sequence (e.g., WIR-SUR-00009, svgINN-ARC-WIR-SUR-01975, SDW-STR-015, NCR-001)
+  // Pattern 1: Standard Prefix with trailing numeric sequence (e.g., WIR-SUR-00009, SDW-STR-015, NCR-001)
   const prefixMatch = raw.match(/^([A-Za-z0-9_.-]*?[^0-9])(\d+)(\s*[-_./\s][A-Za-z0-9]+)?$/);
   if (prefixMatch) {
     const prefix = prefixMatch[1];
@@ -118,7 +92,7 @@ export const formatSequenceID = (prefix: string, seqNum: number, padding: number
 };
 
 /**
- * Analyzes sequence integrity, detects missing records, gaps, ID-only blank records, and population deltas.
+ * Analyzes sequence integrity, detects missing records, gaps, and population deltas for a specific register group.
  */
 export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): RegisterSequenceAudit => {
   if (!rows || rows.length === 0) {
@@ -136,8 +110,6 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
       missingCount: 0,
       missingIds: [],
       sequenceGaps: [],
-      blankOrIdOnlyCount: 0,
-      blankOrIdOnlyRecords: [],
       duplicateRecords: [],
       furtherRevWithoutRev0: [],
       malformedIds: [],
@@ -191,11 +163,9 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
     }
   });
 
-  // Analyze parsed sequence numbers, blank records, & numbering conventions
+  // Analyze parsed sequence numbers & numbering conventions
   const rev0SequenceNumbers = new Set<number>();
   const allEntitySequenceNumbers = new Set<number>();
-  const blankOrIdOnlySeqSet = new Set<number>();
-  const blankOrIdOnlyRecords: { docNo: string; rowId: string; seqNumber: number; reason: string }[] = [];
   const seqToDocMap = new Map<number, string>();
   
   // Track prefixes and padding lengths to find dominant pattern
@@ -222,24 +192,11 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
       suffixCounts.set(parsed.suffix, (suffixCounts.get(parsed.suffix) || 0) + 1);
     }
 
-    // Check if this entity is an ID-only / Blank record (contains no business data in all its rows)
-    const allRowsBlank = histRows.every(r => isBlankOrIdOnlyRow(r));
-    if (allRowsBlank) {
-      blankOrIdOnlySeqSet.add(seq);
-      blankOrIdOnlyRecords.push({
-        docNo,
-        rowId: histRows[0]?.id || docNo,
-        seqNumber: seq,
-        reason: 'Document ID exists in source register but contains no business data (status, dates, code).'
-      });
-      return; // Handled as blank/ID-only exception
-    }
-
-    // Check if this entity has a Rev 00 with data
+    // Check if this entity has a Rev 00
     const hasRev0 = histRows.some(r => {
       const rev = String(r.rev || '').trim().toUpperCase();
       const w = getRevisionWeight(rev);
-      return (w === 0 && rev !== 'AS-BUILT' && rev !== 'IFC') || (r.isRev0 && w === 0);
+      return w === 0 && rev !== 'AS-BUILT' && rev !== 'IFC' || (r.isRev0 && w === 0);
     });
 
     if (hasRev0) {
@@ -301,7 +258,7 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
   const actualRev0Population = rev0SequenceNumbers.size;
   const actualUniquePopulation = entityHistory.size;
 
-  // Identify TRUE Missing Sequence IDs (IDs that are completely absent from the dataset)
+  // Identify Missing Sequence IDs
   const missingNumbers: number[] = [];
   const missingIds: string[] = [];
   const sequenceGaps: SequenceGap[] = [];
@@ -311,8 +268,7 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
     let currentGapEnd: number | null = null;
 
     for (let s = minSeq; s <= maxSeq; s++) {
-      // An ID is truly MISSING (Sequence Gap) only if it is completely absent from all source rows
-      if (!allEntitySequenceNumbers.has(s)) {
+      if (!rev0SequenceNumbers.has(s)) {
         missingNumbers.push(s);
         const formatted = formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix);
         missingIds.push(formatted);
@@ -366,31 +322,27 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
   }
 
   const missingCount = missingIds.length;
-  const blankOrIdOnlyCount = blankOrIdOnlyRecords.length;
   const isSequenceFullyReconciled = missingCount === 0 && duplicateRecords.length === 0;
 
   // Build high-level human readable narrative explanation for delta
   let deltaExplanation = '';
   let deltaExplanationAr = '';
 
-  if (isSequenceFullyReconciled && blankOrIdOnlyCount === 0 && furtherRevWithoutRev0.length === 0) {
-    deltaExplanation = `Sequence perfectly reconciled: Expected ${expectedPopulation} = Actual Unique Records (${actualUniquePopulation}) across range ${minSeq} to ${maxSeq}.`;
-    deltaExplanationAr = `التسلسل مطابق بنسبة 100%: العدد المتوقع ${expectedPopulation} = إجمالي السجلات (${actualUniquePopulation}) ضمن النطاق ${minSeq} إلى ${maxSeq}.`;
+  if (isSequenceFullyReconciled) {
+    deltaExplanation = `Sequence perfectly reconciled: Expected ${expectedPopulation} = Actual Rev.00 (${actualRev0Population}) across range ${minSeq} to ${maxSeq}.`;
+    deltaExplanationAr = `التسلسل مطابق بنسبة 100%: العدد المتوقع ${expectedPopulation} = عدد مراجعات 00 الفعلي (${actualRev0Population}) ضمن النطاق ${minSeq} إلى ${maxSeq}.`;
   } else {
-    const missingSummaryEn = missingCount > 0 ? `Sequence Gaps: ${missingCount} (e.g. ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : `Sequence Gaps: 0`;
-    const missingSummaryAr = missingCount > 0 ? `فجوات التسلسل: ${missingCount} (مثل: ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : `فجوات التسلسل: 0`;
+    const missingSummaryEn = missingCount > 0 ? `${missingCount} missing sequence ID${missingCount > 1 ? 's' : ''} (e.g. ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : '';
+    const missingSummaryAr = missingCount > 0 ? `${missingCount} رقم متسلسل مفقود من مراجعة 00 (مثل: ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : '';
     
-    const blankSummaryEn = blankOrIdOnlyCount > 0 ? `ID-only / Blank Records: ${blankOrIdOnlyCount} (${blankOrIdOnlyRecords.map(b => b.docNo).slice(0, 3).join(', ')}${blankOrIdOnlyCount > 3 ? '...' : ''})` : '';
-    const blankSummaryAr = blankOrIdOnlyCount > 0 ? `سجلات برقم فقط/بيانات فارغة: ${blankOrIdOnlyCount} (${blankOrIdOnlyRecords.map(b => b.docNo).slice(0, 3).join(', ')}${blankOrIdOnlyCount > 3 ? '...' : ''})` : '';
-
     const furtherSummaryEn = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} entities started at Further Revisions without Rev.00` : '';
     const furtherSummaryAr = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} معاملة مسجلة فقط بمراجعات لاحقة دون مراجعة 00` : '';
 
-    const partsEn = [missingSummaryEn, blankSummaryEn, furtherSummaryEn].filter(Boolean).join('; ');
-    const partsAr = [missingSummaryAr, blankSummaryAr, furtherSummaryAr].filter(Boolean).join('؛ ');
+    const partsEn = [missingSummaryEn, furtherSummaryEn].filter(Boolean).join('; ');
+    const partsAr = [missingSummaryAr, furtherSummaryAr].filter(Boolean).join('؛ ');
 
-    deltaExplanation = `${partsEn}. Expected Range: ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} → ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')} (Total Expected: ${expectedPopulation}, Actual in Source: ${actualUniquePopulation}).`;
-    deltaExplanationAr = `${partsAr}. النطاق المتوقع: ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} ← ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')} (المتوقع: ${expectedPopulation}، الفعلي بالمصدر: ${actualUniquePopulation}).`;
+    deltaExplanation = `Sequence Delta Detected: Expected ${expectedPopulation} (from ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} to ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')}), Found Rev.00 = ${actualRev0Population}. Delta = ${missingCount}. Details: ${partsEn}.`;
+    deltaExplanationAr = `تم رصد فجوة في التسلسل: المتوقع ${expectedPopulation} (من ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} حتى ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')})، الفعلي لمراجعة 00 = ${actualRev0Population}. الفارق = ${missingCount}. التفاصيل: ${partsAr}.`;
   }
 
   return {
@@ -407,8 +359,6 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
     missingCount,
     missingIds,
     sequenceGaps,
-    blankOrIdOnlyCount,
-    blankOrIdOnlyRecords,
     duplicateRecords,
     furtherRevWithoutRev0,
     malformedIds,
@@ -427,11 +377,9 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
       totalExpectedPopulation: 0,
       totalActualRev0Population: 0,
       totalMissingCount: 0,
-      totalBlankOrIdOnlyCount: 0,
       totalDuplicatesCount: 0,
       totalFurtherRevWithoutRev0: 0,
       allMissingIds: [],
-      allBlankOrIdOnlyRecords: [],
       registerAudits: {},
       overallStatus: 'PERFECT_MATCH',
       summaryNarrative: 'No records to audit.',
@@ -439,31 +387,10 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
     };
   }
 
-  // Group by documentType / register with smart inference for blank/ID-only rows
-  const getRowRegisterType = (r: SubmittalRow): string => {
-    if (r.documentType && r.documentType.trim()) return r.documentType.trim().toUpperCase();
-    if (r.logType && r.logType.trim()) return r.logType.trim().toUpperCase();
-    // If documentType is blank, infer from document number prefix
-    const doc = (r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || '').trim();
-    const parsed = parseDocIdentifier(doc);
-    if (parsed.prefix) {
-      const cleaned = parsed.prefix.replace(/[-_./\s]+$/, '');
-      const tokens = cleaned.split(/[-_./\s]+/);
-      const knownFamilyIdx = tokens.findIndex(t => ['WIR', 'MIR', 'SDW', 'SHD', 'NCR', 'SOR', 'RFI', 'MAR', 'QS', 'ABD', 'LTR', 'LETTER'].includes(t.toUpperCase()));
-      if (knownFamilyIdx >= 0) {
-        if (knownFamilyIdx < tokens.length - 1) {
-          return `${tokens[knownFamilyIdx]}-${tokens[knownFamilyIdx + 1]}`.toUpperCase();
-        }
-        return tokens[knownFamilyIdx].toUpperCase();
-      }
-      return cleaned.toUpperCase();
-    }
-    return 'DOC-GEN';
-  };
-
+  // Group by documentType / register
   const groups = new Map<string, SubmittalRow[]>();
   rows.forEach(r => {
-    const dt = getRowRegisterType(r);
+    const dt = (r.documentType || r.logType || 'DOC-GEN').trim().toUpperCase();
     if (!groups.has(dt)) {
       groups.set(dt, []);
     }
@@ -474,11 +401,9 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
   let totalExpectedPopulation = 0;
   let totalActualRev0Population = 0;
   let totalMissingCount = 0;
-  let totalBlankOrIdOnlyCount = 0;
   let totalDuplicatesCount = 0;
   let totalFurtherRevWithoutRev0 = 0;
   const allMissingIds: { docType: string; docNo: string; seqNumber: number }[] = [];
-  const allBlankOrIdOnlyRecords: { docType: string; docNo: string; seqNumber: number; rowId: string; reason: string }[] = [];
 
   groups.forEach((groupRows, dt) => {
     const audit = auditRegisterSequence(dt, groupRows);
@@ -487,7 +412,6 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
     totalExpectedPopulation += audit.expectedPopulation;
     totalActualRev0Population += audit.actualRev0Population;
     totalMissingCount += audit.missingCount;
-    totalBlankOrIdOnlyCount += audit.blankOrIdOnlyCount;
     totalDuplicatesCount += audit.duplicateRecords.length;
     totalFurtherRevWithoutRev0 += audit.furtherRevWithoutRev0.length;
 
@@ -499,45 +423,27 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
         seqNumber: parsed.sequenceNumber || 0
       });
     });
-
-    audit.blankOrIdOnlyRecords.forEach(b => {
-      allBlankOrIdOnlyRecords.push({
-        docType: dt,
-        docNo: b.docNo,
-        seqNumber: b.seqNumber,
-        rowId: b.rowId,
-        reason: b.reason
-      });
-    });
   });
 
   const overallStatus = totalMissingCount === 0 && totalDuplicatesCount === 0 
     ? 'PERFECT_MATCH' 
     : (totalMissingCount > 50 ? 'CRITICAL_DISCREPANCY' : 'GAPS_DETECTED');
 
-  let summaryNarrative = '';
-  let summaryNarrativeAr = '';
+  const summaryNarrative = totalMissingCount === 0
+    ? `All ${Object.keys(registerAudits).length} registers show 100% continuous sequence reconciliation (${totalActualRev0Population} / ${totalExpectedPopulation}).`
+    : `Forensic Sequence Audit detected ${totalMissingCount} missing expected sequence records across ${Object.keys(registerAudits).length} registers. Expected Rev.00: ${totalExpectedPopulation}, Actual Rev.00: ${totalActualRev0Population}, Delta: ${totalMissingCount}.`;
 
-  if (totalMissingCount === 0 && totalBlankOrIdOnlyCount === 0) {
-    summaryNarrative = `All ${Object.keys(registerAudits).length} registers show 100% continuous sequence reconciliation (${totalActualRev0Population} / ${totalExpectedPopulation}).`;
-    summaryNarrativeAr = `كافة السجلات (${Object.keys(registerAudits).length} نوع) متطابقة بنسبة 100% دون أي فجوة تسلسل (${totalActualRev0Population} / ${totalExpectedPopulation}).`;
-  } else if (totalMissingCount === 0 && totalBlankOrIdOnlyCount > 0) {
-    summaryNarrative = `Sequence Integrity Audit: 0 Sequence Gaps; ${totalBlankOrIdOnlyCount} ID-only / Blank Record Exception${totalBlankOrIdOnlyCount > 1 ? 's' : ''} detected (${allBlankOrIdOnlyRecords.map(b => b.docNo).slice(0, 3).join(', ')}${totalBlankOrIdOnlyCount > 3 ? '...' : ''}). All sequential IDs are physically present in source rows.`;
-    summaryNarrativeAr = `تدقيق التسلسل: 0 فجوة تسلسل؛ تم رصد ${totalBlankOrIdOnlyCount} سجل برقم فقط/بيانات فارغة (${allBlankOrIdOnlyRecords.map(b => b.docNo).slice(0, 3).join(', ')}${totalBlankOrIdOnlyCount > 3 ? '...' : ''}). كافة الأرقام المتسلسلة متواجدة فعليًا بالمصدر.`;
-  } else {
-    summaryNarrative = `Forensic Sequence Audit: ${totalMissingCount} missing expected sequence records (Sequence Gaps)${totalBlankOrIdOnlyCount > 0 ? ` and ${totalBlankOrIdOnlyCount} ID-only / Blank Records` : ''} across ${Object.keys(registerAudits).length} registers. Expected: ${totalExpectedPopulation}, Actual in Source: ${totalExpectedPopulation - totalMissingCount}.`;
-    summaryNarrativeAr = `تدقيق التسلسل الجنائي: ${totalMissingCount} فجوة تسلسل متوقعة مفقودة${totalBlankOrIdOnlyCount > 0 ? ` و ${totalBlankOrIdOnlyCount} سجل برقم فقط وبيانات فارغة` : ''} عبر ${Object.keys(registerAudits).length} نوع من السجلات. المتوقع: ${totalExpectedPopulation}، الفعلي بالمصدر: ${totalExpectedPopulation - totalMissingCount}.`;
-  }
+  const summaryNarrativeAr = totalMissingCount === 0
+    ? `كافة السجلات (${Object.keys(registerAudits).length} نوع) متطابقة بنسبة 100% دون أي فجوة تسلسل (${totalActualRev0Population} / ${totalExpectedPopulation}).`
+    : `تدقيق التسلسل الجنائي رصد ${totalMissingCount} رقماً متسلسلاً مفقوداً عبر ${Object.keys(registerAudits).length} نوع من السجلات. المتوقع لمراجعة 00: ${totalExpectedPopulation}، الفعلي لمراجعة 00: ${totalActualRev0Population}، الفارق: ${totalMissingCount}.`;
 
   return {
     totalExpectedPopulation,
     totalActualRev0Population,
     totalMissingCount,
-    totalBlankOrIdOnlyCount,
     totalDuplicatesCount,
     totalFurtherRevWithoutRev0,
     allMissingIds,
-    allBlankOrIdOnlyRecords,
     registerAudits,
     overallStatus,
     summaryNarrative,
@@ -565,11 +471,7 @@ export const generateForensicLifecycleLedger = (rows: SubmittalRow[]): ForensicL
     let reasonEn = 'Record is active in Canonical SSOT population and counted in current metrics.';
     let reasonAr = 'السجل نشط ومعتمد في الحسابات النهائية الحالية.';
 
-    if (isBlankOrIdOnlyRow(r)) {
-      disposition = 'ID_ONLY_BLANK_RECORD';
-      reasonEn = 'Document ID exists in source register but contains no business fields (status, dates, workflow). Excluded from active KPI population as a Data Quality Exception.';
-      reasonAr = 'الرقم المتسلسل موجود في السجل المصدري لكن الصف فارغ من بيانات المعاملة (الحالة والتواريخ والكود). تم استبعاده من حسابات المؤشرات واحتسابه كاستثناء جودة بيانات.';
-    } else if (!r.isLatestRev) {
+    if (!r.isLatestRev) {
       disposition = 'SUPERSEDED_HISTORICAL';
       reasonEn = 'Historical submittal superseded by a newer revision in the workload history.';
       reasonAr = 'تقديم تاريخي تم استبداله بمراجعة أحدث في سجل تاريخ المعاملة.';

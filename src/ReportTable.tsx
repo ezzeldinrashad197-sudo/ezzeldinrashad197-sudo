@@ -547,51 +547,6 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         }
         break;
       }
-      case 'idOnlyBlankRecords': {
-        if (docTypeFilter === 'ALL') {
-          sequenceAuditResult.allBlankOrIdOnlyRecords.forEach(b => {
-            extracted.push({
-              id: b.docNo,
-              docNo: b.docNo,
-              rev: '00 (Blank Data)',
-              subject: `ID-only / Blank Record Exception in ${b.docType} (Seq #${b.seqNumber}) - Physical Row ID: ${b.rowId}`,
-              trade: 'Data Quality Exception',
-              discipline: resolveRowDiscipline({ documentType: b.docType } as any),
-              submissionDate: '-',
-              status: 'ID_ONLY_BLANK_EXCEPTION',
-              statusCategory: 'UNCLASSIFIED',
-              actionOwner: 'Source Register Row (Blank Payload)',
-              delayDays: 0,
-              isOverdue: false,
-              isLatest: false,
-              allRevisions: []
-            });
-          });
-        } else {
-          const regAudit = sequenceAuditResult.registerAudits[docTypeFilter];
-          if (regAudit) {
-            regAudit.blankOrIdOnlyRecords.forEach(b => {
-              extracted.push({
-                id: b.docNo,
-                docNo: b.docNo,
-                rev: '00 (Blank Data)',
-                subject: `ID-only / Blank Record Exception in ${docTypeFilter} (Seq #${b.seqNumber}) - Physical Row ID: ${b.rowId}`,
-                trade: 'Data Quality Exception',
-                discipline: resolveRowDiscipline({ documentType: docTypeFilter } as any),
-                submissionDate: '-',
-                status: 'ID_ONLY_BLANK_EXCEPTION',
-                statusCategory: 'UNCLASSIFIED',
-                actionOwner: 'Source Register Row (Blank Payload)',
-                delayDays: 0,
-                isOverdue: false,
-                isLatest: false,
-                allRevisions: []
-              });
-            });
-          }
-        }
-        break;
-      }
       default: {
         rows.forEach(r => extracted.push(mapToDrillDownItem(r, false)));
         break;
@@ -792,78 +747,43 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
        </div>
 
        {/* POPULATION & SEQUENCE INTEGRITY GOVERNANCE CARD */}
-       {(sequenceAuditResult.totalMissingCount > 0 || sequenceAuditResult.totalBlankOrIdOnlyCount > 0) && (
+       {sequenceAuditResult.totalMissingCount > 0 && (
          <div className="bg-amber-50/90 border-2 border-amber-300 rounded-xl p-5 shadow-sm text-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
                <div className="p-2.5 bg-amber-200 text-amber-900 rounded-lg shrink-0 mt-0.5">
                   <ShieldAlert className="w-5 h-5 text-amber-900" />
                </div>
                <div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2">
                      <h4 className="font-bold text-sm text-amber-950 uppercase tracking-wider">
                         {language === 'ar' ? 'حوكمة مطابقة الأعداد واكتشاف الفجوات المتسلسلة' : 'Sequence Population Integrity & Gap Detection Control'}
                      </h4>
-                     {sequenceAuditResult.totalMissingCount > 0 && (
-                       <span className="px-2 py-0.5 bg-rose-600 text-white rounded text-[11px] font-bold">
-                          {sequenceAuditResult.totalMissingCount} {language === 'ar' ? 'فجوات متسلسلة مفقودة' : 'Missing Sequence Gaps'}
-                       </span>
-                     )}
-                     {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 && (
-                       <span className="px-2 py-0.5 bg-sky-700 text-white rounded text-[11px] font-bold">
-                          {sequenceAuditResult.totalBlankOrIdOnlyCount} {language === 'ar' ? 'سجلات بالمعرّف فقط (بيانات فارغة)' : 'ID-Only / Blank Records'}
-                       </span>
-                     )}
+                     <span className="px-2 py-0.5 bg-rose-600 text-white rounded text-[11px] font-bold">
+                        {sequenceAuditResult.totalMissingCount} {language === 'ar' ? 'رقم متسلسل مفقود' : 'Missing IDs'}
+                     </span>
                   </div>
                   <p className="text-xs text-amber-900 mt-1 font-medium leading-relaxed">
                      {language === 'ar' ? sequenceAuditResult.summaryNarrativeAr : sequenceAuditResult.summaryNarrative}
                   </p>
-                  
-                  {/* Missing Sequence IDs sample */}
                   {sequenceAuditResult.allMissingIds.length > 0 && (
-                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="text-[11px] font-bold text-rose-900">{language === 'ar' ? 'عينة الأرقام المفقودة:' : 'Missing IDs:'}</span>
+                     <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[11px] font-bold text-amber-900">{language === 'ar' ? 'عينة الأرقام المفقودة:' : 'Sample Missing:'}</span>
                         <div className="flex flex-wrap gap-1.5">
                            {sequenceAuditResult.allMissingIds.slice(0, 5).map((mItem, mIdx) => (
                               <button
                                 key={mIdx}
                                 type="button"
                                 onClick={() => handleCopySingleDoc(mItem.docNo)}
-                                className="px-2 py-0.5 bg-white text-rose-800 border border-rose-300 rounded font-mono text-[11px] font-bold hover:bg-rose-50 transition-colors flex items-center gap-1 cursor-pointer"
+                                className="px-2 py-0.5 bg-white text-rose-800 border border-amber-300 rounded font-mono text-[11px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-1 cursor-pointer"
                                 title={language === 'ar' ? 'انقر للنسخ' : 'Click to copy'}
                               >
-                                {copiedDocId === mItem.docNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-rose-600" />}
+                                {copiedDocId === mItem.docNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-amber-600" />}
                                 {mItem.docNo}
                               </button>
                            ))}
                            {sequenceAuditResult.allMissingIds.length > 5 && (
-                              <span className="text-[11px] font-bold text-rose-800">
+                              <span className="text-[11px] font-bold text-amber-800">
                                 +{sequenceAuditResult.allMissingIds.length - 5} {language === 'ar' ? 'أخرى' : 'more'}
-                              </span>
-                           )}
-                        </div>
-                     </div>
-                  )}
-
-                  {/* ID-Only Blank Records sample */}
-                  {sequenceAuditResult.allBlankOrIdOnlyRecords.length > 0 && (
-                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="text-[11px] font-bold text-sky-900">{language === 'ar' ? 'سجلات موجودة ببيانات فارغة:' : 'ID-Only / Blank Records:'}</span>
-                        <div className="flex flex-wrap gap-1.5">
-                           {sequenceAuditResult.allBlankOrIdOnlyRecords.slice(0, 5).map((bItem, bIdx) => (
-                              <button
-                                key={bIdx}
-                                type="button"
-                                onClick={() => handleCopySingleDoc(bItem.docNo)}
-                                className="px-2 py-0.5 bg-white text-sky-900 border border-sky-300 rounded font-mono text-[11px] font-bold hover:bg-sky-50 transition-colors flex items-center gap-1 cursor-pointer"
-                                title={language === 'ar' ? 'انقر للنسخ' : 'Click to copy'}
-                              >
-                                {copiedDocId === bItem.docNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-sky-600" />}
-                                {bItem.docNo}
-                              </button>
-                           ))}
-                           {sequenceAuditResult.allBlankOrIdOnlyRecords.length > 5 && (
-                              <span className="text-[11px] font-bold text-sky-800">
-                                +{sequenceAuditResult.allBlankOrIdOnlyRecords.length - 5} {language === 'ar' ? 'أخرى' : 'more'}
                               </span>
                            )}
                         </div>
@@ -872,25 +792,14 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0">
-               {sequenceAuditResult.totalMissingCount > 0 && (
-                 <button
-                    type="button"
-                    onClick={() => openDrillDown('ALL', 'missingSequence', 'All Missing Sequence Numbers', 'جميع الأرقام المتسلسلة المفقودة')}
-                    className="px-3.5 py-2 bg-rose-900 text-white rounded-lg hover:bg-rose-800 transition-colors text-xs font-bold shadow-xs cursor-pointer"
-                 >
-                    {language === 'ar' ? 'فحص الفجوات المفقودة' : 'Inspect Missing Gaps'}
-                 </button>
-               )}
-               {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 && (
-                 <button
-                    type="button"
-                    onClick={() => openDrillDown('ALL', 'idOnlyBlankRecords', 'ID-Only Blank Quality Records', 'السجلات ذات المعرّف فقط والبيانات الفارغة')}
-                    className="px-3.5 py-2 bg-sky-900 text-white rounded-lg hover:bg-sky-800 transition-colors text-xs font-bold shadow-xs cursor-pointer"
-                 >
-                    {language === 'ar' ? 'فحص السجلات الفارغة' : 'Inspect Blank Records'}
-                 </button>
-               )}
+            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+               <button
+                  type="button"
+                  onClick={() => openDrillDown('ALL', 'missingSequence', 'All Missing Sequence Numbers', 'جميع الأرقام المتسلسلة المفقودة')}
+                  className="px-4 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition-colors text-xs font-bold shadow-xs cursor-pointer"
+               >
+                  {language === 'ar' ? 'فحص الأرقام المفقودة بالكامل' : 'Inspect All Missing Gaps'}
+               </button>
             </div>
          </div>
        )}

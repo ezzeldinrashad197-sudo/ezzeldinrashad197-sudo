@@ -229,12 +229,11 @@ export default function DataValidationEngine({ data }: Props) {
 
     const handleExport = () => {
         if (activeTab === 'sequence_audit') {
-            let csv = '\uFEFFRegister,Prefix,Expected Population,Actual Rev 00,Missing Count,Blank ID-Only Count,Range From,Range To,Sequence Gaps,Missing Sample IDs,Blank Records Sample\r\n';
+            let csv = '\uFEFFRegister,Prefix,Expected Population,Actual Rev 00,Missing Count,Range From,Range To,Sequence Gaps,Missing Sample IDs\r\n';
             Object.values(sequenceAuditResult.registerAudits).forEach(reg => {
                 const gapsStr = reg.sequenceGaps.map(g => g.formattedRange).join('; ');
                 const missingStr = reg.missingIds.join('; ');
-                const blankStr = (reg.blankOrIdOnlyRecords || []).map(b => b.docNo).join('; ');
-                csv += `"${reg.docType}","${reg.prefix}",${reg.expectedPopulation},${reg.actualRev0Population},${reg.missingCount},${reg.blankOrIdOnlyCount || 0},"${reg.prefix}${String(reg.minSequence).padStart(reg.paddingLength, '0')}","${reg.prefix}${String(reg.maxSequence).padStart(reg.paddingLength, '0')}","${gapsStr.replace(/"/g, '""')}","${missingStr.replace(/"/g, '""')}","${blankStr.replace(/"/g, '""')}"\r\n`;
+                csv += `"${reg.docType}","${reg.prefix}",${reg.expectedPopulation},${reg.actualRev0Population},${reg.missingCount},"${reg.prefix}${String(reg.minSequence).padStart(reg.paddingLength, '0')}","${reg.prefix}${String(reg.maxSequence).padStart(reg.paddingLength, '0')}","${gapsStr.replace(/"/g, '""')}","${missingStr.replace(/"/g, '""')}"\r\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -335,22 +334,17 @@ export default function DataValidationEngine({ data }: Props) {
                             {sequenceAuditResult.totalMissingCount === 0 ? <ShieldCheck className="w-8 h-8" /> : <ShieldAlert className="w-8 h-8" />}
                         </div>
                         <div>
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-3">
                                 <h2 className="text-xl font-bold tracking-tight text-white">
                                     Population Reconciliation & Missing Sequence Control
                                 </h2>
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
                                     sequenceAuditResult.totalMissingCount === 0 
                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                 }`}>
                                     {sequenceAuditResult.totalMissingCount === 0 ? '100% Sequence Reconciled' : `${sequenceAuditResult.totalMissingCount} Missing Sequence IDs`}
                                 </span>
-                                {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 && (
-                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border bg-sky-500/20 text-sky-300 border-sky-500/30">
-                                        {sequenceAuditResult.totalBlankOrIdOnlyCount} ID-Only / Blank Records
-                                    </span>
-                                )}
                             </div>
                             <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
                                 {sequenceAuditResult.summaryNarrative}
@@ -361,22 +355,16 @@ export default function DataValidationEngine({ data }: Props) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-3 bg-white/10 p-4 rounded-xl border border-white/10 shrink-0 w-full lg:w-auto text-center">
-                        <div className="px-1">
+                    <div className="grid grid-cols-3 gap-4 bg-white/10 p-4 rounded-xl border border-white/10 shrink-0 w-full lg:w-auto">
+                        <div className="text-center px-2">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expected Rev 00</span>
                             <span className="text-2xl font-black text-white font-mono">{sequenceAuditResult.totalExpectedPopulation}</span>
                         </div>
-                        <div className="px-1 border-l border-white/10">
+                        <div className="text-center px-2 border-x border-white/10">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actual Rev 00</span>
                             <span className="text-2xl font-black text-indigo-300 font-mono">{sequenceAuditResult.totalActualRev0Population}</span>
                         </div>
-                        <div className="px-1 border-l border-white/10">
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Blank / ID-Only</span>
-                            <span className={`text-2xl font-black font-mono ${sequenceAuditResult.totalBlankOrIdOnlyCount > 0 ? 'text-sky-300' : 'text-slate-400'}`}>
-                                {sequenceAuditResult.totalBlankOrIdOnlyCount}
-                            </span>
-                        </div>
-                        <div className="px-1 border-l border-white/10">
+                        <div className="text-center px-2">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Missing Delta</span>
                             <span className={`text-2xl font-black font-mono ${sequenceAuditResult.totalMissingCount === 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {sequenceAuditResult.totalMissingCount}
@@ -387,37 +375,32 @@ export default function DataValidationEngine({ data }: Props) {
             </div>
 
             {/* 3. Primary KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm text-center">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Quality Score</h3>
-                    <div className={`text-4xl font-light ${score >= 95 ? 'text-emerald-500' : score >= 80 ? 'text-amber-500' : 'text-red-500'}`}>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
+                <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm text-center">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Quality Score</h3>
+                    <div className={`text-5xl font-light ${score >= 95 ? 'text-emerald-500' : score >= 80 ? 'text-amber-500' : 'text-red-500'}`}>
                         {score.toFixed(1)}%
                     </div>
                 </div>
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <AlertTriangle className={`w-7 h-7 ${sequenceAuditResult.totalMissingCount > 0 ? 'text-rose-500' : 'text-emerald-500'} mb-1`} />
-                    <span className="text-2xl font-bold text-slate-900">{sequenceAuditResult.totalMissingCount}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-0.5">Missing Sequence Gaps</span>
+                <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
+                    <AlertTriangle className={`w-8 h-8 ${sequenceAuditResult.totalMissingCount > 0 ? 'text-rose-500' : 'text-emerald-500'} mb-2`} />
+                    <span className="text-3xl font-bold text-slate-900">{sequenceAuditResult.totalMissingCount}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">Missing Expected IDs</span>
                 </div>
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <FileText className={`w-7 h-7 ${sequenceAuditResult.totalBlankOrIdOnlyCount > 0 ? 'text-sky-600' : 'text-slate-400'} mb-1`} />
-                    <span className="text-2xl font-bold text-slate-900">{sequenceAuditResult.totalBlankOrIdOnlyCount}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-0.5">ID-Only / Blank Records</span>
+                <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
+                    <DatabaseZap className="w-8 h-8 text-purple-500 mb-2" />
+                    <span className="text-3xl font-bold text-slate-900">{sequenceAuditResult.totalFurtherRevWithoutRev0}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">Further Revs without 00</span>
                 </div>
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <DatabaseZap className="w-7 h-7 text-purple-500 mb-1" />
-                    <span className="text-2xl font-bold text-slate-900">{sequenceAuditResult.totalFurtherRevWithoutRev0}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-0.5">Further Revs w/o 00</span>
+                <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
+                    <XCircle className="w-8 h-8 text-amber-500 mb-2" />
+                    <span className="text-3xl font-bold text-slate-900">{sequenceAuditResult.totalDuplicatesCount}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">Duplicate Submissions</span>
                 </div>
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <XCircle className="w-7 h-7 text-amber-500 mb-1" />
-                    <span className="text-2xl font-bold text-slate-900">{sequenceAuditResult.totalDuplicatesCount}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-0.5">Duplicate Submissions</span>
-                </div>
-                <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <CheckCircle2 className="w-7 h-7 text-emerald-500 mb-1" />
-                    <span className="text-2xl font-bold text-slate-900">{data.length}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-0.5">Total Workload Rows</span>
+                <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
+                    <span className="text-3xl font-bold text-slate-900">{data.length}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">Total Workload Rows</span>
                 </div>
             </div>
 
@@ -435,7 +418,7 @@ export default function DataValidationEngine({ data }: Props) {
                             }`}
                         >
                             <ShieldCheck className="w-4 h-4" />
-                            Missing-Sequence Audit ({sequenceAuditResult.totalMissingCount} Missing {sequenceAuditResult.totalBlankOrIdOnlyCount > 0 ? `| ${sequenceAuditResult.totalBlankOrIdOnlyCount} Blank` : ''})
+                            Missing-Sequence Audit ({sequenceAuditResult.totalMissingCount} Missing)
                         </button>
                         <button
                             onClick={() => setActiveTab('audit_report')}
@@ -537,26 +520,20 @@ export default function DataValidationEngine({ data }: Props) {
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-lg border border-slate-200 shrink-0 text-xs">
+                                        <div className="flex items-center gap-6 bg-slate-50 px-4 py-2.5 rounded-lg border border-slate-200 shrink-0 text-xs">
                                             <div>
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Expected</span>
                                                 <span className="font-bold text-slate-900 text-sm font-mono">{reg.expectedPopulation}</span>
                                             </div>
-                                            <div className="border-l border-slate-200 pl-3">
+                                            <div className="border-l border-slate-200 pl-4">
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Actual Rev 00</span>
                                                 <span className="font-bold text-indigo-600 text-sm font-mono">{reg.actualRev0Population}</span>
                                             </div>
-                                            <div className="border-l border-slate-200 pl-3">
-                                                <span className="block text-[10px] font-bold text-slate-400 uppercase">Blank/ID-Only</span>
-                                                <span className={`font-bold text-sm font-mono ${(reg.blankOrIdOnlyCount || 0) > 0 ? 'text-sky-600' : 'text-slate-400'}`}>
-                                                    {reg.blankOrIdOnlyCount || 0}
-                                                </span>
-                                            </div>
-                                            <div className="border-l border-slate-200 pl-3">
+                                            <div className="border-l border-slate-200 pl-4">
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Further Revs</span>
                                                 <span className="font-bold text-purple-600 text-sm font-mono">{reg.furtherRevRows}</span>
                                             </div>
-                                            <div className="border-l border-slate-200 pl-3">
+                                            <div className="border-l border-slate-200 pl-4">
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Missing</span>
                                                 <span className={`font-bold text-sm font-mono ${reg.missingCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                                     {reg.missingCount}
@@ -585,33 +562,6 @@ export default function DataValidationEngine({ data }: Props) {
                                                     >
                                                         {copiedDocId === mid ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3 text-rose-400" />}
                                                         {mid}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ID-Only / Blank Records in Source Register */}
-                                    {(reg.blankOrIdOnlyCount || 0) > 0 && (
-                                        <div className="bg-sky-50/70 border border-sky-200 p-4 rounded-lg mt-3">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-bold text-sky-900 uppercase tracking-wider flex items-center gap-2">
-                                                    <FileText className="w-4 h-4 text-sky-600" />
-                                                    ID-Only / Blank Data Quality Records (Present in Register, Empty Payload) ({reg.blankOrIdOnlyCount}):
-                                                </span>
-                                                <span className="text-[11px] text-sky-700 font-medium">Click ID to copy</span>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {reg.blankOrIdOnlyRecords?.map((bItem, bIdx) => (
-                                                    <button
-                                                        key={bIdx}
-                                                        onClick={() => handleCopyDocId(bItem.docNo)}
-                                                        className="px-2.5 py-1 bg-white hover:bg-sky-100 text-sky-900 border border-sky-300 rounded font-mono text-xs font-bold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                                                        title={`Row ID: ${bItem.rowId} - Present in register with blank business data`}
-                                                    >
-                                                        {copiedDocId === bItem.docNo ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3 text-sky-400" />}
-                                                        {bItem.docNo}
-                                                        <span className="text-[10px] text-slate-400 font-normal ml-0.5">#{bItem.seqNumber}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -745,7 +695,7 @@ export default function DataValidationEngine({ data }: Props) {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {forensicLedger.map((f, i) => (
-                                    <tr key={i} className={`hover:bg-slate-50 transition-colors ${f.disposition === 'MISSING_EXPECTED_GAP' ? 'bg-rose-50/40' : f.disposition === 'ID_ONLY_BLANK_RECORD' ? 'bg-sky-50/30' : ''}`}>
+                                    <tr key={i} className={`hover:bg-slate-50 transition-colors ${f.disposition === 'MISSING_EXPECTED_GAP' ? 'bg-rose-50/40' : ''}`}>
                                         <td className="px-6 py-4 font-mono font-bold text-slate-900">{f.docNo}</td>
                                         <td className="px-6 py-4 font-mono text-slate-700">{f.rev}</td>
                                         <td className="px-6 py-4 font-mono text-xs text-slate-600">{f.docType}</td>
@@ -754,7 +704,6 @@ export default function DataValidationEngine({ data }: Props) {
                                                 f.disposition === 'SSOT_ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                                 f.disposition === 'SUPERSEDED_HISTORICAL' ? 'bg-slate-100 text-slate-700 border-slate-300' :
                                                 f.disposition === 'MISSING_EXPECTED_GAP' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                                f.disposition === 'ID_ONLY_BLANK_RECORD' ? 'bg-sky-50 text-sky-700 border-sky-200' :
                                                 'bg-amber-50 text-amber-700 border-amber-200'
                                             }`}>
                                                 {f.disposition}
