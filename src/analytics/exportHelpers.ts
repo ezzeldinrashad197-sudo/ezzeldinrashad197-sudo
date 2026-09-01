@@ -505,7 +505,8 @@ export const calculateExecutiveDashboardData = (
     const discOrder = ['STR', 'ARC', 'MEC', 'LND', 'INFRA', 'GEN', 'ELE'];
 
     const rowToLabel = (d: SubmittalRow): string => {
-        let t = (d.documentType || 'DOC').toUpperCase().trim();
+        let t = (d.documentType || 'DOC-GEN').toUpperCase().trim();
+        if (t === 'DOC') t = 'DOC-GEN';
         if (t === 'HSE') t = 'NCR-HSE';
         if (t === 'SHD') t = 'SDW';
         return t;

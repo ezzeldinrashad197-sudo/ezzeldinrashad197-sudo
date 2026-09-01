@@ -49,7 +49,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   }, [data, filterFn]);
 
   const rowToLabel = (d: SubmittalRow) => {
-      let dt = (d.documentType || 'DOC').trim();
+      let dt = (d.documentType || 'DOC-GEN').trim();
+      if (dt === 'DOC') dt = 'DOC-GEN';
       return dt;
   };
 

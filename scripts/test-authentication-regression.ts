@@ -24,7 +24,7 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 // 1. Verify SHA-256 hashes of the remediated protected artifacts
 const expectedHashes = {
-  'src/utils/calculations.ts': '6d14efc35605055252dda85f2dbd14beca87ab17f6214646ccf9907da5465abf', // updated 2026-08-27: export classifyRow and classifySubmission
+  'src/utils/calculations.ts': '58e4ee5a67e13882ba9ebd5e356cbde8d656b217ba2bcd15584c2221515f819f', // updated 2026-08-31: deduplicate basePrefix documentType
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade',
   'firestore.rules': 'bb2654c3a03fa1aac102d1deab55ea2995de06a750ee2aa4dbc04021971d4344'
 };

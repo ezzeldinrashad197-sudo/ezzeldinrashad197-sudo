@@ -213,45 +213,45 @@ async function runForensicRegression() {
     { discipline: item2?.discipline, documentType: item2?.documentType }
   );
 
-  // Critical Case 3: WIR-ARCH + MECH -> MECH (Row-Level Mixed Trade Preservation)
+  // Critical Case 3: WIR-ARCH + Sub-Trade Row -> Resolves to Authoritative Sheet Discipline (ARCH)
   const item3Rev0 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-MEC-00103" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + MECH Row -> Resolves to Mechanical (Mixed Trade Preserved)",
-    (item3Rev0?.discipline === "Mechanical" || item3Rev0?.discipline === "MECH") && (item3Rev0?.documentType === "WIR-MEC" || item3Rev0?.documentType === "WIR-MECH"),
-    { discipline: "Mechanical", documentType: "WIR-MEC" },
+    "WIR-ARCH + Sub-Trade MECH Row -> Resolves to Architectural (Authoritative Sheet Identity)",
+    (item3Rev0?.discipline === "Architectural" || item3Rev0?.discipline === "ARCH") && (item3Rev0?.documentType === "WIR-ARC" || item3Rev0?.documentType === "WIR-ARCH"),
+    { discipline: "Architectural", documentType: "WIR-ARC" },
     { discipline: item3Rev0?.discipline, documentType: item3Rev0?.documentType },
-    "Explicit Row-level MECH inside WIR-ARCH sheet must retain Mechanical trade"
+    "Authoritative sheet identity (WIR-ARCH) prevents fragmentation by internal row trade"
   );
 
-  // Critical Case 4: WIR-ARCH + ELEC -> ELEC
+  // Critical Case 4: WIR-ARCH + ELEC -> ARCH (Authoritative Sheet Identity)
   const item4 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-ELE-00104");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + ELEC Row -> Resolves to Electrical (Mixed Trade Preserved)",
-    (item4?.discipline === "Electrical" || item4?.discipline === "ELEC") && (item4?.documentType === "WIR-ELE" || item4?.documentType === "WIR-ELEC"),
-    { discipline: "Electrical", documentType: "WIR-ELE" },
+    "WIR-ARCH + ELEC Row -> Resolves to Architectural (Authoritative Sheet Identity)",
+    (item4?.discipline === "Architectural" || item4?.discipline === "ARCH") && (item4?.documentType === "WIR-ARC" || item4?.documentType === "WIR-ARCH"),
+    { discipline: "Architectural", documentType: "WIR-ARC" },
     { discipline: item4?.discipline, documentType: item4?.documentType }
   );
 
-  // Critical Case 5: SDW-INFRA + IRR -> IRR (Separation of Irrigation from Infrastructure)
+  // Critical Case 5: SDW-INFRA + IRR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)
   const item7 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-IRR-00202");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + IRR Row -> Resolves to Irrigation (Irrigation Preserved)",
-    (item7?.discipline === "Irrigation" || item7?.discipline === "IRR") && (item7?.documentType === "SDW-IRR"),
-    { discipline: "Irrigation", documentType: "SDW-IRR" },
+    "SDW-INFRA + IRR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)",
+    (item7?.discipline === "Infrastructure" || item7?.discipline === "INFRA") && (item7?.documentType === "SDW-INFRA" || item7?.documentType === "SDW-INF"),
+    { discipline: "Infrastructure", documentType: "SDW-INFRA" },
     { discipline: item7?.discipline, documentType: item7?.documentType },
-    "Explicit Row-level Irrigation inside SDW-INFRA sheet must retain Irrigation trade"
+    "Authoritative sheet identity (SDW-INFRA) prevents fragmentation by internal row trade"
   );
 
-  // Critical Case 6: SDW-INFRA + STR -> STR
+  // Critical Case 6: SDW-INFRA + STR -> INFRA (Authoritative Sheet Identity)
   const item8Rev0 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-STR-00203" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + STR Row -> Resolves to Structural (Structural Preserved)",
-    (item8Rev0?.discipline === "Structural" || item8Rev0?.discipline === "STR") && (item8Rev0?.documentType === "SDW-STR"),
-    { discipline: "Structural", documentType: "SDW-STR" },
+    "SDW-INFRA + STR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)",
+    (item8Rev0?.discipline === "Infrastructure" || item8Rev0?.discipline === "INFRA") && (item8Rev0?.documentType === "SDW-INFRA" || item8Rev0?.documentType === "SDW-INF"),
+    { discipline: "Infrastructure", documentType: "SDW-INFRA" },
     { discipline: item8Rev0?.discipline, documentType: item8Rev0?.documentType }
   );
 

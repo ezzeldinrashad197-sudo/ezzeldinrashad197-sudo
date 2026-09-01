@@ -87,8 +87,33 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const tradeShort = resolved.tradeShort || (r as any).tradeShort || '';
     const logType = (r.logType || (r as any).compositeIdentity?.family || 'SDW').toUpperCase();
 
-    const basePrefix = logType.startsWith('SDW') ? 'SDW' : (logType.startsWith('WIR') ? 'WIR' : (logType.startsWith('MIR') ? 'MIR' : (logType.startsWith('NCR') ? 'NCR' : (logType.startsWith('SOR') ? 'SOR' : (logType.startsWith('RFI') ? 'RFI' : logType)))));
-    const documentType = tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix);
+    const basePrefix = logType.startsWith('SDW')
+      ? 'SDW'
+      : (logType.startsWith('WIR')
+        ? 'WIR'
+        : (logType.startsWith('MIR')
+          ? 'MIR'
+          : (logType.startsWith('NCR')
+            ? 'NCR'
+            : (logType.startsWith('SOR')
+              ? 'SOR'
+              : (logType.startsWith('RFI')
+                ? 'RFI'
+                : (logType.startsWith('MAR')
+                  ? 'MAR'
+                  : (logType.startsWith('DOC')
+                    ? 'DOC'
+                    : (logType.startsWith('ABD')
+                      ? 'ABD'
+                      : (logType.startsWith('QS')
+                        ? 'QS'
+                        : (logType.startsWith('LTR')
+                          ? 'LTR'
+                          : logType))))))))));
+    let documentType = tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix);
+    if (documentType === 'DOC') {
+      documentType = 'DOC-GEN';
+    }
 
     const revWeight = getRevisionWeight(revUpper);
     const isRev0 = revWeight === 0 && revUpper !== 'AS-BUILT' && revUpper !== 'IFC';

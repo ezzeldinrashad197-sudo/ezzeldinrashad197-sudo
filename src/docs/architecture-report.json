@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-08-31T07:07:15.478Z",
+    "generatedAt": "2026-08-31T12:00:00.658Z",
     "totalFilesScanned": 80,
     "architecturalViolations": 9,
     "complianceScore": 55,
@@ -4220,49 +4220,49 @@
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 93,
+      "line": 115,
       "context": "getRevisionWeight(revUpper)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 97,
+      "line": 119,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 109,
+      "line": 131,
       "context": "getDelayDays(submissionDate, responseDate, dueDate)",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 111,
+      "line": 133,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 111,
+      "line": 133,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 111,
+      "line": 133,
       "context": "checkIfOverdueDynamically(submissionDate, responseDate, 14)",
       "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
       "functionName": "checkIfOverdueDynamically"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 236,
+      "line": 258,
       "context": "getDelayDays(submission, response, '')",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
@@ -4794,70 +4794,70 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 499,
+      "line": 497,
       "context": "normalizeDiscipline(disciplineVal, activeProjectId)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 514,
+      "line": 512,
       "context": "getRevisionWeight(rawRev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 528,
+      "line": 526,
       "context": "formatDate(colDueDate >= 0 ? r[colDueDate] : \"\")",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 545,
+      "line": 543,
       "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 555,
+      "line": 553,
       "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 564,
+      "line": 562,
       "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 611,
+      "line": 609,
       "context": "mapDocumentToWorkflow(assignedType)",
       "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
       "functionName": "mapDocumentToWorkflow"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 663,
+      "line": 661,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 672,
+      "line": 670,
       "context": "parseExcelWorkbook(wb, fileName)",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 686,
+      "line": 684,
       "context": "parseExcelWorkbook(wb, file.name)",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -6442,8 +6442,8 @@
     ]
   },
   "staticReachability": {
-    "totalLines": 240,
-    "coveredLines": 124,
+    "totalLines": 262,
+    "coveredLines": 136,
     "totalStatements": 27,
     "coveredStatements": 14,
     "totalBranches": 27,

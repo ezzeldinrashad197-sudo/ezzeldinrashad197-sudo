@@ -438,15 +438,17 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
 
             // ARCHITECTURE FIX (2026-08-30): register/sheet identity (compIdent) is now
             // ALWAYS authoritative for grouping when valid — confirmed by domain owner.
-            // The row's own Discipline/Trade column no longer fragments a sheet's rows
-            // into different discipline groups; it's preserved separately for display via
-            // rawSourceIdentity/contextDiscipline, but never overrides classification.
+            // Applies uniformly to WIR, MAR, DOC, SDW, NCR, RFI, SOR (same composite-match
+            // regex covers all of them). The row's own Discipline/Trade column no longer
+            // fragments a register's rows into different discipline groups; it's preserved
+            // separately for display via rawSourceIdentity/contextDiscipline, but never
+            // overrides classification.
             if (isCompDiscValid) {
               disciplineVal = compDisc;
             } else if (
               rawDiscipline &&
-              rawDiscipline.length > 0 &&
-              !["YES", "NO", "N/A", "-", "NONE", "NULL"].includes(rawDiscipline)
+              rawDiscipline.length > 0
+              && !["YES", "NO", "N/A", "-", "NONE", "NULL"].includes(rawDiscipline)
             ) {
               const extracted = extractDiscipline(rawDiscipline);
               disciplineVal = extracted || rawDiscipline;
