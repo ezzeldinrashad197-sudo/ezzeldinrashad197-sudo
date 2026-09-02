@@ -47,8 +47,13 @@ export function classifyRow(code?: string, status?: string): CanonicalStatus {
     cleanCode = cleanCode.substring(5).trim();
   }
 
-  // Code A or Code B or Code D or Closed -> Approved (Code D = Disapproved / Final Closed = No Further Submission)
-  if (cleanCode === 'A' || cleanCode === 'B' || cleanCode === 'D' || cleanCode === 'APPROVED' || cleanCode === 'ACCEPTED' || cleanCode === 'DISAPPROVED' || cleanCode === 'CLOSED' || cleanCode === 'CLOSE') {
+   // Code A or Code B or Code D -> Approved (Code D = Disapproved / Final Closed = No Further Submission)
+  // REMOVED (2026-09-02): 'CLOSED'/'CLOSE' as CODE values — verified against 3 real registers
+  // (SDW-STR, WIR-LND, WIR-STR) that the Code column never contains these literal values;
+  // "Closed" only ever appears in the Status column. Keeping this check on the Code
+  // parameter re-opens the exact Status/Code-conflation bug fixed earlier today, if a
+  // future column-mapping mismatch ever feeds a Status value into the code parameter.
+  if (cleanCode === 'A' || cleanCode === 'B' || cleanCode === 'D' || cleanCode === 'APPROVED' || cleanCode === 'ACCEPTED' || cleanCode === 'DISAPPROVED') {
     return 'APPROVED';
   }
 
