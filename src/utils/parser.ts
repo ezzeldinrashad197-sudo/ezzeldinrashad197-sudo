@@ -181,14 +181,23 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
 
           const colDocNo = getColIdx([
             "document no",
+            "document number",
             "doc no",
+            "doc number",
+            "doc #",
             "submittal ref",
             "sub ref",
             "ref",
             "letter ref",
             "letter ref.",
+            "wir no",
+            "wir number",
+            "rfi no",
+            "mir no",
+            "رقم الوثيقة",
+            "رقم المعاملة",
           ]);
-          const colRev = getColIdx(["rev", "revision"]);
+          const colRev = getColIdx(["rev", "revision", "rev.", "revision no", "rev no"]);
           const colSheet = getColIdx(["sheet no", "sheet"]);
           const colDiscipline = getColIdx([
             "discipline",
@@ -206,18 +215,75 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
             "discipline/category",
             "discipline / category",
           ]);
-          const colContractor = getColIdx(["contractor"]);
-          const colConsultant = getColIdx(["consultant"]);
+          const colContractor = getColIdx([
+            "contractor",
+            "responsible",
+            "responsible party",
+            "company",
+            "contractor / responsible",
+            "المقاول",
+            "الجهة المسؤولة",
+          ]);
+          const colConsultant = getColIdx(["consultant", "الاستشاري"]);
           const colSubmissionDate = getColIdx(
-            ["submission date", "date sent", "sent date", "received date", "issue date", "date issued", "date of receipt"],
-            ["corrective", "response", "action", "received corrective", "sent corrective"]
+            [
+              "submission date",
+              "submit date",
+              "submittal date",
+              "date sent",
+              "sent date",
+              "received date",
+              "issue date",
+              "date issued",
+              "date of receipt",
+              "date submitted",
+              "submission",
+              "تاريخ التقديم",
+              "تاريخ الإرسال",
+              "تاريخ الطلب",
+            ],
+            ["corrective", "response", "action", "received corrective", "sent corrective", "return", "consultant"]
           );
-          const colDueDate = getColIdx(["due date"]);
+          const colDueDate = getColIdx(["due date", "تاريخ الاستحقاق"]);
           const colResponseDate = getColIdx(
-            ["received corrective", "received date corrective", "response date", "received date corrective action", "consultant response", "response date corrective action"],
-            ["submission", "sent corrective", "sent date corrective"]
+            [
+              "response date",
+              "received corrective",
+              "received date corrective",
+              "received date corrective action",
+              "consultant response",
+              "consultant response date",
+              "response date corrective action",
+              "return date",
+              "returned date",
+              "date returned",
+              "date return",
+              "reply date",
+              "date replied",
+              "consultant date",
+              "consultant reply",
+              "consultant reply date",
+              "consultant action date",
+              "consultant return date",
+              "action date",
+              "approval date",
+              "approved date",
+              "date approved",
+              "inspection date",
+              "date inspected",
+              "actual return date",
+              "date of response",
+              "date of reply",
+              "date of return",
+              "تاريخ الرد",
+              "تاريخ الاعتماد",
+              "تاريخ الاستشاري",
+              "تاريخ الإرجاع",
+              "تاريخ الفحص",
+            ],
+            ["submission", "submit", "sent corrective", "sent date corrective"]
           );
-          const colCode = getColIdx(["code", "approval code"]);
+          const colCode = getColIdx(["code", "approval code", "code status", "status code", "كود"]);
           const colStatus = getColIdx(["status"]);
           const colRemarks = getColIdx(["remarks", "comment"]);
           const colArea = getColIdx(["area", "zone"]);

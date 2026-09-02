@@ -49,13 +49,37 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
     setIsCalculatingBackend(true);
     try {
       const token = await auth.currentUser?.getIdToken();
+      // Send only the required fields for calculations to keep the payload lightweight
+      const lightweightDataset = dataset.map(d => ({
+        id: d.id,
+        docNo: d.docNo,
+        rev: d.rev,
+        revision: (d as any).revision || d.rev,
+        status: d.status,
+        discipline: d.discipline,
+        contractor: d.contractor,
+        consultant: d.consultant,
+        logType: d.logType,
+        documentType: d.documentType,
+        workflowFamily: d.workflowFamily,
+        area: d.area,
+        tradeSystem: d.tradeSystem,
+        submissionDate: d.submissionDate,
+        responseDate: d.responseDate,
+        dueDate: d.dueDate,
+        action: d.action,
+        code: d.code,
+        subject: d.subject,
+        title: (d as any).title || d.subject
+      }));
+
       const res = await fetch('/api/metrics/calculate', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ filters: activeFilters, dataset })
+        body: JSON.stringify({ filters: activeFilters, dataset: lightweightDataset })
       });
       if (res.ok) {
         const json = await res.json();
