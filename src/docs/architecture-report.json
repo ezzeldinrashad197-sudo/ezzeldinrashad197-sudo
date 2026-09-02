@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generatedAt": "2026-08-31T12:00:00.658Z",
-    "totalFilesScanned": 80,
+    "generatedAt": "2026-09-02T18:53:48.346Z",
+    "totalFilesScanned": 84,
     "architecturalViolations": 9,
     "complianceScore": 55,
     "circularDependenciesCount": 0,
@@ -153,6 +153,10 @@
       "layer": 2
     },
     {
+      "id": "src/analytics/sequenceAuditEngine.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/sor/sorEngine.ts",
       "layer": 2
     },
@@ -162,6 +166,10 @@
     },
     {
       "id": "src/components/ActionTracker.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/ActiveBacklogIntelligence.tsx",
       "layer": 3
     },
     {
@@ -197,6 +205,10 @@
       "layer": 3
     },
     {
+      "id": "src/components/ExecutiveRegisterSummary.tsx",
+      "layer": 3
+    },
+    {
       "id": "src/components/FinalAcceptanceAuditView.tsx",
       "layer": 3
     },
@@ -226,6 +238,10 @@
     },
     {
       "id": "src/components/WorkflowMappingCenter.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/WorkloadRevisionIntelligence.tsx",
       "layer": 3
     },
     {
@@ -595,6 +611,18 @@
       "target": "src/utils/i18n.tsx"
     },
     {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/ActiveBacklogIntelligence.tsx"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/WorkloadRevisionIntelligence.tsx"
+    },
+    {
       "source": "src/SORAnalytics.tsx",
       "target": "src/types.ts"
     },
@@ -673,6 +701,10 @@
     {
       "source": "src/analytics/calculationFoundation.ts",
       "target": "src/analytics/statusResolver.ts"
+    },
+    {
+      "source": "src/analytics/calculationFoundation.ts",
+      "target": "src/analytics/sequenceAuditEngine.ts"
     },
     {
       "source": "src/analytics/dataValidator.ts",
@@ -835,6 +867,18 @@
       "target": "src/analytics/revisionResolver.ts"
     },
     {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/analytics/statusResolver.ts"
+    },
+    {
       "source": "src/analytics/sor/sorEngine.ts",
       "target": "src/types.ts"
     },
@@ -857,6 +901,14 @@
     {
       "source": "src/components/ActionTracker.tsx",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/components/ActiveBacklogIntelligence.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/ActiveBacklogIntelligence.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
     },
     {
       "source": "src/components/AdvancedAgingAnalysis.tsx",
@@ -915,6 +967,10 @@
       "target": "src/analytics/revisionResolver.ts"
     },
     {
+      "source": "src/components/DataValidationEngine.tsx",
+      "target": "src/analytics/sequenceAuditEngine.ts"
+    },
+    {
       "source": "src/components/EngineeringItemDatasetView.tsx",
       "target": "src/types.ts"
     },
@@ -941,6 +997,10 @@
     {
       "source": "src/components/EnterpriseMonitoringDashboard.tsx",
       "target": "src/firebase.ts"
+    },
+    {
+      "source": "src/components/ExecutiveRegisterSummary.tsx",
+      "target": "src/types.ts"
     },
     {
       "source": "src/components/FinalAcceptanceAuditView.tsx",
@@ -1045,6 +1105,14 @@
     {
       "source": "src/components/WorkflowMappingCenter.tsx",
       "target": "src/components/UniversalRegisterEngine.tsx"
+    },
+    {
+      "source": "src/components/WorkloadRevisionIntelligence.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/WorkloadRevisionIntelligence.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
     },
     {
       "source": "src/components/presentation/PresHelpers.tsx",
@@ -1693,38 +1761,192 @@
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 66,
+      "line": 95,
       "context": "calculateStats(matchingRows, rawDataset || data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 120,
+      "line": 149,
       "context": "calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), rawDataset || data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 126,
+      "line": 154,
+      "context": "runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'))",
+      "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
+      "functionName": "runComprehensiveSequenceAudit"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 159,
       "context": "calculateProjectPerformanceHealth(globalStats, language)",
       "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
       "functionName": "calculateProjectPerformanceHealth"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 218,
+      "line": 251,
       "context": "calculateStats(firstHalf, rawDataset || data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 219,
+      "line": 252,
       "context": "calculateStats(secondHalf, rawDataset || data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 320,
+      "context": "processRevisionEngine(baseForRevisions)",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 321,
+      "context": "getBusinessEntityKey(r)",
+      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
+      "functionName": "getBusinessEntityKey"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 329,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 404,
+      "context": "processRevisionEngine(baseForRevisions)",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 405,
+      "context": "getBusinessEntityKey(r)",
+      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
+      "functionName": "getBusinessEntityKey"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 411,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 418,
+      "context": "resolveRowDiscipline(r)",
+      "destination": "src/utils/calculations.ts::resolveRowDiscipline",
+      "functionName": "resolveRowDiscipline"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 438,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 450,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 462,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 474,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 486,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 498,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 530,
+      "context": "getStatusCodeCategory(group.latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 553,
+      "context": "getRevisionWeight(revVal)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 561,
+      "context": "getRevisionWeight(revVal)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 568,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 574,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 578,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 590,
+      "context": "resolveRowDiscipline({ documentType: m.docType } as any)",
+      "destination": "src/utils/calculations.ts::resolveRowDiscipline",
+      "functionName": "resolveRowDiscipline"
+    },
+    {
+      "callerFile": "src/ReportTable.tsx",
+      "line": 611,
+      "context": "resolveRowDiscipline({ documentType: docTypeFilter } as any)",
+      "destination": "src/utils/calculations.ts::resolveRowDiscipline",
+      "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/SORAnalytics.tsx",
@@ -2078,63 +2300,56 @@
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 143,
+      "line": 144,
       "context": "parseDateTimestamp(asOfDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 147,
+      "line": 148,
       "context": "parseDateTimestamp(row.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 152,
+      "line": 153,
       "context": "getBusinessEntityKey(row)",
       "destination": "src/utils/calculations.ts::getBusinessEntityKey",
       "functionName": "getBusinessEntityKey"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 165,
+      "line": 166,
       "context": "getRevisionWeight(r.rev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 172,
+      "line": 173,
       "context": "getRevisionWeight(r.rev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 178,
+      "line": 179,
       "context": "parseDateTimestamp(a.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 179,
+      "line": 180,
       "context": "parseDateTimestamp(b.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 188,
-      "context": "getStatusCodeCategory(r)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 195,
+      "line": 189,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
@@ -2142,97 +2357,97 @@
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
       "line": 196,
-      "context": "classifySubmission(sheetClassifications)",
-      "destination": "src/utils/calculations.ts::classifySubmission",
-      "functionName": "classifySubmission"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 218,
-      "context": "parseDateTimestamp(asOfDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 232,
-      "context": "getBusinessEntityKey(r)",
-      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
-      "functionName": "getBusinessEntityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 247,
-      "context": "parseDateTimestamp(r.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 262,
-      "context": "isValidRevision(rev)",
-      "destination": "src/utils/calculations.ts::isValidRevision",
-      "functionName": "isValidRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 341,
-      "context": "normalizeCanonicalString(r.rev || (r as any).revision || (r as any).revNo)",
-      "destination": "src/utils/calculations.ts::normalizeCanonicalString",
-      "functionName": "normalizeCanonicalString"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 342,
-      "context": "getRevisionWeight(revVal)",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 352,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 374,
-      "context": "processRevisionEngine(baseForRevisions, asOfDate)",
-      "destination": "src/utils/calculations.ts::processRevisionEngine",
-      "functionName": "processRevisionEngine"
+      "line": 197,
+      "context": "classifySubmission(sheetClassifications)",
+      "destination": "src/utils/calculations.ts::classifySubmission",
+      "functionName": "classifySubmission"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 377,
+      "line": 219,
+      "context": "parseDateTimestamp(asOfDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 233,
       "context": "getBusinessEntityKey(r)",
       "destination": "src/utils/calculations.ts::getBusinessEntityKey",
       "functionName": "getBusinessEntityKey"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 404,
+      "line": 248,
+      "context": "parseDateTimestamp(r.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 263,
+      "context": "isValidRevision(rev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 342,
+      "context": "normalizeCanonicalString(r.rev || (r as any).revision || (r as any).revNo)",
+      "destination": "src/utils/calculations.ts::normalizeCanonicalString",
+      "functionName": "normalizeCanonicalString"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 343,
+      "context": "getRevisionWeight(revVal)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 353,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 375,
+      "context": "processRevisionEngine(baseForRevisions, asOfDate)",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 378,
+      "context": "getBusinessEntityKey(r)",
+      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
+      "functionName": "getBusinessEntityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 405,
       "context": "getStatusCodeCategory(latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 437,
+      "line": 438,
       "context": "parseDateTimestamp(latest.dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 442,
-      "context": "parseDateTimestamp(latest.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 457,
+      "line": 443,
       "context": "parseDateTimestamp(latest.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
@@ -2240,188 +2455,230 @@
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
       "line": 458,
+      "context": "parseDateTimestamp(latest.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 459,
       "context": "parseDateTimestamp(latest.responseDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 556,
+      "line": 554,
+      "context": "auditRegisterSequence(primaryDocType, validRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 560,
+      "context": "auditRegisterSequence(primaryDocType, validRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 565,
+      "context": "auditRegisterSequence(primaryDocType, validRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 570,
+      "context": "auditRegisterSequence(primaryDocType, validRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 575,
+      "context": "auditRegisterSequence(primaryDocType, validRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 585,
       "context": "calculateCanonicalKPIs(data, fullDataset)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 564,
+      "line": 593,
       "context": "processRevisionEngine(baseRows, cutoffDate)",
       "destination": "src/utils/calculations.ts::processRevisionEngine",
       "functionName": "processRevisionEngine"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 567,
+      "line": 596,
       "context": "parseDateTimestamp(cutoffDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 571,
+      "line": 600,
       "context": "parseDateTimestamp(row.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 575,
+      "line": 604,
       "context": "getBusinessEntityKey(row)",
       "destination": "src/utils/calculations.ts::getBusinessEntityKey",
       "functionName": "getBusinessEntityKey"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 579,
+      "line": 608,
       "context": "isValidRevision(revVal)",
       "destination": "src/utils/calculations.ts::isValidRevision",
       "functionName": "isValidRevision"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 579,
+      "line": 608,
       "context": "getRevisionWeight(revVal)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 582,
+      "line": 611,
       "context": "getStatusCodeCategory(row)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 609,
+      "line": 638,
       "context": "calculateCanonicalKPIs(canonicalRecords.map(r => r.originalRow), fullCumulativeRows)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 618,
+      "line": 647,
       "context": "calculateCanonicalKPIs(canonicalRecords.map(r => r.originalRow))",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 646,
+      "line": 675,
       "context": "processRevisionEngine(rows)",
       "destination": "src/utils/calculations.ts::processRevisionEngine",
       "functionName": "processRevisionEngine"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 650,
+      "line": 679,
       "context": "isValidRevision(r.rev)",
       "destination": "src/utils/calculations.ts::isValidRevision",
       "functionName": "isValidRevision"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 651,
+      "line": 680,
       "context": "isValidRevision(r.rev)",
       "destination": "src/utils/calculations.ts::isValidRevision",
       "functionName": "isValidRevision"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 654,
+      "line": 683,
       "context": "parseDateTimestamp(a.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 655,
+      "line": 684,
       "context": "parseDateTimestamp(b.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 674,
+      "line": 703,
       "context": "parseDateTimestamp(a.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 675,
+      "line": 704,
       "context": "parseDateTimestamp(b.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 681,
+      "line": 710,
       "context": "getRevisionWeight(latestRevStr)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 728,
+      "line": 757,
       "context": "buildCanonicalDataset(rows, rows)",
       "destination": "src/utils/calculations.ts::buildCanonicalDataset",
       "functionName": "buildCanonicalDataset"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 740,
+      "line": 769,
       "context": "parseDateTimestamp(a.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 741,
+      "line": 770,
       "context": "parseDateTimestamp(b.submissionDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 916,
+      "line": 945,
       "context": "resolveCanonicalTrade(row)",
       "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
       "functionName": "resolveCanonicalTrade"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 922,
+      "line": 951,
       "context": "calculateCanonicalKPIs(data, dataset)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 941,
+      "line": 970,
       "context": "calculateCanonicalKPIs(data, dataset)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 960,
+      "line": 989,
       "context": "calculateCanonicalKPIs(data, dataset)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 991,
+      "line": 1020,
       "context": "getPerformanceValidationRows(rows)",
       "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
       "functionName": "getPerformanceValidationRows"
@@ -2771,49 +3028,49 @@
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 522,
+      "line": 523,
       "context": "calculateStats(rows, rawDataset || filteredData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 559,
+      "line": 560,
       "context": "calculateStats(generalData, rawDataset || filteredData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 562,
+      "line": 563,
       "context": "calculateProjectPerformanceHealth(globalStats, language)",
       "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
       "functionName": "calculateProjectPerformanceHealth"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 714,
+      "line": 715,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 897,
+      "line": 898,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1038,
+      "line": 1039,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1151,
+      "line": 1152,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
@@ -3239,6 +3496,146 @@
       "functionName": "getRevisionWeight"
     },
     {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 133,
+      "context": "getRevisionWeight(rev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 178,
+      "context": "parseDocIdentifier(docNo)",
+      "destination": "src/utils/calculations.ts::parseDocIdentifier",
+      "functionName": "parseDocIdentifier"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 198,
+      "context": "getRevisionWeight(rev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 206,
+      "context": "getRevisionWeight(a.rev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 206,
+      "context": "getRevisionWeight(b.rev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 273,
+      "context": "formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 286,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 288,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 295,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 296,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 296,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 308,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 310,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 317,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 318,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 318,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 409,
+      "context": "auditRegisterSequence(dt, groupRows)",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 419,
+      "context": "parseDocIdentifier(id)",
+      "destination": "src/utils/calculations.ts::parseDocIdentifier",
+      "functionName": "parseDocIdentifier"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 461,
+      "context": "runComprehensiveSequenceAudit(rows)",
+      "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
+      "functionName": "runComprehensiveSequenceAudit"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 468,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
       "callerFile": "src/analytics/sor/sorEngine.ts",
       "line": 21,
       "context": "isYes(r.isLatestRev)",
@@ -3324,105 +3721,105 @@
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 101,
+      "line": 106,
       "context": "normalizeCanonicalString(codeOrRow.code)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 102,
+      "line": 107,
       "context": "normalizeCanonicalString(codeOrRow.status || (codeOrRow as any).ncrStatus || (codeOrRow as any).sorStatus)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 103,
+      "line": 108,
       "context": "normalizeCanonicalString(codeOrRow.recordStatus)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 104,
+      "line": 109,
       "context": "normalizeCanonicalString(codeOrRow.workflowStage)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 105,
+      "line": 110,
       "context": "normalizeCanonicalString(codeOrRow.action || (codeOrRow as any).ncrAction || (codeOrRow as any).sorAction)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 107,
+      "line": 112,
       "context": "normalizeCanonicalString(codeOrRow.workflowFamily)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 108,
+      "line": 113,
       "context": "normalizeCanonicalString(codeOrRow.documentType)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 109,
+      "line": 114,
       "context": "normalizeCanonicalString(codeOrRow.logType)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 110,
+      "line": 115,
       "context": "normalizeCanonicalString(codeOrRow.docNo)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 111,
+      "line": 116,
       "context": "normalizeCanonicalString((codeOrRow as any).rawSourceIdentity)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 112,
+      "line": 117,
       "context": "normalizeCanonicalString((codeOrRow as any).sourceFile)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 123,
+      "line": 128,
       "context": "normalizeCanonicalString(codeOrRow)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 213,
+      "line": 218,
       "context": "classifyRow(effectiveCode, effectiveStatus)",
       "destination": "src/utils/calculations.ts::classifyRow",
       "functionName": "classifyRow"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 223,
+      "line": 228,
       "context": "getStatusCodeCategory(row)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/analytics/statusResolver.ts",
-      "line": 230,
+      "line": 235,
       "context": "normalizeCanonicalString(row.status || row.recordStatus || row.workflowStage || row.action)",
       "destination": "src/utils/calculations.ts::normalizeCanonicalString",
       "functionName": "normalizeCanonicalString"
@@ -3527,42 +3924,42 @@
     },
     {
       "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 35,
+      "line": 64,
+      "context": "runComprehensiveSequenceAudit(data)",
+      "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
+      "functionName": "runComprehensiveSequenceAudit"
+    },
+    {
+      "callerFile": "src/components/DataValidationEngine.tsx",
+      "line": 69,
+      "context": "generateForensicLifecycleLedger(data)",
+      "destination": "src/utils/calculations.ts::generateForensicLifecycleLedger",
+      "functionName": "generateForensicLifecycleLedger"
+    },
+    {
+      "callerFile": "src/components/DataValidationEngine.tsx",
+      "line": 74,
       "context": "getPerformanceValidationRows(data)",
       "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
       "functionName": "getPerformanceValidationRows"
     },
     {
       "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 129,
-      "context": "getStatusCodeCategory(row.status)",
+      "line": 168,
+      "context": "getStatusCodeCategory(row)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 140,
-      "context": "parseDateTimestamp(a.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 141,
-      "context": "parseDateTimestamp(b.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 165,
+      "line": 195,
       "context": "getRevisionWeight(prev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/components/DataValidationEngine.tsx",
-      "line": 166,
+      "line": 196,
       "context": "getRevisionWeight(curr)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
@@ -4199,70 +4596,70 @@
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 36,
+      "line": 40,
       "context": "compareRevisionsCanonical(a.rev, b.rev)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 79,
+      "line": 83,
       "context": "compareRevisionsCanonical(b, a)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 85,
+      "line": 89,
       "context": "resolveCanonicalTrade(r)",
       "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
       "functionName": "resolveCanonicalTrade"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 115,
+      "line": 122,
       "context": "getRevisionWeight(revUpper)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 119,
+      "line": 126,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 131,
+      "line": 138,
       "context": "getDelayDays(submissionDate, responseDate, dueDate)",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 133,
+      "line": 140,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 133,
+      "line": 140,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 133,
+      "line": 140,
       "context": "checkIfOverdueDynamically(submissionDate, responseDate, 14)",
       "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
       "functionName": "checkIfOverdueDynamically"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 258,
+      "line": 265,
       "context": "getDelayDays(submission, response, '')",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
@@ -4780,84 +5177,84 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 286,
+      "line": 352,
       "context": "formatDate(r[finalColDateSent])",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 287,
+      "line": 353,
       "context": "formatDate(\n              colResponseDate >= 0 ? r[colResponseDate] : \"\",\n            )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 497,
+      "line": 563,
       "context": "normalizeDiscipline(disciplineVal, activeProjectId)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 512,
+      "line": 578,
       "context": "getRevisionWeight(rawRev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 526,
+      "line": 592,
       "context": "formatDate(colDueDate >= 0 ? r[colDueDate] : \"\")",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 543,
-      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
-      "destination": "src/utils/calculations.ts::formatDate",
-      "functionName": "formatDate"
-    },
-    {
-      "callerFile": "src/utils/parser.ts",
-      "line": 553,
-      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
-      "destination": "src/utils/calculations.ts::formatDate",
-      "functionName": "formatDate"
-    },
-    {
-      "callerFile": "src/utils/parser.ts",
-      "line": 562,
-      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
-      "destination": "src/utils/calculations.ts::formatDate",
-      "functionName": "formatDate"
-    },
-    {
-      "callerFile": "src/utils/parser.ts",
       "line": 609,
+      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
+      "destination": "src/utils/calculations.ts::formatDate",
+      "functionName": "formatDate"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 619,
+      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
+      "destination": "src/utils/calculations.ts::formatDate",
+      "functionName": "formatDate"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 628,
+      "context": "formatDate(\n                colNcrSentDateCorrectiveAction >= 0\n                  ? r[colNcrSentDateCorrectiveAction]\n                  : \"\",\n              )",
+      "destination": "src/utils/calculations.ts::formatDate",
+      "functionName": "formatDate"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 675,
       "context": "mapDocumentToWorkflow(assignedType)",
       "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
       "functionName": "mapDocumentToWorkflow"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 661,
+      "line": 727,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 670,
+      "line": 736,
       "context": "parseExcelWorkbook(wb, fileName)",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 684,
+      "line": 750,
       "context": "parseExcelWorkbook(wb, file.name)",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -5600,6 +5997,30 @@
         "referencedBy": []
       },
       {
+        "file": "src/analytics/sequenceAuditEngine.ts",
+        "exportName": "ParsedDocIdentifier",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'ParsedDocIdentifier' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/sequenceAuditEngine.ts",
+        "exportName": "parseDocIdentifier",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'parseDocIdentifier' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/sequenceAuditEngine.ts",
+        "exportName": "formatSequenceID",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'formatSequenceID' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
         "file": "src/analytics/sor/sorEngine.ts",
         "exportName": "isYes",
         "type": "Function",
@@ -5993,14 +6414,6 @@
       },
       {
         "file": "src/utils/calculations.ts",
-        "exportName": "getBusinessEntityKey",
-        "type": "Constant/Enum/Class",
-        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-        "reason": "No incoming imports of 'getBusinessEntityKey' detected in any active source modules.",
-        "referencedBy": []
-      },
-      {
-        "file": "src/utils/calculations.ts",
         "exportName": "calculateCanonicalKPIs",
         "type": "Constant/Enum/Class",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -6013,6 +6426,22 @@
         "type": "Constant/Enum/Class",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'resolveCanonicalTrade' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
+        "exportName": "auditRegisterSequence",
+        "type": "Constant/Enum/Class",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'auditRegisterSequence' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
+        "exportName": "generateForensicLifecycleLedger",
+        "type": "Constant/Enum/Class",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'generateForensicLifecycleLedger' detected in any active source modules.",
         "referencedBy": []
       },
       {
@@ -6442,11 +6871,11 @@
     ]
   },
   "staticReachability": {
-    "totalLines": 262,
-    "coveredLines": 136,
-    "totalStatements": 27,
+    "totalLines": 269,
+    "coveredLines": 135,
+    "totalStatements": 28,
     "coveredStatements": 14,
-    "totalBranches": 27,
+    "totalBranches": 28,
     "coveredBranches": 6,
     "totalFunctions": 18,
     "coveredFunctions": 9

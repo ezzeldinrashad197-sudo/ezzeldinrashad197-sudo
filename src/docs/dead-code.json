@@ -609,6 +609,30 @@
       "referencedBy": []
     },
     {
+      "file": "src/analytics/sequenceAuditEngine.ts",
+      "exportName": "ParsedDocIdentifier",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ParsedDocIdentifier' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/sequenceAuditEngine.ts",
+      "exportName": "parseDocIdentifier",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'parseDocIdentifier' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/sequenceAuditEngine.ts",
+      "exportName": "formatSequenceID",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'formatSequenceID' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/sor/sorEngine.ts",
       "exportName": "isYes",
       "type": "Function",
@@ -1002,14 +1026,6 @@
     },
     {
       "file": "src/utils/calculations.ts",
-      "exportName": "getBusinessEntityKey",
-      "type": "Constant/Enum/Class",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'getBusinessEntityKey' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/calculations.ts",
       "exportName": "calculateCanonicalKPIs",
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -1022,6 +1038,22 @@
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'resolveCanonicalTrade' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "auditRegisterSequence",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'auditRegisterSequence' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "generateForensicLifecycleLedger",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'generateForensicLifecycleLedger' detected in any active source modules.",
       "referencedBy": []
     },
     {

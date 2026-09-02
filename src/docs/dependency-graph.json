@@ -145,6 +145,10 @@
       "layer": 2
     },
     {
+      "id": "src/analytics/sequenceAuditEngine.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/sor/sorEngine.ts",
       "layer": 2
     },
@@ -154,6 +158,10 @@
     },
     {
       "id": "src/components/ActionTracker.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/ActiveBacklogIntelligence.tsx",
       "layer": 3
     },
     {
@@ -189,6 +197,10 @@
       "layer": 3
     },
     {
+      "id": "src/components/ExecutiveRegisterSummary.tsx",
+      "layer": 3
+    },
+    {
       "id": "src/components/FinalAcceptanceAuditView.tsx",
       "layer": 3
     },
@@ -218,6 +230,10 @@
     },
     {
       "id": "src/components/WorkflowMappingCenter.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/WorkloadRevisionIntelligence.tsx",
       "layer": 3
     },
     {
@@ -587,6 +603,18 @@
       "target": "src/utils/i18n.tsx"
     },
     {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/ActiveBacklogIntelligence.tsx"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/components/WorkloadRevisionIntelligence.tsx"
+    },
+    {
       "source": "src/SORAnalytics.tsx",
       "target": "src/types.ts"
     },
@@ -665,6 +693,10 @@
     {
       "source": "src/analytics/calculationFoundation.ts",
       "target": "src/analytics/statusResolver.ts"
+    },
+    {
+      "source": "src/analytics/calculationFoundation.ts",
+      "target": "src/analytics/sequenceAuditEngine.ts"
     },
     {
       "source": "src/analytics/dataValidator.ts",
@@ -827,6 +859,18 @@
       "target": "src/analytics/revisionResolver.ts"
     },
     {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/sequenceAuditEngine.ts",
+      "target": "src/analytics/statusResolver.ts"
+    },
+    {
       "source": "src/analytics/sor/sorEngine.ts",
       "target": "src/types.ts"
     },
@@ -849,6 +893,14 @@
     {
       "source": "src/components/ActionTracker.tsx",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/components/ActiveBacklogIntelligence.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/ActiveBacklogIntelligence.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
     },
     {
       "source": "src/components/AdvancedAgingAnalysis.tsx",
@@ -907,6 +959,10 @@
       "target": "src/analytics/revisionResolver.ts"
     },
     {
+      "source": "src/components/DataValidationEngine.tsx",
+      "target": "src/analytics/sequenceAuditEngine.ts"
+    },
+    {
       "source": "src/components/EngineeringItemDatasetView.tsx",
       "target": "src/types.ts"
     },
@@ -933,6 +989,10 @@
     {
       "source": "src/components/EnterpriseMonitoringDashboard.tsx",
       "target": "src/firebase.ts"
+    },
+    {
+      "source": "src/components/ExecutiveRegisterSummary.tsx",
+      "target": "src/types.ts"
     },
     {
       "source": "src/components/FinalAcceptanceAuditView.tsx",
@@ -1037,6 +1097,14 @@
     {
       "source": "src/components/WorkflowMappingCenter.tsx",
       "target": "src/components/UniversalRegisterEngine.tsx"
+    },
+    {
+      "source": "src/components/WorkloadRevisionIntelligence.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/WorkloadRevisionIntelligence.tsx",
+      "target": "src/components/ExecutiveRegisterSummary.tsx"
     },
     {
       "source": "src/components/presentation/PresHelpers.tsx",

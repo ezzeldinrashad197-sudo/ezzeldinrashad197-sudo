@@ -21,6 +21,7 @@ digraph DependencyGraph {
     "src/SORAnalytics.tsx" [fillcolor=white];
     "src/SettingsCenter.tsx" [fillcolor=white];
     "src/components/ActionTracker.tsx" [fillcolor=white];
+    "src/components/ActiveBacklogIntelligence.tsx" [fillcolor=white];
     "src/components/AdvancedAgingAnalysis.tsx" [fillcolor=white];
     "src/components/AuditIntegrityCenter.tsx" [fillcolor=white];
     "src/components/CalculationAuditCenter.tsx" [fillcolor=white];
@@ -29,6 +30,7 @@ digraph DependencyGraph {
     "src/components/EngineeringItemDatasetView.tsx" [fillcolor=white];
     "src/components/EnterpriseHardeningView.tsx" [fillcolor=white];
     "src/components/EnterpriseMonitoringDashboard.tsx" [fillcolor=white];
+    "src/components/ExecutiveRegisterSummary.tsx" [fillcolor=white];
     "src/components/FinalAcceptanceAuditView.tsx" [fillcolor=white];
     "src/components/HistoricalDataWarehouse.tsx" [fillcolor=white];
     "src/components/MasterRegister.tsx" [fillcolor=white];
@@ -37,6 +39,7 @@ digraph DependencyGraph {
     "src/components/TrendAndForecastEngine.tsx" [fillcolor=white];
     "src/components/UniversalRegisterEngine.tsx" [fillcolor=white];
     "src/components/WorkflowMappingCenter.tsx" [fillcolor=white];
+    "src/components/WorkloadRevisionIntelligence.tsx" [fillcolor=white];
     "src/components/dashboard/ReusableComponents.tsx" [fillcolor=white];
     "src/components/presentation/PresHelpers.tsx" [fillcolor=white];
     "src/db/drizzle.config.ts" [fillcolor=white];
@@ -80,6 +83,7 @@ digraph DependencyGraph {
     "src/analytics/recordTransformer.ts" [fillcolor=lightgreen];
     "src/analytics/revisionEngine.ts" [fillcolor=lightgreen];
     "src/analytics/revisionResolver.ts" [fillcolor=lightgreen];
+    "src/analytics/sequenceAuditEngine.ts" [fillcolor=lightgreen];
     "src/analytics/sor/sorEngine.ts" [fillcolor=lightgreen];
     "src/analytics/statusResolver.ts" [fillcolor=lightgreen];
     "src/utils/ncrAnalytics.ts" [fillcolor=lightgreen];
@@ -167,6 +171,9 @@ digraph DependencyGraph {
   "src/ReportTable.tsx" -> "src/types.ts";
   "src/ReportTable.tsx" -> "src/utils/calculations.ts";
   "src/ReportTable.tsx" -> "src/utils/i18n.tsx";
+  "src/ReportTable.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
+  "src/ReportTable.tsx" -> "src/components/ActiveBacklogIntelligence.tsx";
+  "src/ReportTable.tsx" -> "src/components/WorkloadRevisionIntelligence.tsx";
   "src/SORAnalytics.tsx" -> "src/types.ts";
   "src/SORAnalytics.tsx" -> "src/analytics/sor/sorEngine.ts";
   "src/SORAnalytics.tsx" -> "src/components/dashboard/ReusableComponents.tsx";
@@ -187,6 +194,7 @@ digraph DependencyGraph {
   "src/analytics/calculationFoundation.ts" -> "src/analytics/analyticsCore.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/statusResolver.ts";
+  "src/analytics/calculationFoundation.ts" -> "src/analytics/sequenceAuditEngine.ts";
   "src/analytics/dataValidator.ts" -> "src/analytics/models.ts";
   "src/analytics/dataValidator.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportEngine.ts" -> "src/types.ts";
@@ -227,12 +235,17 @@ digraph DependencyGraph {
   "src/analytics/revisionEngine.ts" -> "src/analytics/models.ts";
   "src/analytics/revisionEngine.ts" -> "src/analytics/analyticsCore.ts";
   "src/analytics/revisionEngine.ts" -> "src/analytics/revisionResolver.ts";
+  "src/analytics/sequenceAuditEngine.ts" -> "src/types.ts";
+  "src/analytics/sequenceAuditEngine.ts" -> "src/analytics/revisionResolver.ts";
+  "src/analytics/sequenceAuditEngine.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/types.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/statusResolver.ts" -> "src/types.ts";
   "src/components/ActionTracker.tsx" -> "src/types.ts";
   "src/components/ActionTracker.tsx" -> "src/utils/calculations.ts";
+  "src/components/ActiveBacklogIntelligence.tsx" -> "src/types.ts";
+  "src/components/ActiveBacklogIntelligence.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/components/AdvancedAgingAnalysis.tsx" -> "src/types.ts";
   "src/components/AdvancedAgingAnalysis.tsx" -> "src/utils/calculations.ts";
   "src/components/AuditIntegrityCenter.tsx" -> "src/types.ts";
@@ -247,6 +260,7 @@ digraph DependencyGraph {
   "src/components/DataValidationEngine.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/components/DataValidationEngine.tsx" -> "src/analytics/analyticsCore.ts";
   "src/components/DataValidationEngine.tsx" -> "src/analytics/revisionResolver.ts";
+  "src/components/DataValidationEngine.tsx" -> "src/analytics/sequenceAuditEngine.ts";
   "src/components/EngineeringItemDatasetView.tsx" -> "src/types.ts";
   "src/components/EngineeringItemDatasetView.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/components/EnterpriseHardeningView.tsx" -> "src/analytics/revisionResolver.ts";
@@ -254,6 +268,7 @@ digraph DependencyGraph {
   "src/components/EnterpriseHardeningView.tsx" -> "src/analytics/analyticsCore.ts";
   "src/components/EnterpriseHardeningView.tsx" -> "src/analytics/governance/auditFramework.ts";
   "src/components/EnterpriseMonitoringDashboard.tsx" -> "src/firebase.ts";
+  "src/components/ExecutiveRegisterSummary.tsx" -> "src/types.ts";
   "src/components/FinalAcceptanceAuditView.tsx" -> "src/types.ts";
   "src/components/FinalAcceptanceAuditView.tsx" -> "src/utils/calculations.ts";
   "src/components/FinalAcceptanceAuditView.tsx" -> "src/analytics/analyticsCore.ts";
@@ -280,6 +295,8 @@ digraph DependencyGraph {
   "src/components/WorkflowMappingCenter.tsx" -> "src/utils/workflowMapping.ts";
   "src/components/WorkflowMappingCenter.tsx" -> "src/utils/classificationEngine.ts";
   "src/components/WorkflowMappingCenter.tsx" -> "src/components/UniversalRegisterEngine.tsx";
+  "src/components/WorkloadRevisionIntelligence.tsx" -> "src/types.ts";
+  "src/components/WorkloadRevisionIntelligence.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/components/presentation/PresHelpers.tsx" -> "src/types.ts";
   "src/db/index.ts" -> "src/db/schema.ts";
   "src/firebase.ts" -> "firebase-applet-config.json";
