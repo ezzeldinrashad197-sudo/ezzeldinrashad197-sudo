@@ -49,8 +49,16 @@ import {
   ExternalLink,
   Eye,
   Info,
-  Filter
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  History,
+  Activity
 } from 'lucide-react';
+import { ExecutiveRegisterSummary } from './components/ExecutiveRegisterSummary';
+import { ActiveBacklogIntelligence } from './components/ActiveBacklogIntelligence';
+import { WorkloadRevisionIntelligence } from './components/WorkloadRevisionIntelligence';
 
 interface ReportTableProps {
   data: SubmittalRow[];
@@ -302,6 +310,74 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [isAuditMatrixOpen, setIsAuditMatrixOpen] = useState(false);
+  const [workloadTab, setWorkloadTab] = useState<'workload' | 'rejection'>('workload');
+
+  // Overdue Active split (Rejected Open vs Pending Review)
+  const activeOverdueCounts = useMemo(() => {
+    const rows = filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
+    const baseForRevisions = rawDataset && rawDataset.length > 0 ? rawDataset : data;
+    const revisionMap = processRevisionEngine(baseForRevisions);
+    const targetEntityKeys = new Set(rows.map(r => getBusinessEntityKey(r)));
+
+    let overdueRejectedOpen = 0;
+    let overduePending = 0;
+
+    targetEntityKeys.forEach(key => {
+      const group = revisionMap.get(key);
+      if (!group) return;
+      const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+      const isOverdue = Boolean(group.latest.overdue || (group.latest.delayDays && group.latest.delayDays > 0));
+      if (isOverdue) {
+        if (cat === 'REJECTED_OPEN') {
+          overdueRejectedOpen++;
+        } else if (cat === 'PENDING' || cat === 'UNCLASSIFIED') {
+          overduePending++;
+        }
+      }
+    });
+
+    return {
+      rejectedOpen: overdueRejectedOpen,
+      pending: overduePending,
+      total: globalStats.overdue
+    };
+  }, [filteredData, rawDataset, data, globalStats.overdue]);
+
+  // Register Compliance Health Rating Resolver
+  const getRegisterHealth = (stats: KPIStats) => {
+    const rate = stats.approvalRate;
+    const od = stats.overdue;
+    if (rate >= 85 && od === 0) {
+      return {
+        labelEn: 'Excellent',
+        labelAr: 'ممتاز',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+        dotClass: 'bg-emerald-500'
+      };
+    } else if (rate >= 80 && od <= 2) {
+      return {
+        labelEn: 'Good',
+        labelAr: 'جيد',
+        badgeClass: 'bg-teal-50 text-teal-700 border-teal-300',
+        dotClass: 'bg-teal-500'
+      };
+    } else if (rate >= 65) {
+      return {
+        labelEn: 'Fair',
+        labelAr: 'مقبول',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300',
+        dotClass: 'bg-amber-500'
+      };
+    } else {
+      return {
+        labelEn: 'Needs Attention',
+        labelAr: 'يحتاج متابعة',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-300',
+        dotClass: 'bg-rose-500'
+      };
+    }
+  };
 
   // Close modal on Escape key
   useEffect(() => {
@@ -1079,22 +1155,106 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           </div>
        )}
 
-       {/* 6. DETAILED BREAKDOWN TABLE */}
-        <div className="space-y-3">
-          {/* Interactive Drill-down Hint Banner */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 bg-blue-50/90 border border-blue-200/90 rounded-xl text-xs text-[#203864] shadow-xs">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-              <span className="font-semibold">
-                {language === 'ar'
-                  ? '💡 جدول تفاعلي ذكي: انقر مباشرة على أي رقم في الجدول (مثل رقم 1 في عمود Current Rejected Closed لـ DOC-STR) لفتح نافذة فحص المستندات ونسخ أرقام المعاملات فوراً.'
-                  : '💡 Interactive Smart Table: Click any number cell (e.g. 1 in Current Rejected Closed for DOC-STR) to open the Drill-Down Inspector and copy exact document numbers.'}
-              </span>
-            </div>
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-100/90 px-2.5 py-1 rounded-md border border-blue-200">
-              {language === 'ar' ? 'انقر على أي خلية للتفاصيل' : 'Click Any Number To Inspect'}
-            </span>
-          </div>
+       {/* 6. REGISTER INTELLIGENCE HIERARCHY (LEVELS 1 - 4) */}
+       {/* LEVEL 1 — EXECUTIVE INTELLIGENCE */}
+       <ExecutiveRegisterSummary
+         byDocType={byDocType}
+         globalStats={globalStats}
+         openDrillDown={openDrillDown}
+         getRegisterHealth={getRegisterHealth}
+         language={language}
+       />
+
+       {/* LEVEL 2 — OPERATIONAL INTELLIGENCE */}
+       <ActiveBacklogIntelligence
+         byDocType={byDocType}
+         globalStats={globalStats}
+         activeOverdueCounts={activeOverdueCounts}
+         openDrillDown={openDrillDown}
+         language={language}
+       />
+
+       {/* LEVEL 3 — WORKLOAD & HISTORICAL INTELLIGENCE */}
+       <WorkloadRevisionIntelligence
+         byDocType={byDocType}
+         globalStats={globalStats}
+         openDrillDown={openDrillDown}
+         language={language}
+       />
+
+       {/* LEVEL 4 — AUDIT & FORENSIC INTELLIGENCE (COLLAPSIBLE MULTI-GRAIN MATRIX) */}
+       <div id="level4-audit-trace" className="space-y-3 print:break-inside-avoid">
+         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+           {/* Header Toggle */}
+           <div
+             onClick={() => setIsAuditMatrixOpen(!isAuditMatrixOpen)}
+             className="p-4 sm:p-5 bg-gradient-to-r from-slate-50 to-slate-100/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-100 transition-colors"
+           >
+             <div className="flex items-start gap-3.5">
+               <div className="p-2.5 bg-slate-200 text-[#203864] rounded-lg shrink-0 mt-0.5">
+                 <Layers className="w-5 h-5 text-[#203864]" />
+               </div>
+               <div>
+                 <div className="flex items-center gap-2 flex-wrap">
+                   <span className="px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wider bg-slate-700 text-white">
+                     Level 4 — Audit & Forensic Intelligence
+                   </span>
+                   <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-[#203864] border border-blue-200">
+                     20-Column Multi-Grain Matrix
+                   </span>
+                 </div>
+                 <h3 className="text-base font-bold text-[#203864] mt-1">
+                   {language === 'ar' ? 'مصفوفة التدقيق والتحليل متعددة الأبعاد (Audit & Data Trace)' : 'Audit & Data Trace — Complete Multi-Grain Matrix'}
+                 </h3>
+                 <p className="text-xs text-slate-500 font-normal mt-0.5">
+                   {language === 'ar'
+                     ? 'الجدول الشامل الكامل الذي يربط بين أحجام العمل التاريخية وحالة البنود الفريدة الحالية ومؤشرات SLA مع حفظ كامل بيانات الفحص التدقيقي.'
+                     : 'Full forensic crosswalk reconciling historical submission events, deliverable-grain current status, and SLA performance.'}
+                 </p>
+               </div>
+             </div>
+
+             <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+               <button
+                 type="button"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setIsAuditMatrixOpen(!isAuditMatrixOpen);
+                 }}
+                 className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg text-xs font-bold shadow-2xs hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer"
+               >
+                 {isAuditMatrixOpen ? (
+                   <>
+                     <span>{language === 'ar' ? 'طي مصفوفة التدقيق' : 'Collapse Audit Matrix'}</span>
+                     <ChevronUp className="w-4 h-4 text-slate-500" />
+                   </>
+                 ) : (
+                   <>
+                     <span>{language === 'ar' ? 'عرض مصفوفة التدقيق الكاملة' : 'Expand Full Audit Matrix'}</span>
+                     <ChevronDown className="w-4 h-4 text-slate-500" />
+                   </>
+                 )}
+               </button>
+             </div>
+           </div>
+
+           {/* Collapsible Content */}
+           {isAuditMatrixOpen && (
+             <div className="p-4 space-y-3 bg-slate-50/30 border-t border-slate-100">
+               {/* Interactive Drill-down Hint Banner */}
+               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 bg-blue-50/90 border border-blue-200/90 rounded-xl text-xs text-[#203864] shadow-xs">
+                 <div className="flex items-center gap-2">
+                   <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                   <span className="font-semibold">
+                     {language === 'ar'
+                       ? '💡 جدول تفاعلي ذكي: انقر مباشرة على أي رقم في الجدول (مثل رقم 1 في عمود Current Rejected Closed لـ DOC-STR) لفتح نافذة فحص المستندات ونسخ أرقام المعاملات فوراً.'
+                       : '💡 Interactive Smart Table: Click any number cell (e.g. 1 in Current Rejected Closed for DOC-STR) to open the Drill-Down Inspector and copy exact document numbers.'}
+                   </span>
+                 </div>
+                 <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-100/90 px-2.5 py-1 rounded-md border border-blue-200">
+                   {language === 'ar' ? 'انقر على أي خلية للتفاصيل' : 'Click Any Number To Inspect'}
+                 </span>
+               </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -1636,6 +1796,9 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
             </div>
           </div>
         </div>
+      )}
+    </div>
+  </div>
 
         {/* 7. EXECUTIVE RECOMMENDATIONS (PRIORITY ACTIONS) PAGE/PANEL - LOCKED ON A SINGLE DEDICATED PAGE */}
        <div id="report-recommendations-panel" className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:break-inside-avoid page-break-inside-avoid page-break-before-always break-before-page break-inside-avoid">

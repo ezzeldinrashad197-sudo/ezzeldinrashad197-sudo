@@ -745,7 +745,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
     }
   });
 
-  app.post("/api/insights", verifyAuthAndRole(), aiLimiter, async (req, res, next) => {
+  app.post("/api/insights", aiLimiter, verifyAuthAndRole(), async (req, res, next) => {
     // Fine-grained per-IP rate limiting
     const clientIp = req.ip || "unmapped-gateway-client";
     const timestampNow = Date.now();
