@@ -138,7 +138,7 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const delayDays = r.delayDays || getDelayDays(submissionDate, responseDate, dueDate);
     const isStatusActive = cat === 'PENDING' || cat === 'REJECTED_OPEN';
     const computedOverdue = isStatusActive && (dueDate ? (parseDateTimestamp(dueDate) > 0 && Date.now() > parseDateTimestamp(dueDate)) : checkIfOverdueDynamically(submissionDate, responseDate, 14));
-    const overdue = isStatusActive ? (r.overdue !== undefined ? Boolean(r.overdue) : computedOverdue) : false;
+    const overdue = isStatusActive ? computedOverdue : false;
 
     return {
       ...r,
