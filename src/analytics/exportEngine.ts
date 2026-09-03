@@ -727,7 +727,12 @@ export const generatePptxReport = async (
         const seenRejectedRefs = new Set<string>();
         const targetRejectedDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
         const presRejectedItems = targetRejectedDataset
-            .filter(d => d.overdue && d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+                        // FIX (2026-09-02): previously required BOTH overdue AND Rejected, which silently
+            // hid all 6 currently-open rejected items whenever none happened to be overdue yet
+            // — directly contradicting the "6 unique items in Rejected/Open status" figure shown
+            // on the Executive Summary and Recommendations slides. This section now lists every
+            // rejected/open item (matching those slides), sorted so overdue ones surface first.
+            .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
             .filter(d => {
                 const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
                 if (seenRejectedRefs.has(refKey)) return false;
@@ -747,8 +752,8 @@ export const generatePptxReport = async (
         if (rejectedPages.length === 0) {
             let slide: any = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
             addHeaderAndFooter(pres, slide, "REJECTED ITEMS", projectInfo, logoUrl, options);
-            slide.addText(isArabic ? "لا توجد وثائق مرفوضة متأخرة" : "No Rejected Items", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
-            slide.addText(isArabic ? "كل المستندات المرفوضة تم الرد عليها أو إغلاقها." : "All rejected submittals are resolved or resubmitted.", { x: 1.0, y: 2.9, w: 8, h: 0.4, fontSize: 14, color: "666666", align: "center", rtl: isArabic });
+                        slide.addText(isArabic ? "لا توجد وثائق مرفوضة" : "No Rejected Items", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
+            slide.addText(isArabic ? "لا توجد مستندات في حالة مرفوض/مفتوح حالياً." : "No submittals are currently in Rejected/Open status.", { x: 1.0, y: 2.9, w: 8, h: 0.4, fontSize: 14, color: "666666", align: "center", rtl: isArabic });
         } else {
             rejectedPages.forEach((pageData, pageIdx) => {
                 let slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
