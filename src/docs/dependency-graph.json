@@ -564,6 +564,10 @@
     },
     {
       "source": "src/Presentation.tsx",
+      "target": "src/analytics/calculationFoundation.ts"
+    },
+    {
+      "source": "src/Presentation.tsx",
       "target": "src/analytics/ncr/ncrEngine.ts"
     },
     {
@@ -597,6 +601,10 @@
     {
       "source": "src/ReportTable.tsx",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/analytics/calculationFoundation.ts"
     },
     {
       "source": "src/ReportTable.tsx",
@@ -713,6 +721,10 @@
     {
       "source": "src/analytics/exportEngine.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/exportEngine.ts",
+      "target": "src/analytics/calculationFoundation.ts"
     },
     {
       "source": "src/analytics/exportEngine.ts",

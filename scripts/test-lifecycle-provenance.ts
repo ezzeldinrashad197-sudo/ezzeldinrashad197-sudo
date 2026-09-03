@@ -6,7 +6,7 @@ import { SubmittalRow } from '../src/types';
 // Load actual fixture dataset
 const dataset = generateExpandedGoldenDataset();
 
-// Create terminal Code C Closed fixture item for Case 3 as specified in scripts/run-tests.ts:431
+// Create terminal Code C Closed fixture item for Case 3 (Controlled Synthetic Fixture Executed Against the Canonical Engine)
 const sampleCodeCClosedRow: SubmittalRow = {
   id: 'FIXTURE-CCLOSED-01',
   docNo: 'SDW-ARC-9999',
@@ -73,9 +73,9 @@ console.log('');
 const docClosedKey = getBusinessEntityKey(sampleCodeCClosedRow);
 const docClosed = engine.get(docClosedKey)!;
 const docClosedPass = docClosed.hasRejection === true && docClosed.isResolved === false && docClosed.resolvedStatus === 'REJECTED_CLOSED';
-console.log('[CASE 3: REJECTED CLOSED]');
+console.log('[CASE 3: REJECTED CLOSED - Controlled Synthetic Fixture Executed Against the Canonical Engine]');
 console.log('- Entity Key:           ', docClosedKey);
-console.log('- Ingested Rows:         FIXTURE-CCLOSED-01 (Rev 0, Code C, Stage: Closed)');
+console.log('- Ingested Rows:         FIXTURE-CCLOSED-01 (Rev 0, Code C, Stage: Closed) [Controlled Synthetic Fixture]');
 console.log('- Revision Sequence:     [Rev 0] (Terminal / Closed)');
 console.log('- Latest Revision:       Rev', docClosed.latest.rev, `(${docClosed.latest.status})`);
 console.log('- Engine Flags:          hasRejection =', docClosed.hasRejection, ', isResolved =', docClosed.isResolved, ', resolvedStatus =', docClosed.resolvedStatus);

@@ -161,6 +161,7 @@ digraph DependencyGraph {
   "src/PortfolioCenter.tsx" -> "src/firebase.ts";
   "src/Presentation.tsx" -> "src/types.ts";
   "src/Presentation.tsx" -> "src/utils/calculations.ts";
+  "src/Presentation.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/Presentation.tsx" -> "src/analytics/ncr/ncrEngine.ts";
   "src/Presentation.tsx" -> "src/utils/i18n.tsx";
   "src/Presentation.tsx" -> "src/components/presentation/PresHelpers.tsx";
@@ -170,6 +171,7 @@ digraph DependencyGraph {
   "src/RFIAnalytics.tsx" -> "src/analytics/analyticsCore.ts";
   "src/ReportTable.tsx" -> "src/types.ts";
   "src/ReportTable.tsx" -> "src/utils/calculations.ts";
+  "src/ReportTable.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/ReportTable.tsx" -> "src/utils/i18n.tsx";
   "src/ReportTable.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/ReportTable.tsx" -> "src/components/ActiveBacklogIntelligence.tsx";
@@ -199,6 +201,7 @@ digraph DependencyGraph {
   "src/analytics/dataValidator.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportEngine.ts" -> "src/types.ts";
   "src/analytics/exportEngine.ts" -> "src/utils/calculations.ts";
+  "src/analytics/exportEngine.ts" -> "src/analytics/calculationFoundation.ts";
   "src/analytics/exportEngine.ts" -> "src/analytics/exportHelpers.ts";
   "src/analytics/exportHelpers.ts" -> "src/types.ts";
   "src/analytics/exportHelpers.ts" -> "src/utils/calculations.ts";

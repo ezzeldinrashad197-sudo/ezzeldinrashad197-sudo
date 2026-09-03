@@ -1,6 +1,7 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline } from "../utils/calculations";
+import { isEntityOverdue } from "./calculationFoundation";
 import {
   compileStatsForBaseType,
   renderLuxeLogoBox,
@@ -747,7 +748,12 @@ export const generatePptxReport = async (
                 seenRejectedRefs.add(refKey);
                 return true;
             })
-            .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
+            .sort((a, b) => {
+                const aOverdue = isEntityOverdue(a) ? 1 : 0;
+                const bOverdue = isEntityOverdue(b) ? 1 : 0;
+                if (bOverdue !== aOverdue) return bOverdue - aOverdue;
+                return (b.delayDays || 0) - (a.delayDays || 0);
+            });
 
         const rejectedPages: SubmittalRow[][] = [];
         for (let i = 0; i < presRejectedItems.length; i += presRejectedPageSize) {
@@ -755,7 +761,7 @@ export const generatePptxReport = async (
         }
 
         const sectionNumRejected = baseTypes.length + 5;
-        addDividerSlide(pres, isArabic ? "الوثائق التي تتطلب إعادة تقديم" : "Items Requiring Resubmission", `${String(sectionNumRejected).padStart(2, '0')} REJECTED ITEMS`, projectInfo, logoUrl, options);
+        addDividerSlide(pres, isArabic ? "الوثائق التي تتطلب إعادة تقديم (إجراء المقاول)" : "Items Requiring Resubmission (Contractor Action)", `${String(sectionNumRejected).padStart(2, '0')} REJECTED ITEMS`, projectInfo, logoUrl, options);
 
         if (rejectedPages.length === 0) {
             let slide: any = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
@@ -821,7 +827,7 @@ export const generatePptxReport = async (
         const seenPendingRefs = new Set<string>();
         const targetPendingDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
         const presPendingItems = targetPendingDataset
-            .filter(d => d.overdue && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+            .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
             .filter(d => {
                 const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
                 if (seenPendingRefs.has(refKey)) return false;
@@ -836,7 +842,7 @@ export const generatePptxReport = async (
         }
 
         const sectionNumPending = baseTypes.length + 6;
-        addDividerSlide(pres, isArabic ? "الوثائق تحت المراجعة المتأخرة" : "Items Requiring Response", `${String(sectionNumPending).padStart(2, '0')} PENDING ITEMS`, projectInfo, logoUrl, options);
+        addDividerSlide(pres, isArabic ? "الوثائق تحت المراجعة المتأخرة (إجراء الاستشاري)" : "Items Requiring Response (Consultant Action)", `${String(sectionNumPending).padStart(2, '0')} PENDING ITEMS`, projectInfo, logoUrl, options);
 
         if (pendingPages.length === 0) {
             let slide: any = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });

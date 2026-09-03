@@ -1,5 +1,5 @@
 # StructuSight E2E Integration Pipeline Verification Report
-*Generated on 2026-09-03T08:15:28.825Z | Deterministic Audit Evidence*
+*Generated on 2026-09-03T08:50:24.198Z | Deterministic Audit Evidence*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -181,8 +181,10 @@ This trace represents the full travel of records from unstructured file ingestio
     "unclassified": 0,
     "activeItems": 2,
     "activeCurrentItems": 2,
-    "slaEligibleActiveItems": 0,
+    "slaEligibleActiveItems": 2,
     "overdue": 2,
+    "overduePending": 1,
+    "overdueRejectedOpen": 1,
     "overdueRateOnActive": 100,
     "avgResponseTime": 14,
     "approvalRate": 25,

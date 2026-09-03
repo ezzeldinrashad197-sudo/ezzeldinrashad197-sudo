@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { SubmittalRow, ProjectSettings } from "./types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType } from "./utils/calculations";
+import { isEntityOverdue } from "./analytics/calculationFoundation";
 import { processNCRData } from "./analytics/ncr/ncrEngine";
 import { useLanguage } from "./utils/i18n";
 import {
@@ -535,7 +536,7 @@ export default function Presentation({
   const pendingItems = useMemo(() => {
     const seen = new Set<string>();
     return cumulativeData
-      .filter(d => (d.overdue || (d.delayDays && d.delayDays > 0)) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+      .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
       .filter(d => {
         const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
         if (seen.has(refKey)) return false;
@@ -556,8 +557,8 @@ export default function Presentation({
         return true;
       })
       .sort((a, b) => {
-        const aOverdue = a.overdue ? 1 : 0;
-        const bOverdue = b.overdue ? 1 : 0;
+        const aOverdue = isEntityOverdue(a) ? 1 : 0;
+        const bOverdue = isEntityOverdue(b) ? 1 : 0;
         if (bOverdue !== aOverdue) return bOverdue - aOverdue;
         return (b.delayDays || 0) - (a.delayDays || 0);
       });
@@ -1626,7 +1627,7 @@ export default function Presentation({
             element: renderContentSlide(
               <div className="flex flex-col h-full px-12 py-8">
                 <h3 className="font-bold mb-4 text-xl text-[#7a1515] flex items-center gap-2">
-                  <span>{language === 'ar' ? 'الوثائق المرفوضة (تتطلب اتخاذ إجراء فوري)' : 'Rejected Items (Action Required)'}</span>
+                  <span>{language === 'ar' ? 'الوثائق المرفوضة (إجراء المقاول - إعادة التقديم)' : 'Rejected Items (Contractor Action - Resubmission Required)'}</span>
                   <span className="text-xs font-semibold bg-red-100 text-[#7a1515] px-2.5 py-0.5 rounded">{language === 'ar' ? `صفحة ${pageIdx + 1} من ${rejectedPages.length}` : `Page ${pageIdx + 1} of ${rejectedPages.length}`}</span>
                 </h3>
                 <table className="w-full text-[11px] text-center border-collapse border border-[#cbd5e1]">
@@ -1646,13 +1647,13 @@ export default function Presentation({
                         <td className="border border-[#cbd5e1] px-2 font-bold text-[#7a1515]">{row.documentType}</td>
                         {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px]">{row.docNo || '-'}</td>}
                         {showTradeCol && <td className="border border-[#cbd5e1] px-2">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Pending Resubmission')}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Awaiting Resubmission')}</td>}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>,
-              language === 'ar' ? 'الوثائق المرفوضة المعلقة' : 'REJECTED ITEMS',
+              language === 'ar' ? 'الوثائق المرفوضة (إجراء المقاول)' : 'REJECTED ITEMS (CONTRACTOR ACTION)',
               `rejected-page-${pageIdx}`
             )
           });
@@ -1685,7 +1686,7 @@ export default function Presentation({
             element: renderContentSlide(
               <div className="flex flex-col h-full px-12 py-8">
                 <h3 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: primaryColor }}>
-                  <span>{language === 'ar' ? 'الوثائق المعلقة المتأخرة بالرد' : 'Pending Items (Overdue)'}</span>
+                  <span>{language === 'ar' ? 'الوثائق المعلقة المتأخرة بالرد (إجراء الاستشاري)' : 'Pending Items Overdue (Consultant Action)'}</span>
                   <span className="text-xs font-semibold bg-blue-100 px-2.5 py-0.5 rounded" style={{ color: primaryColor }}>{language === 'ar' ? `صفحة ${pageIdx + 1} من ${pendingPages.length}` : `Page ${pageIdx + 1} of ${pendingPages.length}`}</span>
                 </h3>
                 <table className="w-full text-[11px] text-center border-collapse border border-[#cbd5e1]">
@@ -1711,7 +1712,7 @@ export default function Presentation({
                   </tbody>
                 </table>
               </div>,
-              language === 'ar' ? 'الوثائق المعلقة المتأخرة بالرد' : 'PENDING ITEMS',
+              language === 'ar' ? 'الوثائق المعلقة (إجراء الاستشاري)' : 'PENDING ITEMS (CONSULTANT ACTION)',
               `pending-page-${pageIdx}`
             )
           });

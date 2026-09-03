@@ -8,9 +8,9 @@ import {
   getStatusCodeCategory, 
   getRevisionWeight, 
   resolveRowDiscipline,
-  runComprehensiveSequenceAudit,
-  isEntityOverdue
+  runComprehensiveSequenceAudit
 } from './utils/calculations';
+import { isEntityOverdue } from './analytics/calculationFoundation';
 import { useLanguage } from './utils/i18n';
 import {
   BarChart,
@@ -262,7 +262,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   // Top 5 Oldest Pending Overdue Items
   const topOverdueItems = useMemo(() => {
      return [...filteredData]
-        .filter(d => d.overdue && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+        .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
         .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
         .slice(0, 5);
   }, [filteredData]);
@@ -537,7 +537,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           if (!group) return;
           const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
           if (cat === 'PENDING' || cat === 'REJECTED_OPEN') {
-            if (group.latest.overdue || (group.latest.delayDays && group.latest.delayDays > 0)) {
+            if (isEntityOverdue(group.latest)) {
               const revs = group.all.map(x => x.rev || '00');
               extracted.push(mapToDrillDownItem(group.latest, true, revs));
             }

@@ -15,6 +15,7 @@
     "test:auth": "tsx scripts/test-authentication-regression.ts",
     "run-integration-tests": "tsx scripts/run-integration-tests.ts",
     "test:forensic": "tsx scripts/test-forensic-e2e-regression.ts",
+    "test:overdue": "tsx scripts/test-overdue-cross-layer-audit.ts",
     "generate-evidence-report": "tsx scripts/generate-evidence-report.ts",
     "verify-all": "npm run lint && npm run test && npm run test:auth && npm run test:forensic && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build",
     "remediation-audit": "node scripts/engineering-remediation-audit.mjs"

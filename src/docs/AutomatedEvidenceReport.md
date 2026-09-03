@@ -1,5 +1,5 @@
 # StructuSight Mathematical & Architecture Evidence Log
-*Generated on 2026-09-03T08:15:31.361Z via StructuSight Custom AST Compliance Engine*
+*Generated on 2026-09-03T08:50:27.467Z via StructuSight Custom AST Compliance Engine*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -12,37 +12,37 @@ To guarantee absolute reproducibility and transparency under independent review,
 
 | Metric | System Signature Value | Description |
 | :--- | :--- | :--- |
-| **Audit Timestamp** | `2026-09-03T08:15:31.361Z` | Universal Coordinated Time (UTC) of verification run |
+| **Audit Timestamp** | `2026-09-03T08:50:27.467Z` | Universal Coordinated Time (UTC) of verification run |
 | **Node.js Engine** | `v22.23.2` | Active Node runtime engine executing verification |
 | **TypeScript Version** | `v5.8.3` | Version of TypeScript Compiler API used for parsing |
 | **System Platform** | `linux (x64)` | Host kernel and architecture fingerprint |
 | **Build Project ID** | `b1fedb55-c17f-4221-b883-f1ee17f1362f` | Unique platform identifier of active workspace |
 | **Report Schema Version** | `1.4.0` | Schema specification version for exported JSON and reporting layers |
 | **Verification Engine** | `2.4.1-Prod` | Release build version of custom AST scanner |
-| **Total Pipeline Wall Time**| `**1.075 seconds**` | Combined execution duration of AST scanning and verification pipeline |
+| **Total Pipeline Wall Time**| `**1.077 seconds**` | Combined execution duration of AST scanning and verification pipeline |
 
 ### ⏱️ VERIFICATION RUNTIME METRIC SPLIT
 
 | Verification Stage | Processed Task | Measured Duration | Percentage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.061 seconds` | `98.7%` | COMPLETED ✅ |
+| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.062 seconds` | `98.6%` | COMPLETED ✅ |
 | **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.000 seconds` | `0.0%` | COMPLETED ✅ |
-| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.007 seconds` | `0.7%` | COMPLETED ✅ |
-| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.007 seconds` | `0.7%` | COMPLETED ✅ |
-| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.075 seconds**` | `100.0%` | **SUCCESS** ✅ |
+| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.007 seconds` | `0.6%` | COMPLETED ✅ |
+| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.008 seconds` | `0.7%` | COMPLETED ✅ |
+| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.077 seconds**` | `100.0%` | **SUCCESS** ✅ |
 
 ### 🔒 CRYPTOGRAPHIC REPOSITORY MANIFEST & FILE HASH SNAPSHOTS
 The table below lists the exact SHA-256 cryptographic hashes of the primary compliance-governed source and configuration files at the exact timestamp of this audit run. Any modification of these files post-verification will invalidate these signatures:
 
 | Core Verification File | Relative Workspace Path | SHA-256 Cryptographic Signature | File Size | Last Modified (UTC) | Scope Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `d81b5025f5d6248b94d5896c606b6432a2d30824a86301c2753fef129139db02` | `11.06 KB` | `2026-09-03T08:08:42.698Z` | `Included` |
+| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `d81b5025f5d6248b94d5896c606b6432a2d30824a86301c2753fef129139db02` | `11.06 KB` | `2026-09-03T08:45:49.438Z` | `Included` |
 | **run-tests.ts (Mathematical regression runner)** | `scripts/run-tests.ts` | `55829c3449c6f5747328a564a4f768e2aaef958946880822f0b02e1c14887319` | `39.74 KB` | `2026-09-03T08:08:42.746Z` | `Included` |
 | **generate-evidence-report.ts (This evidence generator)** | `scripts/generate-evidence-report.ts` | `b9c99cd63f40a8cd75ab88d0818f83c7c1468473def056f1c91d20177699bc39` | `54.82 KB` | `2026-09-03T08:08:42.728Z` | `Included` |
 | **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-03T08:08:42.747Z` | `Included` |
 | **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-03T08:08:42.786Z` | `Included` |
 | **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-03T08:08:42.689Z` | `Excluded (Config/Lockfile)` |
-| **package.json (Project manifest)** | `package.json` | `3155fadbb227a75daea77329c166ac4381e5074a57f6cdf23f37cb03a43bf4fa` | `2.35 KB` | `2026-09-03T08:08:42.756Z` | `Excluded (Config/Manifest)` |
+| **package.json (Project manifest)** | `package.json` | `7f33513b41f4a5a2f66b38090185286e123e81619f9851e8235b942829aac952` | `2.42 KB` | `2026-09-03T08:49:18.193Z` | `Excluded (Config/Manifest)` |
 | **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-03T08:08:42.783Z` | `Excluded (Config/Compiler)` |
 
 ---
@@ -204,10 +204,10 @@ EnterpriseDashboard.tsx ⟶ [types.ts, utils/enterpriseAnalyticsEngine.ts, analy
 LoginScreen.tsx ⟶ [Logo.tsx, firebase.ts, utils/i18n.tsx]
 NCRAnalytics.tsx ⟶ [types.ts, analytics/ncr/ncrEngine.ts, components/dashboard/ReusableComponents.tsx, utils/i18n.tsx]
 PortfolioCenter.tsx ⟶ [types.ts, firebase.ts]
-Presentation.tsx ⟶ [types.ts, utils/calculations.ts, analytics/ncr/ncrEngine.ts, utils/i18n.tsx, components/presentation/PresHelpers.tsx]
+Presentation.tsx ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, analytics/ncr/ncrEngine.ts, utils/i18n.tsx, components/presentation/PresHelpers.tsx]
 ProjectConfigModal.tsx ⟶ [types.ts]
 RFIAnalytics.tsx ⟶ [types.ts, analytics/revisionResolver.ts, analytics/analyticsCore.ts]
-ReportTable.tsx ⟶ [types.ts, utils/calculations.ts, utils/i18n.tsx, components/ExecutiveRegisterSummary.tsx, components/ActiveBacklogIntelligence.tsx, components/WorkloadRevisionIntelligence.tsx]
+ReportTable.tsx ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, utils/i18n.tsx, components/ExecutiveRegisterSummary.tsx, components/ActiveBacklogIntelligence.tsx, components/WorkloadRevisionIntelligence.tsx]
 SORAnalytics.tsx ⟶ [types.ts, analytics/sor/sorEngine.ts, components/dashboard/ReusableComponents.tsx, utils/i18n.tsx]
 SettingsCenter.tsx ⟶ [types.ts, ProjectConfigModal.tsx, firebase.ts, utils/i18n.tsx]
 analytics/__tests__/canonicalCalculations.test.ts ⟶ [analytics/calculationFoundation.ts, types.ts, utils/calculations.ts]
@@ -215,7 +215,7 @@ analytics/analyticsCore.ts ⟶ [types.ts, utils/statusMatrixEngine.ts, analytics
 analytics/analyticsService.ts ⟶ [analytics/models.ts]
 analytics/calculationFoundation.ts ⟶ [types.ts, analytics/analyticsCore.ts, analytics/revisionResolver.ts, analytics/statusResolver.ts, analytics/sequenceAuditEngine.ts]
 analytics/dataValidator.ts ⟶ [analytics/models.ts, utils/calculations.ts]
-analytics/exportEngine.ts ⟶ [types.ts, utils/calculations.ts, analytics/exportHelpers.ts]
+analytics/exportEngine.ts ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, analytics/exportHelpers.ts]
 analytics/exportHelpers.ts ⟶ [types.ts, utils/calculations.ts, analytics/ncr/ncrEngine.ts]
 analytics/exportTelemetryTestSuite.ts ⟶ [analytics/exportHelpers.ts, types.ts]
 analytics/governance/canonicalEngineAdapter.ts ⟶ [types.ts, analytics/calculationFoundation.ts, analytics/governance/validationFramework.ts, analytics/governance/auditFramework.ts, analytics/governance/businessRuleRegistry.ts, analytics/governance/formulaRegistry.ts]
@@ -381,6 +381,7 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/PortfolioCenter.tsx` | `src/firebase.ts` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/Presentation.tsx` | `src/types.ts` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/Presentation.tsx` | `src/utils/calculations.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
+| `src/Presentation.tsx` | `src/analytics/calculationFoundation.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
 | `src/Presentation.tsx` | `src/analytics/ncr/ncrEngine.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
 | `src/Presentation.tsx` | `src/utils/i18n.tsx` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/Presentation.tsx` | `src/components/presentation/PresHelpers.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
@@ -390,6 +391,7 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/RFIAnalytics.tsx` | `src/analytics/analyticsCore.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/types.ts` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/utils/calculations.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
+| `src/ReportTable.tsx` | `src/analytics/calculationFoundation.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/utils/i18n.tsx` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/components/ExecutiveRegisterSummary.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/components/ActiveBacklogIntelligence.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
@@ -419,6 +421,7 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/analytics/dataValidator.ts` | `src/utils/calculations.ts` | Tier `2` | Tier `1` | COMPLIANT ✅ |
 | `src/analytics/exportEngine.ts` | `src/types.ts` | Tier `2` | Tier `0` | COMPLIANT ✅ |
 | `src/analytics/exportEngine.ts` | `src/utils/calculations.ts` | Tier `2` | Tier `1` | COMPLIANT ✅ |
+| `src/analytics/exportEngine.ts` | `src/analytics/calculationFoundation.ts` | Tier `2` | Tier `2` | COMPLIANT ✅ |
 | `src/analytics/exportEngine.ts` | `src/analytics/exportHelpers.ts` | Tier `2` | Tier `2` | COMPLIANT ✅ |
 | `src/analytics/exportHelpers.ts` | `src/types.ts` | Tier `2` | Tier `0` | COMPLIANT ✅ |
 | `src/analytics/exportHelpers.ts` | `src/utils/calculations.ts` | Tier `2` | Tier `1` | COMPLIANT ✅ |
@@ -472,9 +475,6 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/components/CalculationAuditCenter.tsx` | `src/types.ts` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/components/CalculationAuditCenter.tsx` | `src/utils/calculations.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
 | `src/components/CalculationAuditCenter.tsx` | `src/analytics/analyticsCore.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
-| `src/components/CalculationAuditCenter.tsx` | `src/analytics/revisionResolver.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
-| `src/components/CalculationAuditCenter.tsx` | `src/components/AuditIntegrityCenter.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
-| `src/components/CommercialValidationGateCenter.tsx` | `src/utils/universalRegisterSchema.ts` | Tier `3` | Tier `3` | COMPLIANT ✅ |
 *Showing first 150 compliance checks...*
 
 ---
