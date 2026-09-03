@@ -8,7 +8,8 @@ import {
   getStatusCodeCategory, 
   getRevisionWeight, 
   resolveRowDiscipline,
-  runComprehensiveSequenceAudit
+  runComprehensiveSequenceAudit,
+  isEntityOverdue
 } from './utils/calculations';
 import { useLanguage } from './utils/i18n';
 import {
@@ -315,6 +316,13 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
   // Overdue Active split (Rejected Open vs Pending Review)
   const activeOverdueCounts = useMemo(() => {
+    if (globalStats.overduePending !== undefined && globalStats.overdueRejectedOpen !== undefined) {
+      return {
+        rejectedOpen: globalStats.overdueRejectedOpen,
+        pending: globalStats.overduePending,
+        total: globalStats.overdue
+      };
+    }
     const rows = filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
     const baseForRevisions = rawDataset && rawDataset.length > 0 ? rawDataset : data;
     const revisionMap = processRevisionEngine(baseForRevisions);
@@ -327,7 +335,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       const group = revisionMap.get(key);
       if (!group) return;
       const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
-      const isOverdue = Boolean(group.latest.overdue || (group.latest.delayDays && group.latest.delayDays > 0));
+      const isOverdue = isEntityOverdue(group.latest);
       if (isOverdue) {
         if (cat === 'REJECTED_OPEN') {
           overdueRejectedOpen++;
@@ -342,7 +350,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       pending: overduePending,
       total: globalStats.overdue
     };
-  }, [filteredData, rawDataset, data, globalStats.overdue]);
+  }, [filteredData, rawDataset, data, globalStats.overdue, globalStats.overduePending, globalStats.overdueRejectedOpen]);
 
   // Register Compliance Health Rating Resolver
   const getRegisterHealth = (stats: KPIStats) => {

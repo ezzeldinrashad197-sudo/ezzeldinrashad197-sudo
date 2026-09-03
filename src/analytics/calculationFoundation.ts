@@ -204,6 +204,32 @@ export function processRevisionEngine(rows: SubmittalRow[], asOfDate?: string): 
 }
 
 /**
+ * Canonical helper to determine whether an engineering submittal row is overdue according to SLA.
+ */
+export const isEntityOverdue = (latest?: SubmittalRow | null, cutoffTime?: number): boolean => {
+  if (!latest) return false;
+  if (latest.overdue !== undefined) {
+    return Boolean(latest.overdue);
+  }
+  const nowTime = cutoffTime && cutoffTime > 0 ? cutoffTime : Date.now();
+  if (latest.dueDate) {
+    const dueTime = parseDateTimestamp(latest.dueDate);
+    if (dueTime > 0 && nowTime > dueTime) {
+      return true;
+    }
+  } else if (latest.submissionDate) {
+    const subTime = parseDateTimestamp(latest.submissionDate);
+    if (subTime > 0) {
+      const diffDays = (nowTime - subTime) / (1000 * 3600 * 24);
+      if (diffDays > 14) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
  * 4. Master Canonical KPI Calculation Engine
  * Implements the Dual Dimension:
  * Dimension 1 (Workload / Events): Count of physical rows
@@ -314,7 +340,13 @@ export function calculateCanonicalKPIs(
       rejectionEventsClosed: 0,
       resolvedRejections: 0,
       rejectionResolutionRate: 0,
+      activeItems: 0,
+      activeCurrentItems: 0,
+      slaEligibleActiveItems: 0,
       overdue: 0,
+      overduePending: 0,
+      overdueRejectedOpen: 0,
+      overdueRateOnActive: 0,
       avgResponseTime: 0,
       approvalRate: 0,
       rejectionOpenRate: 0,
@@ -386,6 +418,8 @@ export function calculateCanonicalKPIs(
   let resolvedRejections = 0;
   let totalEntitiesWithRejectionHistory = 0;
   let overdueCurrent = 0;
+  let overduePendingCurrent = 0;
+  let overdueRejectedOpenCurrent = 0;
   let slaEligibleActiveCount = 0;
   let totalResponseDays = 0;
   let responseCount = 0;
@@ -429,27 +463,17 @@ export function calculateCanonicalKPIs(
     // SLA & Overdue: Only evaluate current active items (Pending or Rejected Open)
     const isActive = cat === 'PENDING' || cat === 'REJECTED_OPEN';
     if (isActive) {
-      const nowTime = cutoffTime > 0 ? cutoffTime : Date.now();
-      let isItemOverdue = false;
-      if (latest.overdue !== undefined) {
-        isItemOverdue = Boolean(latest.overdue);
-      } else if (latest.dueDate) {
+      if (latest.dueDate) {
         slaEligibleActiveCount++;
-        const dueTime = parseDateTimestamp(latest.dueDate);
-        if (dueTime > 0 && nowTime > dueTime) {
-          isItemOverdue = true;
-        }
-      } else if (latest.submissionDate) {
-        const subTime = parseDateTimestamp(latest.submissionDate);
-        if (subTime > 0) {
-          const diffDays = (nowTime - subTime) / (1000 * 3600 * 24);
-          if (diffDays > 14) {
-            isItemOverdue = true;
-          }
-        }
       }
+      const isItemOverdue = isEntityOverdue(latest, cutoffTime);
       if (isItemOverdue) {
         overdueCurrent++;
+        if (cat === 'REJECTED_OPEN') {
+          overdueRejectedOpenCurrent++;
+        } else {
+          overduePendingCurrent++;
+        }
       }
     }
 
@@ -468,6 +492,8 @@ export function calculateCanonicalKPIs(
   const totalUniqueDrawings = targetEntityKeys.size;
   const totalEligible = approvedCurrent + rejectedOpenCurrent + rejectedClosedCurrent + finalClosedCurrent + pendingCurrent + unclassifiedCurrent;
   const activeCurrentItems = pendingCurrent + rejectedOpenCurrent;
+  const overduePendingFinal = Math.min(overduePendingCurrent, pendingCurrent);
+  const overdueRejectedOpenFinal = Math.min(overdueRejectedOpenCurrent, rejectedOpenCurrent);
   const overdueFinal = Math.min(overdueCurrent, activeCurrentItems);
   const overdueRateOnActive = activeCurrentItems > 0 ? Number(((overdueFinal / activeCurrentItems) * 100).toFixed(1)) : 0;
 
@@ -535,6 +561,8 @@ export function calculateCanonicalKPIs(
     activeCurrentItems,
     slaEligibleActiveItems: slaEligibleActiveCount,
     overdue: overdueFinal,
+    overduePending: overduePendingFinal,
+    overdueRejectedOpen: overdueRejectedOpenFinal,
     overdueRateOnActive,
     avgResponseTime,
     approvalRate,

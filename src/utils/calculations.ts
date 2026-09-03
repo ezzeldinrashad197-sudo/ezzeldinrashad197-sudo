@@ -15,9 +15,10 @@ import {
   resolveCanonicalTrade,
   auditRegisterSequence,
   runComprehensiveSequenceAudit,
-  generateForensicLifecycleLedger
+  generateForensicLifecycleLedger,
+  isEntityOverdue
 } from "../analytics/calculationFoundation";
-export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, processRevisionEngine, resolveRowDiscipline, resolveCanonicalTrade, auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger };
+export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, processRevisionEngine, resolveRowDiscipline, resolveCanonicalTrade, auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger, isEntityOverdue };
 import { compareRevisions } from "../analytics/analyticsCore";
 import { compareRevisionsCanonical, getRevisionWeight } from "../analytics/revisionResolver";
 import { mapDocumentToWorkflow } from "./workflowMapping";

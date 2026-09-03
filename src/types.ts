@@ -172,6 +172,8 @@ export interface KPIStats {
   activeCurrentItems?: number;        // Pending + Rejected Open (Alias)
   slaEligibleActiveItems?: number;    // Active items with defined SLA
   overdue: number;                    // Current Active items > SLA
+  overduePending?: number;            // Overdue items among Pending Review
+  overdueRejectedOpen?: number;       // Overdue items among Rejected Open
   overdueRateOnActive?: number;       // (Overdue / Active Current Items) * 100
   avgResponseTime: number;            // Days
 

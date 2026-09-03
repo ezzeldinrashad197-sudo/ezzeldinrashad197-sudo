@@ -706,9 +706,10 @@ export const generatePptxReport = async (
                         chartColors: colors,
                         showValue: false,
                         showPercent: true
-                                        });
+                    });
                 }
             });
+        };
 
         // Determine which period slides to generate based on requested mode
         if (mode === 'monthly') {
@@ -794,7 +795,7 @@ export const generatePptxReport = async (
                     ];
                     if (showRefCol) bodyRow.push({ text: String(row.docNo || "-"), options: { fill: fillBg, align: "center" } });
                     if (showTradeCol) bodyRow.push({ text: String(row.trade || "-"), options: { fill: fillBg, align: "center" } });
-                    if (showRemarksCol) bodyRow.push({ text: isArabic ? `متأخر منذ ${row.delayDays} يوم` : `Overdue ${row.delayDays} days`, options: { fill: fillBg, align: "center", color: "C00000", bold: true } });
+                    if (showRemarksCol) bodyRow.push({ text: row.delayDays ? (isArabic ? `متأخر منذ ${row.delayDays} يوم` : `Overdue ${row.delayDays} days`) : (isArabic ? "بانتظار إعادة التقديم" : "Pending Resubmission"), options: { fill: fillBg, align: "center", color: "C00000", bold: true } });
                     tableDataRows.push(bodyRow);
                 });
 

@@ -533,11 +533,34 @@ export default function Presentation({
 
   // Appendices Data Compilation
   const pendingItems = useMemo(() => {
-    return cumulativeData.filter(d => d.overdue && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR')).sort((a, b) => b.delayDays - a.delayDays);
+    const seen = new Set<string>();
+    return cumulativeData
+      .filter(d => (d.overdue || (d.delayDays && d.delayDays > 0)) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+      .filter(d => {
+        const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
+        if (seen.has(refKey)) return false;
+        seen.add(refKey);
+        return true;
+      })
+      .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
   }, [cumulativeData]);
 
   const rejectedItems = useMemo(() => {
-    return cumulativeData.filter(d => d.overdue && d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR')).sort((a, b) => b.delayDays - a.delayDays);
+    const seen = new Set<string>();
+    return cumulativeData
+      .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+      .filter(d => {
+        const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
+        if (seen.has(refKey)) return false;
+        seen.add(refKey);
+        return true;
+      })
+      .sort((a, b) => {
+        const aOverdue = a.overdue ? 1 : 0;
+        const bOverdue = b.overdue ? 1 : 0;
+        if (bOverdue !== aOverdue) return bOverdue - aOverdue;
+        return (b.delayDays || 0) - (a.delayDays || 0);
+      });
   }, [cumulativeData]);
 
   const pendingPages = useMemo(() => {
@@ -1623,7 +1646,7 @@ export default function Presentation({
                         <td className="border border-[#cbd5e1] px-2 font-bold text-[#7a1515]">{row.documentType}</td>
                         {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px]">{row.docNo || '-'}</td>}
                         {showTradeCol && <td className="border border-[#cbd5e1] px-2">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Pending Resubmission')}</td>}
                       </tr>
                     ))}
                   </tbody>
