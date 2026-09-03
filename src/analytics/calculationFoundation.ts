@@ -208,10 +208,9 @@ export function processRevisionEngine(rows: SubmittalRow[], asOfDate?: string): 
  */
 export const isEntityOverdue = (latest?: SubmittalRow | null, cutoffTime?: number): boolean => {
   if (!latest) return false;
-  if (latest.overdue !== undefined) {
-    return Boolean(latest.overdue);
-  }
+
   const nowTime = cutoffTime && cutoffTime > 0 ? cutoffTime : Date.now();
+
   if (latest.dueDate) {
     const dueTime = parseDateTimestamp(latest.dueDate);
     if (dueTime > 0 && nowTime > dueTime) {
@@ -226,6 +225,7 @@ export const isEntityOverdue = (latest?: SubmittalRow | null, cutoffTime?: numbe
       }
     }
   }
+
   return false;
 };
 
