@@ -587,7 +587,7 @@ const rowContextDiscipline =
               sourceFile: fileName.replace(/\.[^/.]+$/, ""),
               rawSourceIdentity: compIdent?.rawSourceIdentity || fileName,
               contextDiscipline: rowContextDiscipline,
-              compositeIdentity: compIdent,,
+              compositeIdentity: compIdent,
               documentType: "", // Normalized later
               trade: "", // Normalized later
               workflowStage: "", // Normalized later
