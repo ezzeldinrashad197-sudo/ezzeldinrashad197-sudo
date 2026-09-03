@@ -25,7 +25,7 @@ const createRow = (overrides: Partial<SubmittalRow>): SubmittalRow => ({
   isLatestRev: overrides.isLatestRev !== undefined ? overrides.isLatestRev : true,
   isRev0: overrides.isRev0 !== undefined ? overrides.isRev0 : true,
   delayDays: overrides.delayDays !== undefined ? overrides.delayDays : 0,
-  overdue: overrides.overdue !== undefined ? overrides.overdue : false,
+  overdue: undefined as unknown as boolean,
   docNo: overrides.docNo || 'DOC-01',
   rev: overrides.rev || '00',
   sheetNo: overrides.sheetNo || '',
@@ -61,8 +61,7 @@ for (let i = 1; i <= 35; i++) {
     discipline: 'Structural',
     trade: 'STR',
     delayDays: 45,
-    overdue: true,
-    remarks: 'Requires contractor revision'
+remarks: 'Requires contractor revision'
   }));
 }
 
@@ -121,8 +120,7 @@ for (let i = 1; i <= 15; i++) {
     discipline: 'Architectural',
     trade: 'ARCH',
     delayDays: 0,
-    overdue: false,
-    remarks: 'Within SLA'
+remarks: 'Within SLA'
   }));
 }
 
