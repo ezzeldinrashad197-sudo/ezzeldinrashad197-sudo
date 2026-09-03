@@ -124,7 +124,6 @@ const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
   }, [safeData, monthlyStart, projectId, projectInfo]);
 
   // Extract month year string for headers
-  const targetDateStr = monthlyStart ? new Date(monthlyStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Apr 2026';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
