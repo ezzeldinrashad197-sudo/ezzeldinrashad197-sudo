@@ -1,31 +1,8 @@
 import React, { useMemo } from 'react';
 import { SubmittalRow, ProjectSettings } from './types';
 import { getRevisionWeight } from './analytics/revisionResolver';
-import { getNormalizedStatusCore, compareRevisions, getLatestRevision } from './analytics/analyticsCore';
-
-const isYes = (v: unknown) => typeof v === 'string' ? v.toUpperCase() === 'YES' || v.toUpperCase() === 'Y' : !!v;
-
-const getLatestRev = (rows: SubmittalRow[], upToDate?: Date): SubmittalRow | undefined => {
-   if (!rows.length) return undefined;
-   let validRows = [...rows];
-   if (upToDate) {
-     const endOfMonth = new Date(upToDate.getFullYear(), upToDate.getMonth() + 1, 0, 23, 59, 59);
-     validRows = validRows.filter(r => {
-        const dStr = r.submissionDate || r.responseDate;
-        if (!dStr) return true;
-        const d = new Date(dStr);
-        return d <= endOfMonth;
-     });
-   }
-   if (!validRows.length) return undefined;
-
-   const explicitLatest = validRows.find(r => isYes(r.isLatestRev));
-   if (explicitLatest && !upToDate) return explicitLatest;
-
-   validRows.sort((a, b) => compareRevisions(a.rev, b.rev));
-   return validRows[validRows.length - 1];
-};
-
+import { getNormalizedStatusCore } from './analytics/analyticsCore';
+import { resolveCanonicalTrade } from './analytics/calculationFoundation';
 export default function RFIAnalytics(props: { data: SubmittalRow[], monthlyStart?: string, monthlyEnd?: string, projectInfo?: ProjectSettings | null }) {
   const { data, monthlyStart, projectInfo } = props;
   const safeData = Array.isArray(data) ? data : [];
