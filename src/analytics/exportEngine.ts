@@ -665,16 +665,24 @@ export const generatePptxReport = async (
                     colors = ["70AD47", "C00000", "FFC000"];
                 }
 
-                const pieTotal = pieDataValues.reduce((acc, curr) => acc + curr, 0);
+                                const pieTotal = pieDataValues.reduce((acc, curr) => acc + curr, 0);
                 const isAllZero = (pieTotal === 0);
-                
-                let finalPieData = [
-                    { name: "Status", labels: pieLabelsList, values: pieDataValues }
-                ];
 
+                // FIX (2026-09-03): previously faked all-zero data as [1,1,1,...] so the chart
+                // library had something to render — this drew a convincing, evenly-split pie
+                // chart with real-looking percentages (e.g. 33%/33%/33%) for disciplines that
+                // have ZERO actual records, directly contradicting the data table on the
+                // preceding slide. A discipline with no data now gets a "No Data" label instead
+                // of a fabricated chart.
                 if (isAllZero) {
-                    finalPieData[0].values = finalPieData[0].values.map(() => 1);
+                    slideB.addText("No Data", {
+                        x: posX, y: posY + 0.25, w: 2.6, h: 1.45,
+                        fontSize: 11, color: "999999", align: "center", valign: "middle", italic: true
+                    });
                 } else {
+                    let finalPieData = [
+                        { name: "Status", labels: pieLabelsList, values: pieDataValues }
+                    ];
                     const filteredLabels: string[] = [];
                     const filteredValues: number[] = [];
                     const filteredColors: string[] = [];
@@ -688,20 +696,18 @@ export const generatePptxReport = async (
                     finalPieData[0].values = filteredValues;
                     finalPieData[0].labels = filteredLabels;
                     colors = filteredColors;
-                }
 
-                // Native pie chart integration
-                slideB.addChart(pres.ChartType.pie, finalPieData, {
-                    x: posX, y: posY + 0.25, w: 2.6, h: 1.45,
-                    showLegend: true,
-                    legendPos: "b",
-                    legendFontSize: 7,
-                    chartColors: colors,
-                    showValue: false,
-                    showPercent: !isAllZero
-                });
-            });
-        };
+                    // Native pie chart integration
+                    slideB.addChart(pres.ChartType.pie, finalPieData, {
+                        x: posX, y: posY + 0.25, w: 2.6, h: 1.45,
+                        showLegend: true,
+                        legendPos: "b",
+                        legendFontSize: 7,
+                        chartColors: colors,
+                        showValue: false,
+                        showPercent: true
+                    });
+                }
 
         // Determine which period slides to generate based on requested mode
         if (mode === 'monthly') {
