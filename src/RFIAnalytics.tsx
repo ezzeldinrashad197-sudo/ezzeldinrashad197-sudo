@@ -3,6 +3,37 @@ import { SubmittalRow, ProjectSettings } from './types';
 import { getRevisionWeight } from './analytics/revisionResolver';
 import { getNormalizedStatusCore } from './analytics/analyticsCore';
 import { resolveCanonicalTrade } from './analytics/calculationFoundation';
+const parseRfiDate = (value?: string): Date | null => {
+  if (!value) return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  // Canonical Excel DD/MM/YYYY or DD-MM-YYYY
+  const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+  if (match) {
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+    ) {
+      return parsed;
+    }
+
+    return null;
+  }
+
+  const parsed = new Date(raw);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 export default function RFIAnalytics(props: { data: SubmittalRow[], monthlyStart?: string, monthlyEnd?: string, projectInfo?: ProjectSettings | null }) {
   const { data, monthlyStart, projectInfo } = props;
   const safeData = Array.isArray(data) ? data : [];
@@ -10,51 +41,56 @@ export default function RFIAnalytics(props: { data: SubmittalRow[], monthlyStart
 
   const { cumulativeStats, monthlyStats, cumTotals, monTotals } = useMemo(() => {
     // Filter out only RFI objects
-    const rfiData = safeData.filter((d: SubmittalRow) => {
-        const docT = (d.documentType || '').toUpperCase();
-        const logT = (d.logType || '').toUpperCase();
-        const docNo = (d.docNo || '').toUpperCase();
-        return docT.includes('RFI') || logT.includes('RFI') || docNo.includes('RFI');
-    });
+    const rfiData = safeData.filter((row: SubmittalRow) => {
+  const family = String(row.workflowFamily || '').trim().toUpperCase();
+  const documentType = String(row.documentType || '').trim().toUpperCase();
+  const logType = String(row.logType || '').trim().toUpperCase();
 
-    const targetMonth = monthlyStart ? new Date(monthlyStart) : new Date(2026, 4, 1);
-    const tMonthStr = `${targetMonth.getFullYear()}-${targetMonth.getMonth()}`;
+  // Primary SSOT classification
+  if (family === 'RFI') {
+    return true;
+  }
+
+  // Controlled legacy fallback only
+  return documentType === 'RFI' ||
+         logType === 'RFI' ||
+         documentType.startsWith('RFI-') ||
+         logType.startsWith('RFI-');
+});
+
+    const targetMonth = parseRfiDate(monthlyStart) ?? new Date(2026, 4, 1);
+
+const targetYear = targetMonth.getFullYear();
+const targetMonthIndex = targetMonth.getMonth();
 
     const buildStats = (isMonthly: boolean) => {
         const m = new Map<string, Record<string, any>>();
         rfiData.forEach(row => {
             if (isMonthly) {
                const sd = row.submissionDate || row.responseDate;
-               if (!sd) return;
-               const dDate = new Date(sd);
-               if (`${dDate.getFullYear()}-${dDate.getMonth()}` !== tMonthStr) {
-                   return; // skip if latest action was not in this month
-               }
+const dDate = parseRfiDate(sd);
+
+if (!dDate) {
+  return;
+}
+
+if (
+  dDate.getFullYear() !== targetYear ||
+  dDate.getMonth() !== targetMonthIndex
+) {
+  return;
+}
             }
 
-            let disc = (row.discipline || row.trade || 'General').toUpperCase().trim();
-            if (disc === 'MECHANICAL') disc = 'MECH';
-            if (disc === 'ELECTRICAL') disc = 'ELEC';
-            if (disc === 'STRUCTURAL') disc = 'STR';
-            if (disc === 'ARCHITECTURAL') disc = 'ARCH';
-            if (disc === 'INFRASTRUCTURE') disc = 'INFR';
-            if (disc === 'LANDSCAPE') disc = 'LAND';
-            
-            if (!disc) disc = 'GENERAL';
-            // Capitalize properly for display to match screenshot (Arch, Mech, Elec, etc.)
-            let displayDisc = disc;
-            if (disc === 'STR') displayDisc = 'STR';
-            if (disc === 'ARCH') displayDisc = 'Arch';
-            if (disc === 'MECH') displayDisc = 'Mech';
-            if (disc === 'ELEC') displayDisc = 'Elec';
-            if (disc === 'INFR') displayDisc = 'Infra';
-            if (disc === 'LAND') displayDisc = 'Landscape';
+            const canonicalTrade = resolveCanonicalTrade(row);
+
+const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
 
             if (!m.has(displayDisc)) m.set(displayDisc, { items: displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
             const st = m.get(displayDisc)!;
 
             st.total++;
-            const revVal = (row.rev || '').trim().toUpperCase();
+            const revVal = String(row.rev ?? '').trim().toUpperCase();
             const w = getRevisionWeight(revVal);
             const isRev0 = row.isRev0 ?? (w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC');
             if (isRev0) st.rev00++; else st.furtherRev++;
@@ -85,7 +121,7 @@ export default function RFIAnalytics(props: { data: SubmittalRow[], monthlyStart
        monthlyStats: buildStats(true).data,
        monTotals: buildStats(true).total
     };
-  }, [safeData, monthlyStart]);
+  }, [safeData, monthlyStart, projectId, projectInfo]);
 
   // Extract month year string for headers
   const targetDateStr = monthlyStart ? new Date(monthlyStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Apr 2026';
