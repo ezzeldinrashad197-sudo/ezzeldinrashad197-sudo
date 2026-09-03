@@ -706,8 +706,9 @@ export const generatePptxReport = async (
                         chartColors: colors,
                         showValue: false,
                         showPercent: true
-                    });
+                                        });
                 }
+            });
 
         // Determine which period slides to generate based on requested mode
         if (mode === 'monthly') {
