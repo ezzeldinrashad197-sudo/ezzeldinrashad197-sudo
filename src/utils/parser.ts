@@ -560,15 +560,34 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
                 : rawStatus;
             }
 
-            const finalDisciplineVal = normalizeDiscipline(disciplineVal, activeProjectId);
+            const isRfiWorksheet = detectedType === 'RFI';
+
+const finalDisciplineVal = normalizeDiscipline(
+  disciplineVal,
+  activeProjectId
+);
+
+// RFI Mixed-Discipline Protection:
+// CompositeIdentity represents worksheet/file envelope only.
+// Explicit row discipline MUST remain authoritative when present.
+const rowHasExplicitDiscipline =
+  isRfiWorksheet &&
+  !!rawDiscipline &&
+  rawDiscipline.length > 0 &&
+  !["YES", "NO", "N/A", "-", "NONE", "NULL", "GEN", "GENERAL"].includes(rawDiscipline);
+
+const rowContextDiscipline =
+  isRfiWorksheet && rowHasExplicitDiscipline
+    ? finalDisciplineVal
+    : compIdent?.discipline;
 
             parsed.push({
               id: `${sheetName}-${idx}`,
               logType: compIdent?.compositeCode || (detectedType !== 'UNKNOWN' ? detectedType : sheetName.trim().toUpperCase()),
               sourceFile: fileName.replace(/\.[^/.]+$/, ""),
               rawSourceIdentity: compIdent?.rawSourceIdentity || fileName,
-              contextDiscipline: compIdent?.discipline,
-              compositeIdentity: compIdent,
+              contextDiscipline: rowContextDiscipline,
+              compositeIdentity: compIdent,,
               documentType: "", // Normalized later
               trade: "", // Normalized later
               workflowStage: "", // Normalized later
