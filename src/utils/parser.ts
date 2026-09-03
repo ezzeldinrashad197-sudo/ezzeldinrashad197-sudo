@@ -500,25 +500,39 @@ export const parseExcelWorkbook = (wb: XLSX.WorkBook, fileName: string): Submitt
               fileName.toLowerCase().includes("safety");
 
             const compDisc = compIdent?.discipline;
-            const isCompDiscValid = compDisc && compDisc !== 'UNCLASSIFIED';
+const isCompDiscValid =
+  !!compDisc && compDisc !== 'UNCLASSIFIED';
 
-            // ARCHITECTURE FIX (2026-08-30): register/sheet identity (compIdent) is now
-            // ALWAYS authoritative for grouping when valid — confirmed by domain owner.
-            // Applies uniformly to WIR, MAR, DOC, SDW, NCR, RFI, SOR (same composite-match
-            // regex covers all of them). The row's own Discipline/Trade column no longer
-            // fragments a register's rows into different discipline groups; it's preserved
-            // separately for display via rawSourceIdentity/contextDiscipline, but never
-            // overrides classification.
-            if (isCompDiscValid) {
-              disciplineVal = compDisc;
-            } else if (
-              rawDiscipline &&
-              rawDiscipline.length > 0
-              && !["YES", "NO", "N/A", "-", "NONE", "NULL"].includes(rawDiscipline)
-            ) {
-              const extracted = extractDiscipline(rawDiscipline);
-              disciplineVal = extracted || rawDiscipline;
-            } else {
+const isRfiWorksheet = detectedType === 'RFI';
+
+const rowHasExplicitDiscipline =
+  !!rawDiscipline &&
+  rawDiscipline.length > 0 &&
+  !["YES", "NO", "N/A", "-", "NONE", "NULL", "GEN", "GENERAL"].includes(
+    rawDiscipline
+  );
+
+// RFI DISCIPLINE PRECEDENCE:
+// 1. Explicit row-level discipline
+// 2. Normalized row-level discipline
+// 3. Composite Identity discipline as fallback
+//
+// CompositeIdentity is the worksheet/file envelope and must NOT override
+// an explicit RFI row discipline. This preserves mixed-discipline RFI rows
+// at Physical Row Grain without changing the Certified Calculation Engine.
+if (isRfiWorksheet && rowHasExplicitDiscipline) {
+  const extracted = extractDiscipline(rawDiscipline);
+  disciplineVal = extracted || rawDiscipline;
+} else if (isRfiWorksheet && isCompDiscValid) {
+  disciplineVal = compDisc;
+} else if (rowHasExplicitDiscipline) {
+  const extracted = extractDiscipline(rawDiscipline);
+  disciplineVal = extracted || rawDiscipline;
+} else if (isCompDiscValid) {
+  disciplineVal = compDisc;
+} else {
+  ...
+}
               const refString = (
                 colNcrRef >= 0
                   ? String(r[colNcrRef])
@@ -568,14 +582,8 @@ const finalDisciplineVal = normalizeDiscipline(
 );
 
 // RFI Mixed-Discipline Protection:
-// CompositeIdentity represents worksheet/file envelope only.
-// Explicit row discipline MUST remain authoritative when present.
-const rowHasExplicitDiscipline =
-  isRfiWorksheet &&
-  !!rawDiscipline &&
-  rawDiscipline.length > 0 &&
-  !["YES", "NO", "N/A", "-", "NONE", "NULL", "GEN", "GENERAL"].includes(rawDiscipline);
-
+// For RFI, finalDisciplineVal is already resolved using:
+// Row Discipline -> normalized Row Discipline -> Composite Identity fallback.
 const rowContextDiscipline =
   isRfiWorksheet && rowHasExplicitDiscipline
     ? finalDisciplineVal
