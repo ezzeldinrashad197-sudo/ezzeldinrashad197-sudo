@@ -707,7 +707,7 @@ export const generatePptxReport = async (
                         chartColors: colors,
                         showValue: false,
                         showPercent: true
-                    });
+                  });
                 }
             });
         };
