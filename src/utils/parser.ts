@@ -1,3 +1,4 @@
+```typescript
 import * as XLSX from "xlsx";
 import { SubmittalRow } from "../types";
 import { normalizeData, getRevisionWeight } from "./calculations";
@@ -256,6 +257,49 @@ export const parseExcelWorkbook = (
         );
       });
     };
+
+    /*
+     * ============================================================
+     * DOCUMENT IDENTITY SOURCE COLUMNS
+     * ============================================================
+     *
+     * IMPORTANT:
+     * SUB Ref. and DWG No. are independent identity components
+     * for engineering/shop-drawing registers.
+     *
+     * Canonical identity downstream:
+     *
+     *   SUB Ref + DWG No.
+     *
+     * NOT:
+     *
+     *   SUB Ref only
+     *
+     * The fields are intentionally extracted separately and preserved
+     * on SubmittalRow for the certified calculation engine.
+     * ============================================================
+     */
+
+    const colSubmissionRef = getColIdx([
+      "submission ref.",
+      "submission ref",
+      "submission reference",
+      "submittal ref.",
+      "submittal ref",
+      "submittal reference",
+      "sub ref.",
+      "sub ref",
+      "sub reference",
+    ]);
+
+    const colDrawingNo = getColIdx([
+      "dwg no.",
+      "dwg no",
+      "dwg number",
+      "drawing no.",
+      "drawing no",
+      "drawing number",
+    ]);
 
     const colDocNo = getColIdx([
       "document no",
@@ -1062,6 +1106,36 @@ export const parseExcelWorkbook = (
           ? finalDisciplineVal
           : compIdent?.discipline;
 
+      /*
+       * ============================================================
+       * EXPLICIT DOCUMENT IDENTITY VALUES
+       * ============================================================
+       *
+       * Preserve SUB Ref. and DWG No. independently.
+       *
+       * For backward compatibility:
+       *   docNo continues to use the existing document-number logic.
+       *
+       * If a dedicated SUB Ref. column exists, it is used as the
+       * submissionRef. Otherwise we fall back to the existing docNo
+       * value where appropriate.
+       *
+       * DWG No. is never merged into submissionRef.
+       * ============================================================
+       */
+
+      const parsedSubmissionRef =
+        colSubmissionRef >= 0
+          ? String(r[colSubmissionRef] || "").trim()
+          : colDocNo >= 0
+            ? String(r[colDocNo] || "").trim()
+            : "";
+
+      const parsedDrawingNo =
+        colDrawingNo >= 0
+          ? String(r[colDrawingNo] || "").trim()
+          : "";
+
       parsed.push({
         id: `${sheetName}-${idx}`,
 
@@ -1111,10 +1185,13 @@ export const parseExcelWorkbook = (
         delayDays: 0,
         overdue: false,
 
+        /*
+         * Existing compatibility field.
+         */
         docNo:
           colDocNo >= 0
             ? String(r[colDocNo] || "").trim()
-            : "",
+            : parsedSubmissionRef,
 
         rev:
           colRev >= 0
@@ -1125,6 +1202,24 @@ export const parseExcelWorkbook = (
           colSheet >= 0
             ? String(r[colSheet] || "").trim()
             : "",
+
+        /*
+         * ========================================================
+         * NEW EXPLICIT IDENTITY FIELDS
+         * ========================================================
+         *
+         * These fields are consumed by the canonical identity logic:
+         *
+         *   SUB Ref + DWG No.
+         *
+         * They intentionally remain independent.
+         * ========================================================
+         */
+        submissionRef:
+          parsedSubmissionRef || undefined,
+
+        drawingNo:
+          parsedDrawingNo || undefined,
 
         discipline:
           finalDisciplineVal,
@@ -1503,3 +1598,4 @@ export const parseExcelFile = (
     },
   );
 };
+```
