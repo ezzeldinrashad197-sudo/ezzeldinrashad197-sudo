@@ -1,9 +1,9 @@
 {
-  "totalLines": 269,
-  "coveredLines": 135,
-  "totalStatements": 28,
+  "totalLines": 304,
+  "coveredLines": 147,
+  "totalStatements": 29,
   "coveredStatements": 14,
-  "totalBranches": 28,
+  "totalBranches": 29,
   "coveredBranches": 6,
   "totalFunctions": 18,
   "coveredFunctions": 9

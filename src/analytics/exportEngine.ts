@@ -579,20 +579,49 @@ export const generatePptxReport = async (
             addHeaderAndFooter(pres, slideA, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options);
             
             // Add Table
-            const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace);
             const colW = cols.length === 10
                 ? [0.85, 0.44, 0.40, 0.44, 0.44, 0.42, 0.45, 0.45, 0.45, 0.40]
                 : (cols.length === 8
                     ? [1.0, 0.55, 0.55, 0.55, 0.45, 0.5, 0.5, 0.5]
                     : (cols.length === 7 
                         ? [1.3, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55] 
-                        : [1.6, 1.0, 1.0, 1.0]));
-            slideA.addTable(tableRows, { 
-                x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
-                colW: colW,
-                color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
-                border: { type: "solid", pt: 1, color: "CBD5E1" }
-            });
+                        : (cols.length === 6
+                            ? [1.14, 0.70, 0.70, 0.70, 0.70, 0.70]
+                            : [1.6, 1.0, 1.0, 1.0])));
+
+            if (statsData.stats.length <= 10) {
+                const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace);
+                slideA.addTable(tableRows, { 
+                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
+                    colW: colW,
+                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    border: { type: "solid", pt: 1, color: "CBD5E1" }
+                });
+            } else {
+                // Paginate long discipline list: Slide A shows first 10 rows
+                const firstChunk = statsData.stats.slice(0, 10);
+                const tableRowsA = buildTableData(firstChunk, null, cols, options?.fontFace);
+                slideA.addTable(tableRowsA, { 
+                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
+                    colW: colW,
+                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    border: { type: "solid", pt: 1, color: "CBD5E1" }
+                });
+
+                // Continuation slide for remaining disciplines + Total row
+                const remainingRows = statsData.stats.slice(10);
+                let slideACont = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
+                const contTitle = `${longName} (${bt}) ${periodHeaderTag} (Continued)`;
+                addHeaderAndFooter(pres, slideACont, contTitle, projectInfo, logoUrl, options);
+
+                const tableRowsCont = buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace);
+                slideACont.addTable(tableRowsCont, { 
+                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
+                    colW: colW,
+                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    border: { type: "solid", pt: 1, color: "CBD5E1" }
+                });
+            }
             
             // Add Native Stacked Column Chart
             const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00";
@@ -727,7 +756,7 @@ export const generatePptxReport = async (
     // REJECTED ITEMS SECTION
     // ----------------------------------------------------
     if (isSectionSelected('rejected')) {
-        const presRejectedPageSize = options?.rejectedPageSize || 15;
+        const presRejectedPageSize = options?.rejectedPageSize || 14;
         const showRefCol = options?.showRefCol !== false;
         const showTradeCol = options?.showTradeCol !== false;
         const showRemarksCol = options?.showRemarksCol !== false;
@@ -736,7 +765,7 @@ export const generatePptxReport = async (
         const seenRejectedRefs = new Set<string>();
         const targetRejectedDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
         const presRejectedItems = targetRejectedDataset
-                        // FIX (2026-09-02): previously required BOTH overdue AND Rejected, which silently
+            // FIX (2026-09-02): previously required BOTH overdue AND Rejected, which silently
             // hid all 6 currently-open rejected items whenever none happened to be overdue yet
             // — directly contradicting the "6 unique items in Rejected/Open status" figure shown
             // on the Executive Summary and Recommendations slides. This section now lists every
@@ -766,18 +795,24 @@ export const generatePptxReport = async (
         if (rejectedPages.length === 0) {
             let slide: any = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
             addHeaderAndFooter(pres, slide, "REJECTED ITEMS", projectInfo, logoUrl, options);
-                        slide.addText(isArabic ? "لا توجد وثائق مرفوضة" : "No Rejected Items", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
+            slide.addText(isArabic ? "لا توجد وثائق مرفوضة" : "No Rejected Items", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
             slide.addText(isArabic ? "لا توجد مستندات في حالة مرفوض/مفتوح حالياً." : "No submittals are currently in Rejected/Open status.", { x: 1.0, y: 2.9, w: 8, h: 0.4, fontSize: 14, color: "666666", align: "center", rtl: isArabic });
         } else {
             rejectedPages.forEach((pageData, pageIdx) => {
                 let slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
-                addHeaderAndFooter(pres, slide, "REJECTED ITEMS", projectInfo, logoUrl, options);
+                const slideHeaderTitle = isArabic
+                    ? (pageIdx > 0 ? "الوثائق المرفوضة (متابعة)" : "الوثائق المرفوضة")
+                    : (pageIdx > 0 ? "REJECTED ITEMS (CONTINUED)" : "REJECTED ITEMS");
+                addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options);
                 
-                // Slide title
+                // Slide title with page indication
                 const totalCountLabel = presRejectedItems.length;
-                slide.addText(isArabic ? `أعلى الوثائق المرفوضة تأخيراً (إجمالي: ${totalCountLabel}) - صفحة ${pageIdx + 1} من ${rejectedPages.length}` : `Top Rejected Items by Delay (Total: ${totalCountLabel}) - Page ${pageIdx + 1} of ${rejectedPages.length}`, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "7A1515" });
+                const pageTitle = isArabic 
+                    ? `أعلى الوثائق المرفوضة تأخيراً (إجمالي: ${totalCountLabel}) - صفحة ${pageIdx + 1} من ${rejectedPages.length}${pageIdx > 0 ? " (متابعة)" : ""}` 
+                    : `Top Rejected Items by Delay (Total: ${totalCountLabel}) - Page ${pageIdx + 1} of ${rejectedPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
+                slide.addText(pageTitle, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "7A1515" });
                 
-                // Build Table
+                // Build Table with repeated header
                 let tableDataRows: any[] = [];
                 // Headers row
                 let headersRow: any[] = [
@@ -805,8 +840,17 @@ export const generatePptxReport = async (
                     tableDataRows.push(bodyRow);
                 });
 
+                let colW: number[] = [];
+                if (showRefCol && showTradeCol && showRemarksCol) {
+                    colW = [0.6, 1.5, 3.2, 1.5, 2.2];
+                } else {
+                    const count = 2 + (showRefCol ? 1 : 0) + (showTradeCol ? 1 : 0) + (showRemarksCol ? 1 : 0);
+                    colW = Array(count).fill(9.0 / count);
+                }
+
                 slide.addTable(tableDataRows, {
                     x: 0.5, y: 1.45, w: 9.0,
+                    colW: colW,
                     color: "333333", fontSize: 8.5,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -818,7 +862,7 @@ export const generatePptxReport = async (
     // PENDING ITEMS SECTION
     // ----------------------------------------------------
     if (isSectionSelected('pending')) {
-        const presPendingPageSize = options?.pendingPageSize || 15;
+        const presPendingPageSize = options?.pendingPageSize || 14;
         const showRefCol = options?.showRefCol !== false;
         const showTradeCol = options?.showTradeCol !== false;
         const showRemarksCol = options?.showRemarksCol !== false;
@@ -852,13 +896,19 @@ export const generatePptxReport = async (
         } else {
             pendingPages.forEach((pageData, pageIdx) => {
                 let slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
-                addHeaderAndFooter(pres, slide, "PENDING ITEMS", projectInfo, logoUrl, options);
+                const slideHeaderTitle = isArabic
+                    ? (pageIdx > 0 ? "الوثائق المعلقة (متابعة)" : "الوثائق المعلقة")
+                    : (pageIdx > 0 ? "PENDING ITEMS (CONTINUED)" : "PENDING ITEMS");
+                addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options);
                 
-                // Slide title
+                // Slide title with page indication
                 const totalPendingCount = presPendingItems.length;
-                slide.addText(isArabic ? `المعلقات المتأخرة (قيد المراجعة - إجمالي: ${totalPendingCount}) - صفحة ${pageIdx + 1} من ${pendingPages.length}` : `Top Pending Items Overdue (Total: ${totalPendingCount}) - Page ${pageIdx + 1} of ${pendingPages.length}`, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "0A192F" });
+                const pageTitle = isArabic 
+                    ? `المعلقات المتأخرة (قيد المراجعة - إجمالي: ${totalPendingCount}) - صفحة ${pageIdx + 1} من ${pendingPages.length}${pageIdx > 0 ? " (متابعة)" : ""}` 
+                    : `Top Pending Items Overdue (Total: ${totalPendingCount}) - Page ${pageIdx + 1} of ${pendingPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
+                slide.addText(pageTitle, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "0A192F" });
                 
-                // Build Table
+                // Build Table with repeated header
                 let tableDataRows: any[] = [];
                 // Headers row
                 let headersRow: any[] = [
@@ -886,8 +936,17 @@ export const generatePptxReport = async (
                     tableDataRows.push(bodyRow);
                 });
 
+                let colW: number[] = [];
+                if (showRefCol && showTradeCol && showRemarksCol) {
+                    colW = [0.6, 1.5, 3.2, 1.5, 2.2];
+                } else {
+                    const count = 2 + (showRefCol ? 1 : 0) + (showTradeCol ? 1 : 0) + (showRemarksCol ? 1 : 0);
+                    colW = Array(count).fill(9.0 / count);
+                }
+
                 slide.addTable(tableDataRows, {
                     x: 0.5, y: 1.45, w: 9.0,
+                    colW: colW,
                     color: "333333", fontSize: 8.5,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -916,4 +975,5 @@ export const generatePptxReport = async (
             : `StructuSight-cumulative-${new Date().toISOString().split('T')[0]}.pptx`);
 
     await pres.writeFile({ fileName: outputFilename });
+    return pres;
 };

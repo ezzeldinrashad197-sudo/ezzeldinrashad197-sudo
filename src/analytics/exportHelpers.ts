@@ -449,22 +449,24 @@ export const buildTableData = (stats: any[], totalRow: any, cols: {label: string
         rows.push(r);
     });
     
-    const totalR: any[] = [];
-    cols.forEach((col) => {
-        const textVal = String(totalRow[col.key] !== undefined ? totalRow[col.key] : "");
-        totalR.push({
-            text: textVal,
-            options: {
-                fill: "DDEBF7",
-                color: "203864",
-                bold: true,
-                align: "center",
-                valign: "middle",
-                fontFace: fontFace
-            }
+    if (totalRow) {
+        const totalR: any[] = [];
+        cols.forEach((col) => {
+            const textVal = String(totalRow[col.key] !== undefined ? totalRow[col.key] : "");
+            totalR.push({
+                text: textVal,
+                options: {
+                    fill: "DDEBF7",
+                    color: "203864",
+                    bold: true,
+                    align: "center",
+                    valign: "middle",
+                    fontFace: fontFace
+                }
+            });
         });
-    });
-    rows.push(totalR);
+        rows.push(totalR);
+    }
     
     return rows;
 };
@@ -1028,17 +1030,13 @@ export const addRegisterBreakdownSlide = (
     logoUrl?: string,
     options?: any
 ) => {
-    const slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
     const isArabic = !!options?.arabicEnabled;
     const font = options?.fontFace || "Arial";
 
-    const slideTitle = isMonthly
+    const baseSlideTitle = isMonthly
         ? (isArabic ? "جدول تفصيل السجلات الهندسية (شهري)" : "MONTHLY PRIMARY DETAIL REGISTER BREAKDOWN")
         : (isArabic ? "جدول تفصيل السجلات الهندسية (تراكمي)" : "CUMULATIVE PRIMARY DETAIL REGISTER BREAKDOWN");
 
-    addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options);
-
-    const tableRows: any[] = [];
     const headers = [
         { text: isArabic ? "نوع المعاملة" : "Log Type", options: { bold: true, fill: "203864", color: "FFFFFF", align: "left" } },
         { text: isArabic ? "الأولوية" : "Priority", options: { bold: true, fill: "203864", color: "FFFFFF", align: "center" } },
@@ -1054,7 +1052,6 @@ export const addRegisterBreakdownSlide = (
         { text: isArabic ? "مرفوض مغلق حالي" : "Cur. Rej Closed", options: { bold: true, fill: "881337", color: "FFFFFF", align: "center" } },
         { text: isArabic ? "معلق حالي" : "Cur. Pending", options: { bold: true, fill: "D97706", color: "FFFFFF", align: "center" } }
     ];
-    tableRows.push(headers);
 
     let sumRev0 = 0;
     let sumFurther = 0;
@@ -1068,6 +1065,8 @@ export const addRegisterBreakdownSlide = (
     let sumCurRejClosed = 0;
     let sumCurPending = 0;
     let sumCritical = 0;
+
+    const allDataRows: any[][] = [];
 
     dashData.byDocType.forEach((row, idx) => {
         const isEven = idx % 2 === 1;
@@ -1090,7 +1089,7 @@ export const addRegisterBreakdownSlide = (
         sumCurPending += (row.stats.currentPending || 0);
         sumCritical += crit;
 
-        tableRows.push([
+        allDataRows.push([
             { text: row.documentType, options: { fill: bg, align: "left", bold: true, color: "203864" } },
             { text: crit > 0 ? `CRITICAL (${crit})` : "-", options: { fill: crit > 0 ? "FFF1F2" : bg, align: "center", bold: crit > 0, color: crit > 0 ? "BE123C" : "64748B" } },
             { text: String(row.stats.totalSheetsRev0 || 0), options: { fill: bg, align: "center" } },
@@ -1108,7 +1107,7 @@ export const addRegisterBreakdownSlide = (
     });
 
     // Total Row
-    tableRows.push([
+    const totalRow = [
         { text: isArabic ? "الإجمالي الكلي" : "TOTAL", options: { fill: "DDEBF7", align: "left", bold: true, color: "203864" } },
         { text: sumCritical > 0 ? `CRITICAL (${sumCritical})` : "-", options: { fill: "DDEBF7", align: "center", bold: sumCritical > 0, color: sumCritical > 0 ? "BE123C" : "64748B" } },
         { text: String(sumRev0), options: { fill: "DDEBF7", align: "center", bold: true, color: "203864" } },
@@ -1122,14 +1121,46 @@ export const addRegisterBreakdownSlide = (
         { text: String(sumCurRejOpen), options: { fill: "DDEBF7", align: "center", bold: true, color: "BE123C" } },
         { text: String(sumCurRejClosed), options: { fill: "DDEBF7", align: "center", bold: true, color: "881337" } },
         { text: String(sumCurPending), options: { fill: "DDEBF7", align: "center", bold: true, color: "D97706" } }
-    ]);
+    ];
 
-    slide.addTable(tableRows, {
-        x: 0.3, y: 1.0, w: 9.4,
-        colW: [1.3, 0.85, 0.6, 0.65, 0.7, 0.7, 0.7, 0.65, 0.75, 0.65, 0.6, 0.6, 0.6],
-        fontSize: 6.5,
-        border: { type: "solid", pt: 0.5, color: "CBD5E1" }
-    });
+    // Dynamic pagination: max 11 rows fit comfortably on a single slide without clipping
+    const pageSize = options?.registerBreakdownPageSize || 10;
+    const totalPages = allDataRows.length <= 11 ? 1 : Math.ceil(allDataRows.length / pageSize);
+
+    for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+        const slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
+        
+        let slideTitle = baseSlideTitle;
+        if (totalPages > 1) {
+            slideTitle = isArabic
+                ? `${baseSlideTitle} - صفحة ${pageIdx + 1} من ${totalPages}${pageIdx > 0 ? " (متابعة)" : ""}`
+                : `${baseSlideTitle} — Page ${pageIdx + 1} of ${totalPages}${pageIdx > 0 ? " (Continued)" : ""}`;
+        }
+
+        addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options);
+
+        const tableRows: any[] = [];
+        // Repeat complete table header on every slide
+        tableRows.push(headers);
+
+        const pageData = totalPages === 1 
+            ? allDataRows 
+            : allDataRows.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
+
+        pageData.forEach(r => tableRows.push(r));
+
+        // Add TOTAL row only to the last continuation slide
+        if (pageIdx === totalPages - 1) {
+            tableRows.push(totalRow);
+        }
+
+        slide.addTable(tableRows, {
+            x: 0.3, y: 1.0, w: 9.4,
+            colW: [1.3, 0.85, 0.6, 0.65, 0.7, 0.7, 0.7, 0.65, 0.75, 0.65, 0.6, 0.6, 0.6],
+            fontSize: 6.5,
+            border: { type: "solid", pt: 0.5, color: "CBD5E1" }
+        });
+    }
 };
 
 // 4. Add Strategic Recommendations Slide (Matching ReportTable.tsx Recommendations Panel)
