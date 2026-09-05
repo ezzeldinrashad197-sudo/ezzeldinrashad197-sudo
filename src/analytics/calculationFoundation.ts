@@ -227,19 +227,19 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
   };
 
   const commonRef = extractRef(
-    'docNo',
-    'docNumber',
-    'documentNo',
-    'documentNumber',
-    'drawingNo',
-    'drawingNumber',
-    'submittalRef',
-    'subNo',
-    'subRef',
-    'sheetNo',
-    'ref',
-    'id'
-  );
+  'submissionRef',
+  'submissionReference',
+  'submittalRef',
+  'submittalReference',
+  'subRef',
+  'subNo',
+  'docNo',
+  'docNumber',
+  'documentNo',
+  'documentNumber',
+  'ref',
+  'id'
+);
 
   const upperDocNo = extractRef(
     'docNo',
