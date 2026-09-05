@@ -265,4 +265,39 @@ export const checkIfOverdueDynamically = (submission: string, response: string, 
   const days = getDelayDays(submission, response, '');
   return days > thresholdDays;
 };
-export const getClosedOpenByDocType = (docType: string, s: { totalSubmittedSheets?: number; pending?: number; approved?: number; rejectedOpen?: number; rejectedClosed?: number }): { closed: number; open: number } => { const closed = docType === 'RFI' ? ((s.totalSubmittedSheets || 0) - (s.pending || 0)) : (docType === 'NCR' || docType === 'SOR' ? (s.approved || 0) : (s.approved || 0) + (s.rejectedClosed || 0)); const open = docType === 'NCR' || docType === 'SOR' ? (s.rejectedOpen || 0) : (docType === 'RFI' ? (s.pending || 0) : (s.rejectedOpen || 0) + (s.pending || 0)); return { closed, open }; };
+export const getClosedOpenByDocType = (
+  docType: string,
+  s: {
+    totalSubmittedSheets?: number;
+    pending?: number;
+    approved?: number;
+    rejectedOpen?: number;
+    rejectedClosed?: number;
+    finalClosed?: number;
+    currentClosed?: number;
+    currentPending?: number;
+    currentOpen?: number;
+  }
+): { closed: number; open: number } => {
+  if (docType === 'RFI') {
+    // Canonical Current State for RFI:
+    // Closed represents RFI business entities whose current state is CLOSED/FINAL_CLOSED/APPROVED
+    // Open/Pending represents RFI business entities whose current state is PENDING
+    // NEVER derive from totalSubmittedSheets, Rev.00, or Further Rev
+    const closed = s.currentClosed !== undefined
+      ? s.currentClosed
+      : ((s.approved || 0) + (s.finalClosed || 0) + (s.rejectedClosed || 0));
+    const open = s.pending ?? s.currentPending ?? 0;
+    return { closed, open };
+  }
+
+  const closed = docType === 'NCR' || docType === 'SOR'
+    ? (s.approved || 0)
+    : (s.approved || 0) + (s.rejectedClosed || 0) + (s.finalClosed || 0);
+
+  const open = docType === 'NCR' || docType === 'SOR'
+    ? (s.rejectedOpen || 0)
+    : (s.rejectedOpen || 0) + (s.pending || 0);
+
+  return { closed, open };
+};

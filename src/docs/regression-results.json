@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-09-02T19:19:58.330Z",
+  "timestamp": "2026-09-05T08:22:18.435Z",
   "version": "2.0.0-ENTERPRISE-EVIDENCE-PACK",
   "goldenDatasetSize": 770,
   "totalTests": 20,
-  "passedCount": 18,
-  "failedCount": 2,
-  "zeroVarianceComplianceRate": "90.0%",
+  "passedCount": 20,
+  "failedCount": 0,
+  "zeroVarianceComplianceRate": "100.0%",
   "moduleBreakdown": {
     "Submission Layer": {
       "total": 3,
@@ -14,8 +14,8 @@
     },
     "Performance Layer": {
       "total": 5,
-      "passed": 4,
-      "failed": 1
+      "passed": 5,
+      "failed": 0
     },
     "Shop Drawings": {
       "total": 2,
@@ -29,8 +29,8 @@
     },
     "Global Engine": {
       "total": 1,
-      "passed": 0,
-      "failed": 1
+      "passed": 1,
+      "failed": 0
     },
     "Discipline Engine": {
       "total": 8,
@@ -94,10 +94,10 @@
       "description": "Evaluates unique approved items (Code A, B, Approved, Closed, Code D)",
       "metricName": "approved",
       "expectedValue": 635,
-      "actualValue": 475,
-      "variance": -160,
-      "status": "FAILED",
-      "evidence": "Performance layer computed 475 approved unique items."
+      "actualValue": 635,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Performance layer computed 635 approved unique items."
     },
     {
       "id": "BENCH-PERF-03",
@@ -166,10 +166,10 @@
       "description": "Calculates percentage of approved items over total non-cancelled submittals",
       "metricName": "approvalRate",
       "expectedValue": 88.19444444444444,
-      "actualValue": 65.97222222222221,
-      "variance": -22.22,
-      "status": "FAILED",
-      "evidence": "Global Approval Rate: Expected 88.19444444444444%, Computed 65.97222222222221%."
+      "actualValue": 88.19444444444444,
+      "variance": 0,
+      "status": "PASSED",
+      "evidence": "Global Approval Rate: Expected 88.19444444444444%, Computed 88.19444444444444%."
     },
     {
       "id": "BENCH-DISC-01",
@@ -504,16 +504,16 @@
   ],
   "stressBenchmark10k": {
     "datasetSize": 10000,
-    "executionTimeMs": 1282.59,
-    "throughputPerSec": 7797,
+    "executionTimeMs": 957.82,
+    "throughputPerSec": 10440,
     "memoryEstimateMb": 3.34,
     "passCriteriaMet": true
   },
   "stressBenchmark50k": {
     "datasetSize": 50000,
-    "executionTimeMs": 6657.69,
-    "throughputPerSec": 7510,
+    "executionTimeMs": 4827.29,
+    "throughputPerSec": 10358,
     "memoryEstimateMb": 16.69,
-    "passCriteriaMet": false
+    "passCriteriaMet": true
   }
 }

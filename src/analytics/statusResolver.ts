@@ -47,27 +47,46 @@ export function classifyRow(code?: string, status?: string): CanonicalStatus {
     cleanCode = cleanCode.substring(5).trim();
   }
 
-   // Code A or Code B or Code D -> Approved (Code D = Disapproved / Final Closed = No Further Submission)
-  // REMOVED (2026-09-02): 'CLOSED'/'CLOSE' as CODE values — verified against 3 real registers
-  // (SDW-STR, WIR-LND, WIR-STR) that the Code column never contains these literal values;
-  // "Closed" only ever appears in the Status column. Keeping this check on the Code
-  // parameter re-opens the exact Status/Code-conflation bug fixed earlier today, if a
-  // future column-mapping mismatch ever feeds a Status value into the code parameter.
-  if (cleanCode === 'A' || cleanCode === 'B' || cleanCode === 'D' || cleanCode === 'APPROVED' || cleanCode === 'ACCEPTED' || cleanCode === 'DISAPPROVED') {
-    return 'APPROVED';
-  }
-
-  // Code C -> "revise & resubmit". Status determines whether Open or Closed
+   // Code C -> "revise & resubmit". Status determines whether Open or Closed
   if (cleanCode === 'C' || cleanCode === 'REJECTED' || cleanCode === 'RETURNED' || cleanCode === 'REJ') {
     return (sUpper === 'OPEN' || s === 'Open') ? 'REJECTED_OPEN' : 'REJECTED_CLOSED';
   }
 
+  // Code A or Code B or Code D -> Approved (Code D = Disapproved / Final Closed = No Further Submission)
+  if (cleanCode === 'A' || cleanCode === 'B' || cleanCode === 'D' || cleanCode === 'APPROVED' || cleanCode === 'ACCEPTED' || cleanCode === 'DISAPPROVED') {
+    return 'APPROVED';
+  }
+
   // Pending / Under review / Waiting / Open
-  if (cleanCode === 'W' || cleanCode === 'UNDER REVIEW' || cleanCode === 'PENDING' || cleanCode === 'WAITING' || cleanCode === 'OPEN' || sUpper === 'PENDING' || sUpper === 'UNDER REVIEW' || sUpper === 'WAITING') {
+  if (
+    cleanCode === 'W' || cleanCode === 'UNDER REVIEW' || cleanCode === 'PENDING' || cleanCode === 'WAITING' || cleanCode === 'OPEN' ||
+    sUpper === 'PENDING' || sUpper === 'UNDER REVIEW' || sUpper === 'WAITING' ||
+    sUpper.includes('NOT APPROVED') || sUpper.includes('WAITING FOR APPROVAL') || sUpper.includes('AWAITING APPROVAL') || sUpper.includes('PENDING APPROVAL')
+  ) {
     return 'PENDING';
   }
 
+  // Closed / Answered / Completed in Code or Status (when not Code C)
+  if (cleanCode === 'CLOSED' || cleanCode === 'CLOSE' || cleanCode === 'FINAL_CLOSED' || cleanCode === 'ANSWERED' || cleanCode === 'COMPLETED' || cleanCode === 'RESOLVED') {
+    return 'APPROVED';
+  }
+
   if (!cleanCode) {
+    if (sUpper === 'CLOSED' || sUpper === 'CLOSE' || sUpper === 'FINAL CLOSED' || sUpper === 'FINAL_CLOSED' || sUpper === 'ANSWERED' || sUpper === 'COMPLETED' || sUpper === 'RESOLVED' || sUpper === 'APPROVED') {
+      return 'APPROVED';
+    }
+    if (
+      sUpper === 'OPEN' ||
+      sUpper === 'PENDING' ||
+      sUpper === 'UNDER REVIEW' ||
+      sUpper === 'WAITING' ||
+      sUpper.includes('NOT APPROVED') ||
+      sUpper.includes('WAITING FOR APPROVAL') ||
+      sUpper.includes('AWAITING APPROVAL') ||
+      sUpper.includes('PENDING APPROVAL')
+    ) {
+      return 'PENDING';
+    }
     return 'UNCLASSIFIED';
   }
 
@@ -82,11 +101,12 @@ export function classifySubmission(
   sheetsAtLatestRevision: (CanonicalStatus | string)[]
 ): CanonicalStatus {
   const normalized = sheetsAtLatestRevision.map(s => String(s).toUpperCase());
-   if (normalized.includes('REJECTED_OPEN')) return 'REJECTED_OPEN';   // highest priority — needs action
+  if (normalized.includes('REJECTED_OPEN')) return 'REJECTED_OPEN';   // highest priority — needs action
   if (normalized.includes('REJECTED_CLOSED')) return 'REJECTED_CLOSED'; // rejected via Code C and closed without ever being approved — must NOT collapse into Approved
   if (normalized.includes('PENDING')) return 'PENDING';
   if (normalized.includes('UNCLASSIFIED')) return 'UNCLASSIFIED';
-  return 'APPROVED'; // only if every sheet at the latest revision is genuinely approved (Code A/B/D)
+  if (normalized.every(s => s === 'FINAL_CLOSED')) return 'FINAL_CLOSED';
+  return 'APPROVED'; // only if every sheet at the latest revision is genuinely approved (Code A/B/D) or closed
 }
 
 /**
@@ -101,6 +121,7 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
   let action = '';
   let rawStatusCombined = '';
   let isWIR = false;
+  let isRFI = false;
 
   if (typeof codeOrRow === 'object') {
     rawCode = normalizeCanonicalString(codeOrRow.code);
@@ -124,6 +145,15 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
       rawIdentity.includes('WIR') ||
       sourceFile.includes('WIR')
     );
+
+    // Canonical RFI identification: priority on canonical structural fields
+    const isCanonicalRfiFamily = family === 'RFI' || family.startsWith('RFI-') || family.startsWith('RFI/') || family.startsWith('RFI_');
+    const isCanonicalRfiDocType = docType === 'RFI' || docType.startsWith('RFI-') || docType.startsWith('RFI/') || docType.startsWith('RFI_');
+    const isCanonicalRfiLogType = logType === 'RFI' || logType.startsWith('RFI-') || logType.startsWith('RFI/') || logType.startsWith('RFI_');
+    // Safe docNo pattern fallback: exact prefix like "RFI-" or "RFI/" or word boundary "^RFI[\s\-_/]"
+    const isRfiDocNo = /^RFI[\s\-_/]/i.test(docNo) || docNo === 'RFI';
+
+    isRFI = isCanonicalRfiFamily || isCanonicalRfiDocType || isCanonicalRfiLogType || isRfiDocNo;
   } else {
     rawStatusCombined = normalizeCanonicalString(codeOrRow);
   }
@@ -162,6 +192,90 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
     }
 
     return 'UNCLASSIFIED';
+  }
+
+  // RFI Canonical Status Resolver
+  // RFI lifecycle: Canonical field precedence (recordStatus > workflowStage > status/action)
+  if (isRFI) {
+    // 1. Code C Rejection Semantics:
+    // Explicit rawCode is the SSOT for Code C.
+    // Do NOT allow generic "REJECTED" in notes/descriptions to convert a row into Code C.
+    const isCodeC = (
+      rawCode === 'C' ||
+      rawCode === 'CODE C'
+    );
+    if (isCodeC) {
+      const isExplicitClosedOnCodeC = (
+        recordStatus === 'CLOSED' || recordStatus === 'CLOSE' || recordStatus === 'FINAL_CLOSED' || recordStatus === 'FINAL CLOSED' ||
+        workflowStage === 'CLOSED' || workflowStage === 'CLOSE' || workflowStage === 'FINAL_CLOSED' || workflowStage === 'FINAL CLOSED' ||
+        /\b(CLOSED|CLOSE|FINAL_CLOSED|FINAL CLOSED)\b/.test(`${rawStatusCombined} ${action}`.toUpperCase())
+      );
+      return isExplicitClosedOnCodeC ? 'REJECTED_CLOSED' : 'REJECTED_OPEN';
+    }
+
+    // 2. Precedence Evaluation by Canonical Field Hierarchy:
+    // Priority 1: Authoritative recordStatus (highest priority entity state)
+    const normRecordStatus = recordStatus.toUpperCase().trim();
+    if (normRecordStatus) {
+      if (normRecordStatus === 'CLOSED' || normRecordStatus === 'CLOSE' || normRecordStatus === 'FINAL_CLOSED' || normRecordStatus === 'FINAL CLOSED' || normRecordStatus === 'COMPLETED' || normRecordStatus === 'RESOLVED') {
+        return 'APPROVED';
+      }
+      if (normRecordStatus === 'OPEN' || normRecordStatus === 'PENDING' || normRecordStatus === 'UNDER REVIEW' || normRecordStatus === 'WAITING') {
+        return 'PENDING';
+      }
+    }
+
+    // Priority 2: Authoritative workflowStage (in-flight workflow lifecycle state)
+    const normWorkflowStage = workflowStage.toUpperCase().trim();
+    if (normWorkflowStage) {
+      if (normWorkflowStage === 'CLOSED' || normWorkflowStage === 'CLOSE' || normWorkflowStage === 'FINAL_CLOSED' || normWorkflowStage === 'FINAL CLOSED' || normWorkflowStage === 'COMPLETED' || normWorkflowStage === 'RESOLVED' || normWorkflowStage === 'ANSWERED') {
+        return 'APPROVED';
+      }
+      if (normWorkflowStage === 'PENDING' || normWorkflowStage === 'UNDER REVIEW' || normWorkflowStage === 'WAITING' || normWorkflowStage === 'OPEN') {
+        return 'PENDING';
+      }
+    }
+
+    // Priority 3: Combined status / action / code fallback with strict guards
+    const rawTokens = [rawStatusCombined, action, rawCode]
+      .filter(Boolean)
+      .map(s => s.toUpperCase().trim());
+    const combined = ` ${rawTokens.join(' ')} `;
+
+    // Strict Guards against False Positives:
+    // Substrings like "WAITING FOR APPROVAL" must NEVER resolve to APPROVED/CLOSED
+    if (
+      combined.includes('NOT APPROVED') ||
+      combined.includes('WAITING FOR APPROVAL') ||
+      combined.includes('AWAITING APPROVAL') ||
+      combined.includes('PENDING APPROVAL') ||
+      combined.includes('UNDER REVIEW') ||
+      combined.includes('WAITING CONSULTANT') ||
+      combined.includes('UNDER INVESTIGATION') ||
+      /\b(PENDING|WAITING|OPEN)\b/.test(combined) ||
+      rawCode === 'W' ||
+      rawCode === 'CODE W'
+    ) {
+      return 'PENDING';
+    }
+
+    // Explicit Final Closed States:
+    const isExplicitFinalClosed = /\b(CLOSED|CLOSE|FINAL_CLOSED|FINAL CLOSED|ANSWERED|COMPLETED|RESOLVED)\b/.test(combined);
+
+    // Explicit Approval (Code A / Code B / APPROVED / ACCEPTED):
+    const isExplicitApproved = (
+      rawCode === 'A' ||
+      rawCode === 'B' ||
+      rawCode === 'CODE A' ||
+      rawCode === 'CODE B' ||
+      /\b(APPROVED|ACCEPTED)\b/.test(combined)
+    );
+
+    if (isExplicitFinalClosed || isExplicitApproved) {
+      return 'APPROVED';
+    }
+
+    return 'PENDING';
   }
 
   // Determine code and status for general / SDW / MAR / NCR / etc.

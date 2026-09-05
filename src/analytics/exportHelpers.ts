@@ -1,6 +1,6 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth } from "../utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
 import { processNCRData } from "./ncr/ncrEngine";
 
 // Compile statistics logic extracted from exportEngine
@@ -152,8 +152,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
         Pending: s.pending,
         Total: countForType,
-        Closed: bt === 'RFI' ? ((s.totalSubmittedSheets || 0) - (s.pending || 0)) : (bt === 'NCR' || bt === 'SOR' ? s.approved : s.approved + s.rejectedClosed),
-        Open: bt === 'NCR' || bt === 'SOR' ? s.rejectedOpen : (bt === 'RFI' ? (s.pending || 0) : s.rejectedOpen + s.pending),
+        Closed: getClosedOpenByDocType(bt, s).closed,
+        Open: getClosedOpenByDocType(bt, s).open,
       };
     });
 

@@ -16,9 +16,9 @@ interface TestCase {
 const testCases: TestCase[] = [
   {
     docType: 'RFI',
-    input: { totalSubmittedSheets: 80, pending: 15, approved: 0, rejectedOpen: 0, rejectedClosed: 0 },
+    input: { totalSubmittedSheets: 80, pending: 15, approved: 65, rejectedOpen: 0, rejectedClosed: 0 },
     expected: { closed: 65, open: 15 },
-    reference: 'RFI Domain Formula: Closed = Total - Pending (80 - 15 = 65), Open = Pending (15)'
+    reference: 'RFI Domain Formula: Closed = Approved/Closed Current State (65), Open = Pending (15)'
   },
   {
     docType: 'NCR',
