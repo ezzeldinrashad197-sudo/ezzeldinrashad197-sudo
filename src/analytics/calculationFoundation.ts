@@ -1,4 +1,4 @@
-```typescript
+
 import { SubmittalRow, KPIStats, RegisterSequenceAudit } from '../types';
 import { compareRevisions, isValidRevision } from './analyticsCore';
 import { getRevisionWeight } from './revisionResolver';
