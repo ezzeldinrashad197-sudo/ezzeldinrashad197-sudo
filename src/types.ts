@@ -1,3 +1,4 @@
+```typescript
 export interface SLASettings {
   shopDrawings: number;
   materialSubmittals: number;
@@ -41,6 +42,13 @@ export interface SubmittalRow {
   docNo: string;
   rev: string;
   sheetNo: string;
+
+  // Explicit Document Identity Components
+  // For engineering/shop-drawing registers:
+  // Document Identity = Submission Ref + DWG No.
+  submissionRef?: string;
+  drawingNo?: string;
+
   discipline: string;
   contractor: string;
   consultant: string;
@@ -140,7 +148,7 @@ export interface KPIStats {
   finalClosedRows?: number;     // Total rows with Final Closed Status (Code D)
 
   // 2. Current State Metrics (Grain: Unique Entity / Latest Valid Revision)
-  totalUniqueDrawings: number;  // Total Unique SUB Ref
+  totalUniqueDrawings: number;  // Total Unique Document Identities (SUB Ref + DWG No. where applicable)
   totalUniqueItems?: number;    // Alias for totalUniqueDrawings
   currentApproved: number;      // Current Approved Items (Unique grain)
   currentRejectedOpen: number;  // Current Rejected Open Items (Unique grain)
@@ -218,7 +226,7 @@ export interface RegisterSequenceAudit {
   prefix: string;                // e.g. "WIR-SUR-"
   paddingLength: number;         // e.g. 5
   minSequence: number;           // e.g. 1
-  maxSequence: number;           // e.g. 2000
+  maxSequence: number;            // e.g. 2000
   expectedPopulation: number;    // e.g. 2000 (max - min + 1)
   actualRev0Population: number;  // e.g. 1998
   actualUniquePopulation: number;// e.g. 1998
@@ -261,3 +269,4 @@ export interface ForensicLedgerEntry {
   dispositionReason: string;
   dispositionReasonAr: string;
 }
+```
