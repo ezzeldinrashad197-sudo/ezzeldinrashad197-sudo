@@ -1,4 +1,4 @@
-```typescript
+
 import * as XLSX from "xlsx";
 import { SubmittalRow } from "../types";
 import { normalizeData, getRevisionWeight } from "./calculations";
