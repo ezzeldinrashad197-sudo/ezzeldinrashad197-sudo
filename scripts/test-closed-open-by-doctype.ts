@@ -8,6 +8,10 @@ interface TestCase {
     approved?: number;
     rejectedOpen?: number;
     rejectedClosed?: number;
+    finalClosed?: number;
+    currentClosed?: number;
+    currentPending?: number;
+    currentOpen?: number;
   };
   expected: { closed: number; open: number };
   reference: string;
@@ -16,9 +20,21 @@ interface TestCase {
 const testCases: TestCase[] = [
   {
     docType: 'RFI',
-    input: { totalSubmittedSheets: 80, pending: 15, approved: 65, rejectedOpen: 0, rejectedClosed: 0 },
+    input: { totalSubmittedSheets: 140, pending: 15, approved: 65, rejectedOpen: 0, rejectedClosed: 0 },
     expected: { closed: 65, open: 15 },
-    reference: 'RFI Domain Formula: Closed = Approved/Closed Current State (65), Open = Pending (15)'
+    reference: 'RFI Canonical Formula (Discriminative): Total (140) must NOT affect Closed (65). Legacy formula would give 140-15=125.'
+  },
+  {
+    docType: 'RFI',
+    input: { totalSubmittedSheets: 81, pending: 51, approved: 15, rejectedOpen: 0, rejectedClosed: 0 },
+    expected: { closed: 15, open: 51 },
+    reference: 'RFI Al-Burouj Real Profile: Total (81), Pending (51), Approved (15). Legacy formula would give 81-51=30, correct is 15.'
+  },
+  {
+    docType: 'RFI',
+    input: { totalSubmittedSheets: 9999, pending: 50, approved: 10, finalClosed: 5, rejectedClosed: 2 },
+    expected: { closed: 17, open: 50 },
+    reference: 'RFI Adversarial Stress: Total (9999) has zero impact. Closed = Approved (10) + FinalClosed (5) + RejClosed (2) = 17.'
   },
   {
     docType: 'NCR',
@@ -108,6 +124,15 @@ for (const tc of testCases) {
   const actual = getClosedOpenByDocType(tc.docType, tc.input);
   const pass = actual.closed === tc.expected.closed && actual.open === tc.expected.open;
   
+  // Anti-Regression Guard: explicitly ensure RFI is never calculating totalSubmittedSheets - pending
+  if (tc.docType === 'RFI' && tc.input.totalSubmittedSheets !== undefined && tc.input.pending !== undefined) {
+    const legacyBrokenClosed = tc.input.totalSubmittedSheets - tc.input.pending;
+    if (legacyBrokenClosed !== tc.expected.closed && actual.closed === legacyBrokenClosed) {
+      console.error(`\n[FATAL REGRESSION DETECTED] RFI returned legacy broken formula output (${legacyBrokenClosed}) instead of canonical state (${tc.expected.closed})!`);
+      process.exit(1);
+    }
+  }
+
   if (pass) {
     passedCount++;
   } else {
