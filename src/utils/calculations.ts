@@ -1,3 +1,4 @@
+```ts
 import { SubmittalRow, KPIStats } from '../types';
 import { 
   buildCanonicalDataset, 
@@ -62,24 +63,64 @@ export const calculateLTRStats = (rows: SubmittalRow[], fullDataset?: SubmittalR
 export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
   if (!rows || rows.length === 0) return [];
   
-  // Group rows by docNoUpper to find highest revision
+  // Group rows by document identity to find highest revision.
+  // Engineering / Shop Drawing identity = SUB Ref + DWG No.
+  // Other registers retain the existing reference-based identity.
   const docHistory = new Map<string, string[]>();
   rows.forEach(r => {
-    const docNoUpper = (r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || '').trim().toUpperCase();
+    const submissionRef = (
+      r.submissionRef ||
+      r.docNo ||
+      (r as any).ncrRef ||
+      (r as any).sorRef ||
+      (r as any).rfiRef ||
+      r.id ||
+      ''
+    ).trim().toUpperCase();
+
+    const drawingNo = (
+      r.drawingNo ||
+      ''
+    ).trim().toUpperCase();
+
+    const documentIdentityKey = drawingNo
+      ? `${submissionRef}::DWG:${drawingNo}`
+      : submissionRef;
+
     const revUpper = (r.rev || '').trim().toUpperCase();
-    if (!docHistory.has(docNoUpper)) {
-      docHistory.set(docNoUpper, []);
+
+    if (!docHistory.has(documentIdentityKey)) {
+      docHistory.set(documentIdentityKey, []);
     }
-    const list = docHistory.get(docNoUpper)!;
+
+    const list = docHistory.get(documentIdentityKey)!;
     if (!list.includes(revUpper)) {
       list.push(revUpper);
     }
   });
 
   return rows.map(r => {
-    const docNoUpper = (r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || '').trim().toUpperCase();
+    const submissionRef = (
+      r.submissionRef ||
+      r.docNo ||
+      (r as any).ncrRef ||
+      (r as any).sorRef ||
+      (r as any).rfiRef ||
+      r.id ||
+      ''
+    ).trim().toUpperCase();
+
+    const drawingNo = (
+      r.drawingNo ||
+      ''
+    ).trim().toUpperCase();
+
+    const documentIdentityKey = drawingNo
+      ? `${submissionRef}::DWG:${drawingNo}`
+      : submissionRef;
+
     const revUpper = (r.rev || '').trim().toUpperCase();
-    const allRevs = docHistory.get(docNoUpper) || [];
+    const allRevs = docHistory.get(documentIdentityKey) || [];
     allRevs.sort((a, b) => compareRevisionsCanonical(b, a));
 
     const latestRev = allRevs[0];
@@ -301,3 +342,4 @@ export const getClosedOpenByDocType = (
 
   return { closed, open };
 };
+```
