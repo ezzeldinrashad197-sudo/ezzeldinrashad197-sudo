@@ -1,4 +1,4 @@
-```typescript
+
 export interface SLASettings {
   shopDrawings: number;
   materialSubmittals: number;
