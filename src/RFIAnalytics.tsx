@@ -89,11 +89,11 @@ const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
             if (!m.has(displayDisc)) m.set(displayDisc, { items: displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
             const st = m.get(displayDisc)!;
 
-            st.total++;
             const revVal = String(row.rev ?? '').trim().toUpperCase();
             const w = getRevisionWeight(revVal);
             const isRev0 = row.isRev0 ?? (w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC');
             if (isRev0) st.rev00++; else st.furtherRev++;
+            st.total = st.rev00 + st.furtherRev;
 
             // Use centralized StatusMatrixEngine normalization through analyticsCore
             const norm = getNormalizedStatusCore(row, projectId, projectInfo);
@@ -102,13 +102,18 @@ const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
             if (isClosed) st.closed++; else st.pending++;
         });
 
-        const arr = Array.from(m.values()).sort((a,b) => b.total - a.total);
+        const arr = Array.from(m.values());
+        arr.forEach(row => {
+            row.total = row.rev00 + row.furtherRev;
+        });
+        arr.sort((a,b) => b.total - a.total);
+
         // Sort explicitly by specific order if needed, but total is fine
         const totalLine = {
             items: 'Total',
             rev00: arr.reduce((a,c) => a+c.rev00, 0),
             furtherRev: arr.reduce((a,c) => a+c.furtherRev, 0),
-            total: arr.reduce((a,c) => a+c.total, 0),
+            total: arr.reduce((a,c) => a + c.rev00 + c.furtherRev, 0),
             pending: arr.reduce((a,c) => a+c.pending, 0),
             closed: arr.reduce((a,c) => a+c.closed, 0)
         };

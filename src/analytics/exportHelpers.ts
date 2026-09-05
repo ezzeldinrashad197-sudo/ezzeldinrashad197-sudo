@@ -132,10 +132,10 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
       
       const isMonthlyReport = !!monthlyStart;
-      const isDrawingType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
+      const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD' || bt === 'RFI';
       const totalSheets = (s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0);
       const totalSubmittals = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length;
-      const countForType = isDrawingType
+      const countForType = isSheetCountType
         ? totalSheets
         : (isMonthlyReport
             ? (s.totalSubmittedSheets ?? totalSheets)
