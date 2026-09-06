@@ -2585,7 +2585,3 @@ export function exportPerformanceValidationCsv(
     csv +=
       `"${r.businessEntityKey}","${r.latestRevision}","${r.latestSubmissionDate}","${r.latestStatus}","${r.resolvedStatus}","${r.includedInPerformance}"\n`;
   });
-
-  return csv;
-}
-```
