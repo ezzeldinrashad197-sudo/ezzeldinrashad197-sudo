@@ -339,5 +339,6 @@ export const getClosedOpenByDocType = (
   const open = docType === 'NCR' || docType === 'SOR'
     ? (s.rejectedOpen || 0)
     : (s.rejectedOpen || 0) + (s.pending || 0);
-
+return { closed, open };
+};
   
