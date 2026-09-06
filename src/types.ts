@@ -267,4 +267,5 @@ export interface ForensicLedgerEntry {
   canonicalStatus: string;
   disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE';
   dispositionReason: string;
-  
+   dispositionReasonAr: string;
+} 
