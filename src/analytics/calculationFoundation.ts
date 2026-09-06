@@ -1,4 +1,4 @@
-
+```typescript
 import { SubmittalRow, KPIStats, RegisterSequenceAudit } from '../types';
 import { compareRevisions, isValidRevision } from './analyticsCore';
 import { getRevisionWeight } from './revisionResolver';
@@ -55,15 +55,19 @@ export interface CanonicalRecord {
   registerType: string;
 
   /**
-   * IMPORTANT:
-   * businessEntityKey remains the register/business identity.
-   * The current-state/revision engine uses documentIdentityKey.
+   * Business/register identity.
+   * This remains independent from physical drawing identity.
    */
   businessEntityKey: string;
 
   /**
-   * Physical document identity:
-   * Business Entity / SUB Ref + DWG No. where applicable.
+   * Physical document identity.
+   *
+   * For engineering drawings:
+   *   Business Entity + DWG No.
+   *
+   * For non-drawing registers:
+   *   Business Entity.
    */
   documentIdentityKey: string;
 
@@ -93,10 +97,12 @@ export interface CanonicalKPIResult extends KPIStats {
 }
 
 /**
- * Helper to safely parse any date string into timestamp for comparison.
+ * Safely parse a date string into a timestamp.
  */
 export function parseDateTimestamp(dateStr?: string): number {
-  if (!dateStr) return 0;
+  if (!dateStr) {
+    return 0;
+  }
 
   const parsed = new Date(dateStr).getTime();
 
@@ -107,8 +113,12 @@ export function parseDateTimestamp(dateStr?: string): number {
  * Safely read an optional normalized field without requiring
  * an immediate change to the SubmittalRow TypeScript interface.
  */
-function readRowField(row: SubmittalRow, ...keys: string[]): string {
-  const record = row as unknown as Record<string, unknown>;
+function readRowField(
+  row: SubmittalRow,
+  ...keys: string[]
+): string {
+  const record =
+    row as unknown as Record<string, unknown>;
 
   for (const key of keys) {
     const value = record[key];
@@ -126,13 +136,12 @@ function readRowField(row: SubmittalRow, ...keys: string[]): string {
 }
 
 /**
- * Resolve the SUB / Submission reference independently
- * from the drawing number.
- *
- * IMPORTANT:
- * We deliberately do NOT use drawingNo as the submission reference.
+ * Resolve the submission / SUB reference independently
+ * from the physical drawing number.
  */
-export function getSubmissionReference(row: SubmittalRow): string {
+export function getSubmissionReference(
+  row: SubmittalRow
+): string {
   return readRowField(
     row,
     'submissionRef',
@@ -153,27 +162,47 @@ export function getSubmissionReference(row: SubmittalRow): string {
  *
  * Priority:
  *   1. Explicit drawingNo / drawingNumber
- *   2. Explicit dwgNo / dwgNumber
- *   3. sheetNo only for engineering drawing registers
+ *   2. Explicit dwgNo / dwgNumber / dwg
+ *   3. sheetNo / sheet only for engineering drawing registers
  *
- * We intentionally do NOT blindly treat docNo as DWG No.
+ * We deliberately do NOT blindly treat docNo as DWG No.
  */
-export function getDrawingNumber(row: SubmittalRow): string {
-  const explicitDrawing = readRowField(
-    row,
-    'drawingNo',
-    'drawingNumber',
-    'dwgNo',
-    'dwgNumber',
-    'dwg'
-  );
+export function getDrawingNumber(
+  row: SubmittalRow
+): string {
+  const explicitDrawing =
+    readRowField(
+      row,
+      'drawingNo',
+      'drawingNumber',
+      'dwgNo',
+      'dwgNumber',
+      'dwg'
+    );
 
   if (explicitDrawing) {
     return explicitDrawing;
   }
 
-  const family = (row.workflowFamily || '').toUpperCase().trim();
-  const type = (row.documentType || row.logType || '').toUpperCase().trim();
+  const family =
+    (row.workflowFamily || '')
+      .toUpperCase()
+      .trim();
+
+  const type =
+    (row.documentType || row.logType || '')
+      .toUpperCase()
+      .trim();
+
+  const record =
+    row as unknown as Record<string, unknown>;
+
+  const recordType =
+    String(
+      record.recordType || ''
+    )
+      .toUpperCase()
+      .trim();
 
   const isEngineeringDrawingRegister =
     family === 'SDW' ||
@@ -181,10 +210,15 @@ export function getDrawingNumber(row: SubmittalRow): string {
     type.includes('SHD') ||
     type.includes('SHOP') ||
     type.includes('SHOP DRAWING') ||
-    type.includes('SHOPDRAWING');
+    type.includes('SHOPDRAWING') ||
+    recordType === 'SHD';
 
   if (isEngineeringDrawingRegister) {
-    return readRowField(row, 'sheetNo', 'sheet');
+    return readRowField(
+      row,
+      'sheetNo',
+      'sheet'
+    );
   }
 
   return '';
@@ -193,26 +227,34 @@ export function getDrawingNumber(row: SubmittalRow): string {
 /**
  * 1. Business Entity Resolver
  *
- * This function intentionally remains the register/business identity
- * resolver. It is NOT the revision identity.
- *
- * Example:
- *   SDW:INN-ACE-1.03B-SDW-STR-0005
- *
- * The revision engine must additionally distinguish:
- *   200251
- *   200252
- *   200253
- *   ...
+ * This remains the register/business identity resolver.
+ * It is intentionally NOT the physical revision identity.
  */
-export function getBusinessEntityKey(row: SubmittalRow): string {
-  const family = (row.workflowFamily || '').toUpperCase().trim();
-  const type = (row.documentType || row.logType || 'DOC').toUpperCase().trim();
-  const r = row as unknown as Record<string, unknown>;
+export function getBusinessEntityKey(
+  row: SubmittalRow
+): string {
+  const family =
+    (row.workflowFamily || '')
+      .toUpperCase()
+      .trim();
 
-  const extractRef = (...keys: string[]): string => {
-    for (const k of keys) {
-      const value = r[k];
+  const type =
+    (
+      row.documentType ||
+      row.logType ||
+      'DOC'
+    )
+      .toUpperCase()
+      .trim();
+
+  const r =
+    row as unknown as Record<string, unknown>;
+
+  const extractRef = (
+    ...keys: string[]
+  ): string => {
+    for (const key of keys) {
+      const value = r[key];
 
       if (
         value !== undefined &&
@@ -226,32 +268,37 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     return '';
   };
 
-  const commonRef = extractRef(
-  'submissionRef',
-  'submissionReference',
-  'submittalRef',
-  'submittalReference',
-  'subRef',
-  'subNo',
-  'docNo',
-  'docNumber',
-  'documentNo',
-  'documentNumber',
-  'ref',
-  'id'
-);
+  const commonRef =
+    extractRef(
+      'submissionRef',
+      'submissionReference',
+      'submittalRef',
+      'submittalReference',
+      'subRef',
+      'subNo',
+      'docNo',
+      'docNumber',
+      'documentNo',
+      'documentNumber',
+      'ref',
+      'id'
+    );
 
-  const upperDocNo = extractRef(
-    'docNo',
-    'docNumber',
-    'documentNo'
-  ).toUpperCase();
+  const upperDocNo =
+    extractRef(
+      'docNo',
+      'docNumber',
+      'documentNo'
+    ).toUpperCase();
 
-  const upperLog = (row.logType || '').toUpperCase();
+  const upperLog =
+    (row.logType || '')
+      .toUpperCase();
 
-  const upperSrc = String(
-    (row as unknown as Record<string, unknown>).sourceFile || ''
-  ).toUpperCase();
+  const upperSrc =
+    String(
+      r.sourceFile || ''
+    ).toUpperCase();
 
   const isABD =
     family === 'ABD' ||
@@ -272,11 +319,17 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     upperSrc.includes('AS BUILT') ||
     upperSrc.includes('ASBUILT');
 
-  let baseRef = commonRef;
+  let baseRef =
+    commonRef;
 
   /**
-   * Only strip trailing revision indicators when explicitly
-   * prefixed by REV, REVISION, or R.
+   * Only strip explicit trailing revision indicators.
+   *
+   * Examples:
+   *   REF-REV01 -> REF
+   *   REF-R01   -> REF
+   *
+   * Ordinary reference suffixes are preserved.
    */
   baseRef =
     baseRef
@@ -284,7 +337,8 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
         /[-_/\\s]+(?:REV|REVISION|R)\.?(?:[-_/\\s]*)([0-9]{1,2}|[A-Z])$/i,
         ''
       )
-      .trim() || commonRef;
+      .trim() ||
+    commonRef;
 
   if (isABD) {
     return `ABD:${baseRef.toUpperCase()}`;
@@ -295,13 +349,14 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('NCR') ||
     type === 'NCR'
   ) {
-    const ref = extractRef(
-      'ncrRef',
-      'docNo',
-      'docNumber',
-      'documentNo',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'ncrRef',
+        'docNo',
+        'docNumber',
+        'documentNo',
+        'id'
+      );
 
     return `NCR:${ref.toUpperCase()}`;
   }
@@ -311,13 +366,14 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('SOR') ||
     type === 'SOR'
   ) {
-    const ref = extractRef(
-      'sorRef',
-      'docNo',
-      'docNumber',
-      'documentNo',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'sorRef',
+        'docNo',
+        'docNumber',
+        'documentNo',
+        'id'
+      );
 
     return `SOR:${ref.toUpperCase()}`;
   }
@@ -327,13 +383,14 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('RFI') ||
     type === 'RFI'
   ) {
-    const ref = extractRef(
-      'rfiRef',
-      'docNo',
-      'docNumber',
-      'documentNo',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'rfiRef',
+        'docNo',
+        'docNumber',
+        'documentNo',
+        'id'
+      );
 
     return `RFI:${ref.toUpperCase()}`;
   }
@@ -343,13 +400,13 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('WIR') ||
     type === 'WIR'
   ) {
-    const ref = extractRef(
-      'wirRef',
-      'docNo',
-      'docNumber',
-      'documentNo',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'wirRef',
+        'docNo',
+        'docNumber',
+        'id'
+      );
 
     return `WIR:${ref.toUpperCase()}`;
   }
@@ -359,13 +416,14 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('MIR') ||
     type === 'MIR'
   ) {
-    const ref = extractRef(
-      'mirRef',
-      'docNo',
-      'docNumber',
-      'documentNo',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'mirRef',
+        'docNo',
+        'docNumber',
+        'documentNo',
+        'id'
+      );
 
     return `MIR:${ref.toUpperCase()}`;
   }
@@ -376,12 +434,13 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('LETTER') ||
     type === 'LTR'
   ) {
-    const ref = extractRef(
-      'letterRef',
-      'docNo',
-      'subject',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'letterRef',
+        'docNo',
+        'subject',
+        'id'
+      );
 
     return `LTR:${ref.toUpperCase()}`;
   }
@@ -403,13 +462,14 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('MATERIAL') ||
     type === 'MAR'
   ) {
-    const ref = extractRef(
-      'materialRef',
-      'marRef',
-      'docNo',
-      'docNumber',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'materialRef',
+        'marRef',
+        'docNo',
+        'docNumber',
+        'id'
+      );
 
     return `MAR:${ref.toUpperCase()}`;
   }
@@ -419,85 +479,221 @@ export function getBusinessEntityKey(row: SubmittalRow): string {
     type.includes('QS') ||
     type === 'QS'
   ) {
-    const ref = extractRef(
-      'qsRef',
-      'docNo',
-      'docNumber',
-      'id'
-    );
+    const ref =
+      extractRef(
+        'qsRef',
+        'docNo',
+        'docNumber',
+        'id'
+      );
 
     return `QS:${ref.toUpperCase()}`;
   }
 
-  const disc = (r.discipline as string || '')
-    .trim()
-    .toUpperCase();
+  const disc =
+    String(
+      r.discipline || ''
+    )
+      .trim()
+      .toUpperCase();
 
-  const prefix = type.includes('-')
-    ? type
-    : disc
-      ? `${type}-${disc}`
-      : type;
+  const prefix =
+    type.includes('-')
+      ? type
+      : disc
+        ? `${type}-${disc}`
+        : type;
 
   return `${prefix}:${baseRef.toUpperCase()}`;
 }
 
 /**
- * 2. Document Identity Resolver
+ * 2. Physical Document Identity Resolver
  *
- * THIS IS THE CRITICAL FIX.
+ * CRITICAL IDENTITY RULE:
  *
  * Business identity:
- *   SUB Ref
+ *   SUB Ref / register identity
  *
- * Physical document identity:
- *   SUB Ref + DWG No.
+ * Physical engineering identity:
+ *   Business identity + DWG No.
  *
- * Therefore:
+ * Example:
  *
- *   INN-ACE-1.03B-SDW-STR-0005 + 200251
- *   INN-ACE-1.03B-SDW-STR-0005 + 200252
+ *   SDW:SUB-001::DWG:200251
+ *   SDW:SUB-001::DWG:200252
  *
- * are two different current-state documents even though
- * their SUB Ref is identical.
+ * are two independent physical documents.
  *
- * This prevents revisions of DWG 200252 from affecting DWG 200251.
+ * This prevents revision history for one drawing from affecting
+ * another drawing under the same submission reference.
  */
-export function getDocumentIdentityKey(row: SubmittalRow): string {
-  const businessKey = getBusinessEntityKey(row);
-  const drawingNo = getDrawingNumber(row).toUpperCase().trim();
+export function getDocumentIdentityKey(
+  row: SubmittalRow
+): string {
+  const businessKey =
+    getBusinessEntityKey(row)
+      .toUpperCase()
+      .trim();
+
+  const drawingNo =
+    getDrawingNumber(row)
+      .toUpperCase()
+      .trim();
 
   if (drawingNo) {
     return `${businessKey}::DWG:${drawingNo}`;
   }
 
   /**
-   * If no explicit drawing number exists, retain the old
-   * business identity instead of inventing a false document number.
-   *
-   * This is essential for NCR/SOR/RFI/WIR/MIR/LTR and other
-   * registers where DWG No. is not part of the entity identity.
+   * Non-drawing registers retain business identity.
    */
-  return businessKey;
+  if (businessKey) {
+    return businessKey;
+  }
+
+  /**
+   * FAIL-CLOSED FALLBACK.
+   *
+   * Never allow blank business identity to merge multiple rows.
+   * Prefer the stable source row ID over a random value so that
+   * the same row remains deterministic across repeated calculations.
+   */
+  const record =
+    row as unknown as Record<string, unknown>;
+
+  const rowId =
+    String(
+      row.id ||
+      record.id ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+  if (rowId) {
+    return `ROW:${rowId}`;
+  }
+
+  /**
+   * Final deterministic fallback.
+   *
+   * This branch should normally be unreachable because imported
+   * records are expected to have an ID.
+   */
+  const submissionDate =
+    String(
+      row.submissionDate || ''
+    )
+      .trim();
+
+  const revision =
+    String(
+      row.rev || ''
+    )
+      .trim()
+      .toUpperCase();
+
+  const status =
+    String(
+      row.status ||
+      row.recordStatus ||
+      row.workflowStage ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+  return `ROW:FALLBACK:${submissionDate}:${revision}:${status}`;
+}
+
+/**
+ * Determine whether a row contains a valid revision value.
+ */
+function hasValidRevision(
+  row: SubmittalRow
+): boolean {
+  const revision =
+    normalizeCanonicalString(
+      row.rev ||
+      (row as unknown as Record<string, unknown>).revision ||
+      (row as unknown as Record<string, unknown>).revNo
+    );
+
+  return (
+    revision !== '' &&
+    isValidRevision(revision)
+  );
+}
+
+/**
+ * Return the normalized revision value.
+ */
+function getNormalizedRevision(
+  row: SubmittalRow
+): string {
+  return normalizeCanonicalString(
+    row.rev ||
+    (row as unknown as Record<string, unknown>).revision ||
+    (row as unknown as Record<string, unknown>).revNo
+  );
+}
+
+/**
+ * Sort rows according to canonical revision precedence.
+ *
+ * Revision precedence is primary.
+ * Submission date is the deterministic tie-breaker.
+ * Row ID is the final deterministic tie-breaker.
+ */
+function sortByRevisionPrecedence(
+  rows: SubmittalRow[]
+): SubmittalRow[] {
+  return [...rows].sort(
+    (a, b) => {
+      const revDiff =
+        compareRevisions(
+          a.rev,
+          b.rev
+        );
+
+      if (revDiff !== 0) {
+        return revDiff;
+      }
+
+      const timeA =
+        parseDateTimestamp(
+          a.submissionDate
+        );
+
+      const timeB =
+        parseDateTimestamp(
+          b.submissionDate
+        );
+
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+
+      return (
+        a.id || ''
+      ).localeCompare(
+        b.id || ''
+      );
+    }
+  );
 }
 
 /**
  * 3. Revision & History Engine
  *
- * Revision precedence itself is unchanged.
+ * Revision history is partitioned by physical document identity.
  *
- * The ONLY identity correction is that revision history is now
- * partitioned by getDocumentIdentityKey().
+ * IMPORTANT:
+ * Invalid / blank revisions are never allowed to compete with
+ * valid revisions for latest-revision determination.
  *
- * Therefore:
- *
- * SUB Ref X + DWG 200251
- *   -> Rev00
- *
- * SUB Ref X + DWG 200252
- *   -> Rev00, Rev01, Rev02
- *
- * are resolved independently.
+ * Existing revision precedence is otherwise preserved.
  */
 export function processRevisionEngine(
   rows: SubmittalRow[],
@@ -519,143 +715,248 @@ export function processRevisionEngine(
     isResolved: boolean;
   }
 > {
-  const groups = new Map<string, SubmittalRow[]>();
-  const cutoffTime = parseDateTimestamp(asOfDate);
+  const groups =
+    new Map<
+      string,
+      SubmittalRow[]
+    >();
 
-  rows.forEach(row => {
-    if (cutoffTime > 0 && row.submissionDate) {
-      const subTime = parseDateTimestamp(row.submissionDate);
-
-      if (subTime > cutoffTime) {
-        return;
-      }
-    }
-
-    /**
-     * CRITICAL:
-     * Revision history is grouped by physical document identity,
-     * NOT SUB Ref alone.
-     */
-    const key = getDocumentIdentityKey(row);
-
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-
-    groups.get(key)!.push(row);
-  });
-
-  const result = new Map<
-    string,
-    {
-      latest: SubmittalRow;
-      all: SubmittalRow[];
-      latestSheets: SubmittalRow[];
-      resolvedStatus:
-        | 'APPROVED'
-        | 'REJECTED_OPEN'
-        | 'REJECTED_CLOSED'
-        | 'FINAL_CLOSED'
-        | 'PENDING'
-        | 'UNCLASSIFIED';
-      hasRejection: boolean;
-      isResolved: boolean;
-    }
-  >();
-
-  groups.forEach((groupRows, key) => {
-    /**
-     * Find maximum valid revision weight.
-     *
-     * Existing revision precedence is preserved.
-     */
-    let maxWeight = -1;
-
-    groupRows.forEach(r => {
-      const w = getRevisionWeight(r.rev);
-
-      if (w > maxWeight) {
-        maxWeight = w;
-      }
-    });
-
-    /**
-     * All rows belonging to the latest revision.
-     */
-    const latestSheets = groupRows.filter(
-      r => getRevisionWeight(r.rev) === maxWeight
+  const cutoffTime =
+    parseDateTimestamp(
+      asOfDate
     );
 
-    /**
-     * Sort by revision first, then submission date.
-     *
-     * compareRevisions remains untouched.
-     */
-    const sorted = [...groupRows].sort((a, b) => {
-      const revDiff = compareRevisions(a.rev, b.rev);
+  rows.forEach(
+    row => {
+      if (
+        cutoffTime > 0 &&
+        row.submissionDate
+      ) {
+        const subTime =
+          parseDateTimestamp(
+            row.submissionDate
+          );
 
-      if (revDiff !== 0) {
-        return revDiff;
+        if (
+          subTime > cutoffTime
+        ) {
+          return;
+        }
       }
 
-      const timeA = parseDateTimestamp(a.submissionDate);
-      const timeB = parseDateTimestamp(b.submissionDate);
+      const key =
+        getDocumentIdentityKey(row);
 
-      if (timeA !== timeB) {
-        return timeA - timeB;
+      if (!groups.has(key)) {
+        groups.set(
+          key,
+          []
+        );
       }
 
-      return (a.id || '').localeCompare(b.id || '');
-    });
+      groups
+        .get(key)!
+        .push(row);
+    }
+  );
 
-    const latest =
-      latestSheets[0] ||
-      sorted[sorted.length - 1];
+  const result =
+    new Map<
+      string,
+      {
+        latest: SubmittalRow;
+        all: SubmittalRow[];
+        latestSheets: SubmittalRow[];
+        resolvedStatus:
+          | 'APPROVED'
+          | 'REJECTED_OPEN'
+          | 'REJECTED_CLOSED'
+          | 'FINAL_CLOSED'
+          | 'PENDING'
+          | 'UNCLASSIFIED';
+        hasRejection: boolean;
+        isResolved: boolean;
+      }
+    >();
 
-    let hasRejection = false;
+  groups.forEach(
+    (groupRows, key) => {
+      /**
+       * Only valid revisions participate in latest-revision
+       * precedence.
+       */
+      const validRevisionRows =
+        groupRows.filter(
+          row =>
+            hasValidRevision(row)
+        );
 
-    sorted.forEach(r => {
-      const cat = getStatusCodeCategory(r);
+      let latestSheets:
+        SubmittalRow[] = [];
+
+      let latest:
+        SubmittalRow;
 
       if (
-        cat === 'REJECTED_OPEN' ||
-        cat === 'REJECTED_CLOSED'
+        validRevisionRows.length > 0
       ) {
-        hasRejection = true;
+        let maxWeight =
+          -1;
+
+        validRevisionRows.forEach(
+          row => {
+            const revision =
+              getNormalizedRevision(row);
+
+            const weight =
+              getRevisionWeight(
+                revision
+              );
+
+            if (
+              weight > maxWeight
+            ) {
+              maxWeight =
+                weight;
+            }
+          }
+        );
+
+        latestSheets =
+          validRevisionRows.filter(
+            row =>
+              getRevisionWeight(
+                getNormalizedRevision(row)
+              ) === maxWeight
+          );
+
+        const sortedValid =
+          sortByRevisionPrecedence(
+            validRevisionRows
+          );
+
+        latest =
+          latestSheets.length > 0
+            ? sortByRevisionPrecedence(
+                latestSheets
+              )[latestSheets.length - 1]
+            : sortedValid[
+                sortedValid.length - 1
+              ];
+      } else {
+        /**
+         * No valid revision exists.
+         *
+         * The row remains visible for data-quality/current-state
+         * purposes, but no invalid revision is treated as Rev00
+         * or as a valid revision competitor.
+         */
+        const sortedAll =
+          [...groupRows].sort(
+            (a, b) => {
+              const timeA =
+                parseDateTimestamp(
+                  a.submissionDate
+                );
+
+              const timeB =
+                parseDateTimestamp(
+                  b.submissionDate
+                );
+
+              if (
+                timeA !== timeB
+              ) {
+                return (
+                  timeA - timeB
+                );
+              }
+
+              return (
+                a.id || ''
+              ).localeCompare(
+                b.id || ''
+              );
+            }
+          );
+
+        latest =
+          sortedAll[
+            sortedAll.length - 1
+          ];
+
+        latestSheets =
+          [latest];
       }
-    });
 
-    /**
-     * Current-state classification applies only to rows
-     * at the latest revision of THIS DOCUMENT.
-     */
-    const sheetClassifications = latestSheets.map(r =>
-      getStatusCodeCategory(r)
-    );
+      const sorted =
+        sortByRevisionPrecedence(
+          groupRows
+        );
 
-    const resolvedStatus =
-      classifySubmission(sheetClassifications);
+      let hasRejection =
+        false;
 
-    const isResolved =
-      hasRejection &&
-      resolvedStatus === 'APPROVED';
+      sorted.forEach(
+        row => {
+          const category =
+            getStatusCodeCategory(
+              row
+            );
 
-    result.set(key, {
-      latest,
-      all: sorted,
-      latestSheets,
-      resolvedStatus,
-      hasRejection,
-      isResolved
-    });
-  });
+          if (
+            category ===
+              'REJECTED_OPEN' ||
+            category ===
+              'REJECTED_CLOSED'
+          ) {
+            hasRejection =
+              true;
+          }
+        }
+      );
+
+      /**
+       * Current-state status is evaluated only against the
+       * selected latest revision.
+       */
+      const sheetClassifications =
+        latestSheets.map(
+          row =>
+            getStatusCodeCategory(
+              row
+            )
+        );
+
+      const resolvedStatus =
+        classifySubmission(
+          sheetClassifications
+        );
+
+      const isResolved =
+        hasRejection &&
+        resolvedStatus ===
+          'APPROVED';
+
+      result.set(
+        key,
+        {
+          latest,
+          all: sorted,
+          latestSheets,
+          resolvedStatus,
+          hasRejection,
+          isResolved
+        }
+      );
+    }
+  );
 
   return result;
 }
 
 /**
- * Canonical helper to determine whether an engineering
- * submittal row is overdue according to SLA.
+ * Determine whether the current entity is overdue according to SLA.
  */
 export const isEntityOverdue = (
   latest?: SubmittalRow | null,
@@ -666,12 +967,16 @@ export const isEntityOverdue = (
   }
 
   const nowTime =
-    cutoffTime && cutoffTime > 0
+    cutoffTime &&
+    cutoffTime > 0
       ? cutoffTime
       : Date.now();
 
   if (latest.dueDate) {
-    const dueTime = parseDateTimestamp(latest.dueDate);
+    const dueTime =
+      parseDateTimestamp(
+        latest.dueDate
+      );
 
     if (
       dueTime > 0 &&
@@ -679,16 +984,25 @@ export const isEntityOverdue = (
     ) {
       return true;
     }
-  } else if (latest.submissionDate) {
+  } else if (
+    latest.submissionDate
+  ) {
     const subTime =
-      parseDateTimestamp(latest.submissionDate);
+      parseDateTimestamp(
+        latest.submissionDate
+      );
 
     if (subTime > 0) {
       const diffDays =
-        (nowTime - subTime) /
+        (
+          nowTime -
+          subTime
+        ) /
         (1000 * 3600 * 24);
 
-      if (diffDays > 14) {
+      if (
+        diffDays > 14
+      ) {
         return true;
       }
     }
@@ -700,18 +1014,13 @@ export const isEntityOverdue = (
 /**
  * 4. Master Canonical KPI Calculation Engine
  *
- * Dual / Triple Dimension Governance:
- *
  * Dimension 1:
  *   Workload / Events
  *   = physical source rows
  *
  * Dimension 2:
  *   Current State
- *   = unique physical documents at latest valid revision
- *
- * Document identity:
- *   Business Entity + DWG No. where applicable
+ *   = unique physical documents at latest revision
  *
  * Dimension 3:
  *   Historical rejection events vs resolved current entities
@@ -721,10 +1030,16 @@ export function calculateCanonicalKPIs(
   fullDataset?: SubmittalRow[],
   asOfDate?: string
 ): CanonicalKPIResult {
-  const rowsToUse = data || [];
-  const cutoffTime = parseDateTimestamp(asOfDate);
+  const rowsToUse =
+    data || [];
 
-  const issues: DataQualityIssue[] = [];
+  const cutoffTime =
+    parseDateTimestamp(
+      asOfDate
+    );
+
+  const issues:
+    DataQualityIssue[] = [];
 
   let missingDatesCount = 0;
   let blankStatusCount = 0;
@@ -732,139 +1047,175 @@ export function calculateCanonicalKPIs(
   let duplicateKeysCount = 0;
   let invalidRevisionsCount = 0;
 
-  const validRows: SubmittalRow[] = [];
+  const validRows:
+    SubmittalRow[] = [];
 
   /**
-   * Duplicate detection must also use document identity.
-   *
-   * This prevents:
-   *
-   * SUB + DWG 200251 Rev00
-   *
-   * from being considered the same as:
-   *
-   * SUB + DWG 200252 Rev00
+   * Duplicate detection uses physical document identity.
    */
-  const seenKeyRevs = new Set<string>();
+  const seenKeyRevs =
+    new Set<string>();
 
-  rowsToUse.forEach(r => {
-    const businessKey =
-      getBusinessEntityKey(r);
+  rowsToUse.forEach(
+    row => {
+      const businessKey =
+        getBusinessEntityKey(
+          row
+        );
 
-    const documentKey =
-      getDocumentIdentityKey(r);
+      const documentKey =
+        getDocumentIdentityKey(
+          row
+        );
 
-    const rev = (r.rev || '').trim();
+      const rev =
+        (
+          row.rev ||
+          ''
+        ).trim();
 
-    const keyRev =
-      `${documentKey}__REV__${rev}`;
+      const keyRev =
+        `${documentKey}__REV__${rev}`;
 
-    if (!r.submissionDate) {
-      missingDatesCount++;
-
-      issues.push({
-        id: r.id,
-        businessEntityKey: documentKey,
-        issueType: 'MISSING_DATE',
-        description: 'Missing Submission Date',
-        row: r
-      });
-    }
-
-    if (
-      !r.status &&
-      !r.recordStatus &&
-      !r.workflowStage &&
-      !(r as unknown as Record<string, unknown>).ncrStatus &&
-      !(r as unknown as Record<string, unknown>).sorStatus
-    ) {
-      blankStatusCount++;
-
-      issues.push({
-        id: r.id,
-        businessEntityKey: documentKey,
-        issueType: 'BLANK_STATUS',
-        description:
-          'Blank Status Code and Workflow Stage',
-        row: r
-      });
-    }
-
-    if (
-      cutoffTime > 0 &&
-      r.submissionDate
-    ) {
-      const subTime =
-        parseDateTimestamp(r.submissionDate);
-
-      if (subTime > cutoffTime) {
-        futureDatesCount++;
+      if (!row.submissionDate) {
+        missingDatesCount++;
 
         issues.push({
-          id: r.id,
-          businessEntityKey: documentKey,
-          issueType: 'FUTURE_DATE',
+          id: row.id,
+          businessEntityKey:
+            documentKey,
+          issueType:
+            'MISSING_DATE',
           description:
-            `Submission date (${r.submissionDate}) exceeds snapshot date (${asOfDate})`,
-          row: r
+            'Missing Submission Date',
+          row
         });
-
-        return;
       }
+
+      if (
+        !row.status &&
+        !row.recordStatus &&
+        !row.workflowStage &&
+        !(
+          row as unknown as Record<
+            string,
+            unknown
+          >
+        ).ncrStatus &&
+        !(
+          row as unknown as Record<
+            string,
+            unknown
+          >
+        ).sorStatus
+      ) {
+        blankStatusCount++;
+
+        issues.push({
+          id: row.id,
+          businessEntityKey:
+            documentKey,
+          issueType:
+            'BLANK_STATUS',
+          description:
+            'Blank Status Code and Workflow Stage',
+          row
+        });
+      }
+
+      if (
+        cutoffTime > 0 &&
+        row.submissionDate
+      ) {
+        const subTime =
+          parseDateTimestamp(
+            row.submissionDate
+          );
+
+        if (
+          subTime > cutoffTime
+        ) {
+          futureDatesCount++;
+
+          issues.push({
+            id: row.id,
+            businessEntityKey:
+              documentKey,
+            issueType:
+              'FUTURE_DATE',
+            description:
+              `Submission date (${row.submissionDate}) exceeds snapshot date (${asOfDate})`,
+            row
+          });
+
+          return;
+        }
+      }
+
+      if (
+        seenKeyRevs.has(
+          keyRev
+        )
+      ) {
+        duplicateKeysCount++;
+
+        issues.push({
+          id: row.id,
+          businessEntityKey:
+            documentKey,
+          issueType:
+            'DUPLICATE_REVISION',
+          description:
+            `Duplicate submission for Document Key: ${documentKey} Rev: ${rev}`,
+          row
+        });
+      } else {
+        seenKeyRevs.add(
+          keyRev
+        );
+      }
+
+      if (
+        rev &&
+        !isValidRevision(rev)
+      ) {
+        invalidRevisionsCount++;
+
+        issues.push({
+          id: row.id,
+          businessEntityKey:
+            documentKey,
+          issueType:
+            'INVALID_REVISION',
+          description:
+            `Invalid revision format: ${rev}`,
+          row
+        });
+      }
+
+      void businessKey;
+
+      validRows.push(
+        row
+      );
     }
+  );
 
-    if (seenKeyRevs.has(keyRev)) {
-      duplicateKeysCount++;
-
-      issues.push({
-        id: r.id,
-        businessEntityKey: documentKey,
-        issueType: 'DUPLICATE_REVISION',
-        description:
-          `Duplicate submission for Document Key: ${documentKey} Rev: ${rev}`,
-        row: r
-      });
-    } else {
-      seenKeyRevs.add(keyRev);
-    }
-
-    if (
-      rev &&
-      !isValidRevision(rev)
-    ) {
-      invalidRevisionsCount++;
-
-      issues.push({
-        id: r.id,
-        businessEntityKey: documentKey,
-        issueType: 'INVALID_REVISION',
-        description:
-          `Invalid revision format: ${rev}`,
-        row: r
-      });
-    }
-
-    /**
-     * businessKey is intentionally resolved here to guarantee
-     * the function remains evaluated and available for debugging
-     * without changing the original register identity.
-     */
-    void businessKey;
-
-    validRows.push(r);
-  });
-
-  const dataQuality: DataQualityLedger = {
+  const dataQuality:
+    DataQualityLedger = {
     issues,
     missingDatesCount,
     blankStatusCount,
     futureDatesCount,
     duplicateKeysCount,
     invalidRevisionsCount,
-    totalIssuesCount: issues.length
+    totalIssuesCount:
+      issues.length
   };
 
-  if (validRows.length === 0) {
+  if (
+    validRows.length === 0
+  ) {
     return {
       totalSubmittedSheets: 0,
       totalRows: 0,
@@ -920,7 +1271,8 @@ export function calculateCanonicalKPIs(
   }
 
   // 1. WORKLOAD / SUBMISSION LAYER
-  // Physical Source Rows / Record Grain
+  // Physical source rows / record grain.
+
   const totalSubmittedSheets =
     validRows.length;
 
@@ -933,56 +1285,98 @@ export function calculateCanonicalKPIs(
   let rowApproved = 0;
   let rowPending = 0;
 
-  validRows.forEach(r => {
-    const revVal =
-      normalizeCanonicalString(
-        r.rev ||
-        (r as unknown as Record<string, unknown>).revision ||
-        (r as unknown as Record<string, unknown>).revNo
-      );
+  validRows.forEach(
+    row => {
+      const revVal =
+        normalizeCanonicalString(
+          row.rev ||
+          (
+            row as unknown as Record<
+              string,
+              unknown
+            >
+          ).revision ||
+          (
+            row as unknown as Record<
+              string,
+              unknown
+            >
+          ).revNo
+        );
 
-    const w =
-      getRevisionWeight(revVal);
+      const weight =
+        getRevisionWeight(
+          revVal
+        );
 
-    const isRev0 =
-      (w === 0 &&
-        revVal !== 'AS-BUILT' &&
-        revVal !== 'IFC') ||
-      (r.isRev0 && w === 0);
+      /**
+       * Preserve existing workload classification semantics.
+       *
+       * A valid revision with weight 0 is Rev00.
+       * Existing explicit isRev0 remains supported.
+       *
+       * Invalid/blank revision does not become Rev00 merely
+       * because getRevisionWeight() returns 0.
+       */
+      const isValidRev =
+        isValidRevision(
+          revVal
+        );
 
-    if (isRev0) {
-      totalSheetsRev0++;
-    } else {
-      totalSheetsFurtherRev++;
+      const isRev0 =
+        (
+          isValidRev &&
+          weight === 0
+        ) ||
+        (
+          row.isRev0 === true &&
+          isValidRev &&
+          weight === 0
+        );
+
+      if (isRev0) {
+        totalSheetsRev0++;
+      } else {
+        totalSheetsFurtherRev++;
+      }
+
+      const rowStatusCat =
+        getStatusCodeCategory(
+          row
+        );
+
+      if (
+        rowStatusCat ===
+        'APPROVED'
+      ) {
+        rowApproved++;
+      } else if (
+        rowStatusCat ===
+        'REJECTED_OPEN'
+      ) {
+        totalRejectedRows++;
+        rejectedOpenRows++;
+      } else if (
+        rowStatusCat ===
+        'REJECTED_CLOSED'
+      ) {
+        totalRejectedRows++;
+        rejectedClosedRows++;
+      } else if (
+        rowStatusCat ===
+        'FINAL_CLOSED'
+      ) {
+        finalClosedRows++;
+      } else if (
+        rowStatusCat ===
+        'PENDING'
+      ) {
+        rowPending++;
+      } else {
+        rowPending++;
+      }
     }
-
-    const rowStatusCat =
-      getStatusCodeCategory(r);
-
-    if (rowStatusCat === 'APPROVED') {
-      rowApproved++;
-    } else if (
-      rowStatusCat === 'REJECTED_OPEN'
-    ) {
-      totalRejectedRows++;
-      rejectedOpenRows++;
-    } else if (
-      rowStatusCat === 'REJECTED_CLOSED'
-    ) {
-      totalRejectedRows++;
-      rejectedClosedRows++;
-    } else if (
-      rowStatusCat === 'FINAL_CLOSED'
-    ) {
-      finalClosedRows++;
-    } else if (
-      rowStatusCat === 'PENDING'
-    ) {
-      rowPending++;
-    } else {
-      rowPending++;
-    }
-  });
+  );
 
   const rowApprovedClosed =
     rowApproved +
@@ -990,14 +1384,6 @@ export function calculateCanonicalKPIs(
     finalClosedRows;
 
   // 2. CURRENT STATE LAYER
-  //
-  // UNIQUE DOCUMENT / DRAWING AT LATEST VALID REVISION
-  //
-  // This replaces the old:
-  // "Unique SUB Ref at Latest Valid Revision"
-  //
-  // with:
-  // "Unique Document/Drawing at Latest Valid Revision"
 
   const baseForRevisions =
     fullDataset &&
@@ -1012,13 +1398,16 @@ export function calculateCanonicalKPIs(
     );
 
   /**
-   * Filter revision map to physical documents
+   * Restrict current-state population to physical documents
    * represented by the current dataset.
    */
   const targetDocumentKeys =
     new Set(
-      validRows.map(r =>
-        getDocumentIdentityKey(r)
+      validRows.map(
+        row =>
+          getDocumentIdentityKey(
+            row
+          )
       )
     );
 
@@ -1040,16 +1429,22 @@ export function calculateCanonicalKPIs(
   targetDocumentKeys.forEach(
     documentKey => {
       const groupInfo =
-        revisionMap.get(documentKey);
+        revisionMap.get(
+          documentKey
+        );
 
       if (!groupInfo) {
         return;
       }
 
-      if (groupInfo.hasRejection) {
+      if (
+        groupInfo.hasRejection
+      ) {
         totalEntitiesWithRejectionHistory++;
 
-        if (groupInfo.isResolved) {
+        if (
+          groupInfo.isResolved
+        ) {
           resolvedRejections++;
         }
       }
@@ -1059,7 +1454,9 @@ export function calculateCanonicalKPIs(
 
       const cat =
         groupInfo.resolvedStatus ||
-        getStatusCodeCategory(latest);
+        getStatusCodeCategory(
+          latest
+        );
 
       switch (cat) {
         case 'APPROVED':
@@ -1088,14 +1485,14 @@ export function calculateCanonicalKPIs(
           break;
       }
 
-      // SLA & Overdue:
-      // Only current active items.
       const isActive =
         cat === 'PENDING' ||
         cat === 'REJECTED_OPEN';
 
       if (isActive) {
-        if (latest.dueDate) {
+        if (
+          latest.dueDate
+        ) {
           slaEligibleActiveCount++;
         }
 
@@ -1105,11 +1502,14 @@ export function calculateCanonicalKPIs(
             cutoffTime
           );
 
-        if (isItemOverdue) {
+        if (
+          isItemOverdue
+        ) {
           overdueCurrent++;
 
           if (
-            cat === 'REJECTED_OPEN'
+            cat ===
+            'REJECTED_OPEN'
           ) {
             overdueRejectedOpenCurrent++;
           } else {
@@ -1118,7 +1518,6 @@ export function calculateCanonicalKPIs(
         }
       }
 
-      // Turnaround time for closed/current records.
       if (
         latest.submissionDate &&
         latest.responseDate
@@ -1133,25 +1532,26 @@ export function calculateCanonicalKPIs(
             latest.responseDate
           );
 
-        if (end >= start) {
+        if (
+          end >= start
+        ) {
           const days =
             Math.round(
-              (end - start) /
+              (
+                end - start
+              ) /
               (1000 * 3600 * 24)
             );
 
-          totalResponseDays += days;
+          totalResponseDays +=
+            days;
+
           responseCount++;
         }
       }
     }
   );
 
-  /**
-   * CRITICAL:
-   * Unique current-state population is now the number
-   * of unique document identities, not unique SUB Refs.
-   */
   const totalUniqueDrawings =
     targetDocumentKeys.size;
 
@@ -1189,8 +1589,10 @@ export function calculateCanonicalKPIs(
     activeCurrentItems > 0
       ? Number(
           (
-            (overdueFinal /
-              activeCurrentItems) *
+            (
+              overdueFinal /
+              activeCurrentItems
+            ) *
             100
           ).toFixed(1)
         )
@@ -1198,37 +1600,42 @@ export function calculateCanonicalKPIs(
 
   const approvalRate =
     totalEligible > 0
-      ? (approvedCurrent /
-          totalEligible) *
-        100
+      ? (
+          approvedCurrent /
+          totalEligible
+        ) * 100
       : 0;
 
   const rejectionOpenRate =
     totalEligible > 0
-      ? (rejectedOpenCurrent /
-          totalEligible) *
-        100
+      ? (
+          rejectedOpenCurrent /
+          totalEligible
+        ) * 100
       : 0;
 
   const rejectionClosedRate =
     totalEligible > 0
-      ? (rejectedClosedCurrent /
-          totalEligible) *
-        100
+      ? (
+          rejectedClosedCurrent /
+          totalEligible
+        ) * 100
       : 0;
 
   const delayRate =
     totalEligible > 0
-      ? (overdueFinal /
-          totalEligible) *
-        100
+      ? (
+          overdueFinal /
+          totalEligible
+        ) * 100
       : 0;
 
   const rejectionResolutionRate =
     totalEntitiesWithRejectionHistory > 0
-      ? (resolvedRejections /
-          totalEntitiesWithRejectionHistory) *
-        100
+      ? (
+          resolvedRejections /
+          totalEntitiesWithRejectionHistory
+        ) * 100
       : 0;
 
   const avgResponseTime =
@@ -1241,7 +1648,8 @@ export function calculateCanonicalKPIs(
         )
       : 0;
 
-  // Invariants & Reconciliation
+  // Mathematical invariants.
+
   const isWorkloadReconciled =
     totalSubmittedSheets ===
     totalSheetsRev0 +
@@ -1262,11 +1670,14 @@ export function calculateCanonicalKPIs(
 
   return {
     // 1. Workload / Physical Row Grain
+
     totalSubmittedSheets,
+
     totalRows:
       totalSubmittedSheets,
 
     totalSheetsRev0,
+
     totalSheetsFurtherRev,
 
     totalDrawingsRev0:
@@ -1276,6 +1687,7 @@ export function calculateCanonicalKPIs(
       totalSheetsFurtherRev,
 
     rowApproved,
+
     rowApprovedClosed,
 
     rowRejectedOpen:
@@ -1287,11 +1699,13 @@ export function calculateCanonicalKPIs(
     rowPending,
 
     totalRejectedRows,
+
     rejectedOpenRows,
+
     rejectedClosedRows,
+
     finalClosedRows,
 
-    // Historical Aliases
     rejectionEvents:
       totalRejectedRows,
 
@@ -1302,9 +1716,11 @@ export function calculateCanonicalKPIs(
       rejectedClosedRows,
 
     resolvedRejections,
+
     rejectionResolutionRate,
 
     // 2. Current Unique Document/Drawing Grain
+
     totalUniqueDrawings,
 
     totalUniqueItems:
@@ -1340,7 +1756,6 @@ export function calculateCanonicalKPIs(
       rejectedClosedCurrent +
       finalClosedCurrent,
 
-    // Standard & Backwards Compatible Aliases
     approved:
       approvedCurrent,
 
@@ -1364,6 +1779,7 @@ export function calculateCanonicalKPIs(
       unclassifiedCurrent,
 
     // 3. Overdue & Performance Metrics
+
     activeItems:
       activeCurrentItems,
 
@@ -1394,6 +1810,7 @@ export function calculateCanonicalKPIs(
     delayRate,
 
     // 4. Mathematical Invariants
+
     isWorkloadReconciled,
 
     isCurrentStateReconciled,
@@ -1403,11 +1820,14 @@ export function calculateCanonicalKPIs(
     dataQuality,
 
     // 5. Sequence Integrity & Population Control
+
     expectedPopulation:
       (() => {
         const primaryDocType =
-          validRows[0]?.documentType ||
-          validRows[0]?.logType ||
+          validRows[0]
+            ?.documentType ||
+          validRows[0]
+            ?.logType ||
           'DOC-GEN';
 
         const seqAudit =
@@ -1425,8 +1845,10 @@ export function calculateCanonicalKPIs(
     missingSequenceCount:
       (() => {
         const primaryDocType =
-          validRows[0]?.documentType ||
-          validRows[0]?.logType ||
+          validRows[0]
+            ?.documentType ||
+          validRows[0]
+            ?.logType ||
           'DOC-GEN';
 
         const seqAudit =
@@ -1441,8 +1863,10 @@ export function calculateCanonicalKPIs(
     missingSequenceIds:
       (() => {
         const primaryDocType =
-          validRows[0]?.documentType ||
-          validRows[0]?.logType ||
+          validRows[0]
+            ?.documentType ||
+          validRows[0]
+            ?.logType ||
           'DOC-GEN';
 
         const seqAudit =
@@ -1457,8 +1881,10 @@ export function calculateCanonicalKPIs(
     sequenceGapsCount:
       (() => {
         const primaryDocType =
-          validRows[0]?.documentType ||
-          validRows[0]?.logType ||
+          validRows[0]
+            ?.documentType ||
+          validRows[0]
+            ?.logType ||
           'DOC-GEN';
 
         const seqAudit =
@@ -1473,8 +1899,10 @@ export function calculateCanonicalKPIs(
     sequenceAuditReconciled:
       (() => {
         const primaryDocType =
-          validRows[0]?.documentType ||
-          validRows[0]?.logType ||
+          validRows[0]
+            ?.documentType ||
+          validRows[0]
+            ?.logType ||
           'DOC-GEN';
 
         const seqAudit =
@@ -1489,8 +1917,7 @@ export function calculateCanonicalKPIs(
 }
 
 /**
- * 5. Canonical calculateStats wrapper
- * Backwards Compatible SSOT
+ * 5. Canonical calculateStats wrapper.
  */
 export function calculateStats(
   data: SubmittalRow[],
@@ -1505,9 +1932,9 @@ export function calculateStats(
 }
 
 /**
- * 6. Canonical Dataset Builder
+ * 6. Canonical Dataset Builder.
  *
- * The revision lookup is now document-level.
+ * Revision lookup is document-level.
  */
 export function buildCanonicalDataset(
   rows: SubmittalRow[],
@@ -1526,116 +1953,145 @@ export function buildCanonicalDataset(
       cutoffDate
     );
 
-  const canonicalRecords: CanonicalRecord[] = [];
+  const canonicalRecords:
+    CanonicalRecord[] = [];
 
   const cutoffTime =
-    parseDateTimestamp(cutoffDate);
+    parseDateTimestamp(
+      cutoffDate
+    );
 
-  rows.forEach(row => {
-    if (
-      cutoffTime > 0 &&
-      row.submissionDate
-    ) {
-      const subTime =
-        parseDateTimestamp(
-          row.submissionDate
+  rows.forEach(
+    row => {
+      if (
+        cutoffTime > 0 &&
+        row.submissionDate
+      ) {
+        const subTime =
+          parseDateTimestamp(
+            row.submissionDate
+          );
+
+        if (
+          subTime > cutoffTime
+        ) {
+          return;
+        }
+      }
+
+      const businessEntityKey =
+        getBusinessEntityKey(
+          row
         );
 
-      if (subTime > cutoffTime) {
-        return;
-      }
-    }
+      const documentIdentityKey =
+        getDocumentIdentityKey(
+          row
+        );
 
-    const businessEntityKey =
-      getBusinessEntityKey(row);
+      const groupInfo =
+        revisionMap.get(
+          documentIdentityKey
+        );
 
-    const documentIdentityKey =
-      getDocumentIdentityKey(row);
+      const isLatest =
+        groupInfo
+          ? groupInfo.latest.id ===
+            row.id
+          : true;
 
-    const groupInfo =
-      revisionMap.get(
-        documentIdentityKey
-      );
+      const revVal =
+        (
+          row.rev ||
+          ''
+        ).trim();
 
-    const isLatest =
-      groupInfo
-        ? groupInfo.latest.id === row.id
-        : true;
+      const isRev0 =
+        isValidRevision(
+          revVal
+        ) &&
+        getRevisionWeight(
+          revVal
+        ) === 0;
 
-    const revVal =
-      (row.rev || '').trim();
+      const registerType =
+        (
+          row.documentType ||
+          row.logType ||
+          'DOC'
+        )
+          .toUpperCase()
+          .trim();
 
-    const isRev0 =
-      isValidRevision(revVal) &&
-      getRevisionWeight(revVal) === 0;
+      const resolvedStatus =
+        getStatusCodeCategory(
+          row
+        );
 
-    const registerType =
-      (
-        row.documentType ||
-        row.logType ||
-        'DOC'
-      )
-        .toUpperCase()
-        .trim();
+      canonicalRecords.push({
+        id:
+          row.id,
 
-    const resolvedStatus =
-      getStatusCodeCategory(row);
+        originalRow:
+          row,
 
-    canonicalRecords.push({
-      id: row.id,
-      originalRow: row,
+        registerType,
 
-      registerType,
+        businessEntityKey,
 
-      businessEntityKey,
+        documentIdentityKey,
 
-      documentIdentityKey,
+        revision:
+          revVal,
 
-      revision: revVal,
+        submissionDate:
+          row.submissionDate ||
+          '',
 
-      submissionDate:
-        row.submissionDate || '',
+        responseDate:
+          row.responseDate ||
+          '',
 
-      responseDate:
-        row.responseDate || '',
+        status:
+          row.status ||
+          '',
 
-      status:
-        row.status || '',
+        resolvedStatus,
 
-      resolvedStatus,
+        isLatestRevision:
+          isLatest,
 
-      isLatestRevision:
-        isLatest,
-
-      isRev0,
-
-      isHistoricalRev0:
         isRev0,
 
-      hadRejectionHistory:
-        groupInfo
-          ? groupInfo.hasRejection
-          : false,
+        isHistoricalRev0:
+          isRev0,
 
-      isResolvedRejection:
-        groupInfo
-          ? groupInfo.isResolved
-          : false,
+        hadRejectionHistory:
+          groupInfo
+            ? groupInfo.hasRejection
+            : false,
 
-      firstSubmissionDate:
-        groupInfo &&
-        groupInfo.all.length > 0
-          ? groupInfo.all[0]
-              .submissionDate
-          : row.submissionDate || '',
+        isResolvedRejection:
+          groupInfo
+            ? groupInfo.isResolved
+            : false,
 
-      includeInSubmission:
-        true,
+        firstSubmissionDate:
+          groupInfo &&
+          groupInfo.all.length > 0
+            ? groupInfo.all[0]
+                .submissionDate
+            : row.submissionDate ||
+              '',
 
-      includeInPerformance:
-        isLatest
-    });
-  });
+        includeInSubmission:
+          true,
+
+        includeInPerformance:
+          isLatest
+      });
+    }
+  );
 
   return canonicalRecords;
 }
@@ -1647,7 +2103,8 @@ export function evaluateSubmissionLayer(
   const kpi =
     calculateCanonicalKPIs(
       canonicalRecords.map(
-        r => r.originalRow
+        record =>
+          record.originalRow
       ),
       fullCumulativeRows
     );
@@ -1670,13 +2127,15 @@ export function evaluatePerformanceLayer(
   const kpi =
     calculateCanonicalKPIs(
       canonicalRecords.map(
-        r => r.originalRow
+        record =>
+          record.originalRow
       )
     );
 
   return {
     totalUniqueItems:
-      kpi.totalUniqueDrawings || 0,
+      kpi.totalUniqueDrawings ||
+      0,
 
     approved:
       kpi.approved,
@@ -1716,20 +2175,30 @@ export function evaluateEngineeringItemClassification(
   rows: SubmittalRow[]
 ): EngineeringItemClassification[] {
   const revisionMap =
-    processRevisionEngine(rows);
+    processRevisionEngine(
+      rows
+    );
 
-  const results: EngineeringItemClassification[] = [];
+  const results:
+    EngineeringItemClassification[] =
+    [];
 
   revisionMap.forEach(
     (groupInfo, key) => {
       const invalidRevCount =
         groupInfo.all.filter(
-          r => !isValidRevision(r.rev)
+          row =>
+            !isValidRevision(
+              row.rev
+            )
         ).length;
 
       const validRows =
         groupInfo.all.filter(
-          r => isValidRevision(r.rev)
+          row =>
+            isValidRevision(
+              row.rev
+            )
         );
 
       const sorted =
@@ -1745,18 +2214,25 @@ export function evaluateEngineeringItemClassification(
                 b.submissionDate
               );
 
-            if (timeA !== timeB) {
-              return timeA - timeB;
+            if (
+              timeA !== timeB
+            ) {
+              return (
+                timeA - timeB
+              );
             }
 
-            return compareRevisions(
-              a.rev,
-              b.rev
+            return (
+              a.id || ''
+            ).localeCompare(
+              b.id || ''
             );
           }
         );
 
-      if (sorted.length === 0) {
+      if (
+        sorted.length === 0
+      ) {
         return;
       }
 
@@ -1765,7 +2241,9 @@ export function evaluateEngineeringItemClassification(
 
       const latestOverall =
         groupInfo.latest ||
-        sorted[sorted.length - 1];
+        sorted[
+          sorted.length - 1
+        ];
 
       const drawingNo =
         getDrawingNumber(
@@ -1785,65 +2263,67 @@ export function evaluateEngineeringItemClassification(
       let latestRevStr =
         '(blank)';
 
-      let ruleApplied = '';
-      let explanation = '';
+      let ruleApplied =
+        '';
 
-      if (validRows.length > 0) {
-        const sortedValid =
-          [...validRows].sort(
-            (a, b) => {
-              const timeA =
-                parseDateTimestamp(
-                  a.submissionDate
-                );
+      let explanation =
+        '';
 
-              const timeB =
-                parseDateTimestamp(
-                  b.submissionDate
-                );
+      /**
+       * Classification is based on the canonical revision engine,
+       * not on date-first sorting.
+       */
+      if (
+        validRows.length > 0
+      ) {
+        latestRevStr =
+          (
+            latestOverall.rev ||
+            ''
+          ).trim();
 
-              if (timeA !== timeB) {
-                return timeA - timeB;
-              }
-
-              return compareRevisions(
-                a.rev,
-                b.rev
-              );
-            }
+        const latestIsValid =
+          isValidRevision(
+            latestRevStr
           );
 
-        const latestValid =
-          sortedValid[
-            sortedValid.length - 1
-          ];
+        if (
+          latestIsValid
+        ) {
+          const latestWeight =
+            getRevisionWeight(
+              latestRevStr
+            );
 
-        latestRevStr =
-          (latestValid.rev || '').trim();
+          const isRev0 =
+            latestWeight === 0;
 
-        const isRev0 =
-          getRevisionWeight(
-            latestRevStr
-          ) === 0;
+          if (isRev0) {
+            classification =
+              'Rev00';
 
-        if (isRev0) {
-          classification = 'Rev00';
+            ruleApplied =
+              'Rev00 Baseline Rule: Canonical latest valid revision is 0, 00, or Rev0.';
+          } else {
+            classification =
+              'Further Revision';
 
-          ruleApplied =
-            'Rev00 Baseline Rule: Resolved latest valid revision is 0, 00, or Rev0.';
+            ruleApplied =
+              'Further Revision Rule: Canonical latest valid revision is greater than 0 (e.g., 01, Rev1).';
+          }
         } else {
           classification =
-            'Further Revision';
+            'Missing Revision';
 
           ruleApplied =
-            'Further Revision Rule: Resolved latest valid revision is greater than 0 (e.g., 01, Rev1).';
+            'Missing Revision Rule: No valid canonical latest revision is available.';
         }
 
         explanation =
           `DocumentIdentityKey '${key}' has ${sorted.length} total submission(s). Latest resolved valid revision: '${latestRevStr}'.` +
           (
             invalidRevCount > 0
-              ? ` (Ignored ${invalidRevCount} blank/invalid revision value(s)).`
+              ? ` (Ignored ${invalidRevCount} blank/invalid revision value(s) for revision precedence.)`
               : ''
           );
       } else {
@@ -1866,7 +2346,8 @@ export function evaluateEngineeringItemClassification(
         drawingNo,
 
         sheetNo:
-          latestOverall.sheetNo || '',
+          latestOverall.sheetNo ||
+          '',
 
         submissionRef:
           getSubmissionReference(
@@ -1919,82 +2400,40 @@ export interface PerformanceValidationRow {
 export function getPerformanceValidationRows(
   rows: SubmittalRow[]
 ): PerformanceValidationRow[] {
-  const canonical =
-    buildCanonicalDataset(
-      rows,
+  const revisionMap =
+    processRevisionEngine(
       rows
     );
 
-  const entityMap =
-    new Map<
-      string,
-      CanonicalRecord[]
-    >();
-
-  canonical.forEach(r => {
-    /**
-     * Performance validation must use physical document identity.
-     */
-    const key =
-      r.documentIdentityKey;
-
-    if (!entityMap.has(key)) {
-      entityMap.set(
-        key,
-        []
-      );
-    }
-
-    entityMap.get(key)!.push(r);
-  });
-
   const result:
-    PerformanceValidationRow[] = [];
+    PerformanceValidationRow[] =
+    [];
 
-  entityMap.forEach(
-    (records, key) => {
-      const sorted =
-        [...records].sort(
-          (a, b) => {
-            const timeA =
-              parseDateTimestamp(
-                a.submissionDate
-              );
-
-            const timeB =
-              parseDateTimestamp(
-                b.submissionDate
-              );
-
-            if (timeA !== timeB) {
-              return timeA - timeB;
-            }
-
-            return compareRevisions(
-              a.revision,
-              b.revision
-            );
-          }
-        );
-
+  revisionMap.forEach(
+    (groupInfo, key) => {
       const latest =
-        sorted[sorted.length - 1];
+        groupInfo.latest;
 
       result.push({
         businessEntityKey:
           key,
 
         latestRevision:
-          latest.revision,
+          (
+            latest.rev ||
+            ''
+          ).trim(),
 
         latestSubmissionDate:
-          latest.submissionDate,
+          latest.submissionDate ||
+          '',
 
         latestStatus:
-          latest.status,
+          latest.status ||
+          '',
 
         resolvedStatus:
-          latest.resolvedStatus,
+          groupInfo.resolvedStatus,
 
         includedInPerformance:
           true
@@ -2016,9 +2455,14 @@ export function resolveCanonicalTrade(
 ): CanonicalTradeResolution {
   if (!row) {
     return {
-      trade: 'General',
-      tradeShort: '',
-      presentationDisc: 'GENERAL'
+      trade:
+        'General',
+
+      tradeShort:
+        '',
+
+      presentationDisc:
+        'GENERAL'
     };
   }
 
@@ -2030,7 +2474,9 @@ export function resolveCanonicalTrade(
     }
 
     const clean =
-      text.trim().toUpperCase();
+      text
+        .trim()
+        .toUpperCase();
 
     if (
       !clean ||
@@ -2054,177 +2500,304 @@ export function resolveCanonicalTrade(
       clean.includes('STR-SUR')
     ) {
       return {
-        trade: 'Structural / Survey',
-        tradeShort: 'STR',
-        presentationDisc: 'STR/SUR'
+        trade:
+          'Structural / Survey',
+
+        tradeShort:
+          'STR',
+
+        presentationDisc:
+          'STR/SUR'
       };
     }
 
-    // Infrastructure
     if (
       clean === 'INF' ||
       clean === 'INFRA' ||
       clean.startsWith('INFRA') ||
       clean === 'INFR' ||
-      clean.includes('INFRASTRUCTURE') ||
-      clean.includes('UTILITIES') ||
-      clean.includes('بنية تحتية') ||
-      clean.includes('طرق') ||
-      clean.includes('مرافق')
+      clean.includes(
+        'INFRASTRUCTURE'
+      ) ||
+      clean.includes(
+        'UTILITIES'
+      ) ||
+      clean.includes(
+        'بنية تحتية'
+      ) ||
+      clean.includes(
+        'طرق'
+      ) ||
+      clean.includes(
+        'مرافق'
+      )
     ) {
       return {
-        trade: 'Infrastructure',
-        tradeShort: 'INFRA',
-        presentationDisc: 'Infra'
+        trade:
+          'Infrastructure',
+
+        tradeShort:
+          'INFRA',
+
+        presentationDisc:
+          'Infra'
       };
     }
 
-    // Structural
     if (
       clean === 'STR' ||
       clean === 'STRUCT' ||
-      clean.startsWith('STRUCTUR') ||
+      clean.startsWith(
+        'STRUCTUR'
+      ) ||
       clean === 'CIVIL' ||
       clean === 'CVL' ||
-      clean.startsWith('CIVIL') ||
-      clean.includes('إنشائي') ||
-      clean.includes('انشائي') ||
-      clean.includes('مدني') ||
-      clean.includes('مدنى')
+      clean.startsWith(
+        'CIVIL'
+      ) ||
+      clean.includes(
+        'إنشائي'
+      ) ||
+      clean.includes(
+        'انشائي'
+      ) ||
+      clean.includes(
+        'مدني'
+      ) ||
+      clean.includes(
+        'مدنى'
+      )
     ) {
       return {
-        trade: 'Structural',
-        tradeShort: 'STR',
-        presentationDisc: 'STR'
+        trade:
+          'Structural',
+
+        tradeShort:
+          'STR',
+
+        presentationDisc:
+          'STR'
       };
     }
 
-    // Architectural
     if (
       clean === 'ARC' ||
       clean === 'ARCH' ||
-      clean.startsWith('ARCHITECT') ||
-      clean.includes('معماري') ||
-      clean.includes('معمارى')
+      clean.startsWith(
+        'ARCHITECT'
+      ) ||
+      clean.includes(
+        'معماري'
+      ) ||
+      clean.includes(
+        'معمارى'
+      )
     ) {
       return {
-        trade: 'Architectural',
-        tradeShort: 'ARC',
-        presentationDisc: 'Arch'
+        trade:
+          'Architectural',
+
+        tradeShort:
+          'ARC',
+
+        presentationDisc:
+          'Arch'
       };
     }
 
-    // Mechanical
     if (
       clean === 'MEC' ||
       clean === 'MECH' ||
-      clean.startsWith('MECHANIC') ||
+      clean.startsWith(
+        'MECHANIC'
+      ) ||
       clean === 'HVAC' ||
-      clean.includes('ميكانيك') ||
-      clean.includes('ميكانيكا') ||
-      clean.includes('تكييف')
+      clean.includes(
+        'ميكانيك'
+      ) ||
+      clean.includes(
+        'ميكانيكا'
+      ) ||
+      clean.includes(
+        'تكييف'
+      )
     ) {
       return {
-        trade: 'Mechanical',
-        tradeShort: 'MEC',
-        presentationDisc: 'Mech'
+        trade:
+          'Mechanical',
+
+        tradeShort:
+          'MEC',
+
+        presentationDisc:
+          'Mech'
       };
     }
 
-    // Electrical
     if (
       clean === 'ELE' ||
       clean === 'ELEC' ||
-      clean.startsWith('ELECTR') ||
-      clean.includes('كهرباء') ||
-      clean.includes('كهربائي') ||
-      clean.includes('كهربائى')
+      clean.startsWith(
+        'ELECTR'
+      ) ||
+      clean.includes(
+        'كهرباء'
+      ) ||
+      clean.includes(
+        'كهربائي'
+      ) ||
+      clean.includes(
+        'كهربائى'
+      )
     ) {
       return {
-        trade: 'Electrical',
-        tradeShort: 'ELE',
-        presentationDisc: 'Elec'
+        trade:
+          'Electrical',
+
+        tradeShort:
+          'ELE',
+
+        presentationDisc:
+          'Elec'
       };
     }
 
-    // MEP
     if (
       clean === 'MEP' ||
       clean === 'M.E.P' ||
-      clean.includes('كهروميكانيك') ||
-      clean.includes('اليكتروميكانيك') ||
-      clean.includes('الكتروميكانيك')
+      clean.includes(
+        'كهروميكانيك'
+      ) ||
+      clean.includes(
+        'اليكتروميكانيك'
+      ) ||
+      clean.includes(
+        'الكتروميكانيك'
+      )
     ) {
       return {
-        trade: 'MEP',
-        tradeShort: 'MEP',
-        presentationDisc: 'MEP'
+        trade:
+          'MEP',
+
+        tradeShort:
+          'MEP',
+
+        presentationDisc:
+          'MEP'
       };
     }
 
-    // Landscape
     if (
       clean === 'LAND' ||
       clean === 'LND' ||
-      clean.startsWith('LANDSCAP') ||
+      clean.startsWith(
+        'LANDSCAP'
+      ) ||
       clean === 'LNDSCP' ||
-      clean.includes('لاندسكيب') ||
-      clean.includes('تنسيق مواقع') ||
-      clean.includes('تنسيق الموقع') ||
-      clean.includes('حدائق') ||
-      clean.includes('زراعة')
+      clean.includes(
+        'لاندسكيب'
+      ) ||
+      clean.includes(
+        'تنسيق مواقع'
+      ) ||
+      clean.includes(
+        'تنسيق الموقع'
+      ) ||
+      clean.includes(
+        'حدائق'
+      ) ||
+      clean.includes(
+        'زراعة'
+      )
     ) {
       return {
-        trade: 'Landscape',
-        tradeShort: 'LAND',
-        presentationDisc: 'Landscape'
+        trade:
+          'Landscape',
+
+        tradeShort:
+          'LAND',
+
+        presentationDisc:
+          'Landscape'
       };
     }
 
-    // Survey
     if (
       clean === 'SUR' ||
       clean === 'SURV' ||
-      clean.startsWith('SURVEY') ||
-      clean.includes('مساحة') ||
-      clean.includes('مساحه')
+      clean.startsWith(
+        'SURVEY'
+      ) ||
+      clean.includes(
+        'مساحة'
+      ) ||
+      clean.includes(
+        'مساحه'
+      )
     ) {
       return {
-        trade: 'Survey',
-        tradeShort: 'SUR',
-        presentationDisc: 'SURVEY'
+        trade:
+          'Survey',
+
+        tradeShort:
+          'SUR',
+
+        presentationDisc:
+          'SURVEY'
       };
     }
 
-    // HSE / Safety
     if (
       clean === 'HSE' ||
       clean === 'SAFETY' ||
       clean === 'HEALTH' ||
       clean === 'ENV' ||
-      clean.includes('سلامة') ||
-      clean.includes('سلامه') ||
-      clean.includes('بيئة') ||
-      clean.includes('بيئه')
+      clean.includes(
+        'سلامة'
+      ) ||
+      clean.includes(
+        'سلامه'
+      ) ||
+      clean.includes(
+        'بيئة'
+      ) ||
+      clean.includes(
+        'بيئه'
+      )
     ) {
       return {
-        trade: 'HSE',
-        tradeShort: 'HSE',
-        presentationDisc: 'HSE'
+        trade:
+          'HSE',
+
+        tradeShort:
+          'HSE',
+
+        presentationDisc:
+          'HSE'
       };
     }
 
-    // Irrigation
     if (
       clean === 'IRR' ||
-      clean.startsWith('IRRIGAT') ||
-      clean.includes('ري') ||
-      clean.includes('رى')
+      clean.startsWith(
+        'IRRIGAT'
+      ) ||
+      clean.includes(
+        'ري'
+      ) ||
+      clean.includes(
+        'رى'
+      )
     ) {
       return {
-        trade: 'Irrigation',
-        tradeShort: 'IRR',
-        presentationDisc: 'IRR'
+        trade:
+          'Irrigation',
+
+        tradeShort:
+          'IRR',
+
+        presentationDisc:
+          'IRR'
       };
     }
 
@@ -2233,7 +2806,9 @@ export function resolveCanonicalTrade(
 
   // 1. Explicit discipline
   const fromDisc =
-    checkText(row.discipline);
+    checkText(
+      row.discipline
+    );
 
   if (fromDisc) {
     return fromDisc;
@@ -2241,13 +2816,15 @@ export function resolveCanonicalTrade(
 
   // 2. Explicit trade
   const fromTrade =
-    checkText(row.trade);
+    checkText(
+      row.trade
+    );
 
   if (fromTrade) {
     return fromTrade;
   }
 
-  // 3. contextDiscipline / compositeIdentity
+  // 3. Context discipline / composite identity
   const rowRecord =
     row as unknown as Record<
       string,
@@ -2256,7 +2833,10 @@ export function resolveCanonicalTrade(
 
   const compositeIdentity =
     rowRecord.compositeIdentity as
-      | Record<string, unknown>
+      | Record<
+          string,
+          unknown
+        >
       | undefined;
 
   const fromContext =
@@ -2277,7 +2857,7 @@ export function resolveCanonicalTrade(
     return fromContext;
   }
 
-  // 4. tradeShort
+  // 4. Trade short
   const fromTradeShort =
     checkText(
       String(
@@ -2290,19 +2870,25 @@ export function resolveCanonicalTrade(
     return fromTradeShort;
   }
 
-  // 5. documentType suffix
+  // 5. Document type suffix
   if (row.documentType) {
     const parts =
       row.documentType.split(
         /[-_/ ]+/
       );
 
-    if (parts.length > 1) {
+    if (
+      parts.length > 1
+    ) {
       const suffix =
-        parts[parts.length - 1];
+        parts[
+          parts.length - 1
+        ];
 
       const fromDocType =
-        checkText(suffix);
+        checkText(
+          suffix
+        );
 
       if (fromDocType) {
         return fromDocType;
@@ -2321,7 +2907,8 @@ export function resolveCanonicalTrade(
 
     if (
       tokens.length > 2 &&
-      tokens[0].toUpperCase() === 'INN' &&
+      tokens[0].toUpperCase() ===
+        'INN' &&
       (
         tokens[1].toUpperCase() ===
           'ARC' ||
@@ -2333,9 +2920,13 @@ export function resolveCanonicalTrade(
         tokens.slice(2);
     }
 
-    for (const t of tokens) {
+    for (
+      const token of tokens
+    ) {
       const fromToken =
-        checkText(t);
+        checkText(
+          token
+        );
 
       if (fromToken) {
         return fromToken;
@@ -2352,12 +2943,15 @@ export function resolveCanonicalTrade(
 
   return {
     trade:
-      rawD || 'General',
+      rawD ||
+      'General',
 
-    tradeShort: '',
+    tradeShort:
+      '',
 
     presentationDisc:
-      rawD || 'GENERAL'
+      rawD ||
+      'GENERAL'
   };
 }
 
@@ -2365,12 +2959,16 @@ export function resolveRowDiscipline(
   row: SubmittalRow,
   baseType?: string
 ): string {
+  void baseType;
+
   if (!row) {
     return 'GENERAL';
   }
 
   const resolved =
-    resolveCanonicalTrade(row);
+    resolveCanonicalTrade(
+      row
+    );
 
   return resolved.presentationDisc;
 }
@@ -2380,7 +2978,9 @@ export function calculateNCRStats(
   fullDataset?: SubmittalRow[] | boolean
 ): any {
   const dataset =
-    Array.isArray(fullDataset)
+    Array.isArray(
+      fullDataset
+    )
       ? fullDataset
       : undefined;
 
@@ -2393,12 +2993,14 @@ export function calculateNCRStats(
   return {
     ...kpi,
 
-    discipline: '',
+    discipline:
+      '',
 
     totalUnique:
       kpi.totalUniqueDrawings,
 
-    notSent: 0,
+    notSent:
+      0,
 
     underReview:
       kpi.pending,
@@ -2433,7 +3035,9 @@ export function calculateSORStats(
   fullDataset?: SubmittalRow[] | boolean
 ): any {
   const dataset =
-    Array.isArray(fullDataset)
+    Array.isArray(
+      fullDataset
+    )
       ? fullDataset
       : undefined;
 
@@ -2446,12 +3050,14 @@ export function calculateSORStats(
   return {
     ...kpi,
 
-    discipline: '',
+    discipline:
+      '',
 
     totalUnique:
       kpi.totalUniqueDrawings,
 
-    notSent: 0,
+    notSent:
+      0,
 
     underReview:
       kpi.pending,
@@ -2486,7 +3092,9 @@ export function calculateLTRStats(
   fullDataset?: SubmittalRow[] | boolean
 ): any {
   const dataset =
-    Array.isArray(fullDataset)
+    Array.isArray(
+      fullDataset
+    )
       ? fullDataset
       : undefined;
 
@@ -2499,34 +3107,36 @@ export function calculateLTRStats(
   let inCount = 0;
   let outCount = 0;
 
-  (data || []).forEach(r => {
-    const record =
-      r as unknown as Record<
-        string,
-        unknown
-      >;
+  (data || []).forEach(
+    row => {
+      const record =
+        row as unknown as Record<
+          string,
+          unknown
+        >;
 
-    const dir =
-      String(
-        record.direction ||
-        record.letterDirection ||
-        ''
-      ).toUpperCase();
+      const dir =
+        String(
+          record.direction ||
+          record.letterDirection ||
+          ''
+        ).toUpperCase();
 
-    if (
-      dir === 'IN' ||
-      record.direction === 'IN'
-    ) {
-      inCount++;
-    } else if (
-      dir === 'OUT' ||
-      record.direction === 'OUT'
-    ) {
-      outCount++;
-    } else {
-      inCount++;
+      if (
+        dir === 'IN' ||
+        record.direction === 'IN'
+      ) {
+        inCount++;
+      } else if (
+        dir === 'OUT' ||
+        record.direction === 'OUT'
+      ) {
+        outCount++;
+      } else {
+        inCount++;
+      }
     }
-  });
+  );
 
   return {
     ...kpi,
@@ -2543,7 +3153,8 @@ export function calculateLTRStats(
     totalSheetsFurtherRev:
       outCount,
 
-    stakeholder: '',
+    stakeholder:
+      '',
 
     totalUnique:
       kpi.totalUniqueDrawings,
@@ -2581,10 +3192,12 @@ export function exportPerformanceValidationCsv(
   let csv =
     'BusinessEntityKey,Latest Revision,Latest Submission Date,Latest Status,Resolved Status,Included In Performance\n';
 
-  perfRows.forEach(r => {
-    csv +=
-      `"${r.businessEntityKey}","${r.latestRevision}","${r.latestSubmissionDate}","${r.latestStatus}","${r.resolvedStatus}","${r.includedInPerformance}"\n`;
-  });
+  perfRows.forEach(
+    row => {
+      csv +=
+        `"${row.businessEntityKey}","${row.latestRevision}","${row.latestSubmissionDate}","${row.latestStatus}","${row.resolvedStatus}","${row.includedInPerformance}"\n`;
+    }
+  );
 
   return csv;
 }
