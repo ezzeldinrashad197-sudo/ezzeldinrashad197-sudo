@@ -1,0 +1,42 @@
+[
+  {
+    "functionName": "calculateStats",
+    "cyclomatic": 1,
+    "loc": 3,
+    "halsteadVolume": 28.07,
+    "maintainabilityIndex": 151.65,
+    "normalizedMi": 89
+  },
+  {
+    "functionName": "calculateNCRStats",
+    "cyclomatic": 1,
+    "loc": 3,
+    "halsteadVolume": 23.26,
+    "maintainabilityIndex": 152.63,
+    "normalizedMi": 89
+  },
+  {
+    "functionName": "calculateSORStats",
+    "cyclomatic": 1,
+    "loc": 3,
+    "halsteadVolume": 23.26,
+    "maintainabilityIndex": 152.63,
+    "normalizedMi": 89
+  },
+  {
+    "functionName": "calculateLTRStats",
+    "cyclomatic": 1,
+    "loc": 3,
+    "halsteadVolume": 23.26,
+    "maintainabilityIndex": 152.63,
+    "normalizedMi": 89
+  },
+  {
+    "functionName": "getDelayDays",
+    "cyclomatic": 8,
+    "loc": 14,
+    "halsteadVolume": 298.78,
+    "maintainabilityIndex": 135.25,
+    "normalizedMi": 79
+  }
+]
