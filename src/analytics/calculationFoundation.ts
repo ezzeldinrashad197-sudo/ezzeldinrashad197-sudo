@@ -95,12 +95,34 @@ export interface CanonicalKPIResult extends KPIStats {
 /**
  * Helper to safely parse any date string into timestamp for comparison.
  */
-export function parseDateTimestamp(dateStr?: string): number {
+export function parseDateTimestamp(dateStr?: string | number | Date | null): number {
   if (!dateStr) return 0;
 
-  const parsed = new Date(dateStr).getTime();
+  if (dateStr instanceof Date) {
+    const t = dateStr.getTime();
+    return isNaN(t) ? 0 : t;
+  }
 
-  return isNaN(parsed) ? 0 : parsed;
+  if (typeof dateStr === 'number') {
+    return isNaN(dateStr) ? 0 : dateStr;
+  }
+
+  const s = String(dateStr).trim();
+  if (!s) return 0;
+
+  const parsed = new Date(s).getTime();
+  if (!isNaN(parsed)) return parsed;
+
+  const parts = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (parts) {
+    const d = parseInt(parts[1], 10);
+    const m = parseInt(parts[2], 10) - 1;
+    const y = parseInt(parts[3], 10);
+    const dt = new Date(Date.UTC(y, m, d)).getTime();
+    if (!isNaN(dt)) return dt;
+  }
+
+  return 0;
 }
 
 /**
@@ -662,6 +684,11 @@ export const isEntityOverdue = (
   cutoffTime?: number
 ): boolean => {
   if (!latest) {
+    return false;
+  }
+
+  const cat = getStatusCodeCategory(latest);
+  if (cat !== 'PENDING' && cat !== 'REJECTED_OPEN') {
     return false;
   }
 

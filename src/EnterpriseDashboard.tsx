@@ -26,7 +26,7 @@ import {
   generateExecutiveIntelligence,
   checkIfOverdueDynamically
 } from './utils/enterpriseAnalyticsEngine';
-import { getRevisionWeight } from './analytics/revisionResolver';
+import { getRevisionWeight, compareRevisionsCanonical } from './analytics/revisionResolver';
 
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -190,7 +190,7 @@ export default function EnterpriseDashboard({ data }: EnterpriseDashboardProps) 
   const selectedDocRevisions = useMemo(() => {
     if (!selectedDocNo) return [];
     return data.filter(d => (d.docNo || d.id) === selectedDocNo)
-               .sort((a, b) => getRevisionWeight(a.rev) - getRevisionWeight(b.rev));
+               .sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
   }, [data, selectedDocNo]);
 
   // Dynamic Lifecycle (Priority 2)

@@ -25,7 +25,7 @@ export type { StatusMapConfig };
 export { DEFAULT_STATUS_MAP, getProjectStatusMap, getNormalizedStatus, checkIfOverdueDynamically };
 
 // Canonical revision and status resolvers are imported from dedicated SSOT modules.
-import { getRevisionWeight } from '../analytics/revisionResolver';
+import { getRevisionWeight, compareRevisionsCanonical } from '../analytics/revisionResolver';
 import { getStatusCodeCategory } from './calculations';
 import { getStatusCategory } from '../analytics/statusResolver';
 export { getStatusCategory } from '../analytics/statusResolver';
@@ -103,7 +103,7 @@ export interface DocLifecycleInfo {
 }
 
 export const calculateDocumentLifecycle = (docNo: string, revisions: SubmittalRow[], statusMap: StatusMapConfig = DEFAULT_STATUS_MAP, asOfDate?: string): DocLifecycleInfo => {
-  const sortedRevs = [...revisions].sort((a, b) => getRevisionWeight(a.rev) - getRevisionWeight(b.rev));
+  const sortedRevs = [...revisions].sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
   const earliestRev = sortedRevs[0] || {} as SubmittalRow;
   const latestRev = sortedRevs[sortedRevs.length - 1] || {} as SubmittalRow;
   

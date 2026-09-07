@@ -1,5 +1,5 @@
 import { SubmittalRow, RegisterSequenceAudit, SequenceAuditResult, SequenceGap, ForensicLedgerEntry } from '../types';
-import { getRevisionWeight } from './revisionResolver';
+import { getRevisionWeight, compareRevisionsCanonical } from './revisionResolver';
 import { getStatusCodeCategory } from './statusResolver';
 
 export interface ParsedDocIdentifier {
@@ -203,7 +203,7 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
       rev0SequenceNumbers.add(seq);
     } else {
       // Entity only exists as Further Rev (e.g. started directly at Rev 01)
-      histRows.sort((a, b) => getRevisionWeight(a.rev) - getRevisionWeight(b.rev));
+      histRows.sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
       furtherRevWithoutRev0.push({
         docNo,
         firstRecordedRev: histRows[0]?.rev || '01',

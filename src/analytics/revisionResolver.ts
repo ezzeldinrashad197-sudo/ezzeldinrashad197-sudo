@@ -65,3 +65,44 @@ export const compareRevisionsCanonical = (
   if (b < 0) return 1;
   return a - b;
 };
+
+/**
+ * Canonical helper to normalize revision representation.
+ */
+export const getNormalizedRevision = (
+  rev?: string | number | null,
+  isRev0?: boolean
+): string => {
+  if (rev === undefined || rev === null) {
+    return isRev0 ? '0' : (isRev0 === false ? 'Unknown' : '0');
+  }
+  const r = String(rev).trim().toUpperCase();
+  if (
+    r === '00' ||
+    r === '0' ||
+    r === 'REV0' ||
+    r === 'REV00' ||
+    r === 'REV.0' ||
+    r === 'REV.00' ||
+    r === ''
+  ) {
+    return '0';
+  }
+  let cleaned = r.replace(/^REV\.?\s*/, '');
+  if (cleaned === '00' || cleaned === '0' || cleaned === '') {
+    return '0';
+  }
+  if (/^0+[1-9]\d*$/.test(cleaned)) {
+    cleaned = cleaned.replace(/^0+/, '');
+  }
+  return cleaned;
+};
+
+/**
+ * Sorts any list of items by canonical revision precedence.
+ */
+export const sortByRevisionPrecedence = <T extends { rev?: string | number | null }>(
+  items: T[]
+): T[] => {
+  return [...items].sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
+};

@@ -1,23 +1,6 @@
 import { AnyRecord, ValidationIssue } from './models';
 import { getStatusCodeCategory } from '../utils/calculations';
-
-const getNormalizedRevision = (rev?: string | number): string => {
-    if (rev === undefined || rev === null) {
-        return '0';
-    }
-    const r = String(rev).trim().toUpperCase();
-    if (r === '00' || r === '0' || r === 'REV0' || r === 'REV00' || r === 'REV.0' || r === 'REV.00' || r === '') {
-        return '0';
-    }
-    let cleaned = r.replace(/^REV\.?\s*/, '');
-    if (cleaned === '00' || cleaned === '0' || cleaned === '') {
-        return '0';
-    }
-    if (/^0+[1-9]\d*$/.test(cleaned)) {
-        cleaned = cleaned.replace(/^0+/, '');
-    }
-    return cleaned;
-};
+import { getNormalizedRevision } from './revisionResolver';
 
 export const validateDataset = (records: AnyRecord[]): ValidationIssue[] => {
     const issues: ValidationIssue[] = [];

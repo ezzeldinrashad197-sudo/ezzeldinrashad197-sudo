@@ -91,7 +91,7 @@ export function classifyRow(code?: string, status?: string): CanonicalStatus {
   }
 
   // Fallback for unrecognized codes with review
-  return 'PENDING';
+  return 'UNCLASSIFIED';
 }
 
 /**
@@ -198,11 +198,19 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
   // RFI lifecycle: Canonical field precedence (recordStatus > workflowStage > status/action)
   if (isRFI) {
     // 1. Code C Rejection Semantics:
-    // Explicit rawCode is the SSOT for Code C.
+    // Explicit rawCode or rawStatusCombined is the SSOT for Code C.
     // Do NOT allow generic "REJECTED" in notes/descriptions to convert a row into Code C.
     const isCodeC = (
       rawCode === 'C' ||
-      rawCode === 'CODE C'
+      rawCode === 'CODE C' ||
+      rawStatusCombined === 'C' ||
+      rawStatusCombined === 'CODE C' ||
+      rawStatusCombined.startsWith('C ') ||
+      rawStatusCombined.endsWith(' C') ||
+      rawStatusCombined.includes(' C ') ||
+      rawCode === 'REJECTED' ||
+      rawStatusCombined === 'REJECTED' ||
+      action === 'REJECTED'
     );
     if (isCodeC) {
       const isExplicitClosedOnCodeC = (
@@ -254,7 +262,10 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
       combined.includes('UNDER INVESTIGATION') ||
       /\b(PENDING|WAITING|OPEN)\b/.test(combined) ||
       rawCode === 'W' ||
-      rawCode === 'CODE W'
+      rawCode === 'CODE W' ||
+      rawStatusCombined === 'W' ||
+      rawStatusCombined === 'CODE W' ||
+      rawStatusCombined.startsWith('W ')
     ) {
       return 'PENDING';
     }
@@ -268,6 +279,12 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
       rawCode === 'B' ||
       rawCode === 'CODE A' ||
       rawCode === 'CODE B' ||
+      rawStatusCombined === 'A' ||
+      rawStatusCombined === 'B' ||
+      rawStatusCombined === 'CODE A' ||
+      rawStatusCombined === 'CODE B' ||
+      rawStatusCombined.startsWith('A ') ||
+      rawStatusCombined.startsWith('B ') ||
       /\b(APPROVED|ACCEPTED)\b/.test(combined)
     );
 

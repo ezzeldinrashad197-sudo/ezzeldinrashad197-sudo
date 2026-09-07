@@ -1,9 +1,9 @@
 import { SubmittalRow, ProjectSettings } from '../types';
 import { getNormalizedStatus, checkIfOverdueDynamically } from '../utils/statusMatrixEngine';
-import { compareRevisionsCanonical, isValidRevision } from './revisionResolver';
+import { compareRevisionsCanonical, isValidRevision, getNormalizedRevision, sortByRevisionPrecedence } from './revisionResolver';
 import { getStatusCodeCategory } from './statusResolver';
 
-export { isValidRevision };
+export { isValidRevision, getNormalizedRevision, sortByRevisionPrecedence };
 
 export type NormalizedStatus = 'OPEN' | 'CLOSED' | 'REJECTED' | 'OVERDUE' | 'UNKNOWN';
 
@@ -67,7 +67,7 @@ export const getLatestRevision = (rows: SubmittalRow[]): SubmittalRow | undefine
 };
 
 export const sortRevisions = (rows: SubmittalRow[]): SubmittalRow[] => {
-  return [...rows].sort((a, b) => compareRevisions(a.rev, b.rev));
+  return sortByRevisionPrecedence(rows);
 };
 
 /**
