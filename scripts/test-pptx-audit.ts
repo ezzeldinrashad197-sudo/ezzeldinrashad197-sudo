@@ -25,11 +25,24 @@ export function generateTestDataset(numRejected: number = 45, numPending: number
   const docTypes = ['SDW', 'ABD', 'MAR', 'DOC', 'MIR', 'WIR', 'RFI', 'NCR', 'SOR', 'TRS', 'LTR'];
   const disciplines = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape'];
   
+  const createRow = (partial: Partial<SubmittalRow>): SubmittalRow => ({
+    logType: 'Submittals',
+    trade: partial.discipline || 'General',
+    isLatestRev: true,
+    isRev0: true,
+    overdue: false,
+    sheetNo: '1',
+    contractor: 'Contractor',
+    consultant: 'Consultant',
+    remarks: '',
+    ...partial
+  } as SubmittalRow);
+
   let id = 1;
   // 1. Approved items across all doc types
   for (const dt of docTypes) {
     for (const disc of disciplines) {
-      rows.push({
+      rows.push(createRow({
         id: `ROW-${id++}`,
         docNo: `${dt}-${disc}-APP-001`,
         rev: '00',
@@ -41,7 +54,7 @@ export function generateTestDataset(numRejected: number = 45, numPending: number
         documentType: dt,
         workflowStage: 'Approved',
         delayDays: 0
-      });
+      }));
     }
   }
 
@@ -49,7 +62,7 @@ export function generateTestDataset(numRejected: number = 45, numPending: number
   for (let i = 1; i <= numRejected; i++) {
     const dt = docTypes[i % docTypes.length];
     const disc = disciplines[i % disciplines.length];
-    rows.push({
+    rows.push(createRow({
       id: `ROW-${id++}`,
       docNo: `${dt}-${disc}-REJ-${String(i).padStart(3, '0')}`,
       rev: '00',
@@ -61,14 +74,14 @@ export function generateTestDataset(numRejected: number = 45, numPending: number
       documentType: dt,
       workflowStage: 'Rejected',
       delayDays: 10 + (i % 30)
-    });
+    }));
   }
 
   // 3. Large set of Pending items to test multi-slide pagination
   for (let i = 1; i <= numPending; i++) {
     const dt = docTypes[i % docTypes.length];
     const disc = disciplines[i % disciplines.length];
-    rows.push({
+    rows.push(createRow({
       id: `ROW-${id++}`,
       docNo: `${dt}-${disc}-PND-${String(i).padStart(3, '0')}`,
       rev: '00',
@@ -80,14 +93,14 @@ export function generateTestDataset(numRejected: number = 45, numPending: number
       documentType: dt,
       workflowStage: 'Pending',
       delayDays: 5 + (i % 25)
-    });
+    }));
   }
 
   return rows;
 }
 
 export function computeDatasetKPIs(rows: SubmittalRow[]) {
-  const dashData = calculateExecutiveDashboardData(rows, false);
+  const dashData = calculateExecutiveDashboardData(rows, rows, false);
   return {
     totalSubmissions: dashData.globalStats.totalSubmissions,
     approved: dashData.globalStats.approved,

@@ -342,4 +342,3 @@ export const getClosedOpenByDocType = (
 
   return { closed, open };
 };
-```

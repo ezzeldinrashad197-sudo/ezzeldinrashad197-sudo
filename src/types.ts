@@ -269,4 +269,3 @@ export interface ForensicLedgerEntry {
   dispositionReason: string;
   dispositionReasonAr: string;
 }
-```
