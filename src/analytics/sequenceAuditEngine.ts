@@ -1,5 +1,5 @@
 import { SubmittalRow, RegisterSequenceAudit, SequenceAuditResult, SequenceGap, ForensicLedgerEntry } from '../types';
-import { getRevisionWeight, compareRevisionsCanonical } from './revisionResolver';
+import { getRevisionWeight, compareRevisionsCanonical, isRevision0, isFurtherRevision } from './revisionResolver';
 import { getStatusCodeCategory } from './statusResolver';
 
 export interface ParsedDocIdentifier {
@@ -130,10 +130,10 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
   rows.forEach(r => {
     const rawDoc = (r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || '').trim();
     const rev = String(r.rev || '').trim().toUpperCase();
-    const w = getRevisionWeight(rev);
-    const isRev0 = w === 0 && rev !== 'AS-BUILT' && rev !== 'IFC' || (r.isRev0 && w === 0);
+    const isRev0 = isRevision0(r.rev, r.isRev0);
+    const isFurther = isFurtherRevision(r.rev, r.isRev0);
 
-    if (!isRev0) {
+    if (isFurther) {
       furtherRevRows++;
     }
 
@@ -193,15 +193,12 @@ export const auditRegisterSequence = (docType: string, rows: SubmittalRow[]): Re
     }
 
     // Check if this entity has a Rev 00
-    const hasRev0 = histRows.some(r => {
-      const rev = String(r.rev || '').trim().toUpperCase();
-      const w = getRevisionWeight(rev);
-      return w === 0 && rev !== 'AS-BUILT' && rev !== 'IFC' || (r.isRev0 && w === 0);
-    });
+    const hasRev0 = histRows.some(r => isRevision0(r.rev, r.isRev0));
+    const hasFurther = histRows.some(r => isFurtherRevision(r.rev, r.isRev0));
 
     if (hasRev0) {
       rev0SequenceNumbers.add(seq);
-    } else {
+    } else if (hasFurther) {
       // Entity only exists as Further Rev (e.g. started directly at Rev 01)
       histRows.sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
       furtherRevWithoutRev0.push({

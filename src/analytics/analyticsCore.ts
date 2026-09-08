@@ -9,7 +9,9 @@ import {
   isRevision0,
   isFurtherRevision,
   extractRevisionRaw,
-  assertRevisionInvariants
+  assertRevisionInvariants,
+  classifyRevision,
+  type RevisionClassification
 } from './revisionResolver';
 import { getStatusCodeCategory } from './statusResolver';
 
@@ -22,7 +24,9 @@ export {
   isRevision0,
   isFurtherRevision,
   extractRevisionRaw,
-  assertRevisionInvariants
+  assertRevisionInvariants,
+  classifyRevision,
+  type RevisionClassification
 };
 
 export type NormalizedStatus = 'OPEN' | 'CLOSED' | 'REJECTED' | 'OVERDUE' | 'UNKNOWN';

@@ -8,8 +8,15 @@ import {
 } from 'lucide-react';
 import { SubmittalRow, ProjectSettings } from '../types';
 import { calculateStats, calculateNCRStats, calculateSORStats, parseDateTimestamp, getStatusCodeCategory } from '../utils/calculations';
-import { compareRevisions, isValidRevision } from '../analytics/analyticsCore';
-import { getRevisionWeight } from '../analytics/revisionResolver';
+import { 
+  getRevisionWeight, 
+  isRevision0, 
+  isFurtherRevision, 
+  classifyRevision, 
+  compareRevisionsCanonical as compareRevisions, 
+  isValidRevision,
+  type RevisionClassification 
+} from '../analytics/revisionResolver';
 import { AuditIntegrityCenter } from './AuditIntegrityCenter';
 
 interface CalculationAuditCenterProps {
@@ -116,28 +123,31 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
         item.latestRevStr = revRaw;
         item.latestRevNum = getRevisionWeight(revRaw);
 
-        const isRev0 = getRevisionWeight(revRaw) === 0;
-        item.isRev0 = isRev0;
-        item.classification = isRev0 ? 'Rev0' : 'Further Rev';
+        const classification = classifyRevision(revRaw, latestValid.isRev0);
+        item.isRev0 = classification === 'Rev0';
+        item.classification = classification;
 
         const ignoredNote = invalidCount > 0 ? ` (Ignored ${invalidCount} blank/invalid revision value(s)).` : '';
 
-        if (item.history.length === 1) {
-          if (isRev0) {
+        if (classification === 'Rev0') {
+          if (item.history.length === 1) {
             item.ruleApplied = 'ER-REV-001 (Initial Release)';
             item.reason = `Single transmittal row recorded. Latest resolved revision is "${revRaw}". Classified as Rev0.${ignoredNote}`;
           } else {
-            item.ruleApplied = 'ER-REV-002 (Single-Entry Revision >0)';
-            item.reason = `Single transmittal row recorded with pre-incremented revision "${revRaw}". Classified as Further Rev.${ignoredNote}`;
-          }
-        } else {
-          if (isRev0) {
             item.ruleApplied = 'ER-REV-003 (Multi-Transmittal Rev0 Maintenance)';
             item.reason = `Document has ${item.history.length} transmittal cycles. Latest resolved revision remains "${revRaw}". Classified as Rev0.${ignoredNote}`;
+          }
+        } else if (classification === 'Further Rev') {
+          if (item.history.length === 1) {
+            item.ruleApplied = 'ER-REV-002 (Single-Entry Revision >0)';
+            item.reason = `Single transmittal row recorded with pre-incremented revision "${revRaw}". Classified as Further Rev.${ignoredNote}`;
           } else {
             item.ruleApplied = 'ER-REV-004 (Multi-Transmittal Revision Increment)';
             item.reason = `Document re-submitted across ${item.history.length} transmittal cycles. Latest resolved revision is "${revRaw}". Classified as Further Rev.${ignoredNote}`;
           }
+        } else {
+          item.ruleApplied = 'ER-REV-000 (Invalid Revision Token)';
+          item.reason = `Document resolved to an unrecognized or invalid revision string "${revRaw}". Excluded from Rev0/Further Rev classification.${ignoredNote}`;
         }
       } else {
         item.latestRevStr = '(blank)';
@@ -233,10 +243,10 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
         return cat === 'PENDING';
       }
       if (selectedKpiMetric === 'rev0') {
-        return item.isRev0;
+        return item.classification === 'Rev0';
       }
       if (selectedKpiMetric === 'further_rev') {
-        return !item.isRev0;
+        return item.classification === 'Further Rev';
       }
       return true;
     });
@@ -350,7 +360,7 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[11px] text-emerald-700 font-bold uppercase tracking-wider block">Rev0 Initial Releases</span>
               <p className="text-2xl font-black text-emerald-600 font-mono">
-                {auditDataset.filter(d => d.isRev0).length}
+                {auditDataset.filter(d => d.classification === 'Rev0').length}
               </p>
               <p className="text-[11px] text-emerald-600">Latest resolved revision = Rev 0</p>
             </div>
@@ -358,7 +368,7 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-[11px] text-purple-700 font-bold uppercase tracking-wider block">Further Rev Classifications</span>
               <p className="text-2xl font-black text-purple-600 font-mono">
-                {auditDataset.filter(d => !d.isRev0).length}
+                {auditDataset.filter(d => d.classification === 'Further Rev').length}
               </p>
               <p className="text-[11px] text-purple-600">Latest resolved revision &gt; 0</p>
             </div>
@@ -659,7 +669,13 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
                     <div key={idx} className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-emerald-400">{sample.docNo}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${sample.isRev0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-purple-500/20 text-purple-300'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          sample.classification === 'Rev0' 
+                            ? 'bg-emerald-500/20 text-emerald-300' 
+                            : sample.classification === 'Further Rev' 
+                              ? 'bg-purple-500/20 text-purple-300' 
+                              : 'bg-rose-500/20 text-rose-300'
+                        }`}>
                           {sample.classification}
                         </span>
                       </div>
@@ -735,8 +751,8 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
                         if (m.id === 'approved_comments') return cat === 'APPROVED' && (code === 'B' || code.includes('COMMENTS'));
                         if (m.id === 'rejected') return cat === 'REJECTED_OPEN' || cat === 'REJECTED_CLOSED';
                         if (m.id === 'pending') return cat === 'PENDING';
-                        if (m.id === 'rev0') return item.isRev0;
-                        if (m.id === 'further_rev') return !item.isRev0;
+                        if (m.id === 'rev0') return item.classification === 'Rev0';
+                        if (m.id === 'further_rev') return item.classification === 'Further Rev';
                         return true;
                       }).length
                     }

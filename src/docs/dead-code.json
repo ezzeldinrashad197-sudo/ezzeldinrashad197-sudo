@@ -18,6 +18,86 @@
     },
     {
       "file": "src/analytics/analyticsCore.ts",
+      "exportName": "getNormalizedRevision",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getNormalizedRevision' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "sortByRevisionPrecedence",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'sortByRevisionPrecedence' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "getRevisionWeight",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getRevisionWeight' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "compareRevisionsCanonical",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'compareRevisionsCanonical' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "isRevision0",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isRevision0' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "isFurtherRevision",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isFurtherRevision' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "extractRevisionRaw",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'extractRevisionRaw' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "assertRevisionInvariants",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'assertRevisionInvariants' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "classifyRevision",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'classifyRevision' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "RevisionClassification",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'RevisionClassification' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
       "exportName": "NormalizedStatus",
       "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -54,6 +134,14 @@
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'isStatusOverdueCore' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/analyticsCore.ts",
+      "exportName": "getLatestRevision",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getLatestRevision' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -150,6 +238,30 @@
       "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'CanonicalKPIResult' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "getSubmissionReference",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getSubmissionReference' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "getDrawingNumber",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getDrawingNumber' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "getDocumentIdentityKey",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.",
       "referencedBy": []
     },
     {

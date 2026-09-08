@@ -169,9 +169,11 @@ digraph DependencyGraph {
   "src/RFIAnalytics.tsx" -> "src/types.ts";
   "src/RFIAnalytics.tsx" -> "src/analytics/revisionResolver.ts";
   "src/RFIAnalytics.tsx" -> "src/analytics/analyticsCore.ts";
+  "src/RFIAnalytics.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/ReportTable.tsx" -> "src/types.ts";
   "src/ReportTable.tsx" -> "src/utils/calculations.ts";
   "src/ReportTable.tsx" -> "src/analytics/calculationFoundation.ts";
+  "src/ReportTable.tsx" -> "src/analytics/revisionResolver.ts";
   "src/ReportTable.tsx" -> "src/utils/i18n.tsx";
   "src/ReportTable.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/ReportTable.tsx" -> "src/components/ActiveBacklogIntelligence.tsx";
@@ -185,6 +187,7 @@ digraph DependencyGraph {
   "src/SettingsCenter.tsx" -> "src/firebase.ts";
   "src/SettingsCenter.tsx" -> "src/utils/i18n.tsx";
   "src/analytics/__tests__/canonicalCalculations.test.ts" -> "src/analytics/calculationFoundation.ts";
+  "src/analytics/__tests__/canonicalCalculations.test.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/__tests__/canonicalCalculations.test.ts" -> "src/types.ts";
   "src/analytics/__tests__/canonicalCalculations.test.ts" -> "src/utils/calculations.ts";
   "src/analytics/analyticsCore.ts" -> "src/types.ts";
@@ -193,12 +196,12 @@ digraph DependencyGraph {
   "src/analytics/analyticsCore.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/analyticsService.ts" -> "src/analytics/models.ts";
   "src/analytics/calculationFoundation.ts" -> "src/types.ts";
-  "src/analytics/calculationFoundation.ts" -> "src/analytics/analyticsCore.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/sequenceAuditEngine.ts";
   "src/analytics/dataValidator.ts" -> "src/analytics/models.ts";
   "src/analytics/dataValidator.ts" -> "src/utils/calculations.ts";
+  "src/analytics/dataValidator.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/exportEngine.ts" -> "src/types.ts";
   "src/analytics/exportEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportEngine.ts" -> "src/analytics/calculationFoundation.ts";
@@ -229,14 +232,13 @@ digraph DependencyGraph {
   "src/analytics/kpiEngine.ts" -> "src/analytics/models.ts";
   "src/analytics/ncr/ncrEngine.ts" -> "src/types.ts";
   "src/analytics/ncr/ncrEngine.ts" -> "src/utils/calculations.ts";
-  "src/analytics/ncr/ncrEngine.ts" -> "src/analytics/analyticsCore.ts";
+  "src/analytics/ncr/ncrEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/ncr/ncrEngine.ts" -> "src/analytics/governance/auditFramework.ts";
   "src/analytics/recordTransformer.ts" -> "src/types.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/models.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/revisionEngine.ts";
   "src/analytics/revisionEngine.ts" -> "src/analytics/models.ts";
-  "src/analytics/revisionEngine.ts" -> "src/analytics/analyticsCore.ts";
   "src/analytics/revisionEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/sequenceAuditEngine.ts" -> "src/types.ts";
   "src/analytics/sequenceAuditEngine.ts" -> "src/analytics/revisionResolver.ts";
@@ -254,7 +256,6 @@ digraph DependencyGraph {
   "src/components/AuditIntegrityCenter.tsx" -> "src/types.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/types.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/utils/calculations.ts";
-  "src/components/CalculationAuditCenter.tsx" -> "src/analytics/analyticsCore.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/analytics/revisionResolver.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/components/AuditIntegrityCenter.tsx";
   "src/components/CommercialValidationGateCenter.tsx" -> "src/utils/universalRegisterSchema.ts";

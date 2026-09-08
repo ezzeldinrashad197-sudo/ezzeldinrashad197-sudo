@@ -1,6 +1,5 @@
 import { AnyRecord } from './models';
-import { compareRevisions, isValidRevision } from './analyticsCore';
-import { getRevisionWeight } from './revisionResolver';
+import { compareRevisionsCanonical as compareRevisions, isValidRevision, isRevision0 } from './revisionResolver';
 
 /**
  * Calculates which records are the latest revision, and flags Rev0 based on Latest Resolved Revision.
@@ -21,7 +20,7 @@ export const runRevisionEngine = (records: AnyRecord[]): AnyRecord[] => {
         const key = (r.docNo || '').trim().toUpperCase();
         if (!key) {
             r.isLatestRev = true;
-            r.isRev0 = isValidRevision(r.rev) && getRevisionWeight(r.rev) === 0;
+            r.isRev0 = isRevision0(r.rev, r.isRev0);
             return;
         }
         if (!grouped.has(key)) grouped.set(key, []);
@@ -49,7 +48,7 @@ export const runRevisionEngine = (records: AnyRecord[]): AnyRecord[] => {
                  return compareRevisions(a.rev, b.rev);
             });
             const latestValid = sortedValid[sortedValid.length - 1];
-            isLatestRev0 = getRevisionWeight(latestValid.rev) === 0;
+            isLatestRev0 = isRevision0(latestValid.rev, latestValid.isRev0);
         }
 
         history.forEach(r => {

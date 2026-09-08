@@ -595,6 +595,10 @@
       "target": "src/analytics/analyticsCore.ts"
     },
     {
+      "source": "src/RFIAnalytics.tsx",
+      "target": "src/analytics/calculationFoundation.ts"
+    },
+    {
       "source": "src/ReportTable.tsx",
       "target": "src/types.ts"
     },
@@ -605,6 +609,10 @@
     {
       "source": "src/ReportTable.tsx",
       "target": "src/analytics/calculationFoundation.ts"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/analytics/revisionResolver.ts"
     },
     {
       "source": "src/ReportTable.tsx",
@@ -660,6 +668,10 @@
     },
     {
       "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
       "target": "src/types.ts"
     },
     {
@@ -692,10 +704,6 @@
     },
     {
       "source": "src/analytics/calculationFoundation.ts",
-      "target": "src/analytics/analyticsCore.ts"
-    },
-    {
-      "source": "src/analytics/calculationFoundation.ts",
       "target": "src/analytics/revisionResolver.ts"
     },
     {
@@ -713,6 +721,10 @@
     {
       "source": "src/analytics/dataValidator.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/dataValidator.ts",
+      "target": "src/analytics/revisionResolver.ts"
     },
     {
       "source": "src/analytics/exportEngine.ts",
@@ -836,7 +848,7 @@
     },
     {
       "source": "src/analytics/ncr/ncrEngine.ts",
-      "target": "src/analytics/analyticsCore.ts"
+      "target": "src/analytics/revisionResolver.ts"
     },
     {
       "source": "src/analytics/ncr/ncrEngine.ts",
@@ -861,10 +873,6 @@
     {
       "source": "src/analytics/revisionEngine.ts",
       "target": "src/analytics/models.ts"
-    },
-    {
-      "source": "src/analytics/revisionEngine.ts",
-      "target": "src/analytics/analyticsCore.ts"
     },
     {
       "source": "src/analytics/revisionEngine.ts",
@@ -933,10 +941,6 @@
     {
       "source": "src/components/CalculationAuditCenter.tsx",
       "target": "src/utils/calculations.ts"
-    },
-    {
-      "source": "src/components/CalculationAuditCenter.tsx",
-      "target": "src/analytics/analyticsCore.ts"
     },
     {
       "source": "src/components/CalculationAuditCenter.tsx",

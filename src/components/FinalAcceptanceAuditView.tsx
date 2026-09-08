@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { SubmittalRow, ProjectSettings } from '../types';
 import { calculateStats, calculateNCRStats, classifyNcrStatus, getStatusCodeCategory, parseDateTimestamp } from '../utils/calculations';
 import { compareRevisions, isValidRevision } from '../analytics/analyticsCore';
-import { compareRevisionsCanonical, getRevisionWeight } from '../analytics/revisionResolver';
+import { compareRevisionsCanonical, getRevisionWeight, classifyRevision, isRevision0, isFurtherRevision } from '../analytics/revisionResolver';
 import { validateAllBusinessRules, validateAllFormulas, verifyParallelEngineEquivalence } from '../analytics/governance/validationFramework';
 import { classifyRegisterSheet } from '../utils/classificationEngine';
 import { 
@@ -381,24 +381,26 @@ export default function FinalAcceptanceAuditView({ data, filterMonthly, filterCu
         item.latestRevStr = revRaw;
         item.latestRevNum = getRevisionWeight(revRaw);
 
-        const isRev0 = getRevisionWeight(revRaw) === 0;
-        item.isRev0 = isRev0;
-        item.classification = isRev0 ? 'Rev0' : 'Further Rev';
+        const classification = classifyRevision(revRaw, latestValid.isRev0);
+        item.isRev0 = classification === 'Rev0';
+        item.classification = classification;
 
         const ignoredNote = invalidCount > 0 ? ` (Ignored ${invalidCount} blank/invalid revision value(s)).` : '';
 
-        if (item.history.length === 1) {
-          if (isRev0) {
+        if (classification === 'Rev0') {
+          if (item.history.length === 1) {
             item.reason = `Single transmittal row recorded. Latest resolved revision is "${revRaw}". Classified as Rev0.${ignoredNote}`;
           } else {
-            item.reason = `Single transmittal row recorded. Latest resolved revision is "${revRaw}". Classified as Further Rev.${ignoredNote}`;
-          }
-        } else {
-          if (isRev0) {
             item.reason = `Document has ${item.history.length} transmittal cycles. Latest resolved revision remains "${revRaw}". Classified as Rev0.${ignoredNote}`;
+          }
+        } else if (classification === 'Further Rev') {
+          if (item.history.length === 1) {
+            item.reason = `Single transmittal row recorded. Latest resolved revision is "${revRaw}". Classified as Further Rev.${ignoredNote}`;
           } else {
             item.reason = `Document re-submitted across ${item.history.length} transmittal cycles. Latest resolved revision is "${revRaw}". Classified as Further Rev.${ignoredNote}`;
           }
+        } else {
+          item.reason = `Document resolved to an unrecognized or invalid revision string "${revRaw}". Excluded from Rev0/Further Rev classification.${ignoredNote}`;
         }
       } else {
         item.latestRevStr = '(blank)';
@@ -2146,7 +2148,7 @@ export default function FinalAcceptanceAuditView({ data, filterMonthly, filterCu
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-xs text-emerald-700 font-semibold uppercase tracking-wider block">Rev0 Classifications</span>
               <p className="text-2xl font-black text-emerald-600 font-mono">
-                {revisionAuditDataset.filter(d => d.isRev0).length}
+                {revisionAuditDataset.filter(d => d.classification === 'Rev0').length}
               </p>
               <p className="text-[11px] text-emerald-600">Latest resolved revision is Rev 0</p>
             </div>
@@ -2154,7 +2156,7 @@ export default function FinalAcceptanceAuditView({ data, filterMonthly, filterCu
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
               <span className="text-xs text-purple-700 font-semibold uppercase tracking-wider block">Further Rev Classifications</span>
               <p className="text-2xl font-black text-purple-600 font-mono">
-                {revisionAuditDataset.filter(d => !d.isRev0).length}
+                {revisionAuditDataset.filter(d => d.classification === 'Further Rev').length}
               </p>
               <p className="text-[11px] text-purple-600">Latest resolved revision is &gt; 0</p>
             </div>
@@ -2338,7 +2340,13 @@ export default function FinalAcceptanceAuditView({ data, filterMonthly, filterCu
                         </div>
                         <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
                           <span className="text-slate-500 font-sans">Resolved Classification:</span>
-                          <p className={targetDoc.isRev0 ? 'text-emerald-400 font-bold' : 'text-purple-400 font-bold'}>
+                          <p className={
+                            targetDoc.classification === 'Rev0' 
+                              ? 'text-emerald-400 font-bold' 
+                              : targetDoc.classification === 'Further Rev' 
+                                ? 'text-purple-400 font-bold' 
+                                : 'text-rose-400 font-bold'
+                          }>
                             {targetDoc.classification}
                           </p>
                         </div>

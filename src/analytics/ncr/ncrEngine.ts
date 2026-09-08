@@ -1,6 +1,6 @@
 import { SubmittalRow } from "../../types";
 import { classifyNcrStatus } from "../../utils/calculations";
-import { compareRevisions } from "../analyticsCore";
+import { compareRevisionsCanonical as compareRevisions, isRevision0, isFurtherRevision } from "../revisionResolver";
 import { recordAuditLog } from "../governance/auditFramework";
 
 export const isYes = (v: unknown) =>
@@ -238,10 +238,11 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
       }
     }
 
-    const isLatestRev0 = compareRevisions(latestOverall.rev, '0') === 0;
+    const isLatestRev0 = isRevision0(latestOverall.rev, latestOverall.isRev0);
+    const isLatestFurther = isFurtherRevision(latestOverall.rev, latestOverall.isRev0);
     if (isLatestRev0) {
       cumSt.rev0++;
-    } else {
+    } else if (isLatestFurther) {
       cumSt.revHigh++;
     }
 
@@ -381,10 +382,11 @@ export const calculateMonthlyEvents = (
         mSt.totalSubs++; // Legacy
         isSubmitted = true;
         
-        const isRev0 = compareRevisions(r.rev, '0') === 0;
+        const isRev0 = isRevision0(r.rev, r.isRev0);
+        const isFurther = isFurtherRevision(r.rev, r.isRev0);
         if (isRev0) {
           mSt.rev0++;
-        } else {
+        } else if (isFurther) {
           mSt.revHigh++;
         }
 

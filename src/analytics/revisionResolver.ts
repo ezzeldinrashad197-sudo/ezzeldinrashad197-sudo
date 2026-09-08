@@ -231,6 +231,23 @@ export const assertRevisionInvariants = (
   }
 };
 
+export type RevisionClassification = 'Rev0' | 'Further Rev' | 'Missing Revision';
+
+/**
+ * Canonical helper: Maps any revision to its strict tripartite classification:
+ * - 'Rev0': Baseline revision (Rev 00, Rev 0, etc. or explicit isRev0 flag)
+ * - 'Further Rev': Revision > Rev 00 (e.g. Rev 01, Rev 1, IFC, etc.)
+ * - 'Missing Revision': Blank, null, undefined, or invalid tokens (N/A, NONE, etc.)
+ */
+export const classifyRevision = (
+  rev: string | number | null | undefined,
+  isRev0Flag?: boolean
+): RevisionClassification => {
+  if (isRevision0(rev, isRev0Flag)) return 'Rev0';
+  if (isFurtherRevision(rev, isRev0Flag)) return 'Further Rev';
+  return 'Missing Revision';
+};
+
 /**
  * Sorts any list of items by canonical revision precedence.
  */
