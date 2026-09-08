@@ -18,7 +18,7 @@
     "test:overdue": "tsx scripts/test-overdue-cross-layer-audit.ts",
     "test:rfi": "tsx scripts/test-rfi-total-regression.ts",
     "generate-evidence-report": "tsx scripts/generate-evidence-report.ts",
-    "verify-all": "npm run lint && npm run test && npm run test:auth && npm run test:forensic && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build",
+    "verify-all": "npm run lint && npm run test && npm run test:auth && npm run test:forensic && npm run test:overdue && npm run test:rfi && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build",
     "remediation-audit": "node scripts/engineering-remediation-audit.mjs"
   },
   "dependencies": {

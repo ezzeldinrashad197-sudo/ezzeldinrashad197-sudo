@@ -25,7 +25,7 @@ export type { StatusMapConfig };
 export { DEFAULT_STATUS_MAP, getProjectStatusMap, getNormalizedStatus, checkIfOverdueDynamically };
 
 // Canonical revision and status resolvers are imported from dedicated SSOT modules.
-import { getRevisionWeight, compareRevisionsCanonical } from '../analytics/revisionResolver';
+import { getRevisionWeight, compareRevisionsCanonical, isFurtherRevision } from '../analytics/revisionResolver';
 import { getStatusCodeCategory } from './calculations';
 import { getStatusCategory } from '../analytics/statusResolver';
 export { getStatusCategory } from '../analytics/statusResolver';
@@ -960,10 +960,10 @@ export function runExecutiveAnalytics(data: SubmittalRow[]) {
             closedOrRespondedCount++;
         }
 
-        const rev = getRevisionWeight(d.rev);
-        if (rev > 0) {
+        if (isFurtherRevision(d.rev, d.isRev0)) {
             reworkDocsCount++;
-            totalRevisions += rev;
+            const rev = getRevisionWeight(d.rev);
+            totalRevisions += rev > 0 ? rev : 0;
         }
     });
 
@@ -1023,8 +1023,7 @@ export function runExecutiveAnalytics(data: SubmittalRow[]) {
         if (cat === 'APPROVED') discs[disc].approved++;
         if (cat === 'REJECTED_OPEN' || cat === 'REJECTED_CLOSED') discs[disc].rejected++;
         if (d.overdue) discs[disc].overdue++;
-        const rev = getRevisionWeight(d.rev);
-        if (rev > 0) discs[disc].rework++;
+        if (isFurtherRevision(d.rev, d.isRev0)) discs[disc].rework++;
 
         const sub = safeParseDate(d.submissionDate);
         const res = safeParseDate(d.responseDate);
@@ -1094,8 +1093,7 @@ export function runExecutiveAnalytics(data: SubmittalRow[]) {
         // BEHAVIOR-RELEVANT FIX (F-05, 2026-08-25): removed raw-field fallback, same reasoning as above.
         if (cat === 'APPROVED' || cat === 'REJECTED_CLOSED') originators[originator].closed++;
         if (d.overdue) originators[originator].overdue++;
-        const rev = getRevisionWeight(d.rev);
-        if (rev > 0) originators[originator].rework++;
+        if (isFurtherRevision(d.rev, d.isRev0)) originators[originator].rework++;
 
         const sub = safeParseDate(d.submissionDate);
         const res = safeParseDate(d.responseDate);

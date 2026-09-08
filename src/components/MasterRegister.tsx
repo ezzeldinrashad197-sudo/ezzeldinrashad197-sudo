@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { SubmittalRow, ProjectSettings } from '../types';
 import { calculateStats, getStatusCodeCategory } from '../utils/calculations';
 import { exportPerformanceValidationCsv, getPerformanceValidationRows } from '../analytics/calculationFoundation';
+import { isValidRevision } from '../analytics/revisionResolver';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ComposedChart
@@ -220,7 +221,7 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredData.map((row, i) => {
                                     const isMissingDocNo = !row.docNo && !row.ncrRef && !row.sorRef && !row.normalizedRef && !row.id;
-                                    const isMissingRev = row.rev === undefined || row.rev === null || String(row.rev).trim() === '';
+                                    const isMissingRev = !isValidRevision(row.rev);
                                     const isMissingDate = !row.submissionDate;
                                     const isMissingStatus = !row.status;
                                     return (

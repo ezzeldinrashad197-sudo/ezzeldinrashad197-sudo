@@ -1,7 +1,8 @@
 
 import * as XLSX from "xlsx";
 import { SubmittalRow } from "../types";
-import { normalizeData, getRevisionWeight } from "./calculations";
+import { normalizeData } from "./calculations";
+import { isRevision0 } from "../analytics/revisionResolver";
 import { classifyRegisterSheet, normalizeDiscipline } from "./classificationEngine";
 import { mapDocumentToWorkflow } from "./workflowMapping";
 
@@ -1164,23 +1165,7 @@ export const parseExcelWorkbook = (
         trade: "",
         workflowStage: "",
         isLatestRev: false,
-        isRev0: (() => {
-          const rawRev =
-            colRev >= 0
-              ? String(r[colRev] || "")
-                  .trim()
-                  .toUpperCase()
-              : "";
-
-          const w =
-            getRevisionWeight(rawRev);
-
-          return (
-            w === 0 &&
-            rawRev !== "AS-BUILT" &&
-            rawRev !== "IFC"
-          );
-        })(),
+        isRev0: isRevision0(colRev >= 0 ? r[colRev] : ""),
 
         delayDays: 0,
         overdue: false,
