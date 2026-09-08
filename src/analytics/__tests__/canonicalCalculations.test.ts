@@ -458,7 +458,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
   });
 
   // Test 15: Sequence: Rev 0 (Rejected Open) -> Rev 1 (Rejected Closed) -> Rev 2 (Approved)
-  test('ER-015: Sequence Rev0(Rej Open) -> Rev1(Rej Closed) -> Rev2(Approved) validates historical row counts vs unique current state', () => {
+  test('ER-015-SEQ: Sequence Rev0(Rej Open) -> Rev1(Rej Closed) -> Rev2(Approved) validates historical row counts vs unique current state', () => {
     const rows: SubmittalRow[] = [
       { id: '1', docNo: 'ITEM-SEQ-1', rev: '00', sheetNo: '01', documentType: 'DOC', discipline: 'STR', trade: 'Structural', workflowStage: 'Rejected', status: 'C', recordStatus: 'OPEN', submissionDate: '2026-01-01', dueDate: '', responseDate: '2026-01-05', logType: 'DOC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: false, isRev0: true, delayDays: 0, overdue: false },
       { id: '2', docNo: 'ITEM-SEQ-1', rev: '01', sheetNo: '01', documentType: 'DOC', discipline: 'STR', trade: 'Structural', workflowStage: 'Rejected', status: 'C', recordStatus: 'CLOSED', submissionDate: '2026-01-10', dueDate: '', responseDate: '2026-01-15', logType: 'DOC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: false, isRev0: false, delayDays: 0, overdue: false },
@@ -482,7 +482,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
   });
 
   // Test 16: Sequence: Rev 0 (Rejected Open) -> Rev 1 (Rejected Open) -> Rev 2 (Approved)
-  test('ER-016: Sequence Rev0(Rej Open) -> Rev1(Rej Open) -> Rev2(Approved) tracks 2 Open rejection events and 1 current approved item', () => {
+  test('ER-016-SEQ: Sequence Rev0(Rej Open) -> Rev1(Rej Open) -> Rev2(Approved) tracks 2 Open rejection events and 1 current approved item', () => {
     const rows: SubmittalRow[] = [
       { id: '1', docNo: 'ITEM-SEQ-2', rev: '00', sheetNo: '01', documentType: 'DOC', discipline: 'STR', trade: 'Structural', workflowStage: 'Rejected', status: 'C', recordStatus: 'OPEN', submissionDate: '2026-01-01', dueDate: '', responseDate: '2026-01-05', logType: 'DOC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: false, isRev0: true, delayDays: 0, overdue: false },
       { id: '2', docNo: 'ITEM-SEQ-2', rev: '01', sheetNo: '01', documentType: 'DOC', discipline: 'STR', trade: 'Structural', workflowStage: 'Rejected', status: 'C', recordStatus: 'OPEN', submissionDate: '2026-01-10', dueDate: '', responseDate: '2026-01-15', logType: 'DOC', contractor: '', consultant: '', remarks: '', area: '', tradeSystem: '', isLatestRev: false, isRev0: false, delayDays: 0, overdue: false },
@@ -640,12 +640,19 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
       { raw: 'AS-BUILT', expectedValid: true, expectedWeight: 100000, expectedNormalized: 'AS-BUILT', expectedIsRev0: false, expectedIsFurther: true },
     ];
 
+    console.log(`\n    --- [ER-015 EXECUTION EVIDENCE MATRIX] ---`);
+    console.log(`    ${'Input'.padEnd(12)} | ${'isValid'.padEnd(7)} | ${'Weight'.padEnd(7)} | ${'Normalized'.padEnd(10)} | ${'isRev0'.padEnd(7)} | ${'isFurther'.padEnd(9)} | Status`);
+    console.log(`    ${'-'.repeat(12)}-+-${'-'.repeat(7)}-+-${'-'.repeat(7)}-+-${'-'.repeat(10)}-+-${'-'.repeat(7)}-+-${'-'.repeat(9)}-+-------`);
+
     for (const tc of testMatrix) {
       const valid = isValidRevision(tc.raw);
       const weight = getRevisionWeight(tc.raw);
       const norm = getNormalizedRevision(tc.raw);
       const isR0 = isRevision0(tc.raw);
       const isFurther = isFurtherRevision(tc.raw);
+
+      const label = tc.raw === null ? 'null' : tc.raw === undefined ? 'undefined' : tc.raw === '' ? `"" (empty)` : tc.raw === ' ' ? `" " (space)` : String(tc.raw);
+      console.log(`    ${label.padEnd(12)} | ${String(valid).padEnd(7)} | ${String(weight).padEnd(7)} | ${norm.padEnd(10)} | ${String(isR0).padEnd(7)} | ${String(isFurther).padEnd(9)} | PASS`);
 
       if (valid !== tc.expectedValid) {
         throw new Error(`[ER-015] isValidRevision('${tc.raw}'): expected ${tc.expectedValid}, got ${valid}`);
@@ -669,6 +676,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
 
     // Explicit override test: when isRev0 === true is provided for a blank/null revision
     const normOverride = getNormalizedRevision(null, true);
+    console.log(`    ${'null (isRev0)'.padEnd(12)} | ${String(isValidRevision(null)).padEnd(7)} | ${String(getRevisionWeight(null)).padEnd(7)} | ${normOverride.padEnd(10)} | ${String(isRevision0(null, true)).padEnd(7)} | ${String(isFurtherRevision(null, true)).padEnd(9)} | PASS (Explicit Override)`);
     if (normOverride !== '0') throw new Error(`Expected getNormalizedRevision(null, true) === '0', got '${normOverride}'`);
     const isR0Override = isRevision0(null, true);
     if (!isR0Override) throw new Error(`Expected isRevision0(null, true) === true`);
@@ -733,6 +741,13 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     ];
 
     const kpi = calculateCanonicalKPIs(testRows);
+
+    console.log(`\n    --- [ER-016 BEFORE / AFTER KPI BREAKDOWN] ---`);
+    console.log(`    Total Submitted Sheets  : ${kpi.totalSubmittedSheets}`);
+    console.log(`    Rev00 Baseline Sheets   : ${kpi.totalSheetsRev0} (DWG-001)`);
+    console.log(`    Further Revision Sheets : ${kpi.totalSheetsFurtherRev} (DWG-002)`);
+    console.log(`    Excluded Blank/Invalid  : ${kpi.totalSubmittedSheets - (kpi.totalSheetsRev0 + kpi.totalSheetsFurtherRev)} (DWG-003, DWG-004)`);
+
     if (kpi.totalSubmittedSheets !== 4) throw new Error(`Expected totalSubmittedSheets=4, got ${kpi.totalSubmittedSheets}`);
     if (kpi.totalSheetsRev0 !== 1) throw new Error(`Expected totalSheetsRev0=1 (only ROW-1), got ${kpi.totalSheetsRev0}`);
     if (kpi.totalSheetsFurtherRev !== 1) throw new Error(`Expected totalSheetsFurtherRev=1 (only ROW-2), got ${kpi.totalSheetsFurtherRev}`);

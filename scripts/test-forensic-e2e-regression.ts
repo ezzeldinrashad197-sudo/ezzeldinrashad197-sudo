@@ -213,45 +213,45 @@ async function runForensicRegression() {
     { discipline: item2?.discipline, documentType: item2?.documentType }
   );
 
-  // Critical Case 3: WIR-ARCH + Sub-Trade Row -> Resolves to Authoritative Sheet Discipline (ARCH)
+  // Critical Case 3: WIR-ARCH + Sub-Trade Row -> Preserves Row Mixed Trade (MECH)
   const item3Rev0 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-MEC-00103" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + Sub-Trade MECH Row -> Resolves to Architectural (Authoritative Sheet Identity)",
-    (item3Rev0?.discipline === "Architectural" || item3Rev0?.discipline === "ARCH") && (item3Rev0?.documentType === "WIR-ARC" || item3Rev0?.documentType === "WIR-ARCH"),
-    { discipline: "Architectural", documentType: "WIR-ARC" },
+    "WIR-ARCH + Sub-Trade MECH Row -> Preserves Row Mixed Trade (Mechanical)",
+    (item3Rev0?.discipline === "Mechanical" || item3Rev0?.discipline === "MECH") && (item3Rev0?.documentType === "WIR-MEC" || item3Rev0?.documentType === "WIR-MECH"),
+    { discipline: "Mechanical", documentType: "WIR-MEC" },
     { discipline: item3Rev0?.discipline, documentType: item3Rev0?.documentType },
-    "Authoritative sheet identity (WIR-ARCH) prevents fragmentation by internal row trade"
+    "Row mixed trade MECH in WIR-ARCH must be preserved"
   );
 
-  // Critical Case 4: WIR-ARCH + ELEC -> ARCH (Authoritative Sheet Identity)
+  // Critical Case 4: WIR-ARCH + ELEC -> Preserves Row Mixed Trade (Electrical)
   const item4 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-ELE-00104");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + ELEC Row -> Resolves to Architectural (Authoritative Sheet Identity)",
-    (item4?.discipline === "Architectural" || item4?.discipline === "ARCH") && (item4?.documentType === "WIR-ARC" || item4?.documentType === "WIR-ARCH"),
-    { discipline: "Architectural", documentType: "WIR-ARC" },
+    "WIR-ARCH + ELEC Row -> Preserves Row Mixed Trade (Electrical)",
+    (item4?.discipline === "Electrical" || item4?.discipline === "ELE" || item4?.discipline === "ELEC") && (item4?.documentType === "WIR-ELE" || item4?.documentType === "WIR-ELEC"),
+    { discipline: "Electrical", documentType: "WIR-ELE" },
     { discipline: item4?.discipline, documentType: item4?.documentType }
   );
 
-  // Critical Case 5: SDW-INFRA + IRR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)
+  // Critical Case 5: SDW-INFRA + IRR Row -> Preserves Row Mixed Trade (Irrigation)
   const item7 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-IRR-00202");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + IRR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)",
-    (item7?.discipline === "Infrastructure" || item7?.discipline === "INFRA") && (item7?.documentType === "SDW-INFRA" || item7?.documentType === "SDW-INF"),
-    { discipline: "Infrastructure", documentType: "SDW-INFRA" },
+    "SDW-INFRA + IRR Row -> Preserves Row Mixed Trade (Irrigation)",
+    (item7?.discipline === "Irrigation" || item7?.discipline === "IRR") && (item7?.documentType === "SDW-IRR" || item7?.documentType === "SDW-IRRIGATION"),
+    { discipline: "Irrigation", documentType: "SDW-IRR" },
     { discipline: item7?.discipline, documentType: item7?.documentType },
-    "Authoritative sheet identity (SDW-INFRA) prevents fragmentation by internal row trade"
+    "Row mixed trade IRR in SDW-INFRA must be preserved"
   );
 
-  // Critical Case 6: SDW-INFRA + STR -> INFRA (Authoritative Sheet Identity)
+  // Critical Case 6: SDW-INFRA + STR -> Preserves Row Mixed Trade (Structural)
   const item8Rev0 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-STR-00203" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + STR Row -> Resolves to Infrastructure (Authoritative Sheet Identity)",
-    (item8Rev0?.discipline === "Infrastructure" || item8Rev0?.discipline === "INFRA") && (item8Rev0?.documentType === "SDW-INFRA" || item8Rev0?.documentType === "SDW-INF"),
-    { discipline: "Infrastructure", documentType: "SDW-INFRA" },
+    "SDW-INFRA + STR Row -> Preserves Row Mixed Trade (Structural)",
+    (item8Rev0?.discipline === "Structural" || item8Rev0?.discipline === "STR") && (item8Rev0?.documentType === "SDW-STR" || item8Rev0?.documentType === "SDW-STRUCTURAL"),
+    { discipline: "Structural", documentType: "SDW-STR" },
     { discipline: item8Rev0?.discipline, documentType: item8Rev0?.documentType }
   );
 
