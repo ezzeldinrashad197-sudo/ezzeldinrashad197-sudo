@@ -11,6 +11,7 @@ import {
   runComprehensiveSequenceAudit
 } from './utils/calculations';
 import { isEntityOverdue } from './analytics/calculationFoundation';
+import { isRevision0, isFurtherRevision } from './analytics/revisionResolver';
 import { useLanguage } from './utils/i18n';
 import {
   BarChart,
@@ -556,19 +557,11 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         break;
       }
       case 'rev00': {
-        rows.filter(r => {
-          const revVal = (r.rev || '').trim().toUpperCase();
-          const w = getRevisionWeight(revVal);
-          return (w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC') || (r.isRev0 && w === 0);
-        }).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        rows.filter(r => isRevision0(r.rev, r.isRev0)).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
         break;
       }
       case 'furtherRev': {
-        rows.filter(r => {
-          const revVal = (r.rev || '').trim().toUpperCase();
-          const w = getRevisionWeight(revVal);
-          return !((w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC') || (r.isRev0 && w === 0));
-        }).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        rows.filter(r => isFurtherRevision(r.rev, r.isRev0)).forEach(r => extracted.push(mapToDrillDownItem(r, false)));
         break;
       }
       case 'totalRejectedRows': {

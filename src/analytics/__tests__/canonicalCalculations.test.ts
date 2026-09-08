@@ -1,4 +1,13 @@
 import { calculateCanonicalKPIs, getBusinessEntityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
+import {
+  isValidRevision,
+  getRevisionWeight,
+  getNormalizedRevision,
+  isRevision0,
+  isFurtherRevision,
+  assertRevisionInvariants,
+  extractRevisionRaw
+} from '../revisionResolver';
 import { SubmittalRow } from '../../types';
 import { normalizeData } from '../../utils/calculations';
 
@@ -593,6 +602,140 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     if (kpiC.rejectedClosed !== 1 || kpiC.currentRejectedClosed !== 1) throw new Error(`Expected RejectedClosed=1 for Code C Closed in unique item grain, got ${kpiC.rejectedClosed}`);
     if (kpiC.approved !== 0 || kpiC.currentApproved !== 0) throw new Error(`Expected Approved=0 for Code C Closed in unique item grain, got ${kpiC.approved}`);
     if (kpiC.currentClosed !== 1) throw new Error(`Expected currentClosed=1 for Code C Closed, got ${kpiC.currentClosed}`);
+  });
+
+  // Test 15: Revision SSOT Semantic Consistency & Required Exhaustive Value Matrix (Issue #4)
+  test('ER-015: Issue #4 Mandatory Value Matrix & Revision Semantic Consistency', () => {
+    interface RevisionTestCase {
+      raw: string | number | null | undefined;
+      expectedValid: boolean;
+      expectedWeight: number;
+      expectedNormalized: string;
+      expectedIsRev0: boolean;
+      expectedIsFurther: boolean;
+    }
+
+    const testMatrix: RevisionTestCase[] = [
+      // Rev00 / Baseline Group
+      { raw: '0', expectedValid: true, expectedWeight: 0, expectedNormalized: '0', expectedIsRev0: true, expectedIsFurther: false },
+      { raw: '00', expectedValid: true, expectedWeight: 0, expectedNormalized: '0', expectedIsRev0: true, expectedIsFurther: false },
+      { raw: 'REV0', expectedValid: true, expectedWeight: 0, expectedNormalized: '0', expectedIsRev0: true, expectedIsFurther: false },
+      { raw: 'REV 0', expectedValid: true, expectedWeight: 0, expectedNormalized: '0', expectedIsRev0: true, expectedIsFurther: false },
+      { raw: 'REV.00', expectedValid: true, expectedWeight: 0, expectedNormalized: '0', expectedIsRev0: true, expectedIsFurther: false },
+
+      // Blank / Invalid / Null Group (Strictly Missing / Invalid Revision)
+      { raw: '', expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+      { raw: ' ', expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+      { raw: null, expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+      { raw: undefined, expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+      { raw: 'N/A', expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+      { raw: 'NONE', expectedValid: false, expectedWeight: -1, expectedNormalized: 'Unknown', expectedIsRev0: false, expectedIsFurther: false },
+
+      // Further Revision Group
+      { raw: '1', expectedValid: true, expectedWeight: 1, expectedNormalized: '1', expectedIsRev0: false, expectedIsFurther: true },
+      { raw: 'REV1', expectedValid: true, expectedWeight: 3001, expectedNormalized: '1', expectedIsRev0: false, expectedIsFurther: true },
+      { raw: '2', expectedValid: true, expectedWeight: 2, expectedNormalized: '2', expectedIsRev0: false, expectedIsFurther: true },
+      { raw: 'REV2', expectedValid: true, expectedWeight: 3002, expectedNormalized: '2', expectedIsRev0: false, expectedIsFurther: true },
+      { raw: 'IFC', expectedValid: true, expectedWeight: 90000, expectedNormalized: 'IFC', expectedIsRev0: false, expectedIsFurther: true },
+      { raw: 'AS-BUILT', expectedValid: true, expectedWeight: 100000, expectedNormalized: 'AS-BUILT', expectedIsRev0: false, expectedIsFurther: true },
+    ];
+
+    for (const tc of testMatrix) {
+      const valid = isValidRevision(tc.raw);
+      const weight = getRevisionWeight(tc.raw);
+      const norm = getNormalizedRevision(tc.raw);
+      const isR0 = isRevision0(tc.raw);
+      const isFurther = isFurtherRevision(tc.raw);
+
+      if (valid !== tc.expectedValid) {
+        throw new Error(`[ER-015] isValidRevision('${tc.raw}'): expected ${tc.expectedValid}, got ${valid}`);
+      }
+      if (weight !== tc.expectedWeight) {
+        throw new Error(`[ER-015] getRevisionWeight('${tc.raw}'): expected ${tc.expectedWeight}, got ${weight}`);
+      }
+      if (norm !== tc.expectedNormalized) {
+        throw new Error(`[ER-015] getNormalizedRevision('${tc.raw}'): expected '${tc.expectedNormalized}', got '${norm}'`);
+      }
+      if (isR0 !== tc.expectedIsRev0) {
+        throw new Error(`[ER-015] isRevision0('${tc.raw}'): expected ${tc.expectedIsRev0}, got ${isR0}`);
+      }
+      if (isFurther !== tc.expectedIsFurther) {
+        throw new Error(`[ER-015] isFurtherRevision('${tc.raw}'): expected ${tc.expectedIsFurther}, got ${isFurther}`);
+      }
+
+      // Assert Invariant verification
+      assertRevisionInvariants(tc.raw);
+    }
+
+    // Explicit override test: when isRev0 === true is provided for a blank/null revision
+    const normOverride = getNormalizedRevision(null, true);
+    if (normOverride !== '0') throw new Error(`Expected getNormalizedRevision(null, true) === '0', got '${normOverride}'`);
+    const isR0Override = isRevision0(null, true);
+    if (!isR0Override) throw new Error(`Expected isRevision0(null, true) === true`);
+    const isFurtherOverride = isFurtherRevision(null, true);
+    if (isFurtherOverride) throw new Error(`Expected isFurtherRevision(null, true) === false`);
+    assertRevisionInvariants(null, true);
+  });
+
+  // Test 16: Multi-Row Aggregation with Blank Revisions Excluded from Rev00 & Further Rev
+  test('ER-016: Blank & Invalid Revisions Excluded from Rev00 and Further Rev Counts in KPI Model', () => {
+    const testRows: SubmittalRow[] = [
+      // Valid Rev 00
+      {
+        id: 'ROW-1',
+        docNo: 'DWG-001',
+        rev: '00',
+        sheetNo: '01',
+        documentType: 'SDW',
+        trade: 'Civil',
+        status: 'A',
+        submissionDate: '2026-01-01',
+        logType: 'SDW',
+        isRev0: true
+      } as SubmittalRow,
+      // Valid Further Rev
+      {
+        id: 'ROW-2',
+        docNo: 'DWG-002',
+        rev: '01',
+        sheetNo: '01',
+        documentType: 'SDW',
+        trade: 'Civil',
+        status: 'A',
+        submissionDate: '2026-01-02',
+        logType: 'SDW',
+        isRev0: false
+      } as SubmittalRow,
+      // Blank Revision row
+      {
+        id: 'ROW-3',
+        docNo: 'DWG-003',
+        rev: '',
+        sheetNo: '01',
+        documentType: 'SDW',
+        trade: 'Civil',
+        status: 'C',
+        submissionDate: '2026-01-03',
+        logType: 'SDW'
+      } as SubmittalRow,
+      // N/A Revision row
+      {
+        id: 'ROW-4',
+        docNo: 'DWG-004',
+        rev: 'N/A',
+        sheetNo: '01',
+        documentType: 'SDW',
+        trade: 'Civil',
+        status: 'PENDING',
+        submissionDate: '2026-01-04',
+        logType: 'SDW'
+      } as SubmittalRow
+    ];
+
+    const kpi = calculateCanonicalKPIs(testRows);
+    if (kpi.totalSubmittedSheets !== 4) throw new Error(`Expected totalSubmittedSheets=4, got ${kpi.totalSubmittedSheets}`);
+    if (kpi.totalSheetsRev0 !== 1) throw new Error(`Expected totalSheetsRev0=1 (only ROW-1), got ${kpi.totalSheetsRev0}`);
+    if (kpi.totalSheetsFurtherRev !== 1) throw new Error(`Expected totalSheetsFurtherRev=1 (only ROW-2), got ${kpi.totalSheetsFurtherRev}`);
   });
 
   return testResults;

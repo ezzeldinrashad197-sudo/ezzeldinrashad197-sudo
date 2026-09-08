@@ -20,7 +20,7 @@ import {
 } from "../analytics/calculationFoundation";
 export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, processRevisionEngine, resolveRowDiscipline, resolveCanonicalTrade, auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger };
 import { compareRevisions } from "../analytics/analyticsCore";
-import { compareRevisionsCanonical, getRevisionWeight } from "../analytics/revisionResolver";
+import { compareRevisionsCanonical, getRevisionWeight, isRevision0 } from "../analytics/revisionResolver";
 import { mapDocumentToWorkflow } from "./workflowMapping";
 import { getStatusCodeCategory, getStatusCategory, getRecordNormalizedStatus, classifyNcrStatus, NcrClassificationResult, classifyRow, classifySubmission } from '../analytics/statusResolver';
 export { getStatusCodeCategory, getStatusCategory, getRecordNormalizedStatus, classifyNcrStatus, compareRevisions, compareRevisionsCanonical, getRevisionWeight, mapDocumentToWorkflow, classifyRow, classifySubmission };
@@ -161,7 +161,7 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     }
 
     const revWeight = getRevisionWeight(revUpper);
-    const isRev0 = revWeight === 0 && revUpper !== 'AS-BUILT' && revUpper !== 'IFC';
+    const isRev0 = isRevision0(revUpper, r.isRev0);
 
     // Derive canonical status category
     const cat = getStatusCodeCategory(r);

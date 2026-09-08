@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { SubmittalRow, ProjectSettings } from './types';
-import { getRevisionWeight } from './analytics/revisionResolver';
+import { getRevisionWeight, isRevision0, isFurtherRevision } from './analytics/revisionResolver';
 import { getNormalizedStatusCore } from './analytics/analyticsCore';
 import { resolveCanonicalTrade } from './analytics/calculationFoundation';
 const parseRfiDate = (value?: string): Date | null => {
@@ -89,10 +89,9 @@ const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
             if (!m.has(displayDisc)) m.set(displayDisc, { items: displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
             const st = m.get(displayDisc)!;
 
-            const revVal = String(row.rev ?? '').trim().toUpperCase();
-            const w = getRevisionWeight(revVal);
-            const isRev0 = row.isRev0 ?? (w === 0 && revVal !== 'AS-BUILT' && revVal !== 'IFC');
-            if (isRev0) st.rev00++; else st.furtherRev++;
+            const isRev0 = isRevision0(row.rev, row.isRev0);
+            const isFurther = isFurtherRevision(row.rev, row.isRev0);
+            if (isRev0) st.rev00++; else if (isFurther) st.furtherRev++;
             st.total = st.rev00 + st.furtherRev;
 
             // Use centralized StatusMatrixEngine normalization through analyticsCore

@@ -1,9 +1,29 @@
 import { SubmittalRow, ProjectSettings } from '../types';
 import { getNormalizedStatus, checkIfOverdueDynamically } from '../utils/statusMatrixEngine';
-import { compareRevisionsCanonical, isValidRevision, getNormalizedRevision, sortByRevisionPrecedence } from './revisionResolver';
+import {
+  compareRevisionsCanonical,
+  isValidRevision,
+  getNormalizedRevision,
+  sortByRevisionPrecedence,
+  getRevisionWeight,
+  isRevision0,
+  isFurtherRevision,
+  extractRevisionRaw,
+  assertRevisionInvariants
+} from './revisionResolver';
 import { getStatusCodeCategory } from './statusResolver';
 
-export { isValidRevision, getNormalizedRevision, sortByRevisionPrecedence };
+export {
+  isValidRevision,
+  getNormalizedRevision,
+  sortByRevisionPrecedence,
+  getRevisionWeight,
+  compareRevisionsCanonical,
+  isRevision0,
+  isFurtherRevision,
+  extractRevisionRaw,
+  assertRevisionInvariants
+};
 
 export type NormalizedStatus = 'OPEN' | 'CLOSED' | 'REJECTED' | 'OVERDUE' | 'UNKNOWN';
 

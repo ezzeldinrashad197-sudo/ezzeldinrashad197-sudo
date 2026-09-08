@@ -1,7 +1,15 @@
 
 import { SubmittalRow, KPIStats, RegisterSequenceAudit } from '../types';
-import { compareRevisions, isValidRevision } from './analyticsCore';
-import { getRevisionWeight } from './revisionResolver';
+import {
+  compareRevisionsCanonical as compareRevisions,
+  isValidRevision,
+  getRevisionWeight,
+  getNormalizedRevision,
+  isRevision0,
+  isFurtherRevision,
+  extractRevisionRaw,
+  assertRevisionInvariants
+} from './revisionResolver';
 import {
   getStatusCodeCategory,
   classifyNcrStatus,
@@ -594,7 +602,7 @@ export function processRevisionEngine(
     let maxWeight = -1;
 
     groupRows.forEach(r => {
-      const w = getRevisionWeight(r.rev);
+      const w = getRevisionWeight(extractRevisionRaw(r));
 
       if (w > maxWeight) {
         maxWeight = w;
@@ -605,7 +613,7 @@ export function processRevisionEngine(
      * All rows belonging to the latest revision.
      */
     const latestSheets = groupRows.filter(
-      r => getRevisionWeight(r.rev) === maxWeight
+      r => getRevisionWeight(extractRevisionRaw(r)) === maxWeight
     );
 
     /**
@@ -614,7 +622,7 @@ export function processRevisionEngine(
      * compareRevisions remains untouched.
      */
     const sorted = [...groupRows].sort((a, b) => {
-      const revDiff = compareRevisions(a.rev, b.rev);
+      const revDiff = compareRevisions(extractRevisionRaw(a), extractRevisionRaw(b));
 
       if (revDiff !== 0) {
         return revDiff;
@@ -781,7 +789,7 @@ export function calculateCanonicalKPIs(
     const documentKey =
       getDocumentIdentityKey(r);
 
-    const rev = (r.rev || '').trim();
+    const rev = extractRevisionRaw(r);
 
     const keyRev =
       `${documentKey}__REV__${rev}`;
@@ -961,25 +969,13 @@ export function calculateCanonicalKPIs(
   let rowPending = 0;
 
   validRows.forEach(r => {
-    const revVal =
-      normalizeCanonicalString(
-        r.rev ||
-        (r as unknown as Record<string, unknown>).revision ||
-        (r as unknown as Record<string, unknown>).revNo
-      );
-
-    const w =
-      getRevisionWeight(revVal);
-
-    const isRev0 =
-      (w === 0 &&
-        revVal !== 'AS-BUILT' &&
-        revVal !== 'IFC') ||
-      (r.isRev0 && w === 0);
+    const rawRev = extractRevisionRaw(r);
+    const isRev0 = isRevision0(rawRev, r.isRev0);
+    const isFurtherRev = isFurtherRevision(rawRev, r.isRev0);
 
     if (isRev0) {
       totalSheetsRev0++;
-    } else {
+    } else if (isFurtherRev) {
       totalSheetsFurtherRev++;
     }
 
@@ -1589,12 +1585,8 @@ export function buildCanonicalDataset(
         ? groupInfo.latest.id === row.id
         : true;
 
-    const revVal =
-      (row.rev || '').trim();
-
-    const isRev0 =
-      isValidRevision(revVal) &&
-      getRevisionWeight(revVal) === 0;
+    const rawRev = extractRevisionRaw(row);
+    const isRev0 = isRevision0(rawRev, row.isRev0);
 
     const registerType =
       (
@@ -1618,7 +1610,7 @@ export function buildCanonicalDataset(
 
       documentIdentityKey,
 
-      revision: revVal,
+      revision: rawRev,
 
       submissionDate:
         row.submissionDate || '',
@@ -1751,12 +1743,12 @@ export function evaluateEngineeringItemClassification(
     (groupInfo, key) => {
       const invalidRevCount =
         groupInfo.all.filter(
-          r => !isValidRevision(r.rev)
+          r => !isValidRevision(extractRevisionRaw(r))
         ).length;
 
       const validRows =
         groupInfo.all.filter(
-          r => isValidRevision(r.rev)
+          r => isValidRevision(extractRevisionRaw(r))
         );
 
       const sorted =
@@ -1777,8 +1769,8 @@ export function evaluateEngineeringItemClassification(
             }
 
             return compareRevisions(
-              a.rev,
-              b.rev
+              extractRevisionRaw(a),
+              extractRevisionRaw(b)
             );
           }
         );
@@ -1834,8 +1826,8 @@ export function evaluateEngineeringItemClassification(
               }
 
               return compareRevisions(
-                a.rev,
-                b.rev
+                extractRevisionRaw(a),
+                extractRevisionRaw(b)
               );
             }
           );
@@ -1845,25 +1837,28 @@ export function evaluateEngineeringItemClassification(
             sortedValid.length - 1
           ];
 
-        latestRevStr =
-          (latestValid.rev || '').trim();
+        latestRevStr = extractRevisionRaw(latestValid);
 
-        const isRev0 =
-          getRevisionWeight(
-            latestRevStr
-          ) === 0;
+        const isRev0 = isRevision0(latestRevStr, latestValid.isRev0);
+        const isFurther = isFurtherRevision(latestRevStr, latestValid.isRev0);
 
         if (isRev0) {
           classification = 'Rev00';
 
           ruleApplied =
             'Rev00 Baseline Rule: Resolved latest valid revision is 0, 00, or Rev0.';
-        } else {
+        } else if (isFurther) {
           classification =
             'Further Revision';
 
           ruleApplied =
             'Further Revision Rule: Resolved latest valid revision is greater than 0 (e.g., 01, Rev1).';
+        } else {
+          classification =
+            'Missing Revision';
+
+          ruleApplied =
+            'Missing Revision Rule: Document revision is blank or invalid.';
         }
 
         explanation =
