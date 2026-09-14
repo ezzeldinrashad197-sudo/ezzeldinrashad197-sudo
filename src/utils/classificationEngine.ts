@@ -15,6 +15,28 @@ export function detectDisciplineFromText(text: string): { discipline: string; ra
   if (!text) return null;
   const clean = text.toUpperCase().trim();
 
+  // 0. Tokenize words for Multi-Discipline Combination Guard
+  let words = clean.split(/[-_ \/(),&.]+/).filter(Boolean);
+
+  // If text starts with contractor-consultant prefix like INN-ARC or INN-ACE, strip the partner prefix so ARC does not contaminate
+  if (words.length > 2 && words[0] === 'INN' && (words[1] === 'ARC' || words[1] === 'ACE')) {
+    words = words.slice(2);
+  }
+
+  // Multi-Discipline Combination Guard: check if multiple primary trades are present
+  const hasArch = words.some(w => ['ARCH', 'ARC', 'ARCHITECTURAL', 'ARCHITECTURE'].includes(w));
+  const hasStr = words.some(w => ['STR', 'STRUCT', 'STRUCTURAL', 'CIVIL', 'CVL'].includes(w));
+  const hasMech = words.some(w => ['MECH', 'MEC', 'MECHANICAL', 'HVAC'].includes(w));
+  const hasElec = words.some(w => ['ELEC', 'ELE', 'ELECTRICAL', 'ELECTRIC'].includes(w));
+  const hasInfra = words.some(w => ['INFRA', 'INFR', 'INF', 'INFRASTRUCTURE', 'UTILITIES'].includes(w));
+  const hasSurv = words.some(w => ['SURVEY', 'SURV', 'SUR'].includes(w));
+  const hasLand = words.some(w => ['LAND', 'LND', 'LANDSCAPE'].includes(w));
+
+  const discCount = [hasArch, hasStr, hasMech, hasElec, hasInfra, hasSurv, hasLand].filter(Boolean).length;
+  if (discCount >= 2 || words.includes('MEP') || words.includes('M.E.P') || words.includes('MULTI') || words.includes('COMBINED')) {
+    return { discipline: 'MULTIDISCIPLINE', rawMatch: 'MULTI-DISCIPLINE' };
+  }
+
   // 1. Structured Composite Pattern Match (e.g. INN-ARC-WIR-SUR-01938 -> SUR, WIR-ARC -> ARC, etc.)
   const compMatch = clean.match(/\b(?:WIR|SDW|MAR|RFI|NCR|MIR|SOR|ABD|DOC|QS|LTR)[-_ /](SUR|SURV|SURVEY|STR|STRUCT|STRUCTURAL|CIVIL|CVL|ARC|ARCH|ARCHITECTURAL|MEC|MECH|MECHANICAL|HVAC|ELE|ELEC|ELECTRICAL|MEP|INFRA|INFR|INF|INFRASTRUCTURE|UTILITIES|LND|LAND|LANDSCAPE|IRR|IRRIGATION|HSE|SAFETY|GEN|GENERAL)\b/);
   if (compMatch) {
@@ -61,17 +83,7 @@ export function detectDisciplineFromText(text: string): { discipline: string; ra
     return { discipline: 'LAND', rawMatch: 'لاندسكيب' };
   }
 
-  // 3. Tokenize words
-  let words = clean.split(/[-_ \/(),&.]+/).filter(Boolean);
-
-  // If text starts with contractor-consultant prefix like INN-ARC or INN-ACE, strip the partner prefix so ARC does not contaminate
-  if (words.length > 2 && words[0] === 'INN' && (words[1] === 'ARC' || words[1] === 'ACE')) {
-    words = words.slice(2);
-  }
-
-  if ((words.includes('ARCH') || words.includes('ARC')) && (words.includes('STR') || words.includes('CIVIL'))) {
-    return { discipline: 'MULTIDISCIPLINE', rawMatch: 'ARCH & STR' };
-  }
+  // 3. Keyword Match in tokens
 
   if (words.includes('MEP') || words.includes('M.E.P')) {
     return { discipline: 'MEP', rawMatch: 'MEP' };

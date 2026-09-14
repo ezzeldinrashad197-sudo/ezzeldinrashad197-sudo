@@ -1,5 +1,6 @@
 import { formatDate } from '../src/utils/parser';
 import { calculateStats, normalizeData } from '../src/utils/calculations';
+import { buildCompositeIdentity } from '../src/utils/classificationEngine';
 import { SubmittalRow } from '../src/types';
 
 console.log('================================================================================');
@@ -139,6 +140,37 @@ assert(
   Math.abs(augStats.approvalRate - expectedRate) < 0.1,
   'CASE-STR-003.4 August Approval Rate Denominator Check',
   `Expected 75.00%, got: ${augStats.approvalRate.toFixed(2)}%`
+);
+
+// --------------------------------------------------------------------------------
+// CASE-STR-004: Multi-Discipline Register Guard (WIR-ARCH-STR.xlsx -> MULTIDISCIPLINE & NOT REGISTER_LOCK)
+// --------------------------------------------------------------------------------
+console.log('\n--- CASE-STR-004: Multi-Discipline Register Guard ---');
+
+const multiCompIdent = buildCompositeIdentity(
+  'WIR',
+  'WIR-ARCH-STR.xlsx',
+  'WIR-ARCH-STR',
+  ['WIR-ARCH-STR'],
+  []
+);
+
+assert(
+  multiCompIdent.discipline === 'MULTIDISCIPLINE',
+  'CASE-STR-004.1 Multi-discipline register detected as MULTIDISCIPLINE',
+  `Expected MULTIDISCIPLINE, got: ${multiCompIdent.discipline}`
+);
+
+assert(
+  multiCompIdent.isRegisterLocked === false,
+  'CASE-STR-004.2 Multi-discipline register is NOT register-locked',
+  `Expected isRegisterLocked === false, got: ${multiCompIdent.isRegisterLocked}`
+);
+
+assert(
+  multiCompIdent.disciplineEvidenceSource !== 'REGISTER_LOCK',
+  'CASE-STR-004.3 Multi-discipline register evidence source is not REGISTER_LOCK',
+  `Expected not REGISTER_LOCK, got: ${multiCompIdent.disciplineEvidenceSource}`
 );
 
 console.log(`\n================================================================================`);
