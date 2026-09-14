@@ -194,6 +194,7 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const isLockedRow =
       r.disciplineEvidenceSource === 'REGISTER_LOCK' ||
       Boolean(r.isDisciplineLocked) ||
+      Boolean(r.compositeIdentity?.isRegisterLocked) ||
       isSourceCodeLocked ||
       (
         Boolean(r.compositeIdentity?.discipline) &&

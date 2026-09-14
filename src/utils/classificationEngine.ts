@@ -171,9 +171,15 @@ export function buildCompositeIdentity(
     if (rowDisc) break;
   }
 
+  // Helper to determine if register is a locked single-discipline register
+  const checkRegisterLock = (fam: string, disc: string) => {
+    return fam !== 'RFI' && !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(disc);
+  };
+
   // 7-Level Hierarchy Resolution
   if (fileDisc) {
     const hasConflict = !!(sheetDisc && sheetDisc.discipline !== fileDisc.discipline && sheetDisc.discipline !== 'GEN');
+    const isRegisterLocked = checkRegisterLock(family, fileDisc.discipline);
     return {
       family,
       discipline: fileDisc.discipline,
@@ -185,11 +191,14 @@ export function buildCompositeIdentity(
       lockedBy: `Filename composite match: ${fileName}`,
       fallbackState: false,
       hasConflict,
-      conflictDetails: hasConflict ? `Filename discipline (${fileDisc.discipline}) conflicts with worksheet discipline (${sheetDisc.discipline})` : undefined
+      conflictDetails: hasConflict ? `Filename discipline (${fileDisc.discipline}) conflicts with worksheet discipline (${sheetDisc.discipline})` : undefined,
+      isRegisterLocked,
+      disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'COMPOSITE_FALLBACK'
     };
   }
 
   if (sheetDisc) {
+    const isRegisterLocked = checkRegisterLock(family, sheetDisc.discipline);
     return {
       family,
       discipline: sheetDisc.discipline,
@@ -200,11 +209,14 @@ export function buildCompositeIdentity(
       confidence: 0.95,
       lockedBy: `Worksheet composite match: ${sheetName}`,
       fallbackState: false,
-      hasConflict: false
+      hasConflict: false,
+      isRegisterLocked,
+      disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'COMPOSITE_FALLBACK'
     };
   }
 
   if (hdrDisc) {
+    const isRegisterLocked = checkRegisterLock(family, hdrDisc.discipline);
     return {
       family,
       discipline: hdrDisc.discipline,
@@ -215,7 +227,9 @@ export function buildCompositeIdentity(
       confidence: 0.85,
       lockedBy: `Header title block match`,
       fallbackState: false,
-      hasConflict: false
+      hasConflict: false,
+      isRegisterLocked,
+      disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'COMPOSITE_FALLBACK'
     };
   }
 

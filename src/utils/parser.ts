@@ -985,6 +985,7 @@ export const parseExcelWorkbook = (
         !isMultiDisciplineSource &&
         isCompDiscValid &&
         (
+          compIdent?.isRegisterLocked === true ||
           compIdent?.evidenceLevel === "LEVEL_1_FILENAME_COMPOSITE" ||
           compIdent?.evidenceLevel === "LEVEL_2_WORKSHEET_COMPOSITE" ||
           compIdent?.evidenceLevel === "LEVEL_3_HEADER_TITLE_BLOCK" ||
@@ -1186,8 +1187,10 @@ export const parseExcelWorkbook = (
         disciplineEvidenceSource,
         isDisciplineLocked: isRegisterDisciplineLocked,
 
-        documentType: "",
-        trade: "",
+        documentType:
+          compIdent?.compositeCode || (detectedType && compDisc ? `${detectedType}-${compDisc}` : (detectedType || "")),
+        trade:
+          finalDisciplineVal || "",
         workflowStage: "",
         isLatestRev: false,
         isRev0: isRevision0(

@@ -127,6 +127,8 @@ export interface CompositeIdentity {
   fallbackState: boolean;
   hasConflict: boolean;
   conflictDetails?: string;
+  isRegisterLocked?: boolean;
+  disciplineEvidenceSource?: string;
 }
 
 export interface KPIStats {

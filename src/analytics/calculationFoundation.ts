@@ -2278,52 +2278,79 @@ export function resolveCanonicalTrade(
   const compFamily = String(compositeIdentity?.family || row.workflowFamily || '').toUpperCase().trim();
   const rawSource = String(row.rawSourceIdentity || row.sourceFile || '').toUpperCase().trim();
   const logType = String(row.logType || '').toUpperCase().trim();
+  const docType = String(row.documentType || '').toUpperCase().trim();
+  const docNo = String(row.docNo || '').toUpperCase().trim();
 
-  const isLockedEvidence =
-    row.disciplineEvidenceSource === 'REGISTER_LOCK' ||
-    Boolean(rowRecord.isDisciplineLocked);
+  const isRfi =
+    compFamily === 'RFI' ||
+    logType.startsWith('RFI') ||
+    rawSource.startsWith('RFI') ||
+    docType.startsWith('RFI') ||
+    docNo.includes('-RFI-');
 
-  const isLockedComposite =
-    Boolean(compDisc) &&
-    !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(compDisc) &&
-    compFamily !== 'RFI' &&
+  const isExplicitMultiDiscipline =
+    ['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(compDisc);
+
+  // Detect single-discipline register pattern in any identifier
+  const singleDiscMatch = !isRfi && (
+    `${logType} ${docType} ${rawSource} ${docNo}`.match(/\b(WIR|SDW|MIR|MAR|ABD)[-_ ](STR|STRUCT|CIVIL|CVL|ARCH|ARC|MECH|MEC|ELEC|ELE|INFRA|INF|INFR|LAND|LND|SURVEY|SUR|IRR)\b/i)
+  );
+
+  const hasExplicitLock =
+    !isRfi &&
     (
-      compositeIdentity?.evidenceLevel === 'LEVEL_1_FILENAME_COMPOSITE' ||
-      compositeIdentity?.evidenceLevel === 'LEVEL_2_WORKSHEET_COMPOSITE' ||
-      compositeIdentity?.evidenceLevel === 'LEVEL_3_HEADER_TITLE_BLOCK' ||
-      String(compositeIdentity?.compositeCode || '').includes('-')
+      row.disciplineEvidenceSource === 'REGISTER_LOCK' ||
+      Boolean(rowRecord.isDisciplineLocked) ||
+      Boolean(compositeIdentity?.isRegisterLocked)
     );
 
-  const isLockedSourceCode =
-    !isLockedComposite &&
-    !logType.startsWith('RFI') &&
-    !rawSource.startsWith('RFI') &&
+  const isSingleDiscRegister =
+    !isRfi &&
+    !isExplicitMultiDiscipline &&
     (
-      logType.startsWith('WIR-') ||
-      logType.startsWith('SDW-') ||
-      logType.startsWith('MIR-') ||
-      logType.startsWith('MAR-') ||
-      rawSource.startsWith('WIR-') ||
-      rawSource.startsWith('SDW-') ||
-      rawSource.startsWith('MIR-')
+      hasExplicitLock ||
+      Boolean(singleDiscMatch) ||
+      (
+        Boolean(compDisc) &&
+        (
+          compositeIdentity?.evidenceLevel === 'LEVEL_1_FILENAME_COMPOSITE' ||
+          compositeIdentity?.evidenceLevel === 'LEVEL_2_WORKSHEET_COMPOSITE' ||
+          compositeIdentity?.evidenceLevel === 'LEVEL_3_HEADER_TITLE_BLOCK' ||
+          String(compositeIdentity?.compositeCode || '').includes('-')
+        )
+      ) ||
+      (
+        (logType.startsWith('WIR-') || logType.startsWith('SDW-') || logType.startsWith('MIR-') || logType.startsWith('MAR-')) &&
+        logType.includes('-')
+      ) ||
+      (
+        (docType.startsWith('WIR-') || docType.startsWith('SDW-') || docType.startsWith('MIR-') || docType.startsWith('MAR-')) &&
+        docType.includes('-')
+      )
     );
 
-  if (isLockedEvidence || isLockedComposite) {
-    const lockedDiscStr = compDisc || String(rowRecord.contextDiscipline || '');
-    const lockedResult = checkText(lockedDiscStr);
-    if (lockedResult) {
-      return lockedResult;
+  if (isSingleDiscRegister) {
+    // Determine candidate locked discipline string
+    let candidateLockStr = '';
+    if (compDisc && !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(compDisc)) {
+      candidateLockStr = compDisc;
+    } else if (singleDiscMatch && singleDiscMatch[2]) {
+      candidateLockStr = singleDiscMatch[2];
+    } else if (rowRecord.contextDiscipline) {
+      candidateLockStr = String(rowRecord.contextDiscipline);
+    } else {
+      const sourceCode = logType.includes('-') ? logType : (docType.includes('-') ? docType : rawSource);
+      const parts = sourceCode.split(/[-_.]+/);
+      if (parts.length >= 2 && !['GEN', 'GENERAL', 'MIXED', 'ALL', 'MULTI'].includes(parts[1])) {
+        candidateLockStr = parts[1];
+      }
     }
-  } else if (isLockedSourceCode) {
-    const sourceCode = logType.includes('-') ? logType : rawSource;
-    const parts = sourceCode.split(/[-_.]+/);
-    if (parts.length >= 2) {
-      const candidateDisc = parts[1].trim();
-      if (!['GEN', 'GENERAL', 'MIXED', 'ALL', 'MULTI'].includes(candidateDisc)) {
-        const lockedResult = checkText(candidateDisc);
-        if (lockedResult) {
-          return lockedResult;
-        }
+
+    if (candidateLockStr) {
+      const lockedResult = checkText(candidateLockStr);
+      if (lockedResult) {
+        // Absolute Lock: Row cell values are rejected and ignored for canonical classification!
+        return lockedResult;
       }
     }
   }
