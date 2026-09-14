@@ -488,14 +488,25 @@ const failsafeAssertions: MutationFailsafeAssertion[] = [
     }
   },
   {
-    name: "Mixed-Trade Check: Row-level Trade (IRR) in Infra worksheet MUST map to Irrigation (SDW-IRR) and NOT Infrastructure",
+    name: "Register-Level Discipline Lock: Row in single-discipline register (SDW-INFRA) is locked to Infrastructure (SDW-INFRA)",
+    test: () => {
+      const locked = normalizeData([
+        { id: 'inf1', docNo: 'SDW-INF-001', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'INF', discipline: 'INF', logType: 'SDW-INFRA', compositeIdentity: { family: 'SDW', discipline: 'INFRA', compositeCode: 'SDW-INFRA' }, disciplineEvidenceSource: 'REGISTER_LOCK', isDisciplineLocked: true } as any,
+        { id: 'irr1', docNo: 'SDW-IRR-001', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'IRR', discipline: 'IRR', logType: 'SDW-INFRA', compositeIdentity: { family: 'SDW', discipline: 'INFRA', compositeCode: 'SDW-INFRA' }, disciplineEvidenceSource: 'REGISTER_LOCK', isDisciplineLocked: true } as any
+      ]);
+      return locked[0].trade === 'Infrastructure' && locked[0].documentType === 'SDW-INFRA' &&
+             locked[1].trade === 'Infrastructure' && locked[1].documentType === 'SDW-INFRA';
+    }
+  },
+  {
+    name: "Mixed-Discipline Check: Row in mixed register (RFI) preserves row-level discipline (Mechanical)",
     test: () => {
       const mixed = normalizeData([
-        { id: 'inf1', docNo: 'SDW-INF-001', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'INF', discipline: 'INF', logType: 'SDW-INFRA', compositeIdentity: { family: 'SDW', discipline: 'INFRA', compositeCode: 'SDW-INFRA' } } as any,
-        { id: 'irr1', docNo: 'SDW-IRR-001', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'IRR', discipline: 'IRR', logType: 'SDW-INFRA', compositeIdentity: { family: 'SDW', discipline: 'INFRA', compositeCode: 'SDW-INFRA' } } as any
+        { id: 'rfi1', docNo: 'RFI-001', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'MECH', discipline: 'MECH', logType: 'RFI', compositeIdentity: { family: 'RFI', discipline: 'MULTIDISCIPLINE', compositeCode: 'RFI' } } as any,
+        { id: 'rfi2', docNo: 'RFI-002', rev: '0', status: 'A', submissionDate: '2026-01-01', trade: 'ELEC', discipline: 'ELEC', logType: 'RFI', compositeIdentity: { family: 'RFI', discipline: 'MULTIDISCIPLINE', compositeCode: 'RFI' } } as any
       ]);
-      return mixed[0].trade === 'Infrastructure' && mixed[0].documentType === 'SDW-INFRA' &&
-             mixed[1].trade === 'Irrigation' && mixed[1].documentType === 'SDW-IRR';
+      return mixed[0].trade === 'Mechanical' && mixed[0].documentType === 'RFI-MEC' &&
+             mixed[1].trade === 'Electrical' && mixed[1].documentType === 'RFI-ELE';
     }
   }
 ];

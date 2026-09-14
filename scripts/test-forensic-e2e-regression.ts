@@ -214,46 +214,46 @@ async function runForensicRegression() {
     { discipline: item2?.discipline, documentType: item2?.documentType }
   );
 
-  // Critical Case 3: WIR-ARCH + Sub-Trade Row -> Preserves Row Mixed Trade (MECH)
+  // Critical Case 3: WIR-ARCH + Sub-Trade Row -> Enforces Register-Level Lock (Architectural)
   const item3Rev0 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-MEC-00103" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + Sub-Trade MECH Row -> Preserves Row Mixed Trade (Mechanical)",
-    (item3Rev0?.discipline === "Mechanical" || item3Rev0?.discipline === "MECH") && (item3Rev0?.documentType === "WIR-MEC" || item3Rev0?.documentType === "WIR-MECH"),
-    { discipline: "Mechanical", documentType: "WIR-MEC" },
-    { discipline: item3Rev0?.discipline, documentType: item3Rev0?.documentType },
-    "Row mixed trade MECH in WIR-ARCH must be preserved"
+    "WIR-ARCH + Sub-Trade MECH Row -> Enforces Register Lock (Architectural)",
+    (item3Rev0?.discipline === "Architectural" || item3Rev0?.discipline === "ARCH") && (item3Rev0?.documentType === "WIR-ARC" || item3Rev0?.documentType === "WIR-ARCH") && item3Rev0?.disciplineEvidenceSource === "REGISTER_LOCK",
+    { discipline: "Architectural", documentType: "WIR-ARC", evidenceSource: "REGISTER_LOCK" },
+    { discipline: item3Rev0?.discipline, documentType: item3Rev0?.documentType, evidenceSource: item3Rev0?.disciplineEvidenceSource },
+    "Single-discipline register lock: accidental row discipline MECH must never override WIR-ARCH"
   );
 
-  // Critical Case 4: WIR-ARCH + ELEC -> Preserves Row Mixed Trade (Electrical)
+  // Critical Case 4: WIR-ARCH + ELEC -> Enforces Register-Level Lock (Architectural)
   const item4 = ingestedWIR.find(r => r.docNo === "INN-ARC-WIR-ELE-00104");
   recordTest(
     "Critical Matrix",
-    "WIR-ARCH + ELEC Row -> Preserves Row Mixed Trade (Electrical)",
-    (item4?.discipline === "Electrical" || item4?.discipline === "ELE" || item4?.discipline === "ELEC") && (item4?.documentType === "WIR-ELE" || item4?.documentType === "WIR-ELEC"),
-    { discipline: "Electrical", documentType: "WIR-ELE" },
-    { discipline: item4?.discipline, documentType: item4?.documentType }
+    "WIR-ARCH + ELEC Row -> Enforces Register Lock (Architectural)",
+    (item4?.discipline === "Architectural" || item4?.discipline === "ARCH") && (item4?.documentType === "WIR-ARC" || item4?.documentType === "WIR-ARCH") && item4?.disciplineEvidenceSource === "REGISTER_LOCK",
+    { discipline: "Architectural", documentType: "WIR-ARC", evidenceSource: "REGISTER_LOCK" },
+    { discipline: item4?.discipline, documentType: item4?.documentType, evidenceSource: item4?.disciplineEvidenceSource }
   );
 
-  // Critical Case 5: SDW-INFRA + IRR Row -> Preserves Row Mixed Trade (Irrigation)
+  // Critical Case 5: SDW-INFRA + IRR Row -> Enforces Register-Level Lock (Infrastructure)
   const item7 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-IRR-00202");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + IRR Row -> Preserves Row Mixed Trade (Irrigation)",
-    (item7?.discipline === "Irrigation" || item7?.discipline === "IRR") && (item7?.documentType === "SDW-IRR" || item7?.documentType === "SDW-IRRIGATION"),
-    { discipline: "Irrigation", documentType: "SDW-IRR" },
-    { discipline: item7?.discipline, documentType: item7?.documentType },
-    "Row mixed trade IRR in SDW-INFRA must be preserved"
+    "SDW-INFRA + IRR Row -> Enforces Register Lock (Infrastructure)",
+    (item7?.discipline === "Infrastructure" || item7?.discipline === "INFRA") && (item7?.documentType === "SDW-INFRA" || item7?.documentType === "SDW-INF") && item7?.disciplineEvidenceSource === "REGISTER_LOCK",
+    { discipline: "Infrastructure", documentType: "SDW-INFRA", evidenceSource: "REGISTER_LOCK" },
+    { discipline: item7?.discipline, documentType: item7?.documentType, evidenceSource: item7?.disciplineEvidenceSource },
+    "Single-discipline register lock: accidental row discipline IRR must never override SDW-INFRA"
   );
 
-  // Critical Case 6: SDW-INFRA + STR -> Preserves Row Mixed Trade (Structural)
+  // Critical Case 6: SDW-INFRA + STR -> Enforces Register-Level Lock (Infrastructure)
   const item8Rev0 = ingestedSDW.find(r => r.docNo === "INN-INF-SDW-STR-00203" && r.rev === "00");
   recordTest(
     "Critical Matrix",
-    "SDW-INFRA + STR Row -> Preserves Row Mixed Trade (Structural)",
-    (item8Rev0?.discipline === "Structural" || item8Rev0?.discipline === "STR") && (item8Rev0?.documentType === "SDW-STR" || item8Rev0?.documentType === "SDW-STRUCTURAL"),
-    { discipline: "Structural", documentType: "SDW-STR" },
-    { discipline: item8Rev0?.discipline, documentType: item8Rev0?.documentType }
+    "SDW-INFRA + STR Row -> Enforces Register Lock (Infrastructure)",
+    (item8Rev0?.discipline === "Infrastructure" || item8Rev0?.discipline === "INFRA") && (item8Rev0?.documentType === "SDW-INFRA" || item8Rev0?.documentType === "SDW-INF") && item8Rev0?.disciplineEvidenceSource === "REGISTER_LOCK",
+    { discipline: "Infrastructure", documentType: "SDW-INFRA", evidenceSource: "REGISTER_LOCK" },
+    { discipline: item8Rev0?.discipline, documentType: item8Rev0?.documentType, evidenceSource: item8Rev0?.disciplineEvidenceSource }
   );
 
   // Critical Case 7: SDW-INFRA + Blank -> INFRA
@@ -261,9 +261,36 @@ async function runForensicRegression() {
   recordTest(
     "Critical Matrix",
     "SDW-INFRA + Blank Row -> Resolves to Infrastructure",
-    (item9?.discipline === "Infrastructure" || item9?.discipline === "INFRA") && (item9?.documentType === "SDW-INFRA" || item9?.documentType === "SDW-INF"),
-    { discipline: "Infrastructure", documentType: "SDW-INFRA" },
-    { discipline: item9?.discipline, documentType: item9?.documentType }
+    (item9?.discipline === "Infrastructure" || item9?.discipline === "INFRA") && (item9?.documentType === "SDW-INFRA" || item9?.documentType === "SDW-INF") && item9?.disciplineEvidenceSource === "REGISTER_LOCK",
+    { discipline: "Infrastructure", documentType: "SDW-INFRA", evidenceSource: "REGISTER_LOCK" },
+    { discipline: item9?.discipline, documentType: item9?.documentType, evidenceSource: item9?.disciplineEvidenceSource }
+  );
+
+  // Mixed-Discipline Register Check: RFI allows row-level disciplines
+  const rfiMixedRows = [
+    headers,
+    ["INN-GEN-RFI-ALL-00001", "00", "MECH", "2026-08-01", "2026-08-15", "2026-08-10", "A", "APPROVED"],
+    ["INN-GEN-RFI-ALL-00002", "00", "ELEC", "2026-08-02", "2026-08-16", "2026-08-12", "A", "APPROVED"],
+  ];
+  const rfiMixedBuffer = createExcelWorkbookBuffer([{ sheetName: "RFI-ALL", rows: rfiMixedRows }]);
+  const ingestedRFI = parseExcelBuffer(rfiMixedBuffer, "RFI-ALL.xlsx");
+  const rfiMech = ingestedRFI.find(r => r.docNo === "INN-GEN-RFI-ALL-00001");
+  const rfiElec = ingestedRFI.find(r => r.docNo === "INN-GEN-RFI-ALL-00002");
+
+  recordTest(
+    "Critical Matrix",
+    "RFI Mixed Register + MECH Row -> Preserves Row Discipline (Mechanical)",
+    rfiMech?.discipline === "Mechanical" && rfiMech?.disciplineEvidenceSource === "ROW_EXPLICIT",
+    { discipline: "Mechanical", evidenceSource: "ROW_EXPLICIT" },
+    { discipline: rfiMech?.discipline, evidenceSource: rfiMech?.disciplineEvidenceSource }
+  );
+
+  recordTest(
+    "Critical Matrix",
+    "RFI Mixed Register + ELEC Row -> Preserves Row Discipline (Electrical)",
+    rfiElec?.discipline === "Electrical" && rfiElec?.disciplineEvidenceSource === "ROW_EXPLICIT",
+    { discipline: "Electrical", evidenceSource: "ROW_EXPLICIT" },
+    { discipline: rfiElec?.discipline, evidenceSource: rfiElec?.disciplineEvidenceSource }
   );
 
   // ===========================================================================
@@ -681,6 +708,68 @@ async function runForensicRegression() {
     seqAuditResult.totalMissingCount === 0,
     0,
     seqAuditResult.totalMissingCount
+  );
+
+  // ===========================================================================
+  // STEP 7: WIR-STR REAL-WORLD FORENSIC INVARIANT (100% WIR-STR, ZERO WIR-INFRA)
+  // ===========================================================================
+  console.log(`\n${colors.bold}STEP 7: WIR-STR Real-World Forensic Invariant (100% WIR-STR, Zero WIR-INFRA)${colors.reset}`);
+
+  const wirStrRows = [
+    headers,
+    ["INN-ARC-WIR-STR-00749", "00", "STR", "2026-08-01", "2026-08-15", "2026-08-10", "A", "APPROVED"],
+    ["INN-ARC-WIR-STR-00750", "00", "STR", "2026-08-01", "2026-08-15", "2026-08-10", "A", "APPROVED"],
+    // Accidental / Misleading INFRA in WIR-STR row 00751:
+    ["INN-ARC-WIR-STR-00751", "00", "INFRA", "2026-08-02", "2026-08-16", "2026-08-11", "A", "APPROVED"],
+    ["INN-ARC-WIR-STR-00752", "00", "STR", "2026-08-02", "2026-08-16", "2026-08-11", "A", "APPROVED"],
+  ];
+
+  const wirStrBuffer = createExcelWorkbookBuffer([{ sheetName: "WIR-STR", rows: wirStrRows }]);
+  const ingestedSTR = parseExcelBuffer(wirStrBuffer, "WIR-STR.xlsx");
+  const normalizedSTR = normalizeData(ingestedSTR);
+
+  const strRowsCount = normalizedSTR.filter(r => r.documentType === "WIR-STR").length;
+  const infraRowsCount = normalizedSTR.filter(r => r.documentType === "WIR-INFRA").length;
+
+  recordTest(
+    "WIR-STR Register Lock Invariant",
+    "WIR-STR source with accidental INFRA row produces 100% WIR-STR",
+    strRowsCount === 4,
+    4,
+    strRowsCount
+  );
+
+  recordTest(
+    "WIR-STR Register Lock Invariant",
+    "WIR-STR source produces zero WIR-INFRA rows",
+    infraRowsCount === 0,
+    0,
+    infraRowsCount
+  );
+
+  const row751Parsed = normalizedSTR.find(r => r.docNo === "INN-ARC-WIR-STR-00751");
+  recordTest(
+    "WIR-STR Register Lock Invariant",
+    "Row 00751 has disciplineEvidenceSource === 'REGISTER_LOCK'",
+    row751Parsed?.disciplineEvidenceSource === "REGISTER_LOCK",
+    "REGISTER_LOCK",
+    row751Parsed?.disciplineEvidenceSource
+  );
+
+  recordTest(
+    "WIR-STR Register Lock Invariant",
+    "Row 00751 has isDisciplineLocked === true",
+    row751Parsed?.isDisciplineLocked === true,
+    true,
+    row751Parsed?.isDisciplineLocked
+  );
+
+  recordTest(
+    "WIR-STR Register Lock Invariant",
+    "Row 00751 resolved discipline is Structural (not Infrastructure)",
+    row751Parsed?.discipline === "Structural" || row751Parsed?.discipline === "STR",
+    "Structural",
+    row751Parsed?.discipline
   );
 
   // ===========================================================================

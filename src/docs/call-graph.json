@@ -1653,35 +1653,35 @@
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2395,
+    "line": 2460,
     "context": "resolveCanonicalTrade(row)",
     "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
     "functionName": "resolveCanonicalTrade"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2410,
+    "line": 2475,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2463,
+    "line": 2528,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2516,
+    "line": 2581,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2599,
+    "line": 2664,
     "context": "getPerformanceValidationRows(\n      rows\n    )",
     "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
     "functionName": "getPerformanceValidationRows"
@@ -3865,7 +3865,7 @@
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 306,
+    "line": 329,
     "context": "getDelayDays(submission, response, '')",
     "destination": "src/utils/calculations.ts::getDelayDays",
     "functionName": "getDelayDays"
@@ -4397,70 +4397,70 @@
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1087,
+    "line": 1108,
     "context": "normalizeDiscipline(\n          disciplineVal,\n          activeProjectId,\n        )",
     "destination": "src/utils/calculations.ts::normalizeDiscipline",
     "functionName": "normalizeDiscipline"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1168,
+    "line": 1193,
     "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1229,
+    "line": 1254,
     "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1278,
+    "line": 1303,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1298,
+    "line": 1323,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1311,
+    "line": 1336,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1402,
+    "line": 1427,
     "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
     "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
     "functionName": "mapDocumentToWorkflow"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1535,
+    "line": 1560,
     "context": "normalizeData(parsed)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1548,
+    "line": 1573,
     "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1573,
+    "line": 1598,
     "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"

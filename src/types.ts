@@ -102,6 +102,8 @@ export interface SubmittalRow {
   rawSourceIdentity?: string;
   contextDiscipline?: string;
   compositeIdentity?: CompositeIdentity;
+  disciplineEvidenceSource?: 'REGISTER_LOCK' | 'ROW_EXPLICIT' | 'COMPOSITE_FALLBACK' | 'REFERENCE_FALLBACK' | 'UNCLASSIFIED' | string;
+  isDisciplineLocked?: boolean;
 }
 
 export type EvidenceLevel = 

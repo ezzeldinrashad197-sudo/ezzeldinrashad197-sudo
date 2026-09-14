@@ -952,7 +952,44 @@ export const parseExcelWorkbook = (
         compDisc !== "UNCLASSIFIED";
 
       const isRfiWorksheet =
-        detectedType === "RFI";
+        detectedType === "RFI" ||
+        compIdent?.family === "RFI";
+
+      const isMultiDisciplineSource =
+        isRfiWorksheet ||
+        compDisc === "MULTIDISCIPLINE" ||
+        compDisc === "MIXED" ||
+        compDisc === "ALL" ||
+        compDisc === "GEN" ||
+        compDisc === "GENERAL" ||
+        compIdent?.evidenceLevel === "LEVEL_7_UNCLASSIFIED_FALLBACK";
+
+      /*
+       * ============================================================
+       * REGISTER-LEVEL DISCIPLINE LOCK (SSOT FORENSIC INVARIANT)
+       * ============================================================
+       * For any single-discipline source file/sheet such as WIR-STR,
+       * WIR-ARCH, WIR-MECH, WIR-ELEC, WIR-INFRA, SDW-STR, etc.,
+       * the composite identity derived from filename/sheet is the
+       * authoritative discipline for EVERY row in that source.
+       *
+       * Row-level discipline is NEVER permitted to override a locked
+       * single-discipline register.
+       *
+       * Row-level discipline may override/inherit ONLY when the source
+       * is explicitly classified as MIXED/MULTI-DISCIPLINE (e.g. RFI
+       * mixed register or explicitly multi-trade sheets).
+       * ============================================================
+       */
+      const isRegisterDisciplineLocked =
+        !isMultiDisciplineSource &&
+        isCompDiscValid &&
+        (
+          compIdent?.evidenceLevel === "LEVEL_1_FILENAME_COMPOSITE" ||
+          compIdent?.evidenceLevel === "LEVEL_2_WORKSHEET_COMPOSITE" ||
+          compIdent?.evidenceLevel === "LEVEL_3_HEADER_TITLE_BLOCK" ||
+          (!!compIdent?.compositeCode && compIdent.compositeCode.includes("-"))
+        );
 
       /*
        * Values that do not constitute explicit row-level discipline
@@ -976,41 +1013,21 @@ export const parseExcelWorkbook = (
           "UNCLASSIFIED",
         ].includes(rawDiscipline);
 
-      /*
-       * RFI DISCIPLINE PRECEDENCE:
-       *
-       * 1. Explicit row-level discipline
-       * 2. Composite Identity fallback
-       *
-       * For non-RFI registers, retain the established generic
-       * precedence while preserving the same fallback behavior.
-       */
-      if (
-        isRfiWorksheet &&
-        rowHasExplicitDiscipline
-      ) {
+      let disciplineEvidenceSource = "UNCLASSIFIED";
+
+      if (isRegisterDisciplineLocked) {
+        disciplineVal = compDisc!;
+        disciplineEvidenceSource = "REGISTER_LOCK";
+      } else if (rowHasExplicitDiscipline) {
         const extracted =
           extractDiscipline(rawDiscipline);
 
         disciplineVal =
           extracted || rawDiscipline;
-      } else if (
-        isRfiWorksheet &&
-        isCompDiscValid
-      ) {
-        disciplineVal = compDisc;
-      } else if (
-        rowHasExplicitDiscipline
-      ) {
-        const extracted =
-          extractDiscipline(rawDiscipline);
-
-        disciplineVal =
-          extracted || rawDiscipline;
-      } else if (
-        isCompDiscValid
-      ) {
-        disciplineVal = compDisc;
+        disciplineEvidenceSource = "ROW_EXPLICIT";
+      } else if (isCompDiscValid) {
+        disciplineVal = compDisc!;
+        disciplineEvidenceSource = "COMPOSITE_FALLBACK";
       } else {
         /*
          * Final evidence-based fallback.
@@ -1032,8 +1049,10 @@ export const parseExcelWorkbook = (
 
         if (extractedRefDisc) {
           disciplineVal = extractedRefDisc;
+          disciplineEvidenceSource = "REFERENCE_FALLBACK";
         } else if (isLetter) {
           disciplineVal = "GENERAL";
+          disciplineEvidenceSource = "LETTER_DEFAULT";
         } else if (
           isNcr &&
           (
@@ -1042,12 +1061,14 @@ export const parseExcelWorkbook = (
           )
         ) {
           disciplineVal = "HSE";
+          disciplineEvidenceSource = "NCR_HSE_DEFAULT";
         } else {
           /*
            * Zero-Invention Rule:
            * Never silently invent a discipline.
            */
           disciplineVal = "UNCLASSIFIED";
+          disciplineEvidenceSource = "UNCLASSIFIED";
         }
       }
 
@@ -1102,10 +1123,11 @@ export const parseExcelWorkbook = (
        *   retain Composite Identity context behavior.
        */
       const rowContextDiscipline =
-        isRfiWorksheet &&
-        rowHasExplicitDiscipline
-          ? finalDisciplineVal
-          : compIdent?.discipline;
+        isRegisterDisciplineLocked
+          ? compDisc
+          : (isRfiWorksheet && rowHasExplicitDiscipline
+              ? finalDisciplineVal
+              : compIdent?.discipline);
 
       /*
        * ============================================================
@@ -1160,6 +1182,9 @@ export const parseExcelWorkbook = (
 
         compositeIdentity:
           compIdent,
+
+        disciplineEvidenceSource,
+        isDisciplineLocked: isRegisterDisciplineLocked,
 
         documentType: "",
         trade: "",

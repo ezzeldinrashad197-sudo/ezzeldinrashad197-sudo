@@ -2253,6 +2253,81 @@ export function resolveCanonicalTrade(
     return null;
   };
 
+  const rowRecord =
+    row as unknown as Record<
+      string,
+      unknown
+    >;
+
+  const compositeIdentity =
+    rowRecord.compositeIdentity as
+      | Record<string, unknown>
+      | undefined;
+
+  /*
+   * ============================================================
+   * REGISTER-LEVEL DISCIPLINE LOCK (SSOT CANONICAL RESOLUTION)
+   * ============================================================
+   * If the row originates from a single-discipline locked register
+   * (e.g. WIR-STR, WIR-ARCH, WIR-MECH, WIR-ELEC, WIR-INFRA, SDW-STR),
+   * the locked discipline is authoritative and CANNOT be overridden
+   * by an accidental row-level value.
+   * ============================================================
+   */
+  const compDisc = String(compositeIdentity?.discipline || '').toUpperCase().trim();
+  const compFamily = String(compositeIdentity?.family || row.workflowFamily || '').toUpperCase().trim();
+  const rawSource = String(row.rawSourceIdentity || row.sourceFile || '').toUpperCase().trim();
+  const logType = String(row.logType || '').toUpperCase().trim();
+
+  const isLockedEvidence =
+    row.disciplineEvidenceSource === 'REGISTER_LOCK' ||
+    Boolean(rowRecord.isDisciplineLocked);
+
+  const isLockedComposite =
+    Boolean(compDisc) &&
+    !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(compDisc) &&
+    compFamily !== 'RFI' &&
+    (
+      compositeIdentity?.evidenceLevel === 'LEVEL_1_FILENAME_COMPOSITE' ||
+      compositeIdentity?.evidenceLevel === 'LEVEL_2_WORKSHEET_COMPOSITE' ||
+      compositeIdentity?.evidenceLevel === 'LEVEL_3_HEADER_TITLE_BLOCK' ||
+      String(compositeIdentity?.compositeCode || '').includes('-')
+    );
+
+  const isLockedSourceCode =
+    !isLockedComposite &&
+    !logType.startsWith('RFI') &&
+    !rawSource.startsWith('RFI') &&
+    (
+      logType.startsWith('WIR-') ||
+      logType.startsWith('SDW-') ||
+      logType.startsWith('MIR-') ||
+      logType.startsWith('MAR-') ||
+      rawSource.startsWith('WIR-') ||
+      rawSource.startsWith('SDW-') ||
+      rawSource.startsWith('MIR-')
+    );
+
+  if (isLockedEvidence || isLockedComposite) {
+    const lockedDiscStr = compDisc || String(rowRecord.contextDiscipline || '');
+    const lockedResult = checkText(lockedDiscStr);
+    if (lockedResult) {
+      return lockedResult;
+    }
+  } else if (isLockedSourceCode) {
+    const sourceCode = logType.includes('-') ? logType : rawSource;
+    const parts = sourceCode.split(/[-_.]+/);
+    if (parts.length >= 2) {
+      const candidateDisc = parts[1].trim();
+      if (!['GEN', 'GENERAL', 'MIXED', 'ALL', 'MULTI'].includes(candidateDisc)) {
+        const lockedResult = checkText(candidateDisc);
+        if (lockedResult) {
+          return lockedResult;
+        }
+      }
+    }
+  }
+
   // 1. Explicit discipline
   const fromDisc =
     checkText(row.discipline);
@@ -2270,16 +2345,6 @@ export function resolveCanonicalTrade(
   }
 
   // 3. contextDiscipline / compositeIdentity
-  const rowRecord =
-    row as unknown as Record<
-      string,
-      unknown
-    >;
-
-  const compositeIdentity =
-    rowRecord.compositeIdentity as
-      | Record<string, unknown>
-      | undefined;
 
   const fromContext =
     checkText(

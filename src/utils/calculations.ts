@@ -181,8 +181,31 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const computedOverdue = isStatusActive && (dueDate ? (parseDateTimestamp(dueDate) > 0 && Date.now() > parseDateTimestamp(dueDate)) : checkIfOverdueDynamically(submissionDate, responseDate, 14));
     const overdue = isStatusActive ? computedOverdue : false;
 
+    const rawSource = String(r.rawSourceIdentity || r.sourceFile || '').toUpperCase().trim();
+    const logTypeUpper = String(r.logType || '').toUpperCase().trim();
+    const isSourceCodeLocked =
+      !logTypeUpper.startsWith('RFI') &&
+      !rawSource.startsWith('RFI') &&
+      (
+        (logTypeUpper.startsWith('WIR-') || logTypeUpper.startsWith('SDW-') || logTypeUpper.startsWith('MIR-') || logTypeUpper.startsWith('MAR-')) ||
+        (rawSource.startsWith('WIR-') || rawSource.startsWith('SDW-') || rawSource.startsWith('MIR-'))
+      );
+
+    const isLockedRow =
+      r.disciplineEvidenceSource === 'REGISTER_LOCK' ||
+      Boolean(r.isDisciplineLocked) ||
+      isSourceCodeLocked ||
+      (
+        Boolean(r.compositeIdentity?.discipline) &&
+        !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(String(r.compositeIdentity?.discipline).toUpperCase()) &&
+        String(r.compositeIdentity?.family).toUpperCase() !== 'RFI'
+      );
+
     return {
       ...r,
+      discipline: isLockedRow ? (trade || r.discipline) : r.discipline,
+      disciplineEvidenceSource: r.disciplineEvidenceSource || (isLockedRow ? 'REGISTER_LOCK' : undefined),
+      isDisciplineLocked: r.isDisciplineLocked || isLockedRow,
       trade: trade || r.trade,
       tradeShort: tradeShort || (r as any).tradeShort,
       documentType,

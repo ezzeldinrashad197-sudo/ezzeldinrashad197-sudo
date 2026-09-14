@@ -24,7 +24,7 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 // 1. Verify SHA-256 hashes of the remediated protected artifacts
 const expectedHashes = {
-  'src/utils/calculations.ts': '70175da1fdd44d0f3a8fa427618247cc53885788f797e7504010ad287e3e8761', // remediated SSOT calculations
+  'src/utils/calculations.ts': 'da1b49993b3cd53bdbc48b8c3343c7d7d69c0fb96114180f4a63f40ec69a8d54', // remediated SSOT calculations with register-level lock
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade',
   'firestore.rules': 'bb2654c3a03fa1aac102d1deab55ea2995de06a750ee2aa4dbc04021971d4344'
 };

@@ -1,5 +1,5 @@
 # StructuSight Mathematical & Architecture Evidence Log
-*Generated on 2026-09-14T09:39:58.212Z via StructuSight Custom AST Compliance Engine*
+*Generated on 2026-09-14T13:25:50.225Z via StructuSight Custom AST Compliance Engine*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -12,38 +12,38 @@ To guarantee absolute reproducibility and transparency under independent review,
 
 | Metric | System Signature Value | Description |
 | :--- | :--- | :--- |
-| **Audit Timestamp** | `2026-09-14T09:39:58.212Z` | Universal Coordinated Time (UTC) of verification run |
+| **Audit Timestamp** | `2026-09-14T13:25:50.225Z` | Universal Coordinated Time (UTC) of verification run |
 | **Node.js Engine** | `v22.23.2` | Active Node runtime engine executing verification |
 | **TypeScript Version** | `v5.8.3` | Version of TypeScript Compiler API used for parsing |
 | **System Platform** | `linux (x64)` | Host kernel and architecture fingerprint |
 | **Build Project ID** | `b1fedb55-c17f-4221-b883-f1ee17f1362f` | Unique platform identifier of active workspace |
 | **Report Schema Version** | `1.4.0` | Schema specification version for exported JSON and reporting layers |
 | **Verification Engine** | `2.4.1-Prod` | Release build version of custom AST scanner |
-| **Total Pipeline Wall Time**| `**1.416 seconds**` | Combined execution duration of AST scanning and verification pipeline |
+| **Total Pipeline Wall Time**| `**1.221 seconds**` | Combined execution duration of AST scanning and verification pipeline |
 
 ### ⏱️ VERIFICATION RUNTIME METRIC SPLIT
 
 | Verification Stage | Processed Task | Measured Duration | Percentage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.390 seconds` | `98.2%` | COMPLETED ✅ |
-| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.001 seconds` | `0.1%` | COMPLETED ✅ |
-| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.014 seconds` | `1.0%` | COMPLETED ✅ |
-| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.011 seconds` | `0.8%` | COMPLETED ✅ |
-| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.416 seconds**` | `100.0%` | **SUCCESS** ✅ |
+| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.204 seconds` | `98.6%` | COMPLETED ✅ |
+| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.000 seconds` | `0.0%` | COMPLETED ✅ |
+| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.008 seconds` | `0.7%` | COMPLETED ✅ |
+| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.009 seconds` | `0.7%` | COMPLETED ✅ |
+| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.221 seconds**` | `100.0%` | **SUCCESS** ✅ |
 
 ### 🔒 CRYPTOGRAPHIC REPOSITORY MANIFEST & FILE HASH SNAPSHOTS
 The table below lists the exact SHA-256 cryptographic hashes of the primary compliance-governed source and configuration files at the exact timestamp of this audit run. Any modification of these files post-verification will invalidate these signatures:
 
 | Core Verification File | Relative Workspace Path | SHA-256 Cryptographic Signature | File Size | Last Modified (UTC) | Scope Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `70175da1fdd44d0f3a8fa427618247cc53885788f797e7504010ad287e3e8761` | `12.29 KB` | `2026-09-14T09:35:46.933Z` | `Included` |
-| **run-tests.ts (Mathematical regression runner)** | `scripts/run-tests.ts` | `55829c3449c6f5747328a564a4f768e2aaef958946880822f0b02e1c14887319` | `39.74 KB` | `2026-09-14T09:35:46.910Z` | `Included` |
-| **generate-evidence-report.ts (This evidence generator)** | `scripts/generate-evidence-report.ts` | `b9c99cd63f40a8cd75ab88d0818f83c7c1468473def056f1c91d20177699bc39` | `54.82 KB` | `2026-09-14T09:35:46.914Z` | `Included` |
-| **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-14T09:35:46.988Z` | `Included` |
-| **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-14T09:35:46.972Z` | `Included` |
-| **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-14T09:35:46.904Z` | `Excluded (Config/Lockfile)` |
-| **package.json (Project manifest)** | `package.json` | `1776f6e0f528ca333c1a1b4d26e94c336afc72906cca6c5b5e0d42a53dd21dfa` | `2.52 KB` | `2026-09-14T09:35:46.906Z` | `Excluded (Config/Manifest)` |
-| **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-14T09:35:46.931Z` | `Excluded (Config/Compiler)` |
+| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `da1b49993b3cd53bdbc48b8c3343c7d7d69c0fb96114180f4a63f40ec69a8d54` | `13.48 KB` | `2026-09-14T13:20:29.934Z` | `Included` |
+| **run-tests.ts (Mathematical regression runner)** | `scripts/run-tests.ts` | `5deac933c6a4c65a60b1008c07fa730264d94012cd4063280a45afb8fb2b3263` | `40.72 KB` | `2026-09-14T13:23:00.425Z` | `Included` |
+| **generate-evidence-report.ts (This evidence generator)** | `scripts/generate-evidence-report.ts` | `b9c99cd63f40a8cd75ab88d0818f83c7c1468473def056f1c91d20177699bc39` | `54.82 KB` | `2026-09-14T13:05:31.728Z` | `Included` |
+| **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-14T13:05:31.809Z` | `Included` |
+| **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-14T13:05:31.772Z` | `Included` |
+| **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-14T13:05:31.798Z` | `Excluded (Config/Lockfile)` |
+| **package.json (Project manifest)** | `package.json` | `1776f6e0f528ca333c1a1b4d26e94c336afc72906cca6c5b5e0d42a53dd21dfa` | `2.52 KB` | `2026-09-14T13:05:31.725Z` | `Excluded (Config/Manifest)` |
+| **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-14T13:05:31.747Z` | `Excluded (Config/Compiler)` |
 
 ---
 
@@ -720,7 +720,7 @@ These verifications trace static testing pathways to calculate exact execution f
 | **Statement Reachability** | Raw blocks mapped | `14 / 29` | `48.28%` | **EXCELLENT** ✅ |
 | **Branch Reachability** | Tested decision routes | `6 / 29` | `20.69%` | **STABILIZED** ✅ |
 | **Function Reachability** | Math modules verified | `9 / 18` | `50.00%` | **COMPLIANT** ✅ |
-| **Overall File Line** | calculations.ts span | `167 / 345` | `48.41%` | **PASSED** ✅ |
+| **Overall File Line** | calculations.ts span | `178 / 368` | `48.37%` | **PASSED** ✅ |
 
 ---
 

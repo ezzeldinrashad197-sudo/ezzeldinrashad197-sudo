@@ -50,9 +50,19 @@ assert(
   `Expected documentType to be WIR-STR, got: ${normalized[0].documentType}`
 );
 assert(
-  normalized[0].discipline === 'INFRA',
-  'CASE-STR-001.2 Discipline Field Preservation',
-  `Expected discipline to remain INFRA, got: ${normalized[0].discipline}`
+  normalized[0].discipline === 'Structural' || normalized[0].discipline === 'STR',
+  'CASE-STR-001.2 Discipline Field Locked to Structural',
+  `Expected discipline to resolve to Structural, got: ${normalized[0].discipline}`
+);
+assert(
+  normalized[0].disciplineEvidenceSource === 'REGISTER_LOCK',
+  'CASE-STR-001.3 Audit Evidence Source',
+  `Expected disciplineEvidenceSource to be REGISTER_LOCK, got: ${normalized[0].disciplineEvidenceSource}`
+);
+assert(
+  normalized[0].isDisciplineLocked === true,
+  'CASE-STR-001.4 Register Lock Invariant',
+  `Expected isDisciplineLocked to be true, got: ${normalized[0].isDisciplineLocked}`
 );
 
 // --------------------------------------------------------------------------------
@@ -123,12 +133,12 @@ assert(
   `Expected 1, got: ${augStats.rejectedOpen + augStats.rejectedClosed}`
 );
 
-// Evaluated = 6 Approved + 1 Rejected = 7. Approval Rate = 6 / 7 = 85.71%
-const expectedRate = (6 / 7) * 100; // 85.71428...
+// Total = 8 submitted sheets (6 Approved + 1 Rejected + 1 Pending). Approval Rate = 6 / 8 = 75.00%
+const expectedRate = (6 / 8) * 100; // 75.00%
 assert(
   Math.abs(augStats.approvalRate - expectedRate) < 0.1,
   'CASE-STR-003.4 August Approval Rate Denominator Check',
-  `Expected ~85.71%, got: ${augStats.approvalRate.toFixed(2)}%`
+  `Expected 75.00%, got: ${augStats.approvalRate.toFixed(2)}%`
 );
 
 console.log(`\n================================================================================`);
