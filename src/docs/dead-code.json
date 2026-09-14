@@ -730,6 +730,14 @@
     },
     {
       "file": "src/analytics/sequenceAuditEngine.ts",
+      "exportName": "getExpectedRegisterFromPrefix",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getExpectedRegisterFromPrefix' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/sequenceAuditEngine.ts",
       "exportName": "parseDocIdentifier",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",

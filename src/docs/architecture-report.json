@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-08T09:44:35.351Z",
+    "generatedAt": "2026-09-14T09:02:11.205Z",
     "totalFilesScanned": 84,
     "architecturalViolations": 9,
     "complianceScore": 55,
@@ -1067,6 +1067,10 @@
       "target": "src/analytics/calculationFoundation.ts"
     },
     {
+      "source": "src/components/MasterRegister.tsx",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
       "source": "src/components/SLAMonitoring.tsx",
       "target": "src/types.ts"
     },
@@ -1285,6 +1289,10 @@
     {
       "source": "src/utils/parser.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/utils/parser.ts",
+      "target": "src/analytics/revisionResolver.ts"
     },
     {
       "source": "src/utils/parser.ts",
@@ -4003,147 +4011,133 @@
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 133,
+      "line": 162,
       "context": "isRevision0(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 134,
+      "line": 170,
+      "context": "parseDocIdentifier(rawDoc)",
+      "destination": "src/utils/calculations.ts::parseDocIdentifier",
+      "functionName": "parseDocIdentifier"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 192,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 178,
+      "line": 230,
       "context": "parseDocIdentifier(docNo)",
       "destination": "src/utils/calculations.ts::parseDocIdentifier",
       "functionName": "parseDocIdentifier"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 196,
+      "line": 277,
+      "context": "parseDocIdentifier(docNo)",
+      "destination": "src/utils/calculations.ts::parseDocIdentifier",
+      "functionName": "parseDocIdentifier"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 287,
+      "context": "getExpectedRegisterFromPrefix(parsed.prefix)",
+      "destination": "src/utils/calculations.ts::getExpectedRegisterFromPrefix",
+      "functionName": "getExpectedRegisterFromPrefix"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 306,
       "context": "isRevision0(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 197,
+      "line": 307,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 203,
+      "line": 312,
       "context": "compareRevisionsCanonical(a.rev, b.rev)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 270,
+      "line": 350,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 352,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 359,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 360,
+      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 360,
+      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
+      "destination": "src/utils/calculations.ts::formatSequenceID",
+      "functionName": "formatSequenceID"
+    },
+    {
+      "callerFile": "src/analytics/sequenceAuditEngine.ts",
+      "line": 374,
       "context": "formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix)",
       "destination": "src/utils/calculations.ts::formatSequenceID",
       "functionName": "formatSequenceID"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 283,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 285,
-      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 292,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 293,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 293,
-      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 305,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 307,
-      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 314,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 315,
-      "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 315,
-      "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
-      "destination": "src/utils/calculations.ts::formatSequenceID",
-      "functionName": "formatSequenceID"
-    },
-    {
-      "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 406,
-      "context": "auditRegisterSequence(dt, groupRows)",
+      "line": 514,
+      "context": "auditRegisterSequence(dt, groupRows, rows)",
       "destination": "src/utils/calculations.ts::auditRegisterSequence",
       "functionName": "auditRegisterSequence"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 416,
+      "line": 526,
       "context": "parseDocIdentifier(id)",
       "destination": "src/utils/calculations.ts::parseDocIdentifier",
       "functionName": "parseDocIdentifier"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 458,
+      "line": 573,
       "context": "runComprehensiveSequenceAudit(rows)",
       "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
       "functionName": "runComprehensiveSequenceAudit"
     },
     {
       "callerFile": "src/analytics/sequenceAuditEngine.ts",
-      "line": 465,
+      "line": 585,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
@@ -4745,56 +4739,63 @@
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 28,
+      "line": 29,
       "context": "calculateStats(data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 35,
+      "line": 36,
       "context": "getPerformanceValidationRows(data)",
       "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
       "functionName": "getPerformanceValidationRows"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 44,
+      "line": 45,
       "context": "getStatusCodeCategory(d.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 106,
+      "line": 107,
       "context": "getStatusCodeCategory(row.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 106,
+      "line": 107,
       "context": "getStatusCodeCategory(row.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 161,
+      "line": 162,
       "context": "exportPerformanceValidationCsv(data)",
       "destination": "src/utils/calculations.ts::exportPerformanceValidationCsv",
       "functionName": "exportPerformanceValidationCsv"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 241,
+      "line": 224,
+      "context": "isValidRevision(row.rev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/components/MasterRegister.tsx",
+      "line": 242,
       "context": "getStatusCodeCategory(row.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/components/MasterRegister.tsx",
-      "line": 241,
+      "line": 242,
       "context": "getStatusCodeCategory(row.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
@@ -5600,6 +5601,13 @@
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
       "line": 963,
+      "context": "isFurtherRevision(d.rev, d.isRev0)",
+      "destination": "src/utils/calculations.ts::isFurtherRevision",
+      "functionName": "isFurtherRevision"
+    },
+    {
+      "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+      "line": 965,
       "context": "getRevisionWeight(d.rev)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
@@ -5614,34 +5622,34 @@
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
       "line": 1026,
-      "context": "getRevisionWeight(d.rev)",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
+      "context": "isFurtherRevision(d.rev, d.isRev0)",
+      "destination": "src/utils/calculations.ts::isFurtherRevision",
+      "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-      "line": 1057,
+      "line": 1056,
       "context": "getStatusCodeCategory(d.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-      "line": 1090,
+      "line": 1089,
       "context": "getStatusCodeCategory(d.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-      "line": 1097,
-      "context": "getRevisionWeight(d.rev)",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
+      "line": 1096,
+      "context": "isFurtherRevision(d.rev, d.isRev0)",
+      "destination": "src/utils/calculations.ts::isFurtherRevision",
+      "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-      "line": 1133,
+      "line": 1131,
       "context": "getStatusCodeCategory(d.status)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
@@ -5697,91 +5705,91 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 230,
+      "line": 231,
       "context": "classifyRegisterSheet({\n      fileName,\n      sheetName,\n      headers: headers.map((h) => String(h || \"\")),\n      sampleRows: rows.slice(0, 20) as any[][],\n      projectId: activeProjectId,\n    })",
       "destination": "src/utils/calculations.ts::classifyRegisterSheet",
       "functionName": "classifyRegisterSheet"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 588,
+      "line": 589,
       "context": "formatDate(\n        r[finalColDateSent],\n      )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 592,
+      "line": 593,
       "context": "formatDate(\n        colResponseDate >= 0\n          ? r[colResponseDate]\n          : \"\",\n      )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1086,
+      "line": 1087,
       "context": "normalizeDiscipline(\n          disciplineVal,\n          activeProjectId,\n        )",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1176,
-      "context": "getRevisionWeight(rawRev)",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
+      "line": 1168,
+      "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1240,
+      "line": 1229,
       "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1289,
+      "line": 1278,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1309,
+      "line": 1298,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1322,
+      "line": 1311,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1413,
+      "line": 1402,
       "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
       "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
       "functionName": "mapDocumentToWorkflow"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1546,
+      "line": 1535,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1559,
+      "line": 1548,
       "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1584,
+      "line": 1573,
       "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -6641,6 +6649,14 @@
         "type": "Type/Interface",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'ParsedDocIdentifier' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/sequenceAuditEngine.ts",
+        "exportName": "getExpectedRegisterFromPrefix",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getExpectedRegisterFromPrefix' detected in any active source modules.",
         "referencedBy": []
       },
       {

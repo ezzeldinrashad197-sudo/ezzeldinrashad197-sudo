@@ -285,6 +285,7 @@ digraph DependencyGraph {
   "src/components/MasterRegister.tsx" -> "src/types.ts";
   "src/components/MasterRegister.tsx" -> "src/utils/calculations.ts";
   "src/components/MasterRegister.tsx" -> "src/analytics/calculationFoundation.ts";
+  "src/components/MasterRegister.tsx" -> "src/analytics/revisionResolver.ts";
   "src/components/SLAMonitoring.tsx" -> "src/types.ts";
   "src/components/SLAMonitoring.tsx" -> "src/utils/calculations.ts";
   "src/components/SmartExportModal.tsx" -> "src/utils/i18n.tsx";
@@ -340,6 +341,7 @@ digraph DependencyGraph {
   "src/utils/ncrAnalytics.ts" -> "src/utils/calculations.ts";
   "src/utils/parser.ts" -> "src/types.ts";
   "src/utils/parser.ts" -> "src/utils/calculations.ts";
+  "src/utils/parser.ts" -> "src/analytics/revisionResolver.ts";
   "src/utils/parser.ts" -> "src/utils/classificationEngine.ts";
   "src/utils/parser.ts" -> "src/utils/workflowMapping.ts";
   "src/utils/rfiAnalytics.ts" -> "src/types.ts";

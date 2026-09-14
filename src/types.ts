@@ -221,6 +221,17 @@ export interface SequenceGap {
   sampleMissingIds: string[];
 }
 
+export interface CrossRegisterRecord {
+  docNo: string;
+  seqNumber: number;
+  actualRegister: string;
+  expectedRegister: string;
+  rev: string;
+  disposition: 'CROSS_REGISTER';
+  reasonEn: string;
+  reasonAr: string;
+}
+
 export interface RegisterSequenceAudit {
   docType: string;               // e.g. "WIR-SUR", "SDW-STR", etc.
   prefix: string;                // e.g. "WIR-SUR-"
@@ -239,6 +250,8 @@ export interface RegisterSequenceAudit {
   duplicateRecords: { docNo: string; rev: string; count: number; ids: string[] }[];
   furtherRevWithoutRev0: { docNo: string; firstRecordedRev: string; count: number }[];
   malformedIds: string[];
+  crossRegisterRecords: CrossRegisterRecord[];
+  crossRegisterCount: number;
   isSequenceFullyReconciled: boolean; // true if missingCount === 0 && duplicateRecords.length === 0
   deltaExplanation: string;      // Human-readable English summary of the delta
   deltaExplanationAr: string;    // Human-readable Arabic summary of the delta
@@ -250,6 +263,8 @@ export interface SequenceAuditResult {
   totalMissingCount: number;
   totalDuplicatesCount: number;
   totalFurtherRevWithoutRev0: number;
+  totalCrossRegisterCount: number;
+  allCrossRegisterRecords: CrossRegisterRecord[];
   allMissingIds: { docType: string; docNo: string; seqNumber: number }[];
   registerAudits: Record<string, RegisterSequenceAudit>;
   overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY';
@@ -265,7 +280,7 @@ export interface ForensicLedgerEntry {
   sourceLocation: string;
   parsedStatus: string;
   canonicalStatus: string;
-  disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE';
+  disposition: 'SSOT_ACTIVE' | 'SUPERSEDED_HISTORICAL' | 'DROPPED_PARSER' | 'DUPLICATE_DISCARDED' | 'MISSING_EXPECTED_GAP' | 'FURTHER_REV_ENTRY' | 'EXCLUDED_RULE' | 'CROSS_REGISTER';
   dispositionReason: string;
   dispositionReasonAr: string;
 }

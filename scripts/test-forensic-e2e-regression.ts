@@ -7,6 +7,7 @@ import { normalizeData } from '../src/utils/calculations';
 import { calculateCanonicalKPIs, getBusinessEntityKey, resolveCanonicalTrade } from '../src/analytics/calculationFoundation';
 import { runRevisionEngine } from '../src/analytics/revisionEngine';
 import { compareRevisions, isValidRevision } from '../src/analytics/analyticsCore';
+import { auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger } from '../src/analytics/sequenceAuditEngine';
 import { SubmittalRow } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -439,6 +440,248 @@ async function runForensicRegression() {
     console.log(`${nameStr} | ${bStr} | ${rStr} | ${colors.cyan}${row.desc}${colors.reset}`);
   }
   console.log(`---------------------------------+----------------------+----------------------+------------------------\n`);
+
+  // ===========================================================================
+  // STEP 6: SEQUENCE RECONCILIATION & 00751 CROSS-REGISTER FORENSIC INVARIANT
+  // ===========================================================================
+  console.log(`\n${colors.bold}STEP 6: Sequence Reconciliation & 00751 Cross-Register Forensic Invariant${colors.reset}`);
+
+  // Construct Realistic Cross-Register Dataset:
+  // WIR-STR has sequences 749, 750, 752, 753.
+  // 00751 is physically registered in WIR-INFRA source register.
+  const crossRegDataset: SubmittalRow[] = [
+    // WIR-STR register native rows
+    {
+      id: "STR-00749-00",
+      docNo: "INN-ARC-WIR-STR-00749",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-STR",
+      logType: "WIR-STR",
+      trade: "Structural",
+      sourceFile: "WIR-STR.xlsx",
+      discipline: "Structural",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+    {
+      id: "STR-00750-00",
+      docNo: "INN-ARC-WIR-STR-00750",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-STR",
+      logType: "WIR-STR",
+      trade: "Structural",
+      sourceFile: "WIR-STR.xlsx",
+      discipline: "Structural",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+    {
+      id: "STR-00752-00",
+      docNo: "INN-ARC-WIR-STR-00752",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-STR",
+      logType: "WIR-STR",
+      trade: "Structural",
+      sourceFile: "WIR-STR.xlsx",
+      discipline: "Structural",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+    {
+      id: "STR-00753-00",
+      docNo: "INN-ARC-WIR-STR-00753",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-STR",
+      logType: "WIR-STR",
+      trade: "Structural",
+      sourceFile: "WIR-STR.xlsx",
+      discipline: "Structural",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+
+    // WIR-INFRA register rows containing 00751 (Cross-Register filing)
+    {
+      id: "INFRA-00001-00",
+      docNo: "INN-ARC-WIR-INFRA-00001",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-INFRA",
+      logType: "WIR-INFRA",
+      trade: "Infrastructure",
+      sourceFile: "WIR-INFRA.xlsx",
+      discipline: "Infrastructure",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+    {
+      id: "INFRA-00002-00",
+      docNo: "INN-ARC-WIR-INFRA-00002",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-INFRA",
+      logType: "WIR-INFRA",
+      trade: "Infrastructure",
+      sourceFile: "WIR-INFRA.xlsx",
+      discipline: "Infrastructure",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow,
+    {
+      id: "INFRA-STR-00751-00",
+      docNo: "INN-ARC-WIR-STR-00751",
+      rev: "00",
+      isRev0: true,
+      isLatestRev: true,
+      documentType: "WIR-INFRA",
+      logType: "WIR-INFRA",
+      trade: "Infrastructure",
+      sourceFile: "WIR-INFRA.xlsx",
+      discipline: "Infrastructure",
+      status: "Approved",
+      workflowStage: "Approved",
+      submissionDate: "2026-08-01",
+      responseDate: "2026-08-10",
+      dueDate: "2026-08-15",
+      delayDays: 0,
+      overdue: false,
+      code: "A"
+    } as SubmittalRow
+  ];
+
+  const seqAuditResult = runComprehensiveSequenceAudit(crossRegDataset);
+  const wirStrAudit = seqAuditResult.registerAudits["WIR-STR"];
+  const wirInfraAudit = seqAuditResult.registerAudits["WIR-INFRA"];
+  const crossRegLedger = generateForensicLifecycleLedger(crossRegDataset);
+
+  // Invariant 1: WIR-STR missingCount does NOT increase (remains 0)
+  recordTest(
+    "Sequence Forensic 00751",
+    "WIR-STR missingCount does NOT increase (missingCount === 0)",
+    wirStrAudit?.missingCount === 0,
+    0,
+    wirStrAudit?.missingCount
+  );
+
+  // Invariant 2: INN-ARC-WIR-STR-00751 is NOT in WIR-STR missingIds
+  recordTest(
+    "Sequence Forensic 00751",
+    "INN-ARC-WIR-STR-00751 is NOT flagged as missing in WIR-STR missingIds",
+    !wirStrAudit?.missingIds.includes("INN-ARC-WIR-STR-00751"),
+    true,
+    !wirStrAudit?.missingIds.includes("INN-ARC-WIR-STR-00751")
+  );
+
+  // Invariant 3: WIR-INFRA contains 00751 as source record
+  const infraHas751 = crossRegDataset.some(r => r.docNo === "INN-ARC-WIR-STR-00751" && r.documentType === "WIR-INFRA");
+  recordTest(
+    "Sequence Forensic 00751",
+    "WIR-INFRA source dataset physically contains 00751",
+    infraHas751,
+    true,
+    infraHas751
+  );
+
+  // Invariant 4: WIR-INFRA sequence range is not skewed by 751 (maxSequence is 2, not 751)
+  recordTest(
+    "Sequence Forensic 00751",
+    "WIR-INFRA maxSequence is not skewed by cross-register record (maxSequence === 2)",
+    wirInfraAudit?.maxSequence === 2,
+    2,
+    wirInfraAudit?.maxSequence
+  );
+
+  // Invariant 5: 00751 is classified as CROSS_REGISTER in crossRegisterRecords
+  const crossRegRecord751 = seqAuditResult.allCrossRegisterRecords.find(x => x.docNo === "INN-ARC-WIR-STR-00751");
+  recordTest(
+    "Sequence Forensic 00751",
+    "00751 identified in Cross-Register Reconciliation Records",
+    Boolean(crossRegRecord751),
+    true,
+    Boolean(crossRegRecord751)
+  );
+
+  recordTest(
+    "Sequence Forensic 00751",
+    "00751 Cross-Register actualRegister === 'WIR-INFRA' and expectedRegister === 'WIR-STR'",
+    crossRegRecord751?.actualRegister === "WIR-INFRA" && crossRegRecord751?.expectedRegister === "WIR-STR",
+    "WIR-INFRA -> WIR-STR",
+    `${crossRegRecord751?.actualRegister} -> ${crossRegRecord751?.expectedRegister}`
+  );
+
+  // Invariant 6: Forensic Lifecycle Ledger disposition is CROSS_REGISTER, NOT MISSING_EXPECTED_GAP
+  const ledger751 = crossRegLedger.find(e => e.docNo === "INN-ARC-WIR-STR-00751");
+  recordTest(
+    "Sequence Forensic 00751",
+    "Forensic Ledger disposition is CROSS_REGISTER (not MISSING_EXPECTED_GAP)",
+    ledger751?.disposition === "CROSS_REGISTER",
+    "CROSS_REGISTER",
+    ledger751?.disposition
+  );
+
+  const missingLedger751 = crossRegLedger.find(e => e.docNo === "INN-ARC-WIR-STR-00751" && e.disposition === "MISSING_EXPECTED_GAP");
+  recordTest(
+    "Sequence Forensic 00751",
+    "No MISSING_EXPECTED_GAP virtual entry generated for 00751 (Missing: false)",
+    !missingLedger751,
+    true,
+    !missingLedger751
+  );
+
+  // Invariant 7: Total Missing Count in crossRegDataset is 0
+  recordTest(
+    "Sequence Forensic 00751",
+    "Overall dataset totalMissingCount is 0 after Cross-Register reconciliation",
+    seqAuditResult.totalMissingCount === 0,
+    0,
+    seqAuditResult.totalMissingCount
+  );
 
   // ===========================================================================
   // FINAL EVALUATION & ACCEPTANCE DECISION

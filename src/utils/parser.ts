@@ -1165,7 +1165,11 @@ export const parseExcelWorkbook = (
         trade: "",
         workflowStage: "",
         isLatestRev: false,
-        isRev0: isRevision0(colRev >= 0 ? r[colRev] : ""),
+        isRev0: isRevision0(
+          colRev >= 0
+            ? (typeof r[colRev] === "number" ? r[colRev] : String(r[colRev] ?? ""))
+            : ""
+        ),
 
         delayDays: 0,
         overdue: false,
