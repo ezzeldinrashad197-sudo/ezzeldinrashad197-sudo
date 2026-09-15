@@ -1,5 +1,5 @@
 # StructuSight Mathematical & Architecture Evidence Log
-*Generated on 2026-09-14T13:25:50.225Z via StructuSight Custom AST Compliance Engine*
+*Generated on 2026-09-15T12:50:41.225Z via StructuSight Custom AST Compliance Engine*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -12,38 +12,38 @@ To guarantee absolute reproducibility and transparency under independent review,
 
 | Metric | System Signature Value | Description |
 | :--- | :--- | :--- |
-| **Audit Timestamp** | `2026-09-14T13:25:50.225Z` | Universal Coordinated Time (UTC) of verification run |
+| **Audit Timestamp** | `2026-09-15T12:50:41.225Z` | Universal Coordinated Time (UTC) of verification run |
 | **Node.js Engine** | `v22.23.2` | Active Node runtime engine executing verification |
 | **TypeScript Version** | `v5.8.3` | Version of TypeScript Compiler API used for parsing |
 | **System Platform** | `linux (x64)` | Host kernel and architecture fingerprint |
 | **Build Project ID** | `b1fedb55-c17f-4221-b883-f1ee17f1362f` | Unique platform identifier of active workspace |
 | **Report Schema Version** | `1.4.0` | Schema specification version for exported JSON and reporting layers |
 | **Verification Engine** | `2.4.1-Prod` | Release build version of custom AST scanner |
-| **Total Pipeline Wall Time**| `**1.221 seconds**` | Combined execution duration of AST scanning and verification pipeline |
+| **Total Pipeline Wall Time**| `**1.317 seconds**` | Combined execution duration of AST scanning and verification pipeline |
 
 ### ⏱️ VERIFICATION RUNTIME METRIC SPLIT
 
 | Verification Stage | Processed Task | Measured Duration | Percentage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.204 seconds` | `98.6%` | COMPLETED ✅ |
-| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.000 seconds` | `0.0%` | COMPLETED ✅ |
-| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.008 seconds` | `0.7%` | COMPLETED ✅ |
-| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.009 seconds` | `0.7%` | COMPLETED ✅ |
-| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.221 seconds**` | `100.0%` | **SUCCESS** ✅ |
+| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.293 seconds` | `98.2%` | COMPLETED ✅ |
+| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.001 seconds` | `0.1%` | COMPLETED ✅ |
+| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.012 seconds` | `0.9%` | COMPLETED ✅ |
+| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.011 seconds` | `0.8%` | COMPLETED ✅ |
+| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.317 seconds**` | `100.0%` | **SUCCESS** ✅ |
 
 ### 🔒 CRYPTOGRAPHIC REPOSITORY MANIFEST & FILE HASH SNAPSHOTS
 The table below lists the exact SHA-256 cryptographic hashes of the primary compliance-governed source and configuration files at the exact timestamp of this audit run. Any modification of these files post-verification will invalidate these signatures:
 
 | Core Verification File | Relative Workspace Path | SHA-256 Cryptographic Signature | File Size | Last Modified (UTC) | Scope Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `da1b49993b3cd53bdbc48b8c3343c7d7d69c0fb96114180f4a63f40ec69a8d54` | `13.48 KB` | `2026-09-14T13:20:29.934Z` | `Included` |
-| **run-tests.ts (Mathematical regression runner)** | `scripts/run-tests.ts` | `5deac933c6a4c65a60b1008c07fa730264d94012cd4063280a45afb8fb2b3263` | `40.72 KB` | `2026-09-14T13:23:00.425Z` | `Included` |
-| **generate-evidence-report.ts (This evidence generator)** | `scripts/generate-evidence-report.ts` | `b9c99cd63f40a8cd75ab88d0818f83c7c1468473def056f1c91d20177699bc39` | `54.82 KB` | `2026-09-14T13:05:31.728Z` | `Included` |
-| **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-14T13:05:31.809Z` | `Included` |
-| **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-14T13:05:31.772Z` | `Included` |
-| **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-14T13:05:31.798Z` | `Excluded (Config/Lockfile)` |
-| **package.json (Project manifest)** | `package.json` | `1776f6e0f528ca333c1a1b4d26e94c336afc72906cca6c5b5e0d42a53dd21dfa` | `2.52 KB` | `2026-09-14T13:05:31.725Z` | `Excluded (Config/Manifest)` |
-| **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-14T13:05:31.747Z` | `Excluded (Config/Compiler)` |
+| **calculations.ts (Core calculations SSOT)** | `src/utils/calculations.ts` | `da1b49993b3cd53bdbc48b8c3343c7d7d69c0fb96114180f4a63f40ec69a8d54` | `13.48 KB` | `2026-09-15T12:47:11.811Z` | `Included` |
+| **run-tests.ts (Mathematical regression runner)** | `scripts/run-tests.ts` | `5deac933c6a4c65a60b1008c07fa730264d94012cd4063280a45afb8fb2b3263` | `40.72 KB` | `2026-09-15T07:55:40.139Z` | `Included` |
+| **generate-evidence-report.ts (This evidence generator)** | `scripts/generate-evidence-report.ts` | `b9c99cd63f40a8cd75ab88d0818f83c7c1468473def056f1c91d20177699bc39` | `54.82 KB` | `2026-09-15T07:55:40.166Z` | `Included` |
+| **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-15T07:55:40.193Z` | `Included` |
+| **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-15T07:55:40.115Z` | `Included` |
+| **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-15T07:55:40.127Z` | `Excluded (Config/Lockfile)` |
+| **package.json (Project manifest)** | `package.json` | `1776f6e0f528ca333c1a1b4d26e94c336afc72906cca6c5b5e0d42a53dd21dfa` | `2.52 KB` | `2026-09-15T07:55:40.153Z` | `Excluded (Config/Manifest)` |
+| **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-15T07:55:40.154Z` | `Excluded (Config/Compiler)` |
 
 ---
 
@@ -53,8 +53,8 @@ The table below lists the exact SHA-256 cryptographic hashes of the primary comp
 - **Central Classification Module**: `src/utils/calculations.ts`
 - **Mathematical Integrity Score**: `100 / 100`
 - **Circular Dependencies**: `0`
-- **Strict Layer Isolation Violations**: `9`
-- **Internal Architecture Compliance Score**: `55 / 100`
+- **Strict Layer Isolation Violations**: `10`
+- **Internal Architecture Compliance Score**: `50 / 100`
 - **Analysis Methodology**: AST-based Syntactic Call Graph & Path Mapping
 - **DOT Graphviz Output**: [`/src/docs/call-graph.dot`](./call-graph.dot) | [`/src/docs/dependency-graph.dot`](./dependency-graph.dot)
 - **Mermaid.js Output**: [`/src/docs/call-graph.mmd`](./call-graph.mmd) | [`/src/docs/dependency-graph.mmd`](./dependency-graph.mmd)
@@ -83,7 +83,7 @@ The following compliance rules and audit criteria are executed programmatically 
 | **No Circular Imports** | Prevention of cyclic dependency paths to maintain a strict DAG (Directed Acyclic Graph) structure. | `0` | **PASS** ✅ |
 | **No Duplicate Math Engine** | Enforcement of the Single Source of Truth (SSOT) for calculation logic, preventing duplicated equations. | `0` | **PASS** ✅ |
 | **SSOT Isolation Rules** | Centralization of mathematical classification logic exclusively inside `src/utils/calculations.ts`. | `0` | **PASS** ✅ |
-| **No UI-to-Core Boundary Violations** | Prevention of layer boundary bypasses where infrastructure/views bypass mathematical layers. | `9` | **WARNING** ⚠️ (Bypasses detected, see Section 8) |
+| **No UI-to-Core Boundary Violations** | Prevention of layer boundary bypasses where infrastructure/views bypass mathematical layers. | `10` | **WARNING** ⚠️ (Bypasses detected, see Section 8) |
 | **No Inline Status Comparisons**| Verification that active files do not query status strings inline, but defer to central SSOT mapping helper. | `0` | **PASS** ✅ |
 | **Mathematical Delta Variance** | Regression testing of core KPI calculations against frozen golden datasets. | `0.000%` | **PASS** ✅ |
 
@@ -94,22 +94,22 @@ The following compliance rules and audit criteria are executed programmatically 
 | **Total Rules Evaluated** | `18` | Integrated set of architectural policies, mathematical constraints, and delta limits |
 | **Rules Passed Successfully** | `18` | Perfect execution of all non-negotiable invariants and structural compliance targets |
 | **Rules Failed** | `0` | Zero system-level failures or non-conformance defects detected |
-| **Active Warnings** | `9` | Soft architectural anomalies detected (e.g. cross-hierarchy peer imports) |
-| **Overall Verification Score** | `55 / 100` | Internal Compliance Rating after weighting soft warning deductions |
+| **Active Warnings** | `10` | Soft architectural anomalies detected (e.g. cross-hierarchy peer imports) |
+| **Overall Verification Score** | `50 / 100` | Internal Compliance Rating after weighting soft warning deductions |
 | **Verification Engine Version** | `2.4.1-Prod` | Active verification harness compilation release |
 | **Report Schema Version**| `1.4.0` | Standard format schema version for integration log file and automated reports |
 
 ### 📐 COMPLIANCE SCORE CALCULUS & PENALTY ENGINE
-The overall verification score of **55 / 100** is computed deterministically using the following audit penalty model:
+The overall verification score of **50 / 100** is computed deterministically using the following audit penalty model:
 $$	ext{Verification Score} = maxleft(0, 100 - sum 	ext{Penalties}ight)$$
 
 | Violation / Event Type | Active Count | Unit Penalty | Total Penalty Applied | Rule Class |
 | :--- | :--- | :--- | :--- | :--- |
 | **Critical Rule Failure** | `0` | `25 points` | `0 points` | Blocking Failure ❌ |
-| **Layer Boundary Warning**| `9` | `5 points` | `45 points` | Soft Architectural Warning ⚠️ |
+| **Layer Boundary Warning**| `10` | `5 points` | `50 points` | Soft Architectural Warning ⚠️ |
 | **Circular Dependency Warning**| `0` | `10 points` | `0 points` | Soft Structural Warning ⚠️ |
 | **Unused/Dead Module Warning**| `0` | `0 points (Muted)`| `0 points` | Informational Alert ℹ️ |
-| **Verification Score (Net)** | — | — | **45 points** | **55 / 100** 🏆 |
+| **Verification Score (Net)** | — | — | **50 points** | **50 / 100** 🏆 |
 
 ### ⚠️ ARCHITECTURAL WARNING DETAILED BREAKDOWN
 The following peer imports/cross-hierarchy loops were flagged as warnings during this run. These represent minor architectural anomalies (such as direct imports between files in the same view folder) that do not break the overall layer flow, but should be monitored to ensure a clean hierarchy:
@@ -123,6 +123,7 @@ The following peer imports/cross-hierarchy loops were flagged as warnings during
 | `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/calculations.ts` | `src/utils/workflowMapping.ts (Tier 3)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `3`. |
 | `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/calculations.ts` | `src/analytics/statusResolver.ts (Tier 2)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `2`. |
 | `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/enterpriseAnalyticsEngine.ts` | `src/analytics/revisionResolver.ts (Tier 2)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `2`. |
+| `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/enterpriseAnalyticsEngine.ts` | `src/analytics/calculationFoundation.ts (Tier 2)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `2`. |
 | `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/enterpriseAnalyticsEngine.ts` | `src/analytics/statusResolver.ts (Tier 2)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `2`. |
 | `RULE_LAYER_ISOLATION_BYPASS` | `WARNING` | `src/utils/statusMatrixEngine.ts` | `src/analytics/statusResolver.ts (Tier 2)` | Tier bypass found: File at Tier `1` imported a peer/higher tier `2`. |
 
@@ -258,7 +259,7 @@ main.tsx ⟶ [App.tsx, index.css, utils/i18n.tsx]
 utils/calculationVerificationEngine.ts ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts]
 utils/calculations.ts ⟶ [types.ts, analytics/calculationFoundation.ts, analytics/analyticsCore.ts, analytics/revisionResolver.ts, utils/workflowMapping.ts, analytics/statusResolver.ts]
 utils/classificationEngine.ts ⟶ [utils/workflowMapping.ts, types.ts]
-utils/enterpriseAnalyticsEngine.ts ⟶ [types.ts, utils/statusMatrixEngine.ts, analytics/revisionResolver.ts, utils/calculations.ts, analytics/statusResolver.ts]
+utils/enterpriseAnalyticsEngine.ts ⟶ [types.ts, utils/statusMatrixEngine.ts, analytics/revisionResolver.ts, analytics/calculationFoundation.ts, utils/calculations.ts, analytics/statusResolver.ts]
 utils/multiFileParser.ts ⟶ [utils/parser.ts, types.ts]
 utils/ncrAnalytics.ts ⟶ [types.ts, analytics/revisionResolver.ts, utils/rfiAnalytics.ts, utils/calculations.ts]
 utils/parser.ts ⟶ [types.ts, utils/calculations.ts, analytics/revisionResolver.ts, utils/classificationEngine.ts, utils/workflowMapping.ts]
@@ -543,172 +544,171 @@ The static analyzer detected the following exported symbols that have 0 incoming
 | 30 | `src/analytics/calculationFoundation.ts` | `CanonicalKPIResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CanonicalKPIResult' detected in any active source modules.` |
 | 31 | `src/analytics/calculationFoundation.ts` | `getSubmissionReference` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getSubmissionReference' detected in any active source modules.` |
 | 32 | `src/analytics/calculationFoundation.ts` | `getDrawingNumber` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getDrawingNumber' detected in any active source modules.` |
-| 33 | `src/analytics/calculationFoundation.ts` | `getDocumentIdentityKey` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.` |
-| 34 | `src/analytics/calculationFoundation.ts` | `calculateStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateStats' detected in any active source modules.` |
-| 35 | `src/analytics/calculationFoundation.ts` | `EngineeringItemClassification` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'EngineeringItemClassification' detected in any active source modules.` |
-| 36 | `src/analytics/calculationFoundation.ts` | `PerformanceValidationRow` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'PerformanceValidationRow' detected in any active source modules.` |
-| 37 | `src/analytics/calculationFoundation.ts` | `CanonicalTradeResolution` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CanonicalTradeResolution' detected in any active source modules.` |
-| 38 | `src/analytics/calculationFoundation.ts` | `calculateNCRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateNCRStats' detected in any active source modules.` |
-| 39 | `src/analytics/calculationFoundation.ts` | `calculateSORStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateSORStats' detected in any active source modules.` |
-| 40 | `src/analytics/calculationFoundation.ts` | `calculateLTRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateLTRStats' detected in any active source modules.` |
-| 41 | `src/analytics/dataValidator.ts` | `validateDataset` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'validateDataset' detected in any active source modules.` |
-| 42 | `src/analytics/exportHelpers.ts` | `ExecutiveDashboardData` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ExecutiveDashboardData' detected in any active source modules.` |
-| 43 | `src/analytics/exportTelemetryTestSuite.ts` | `runExportTelemetrySuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runExportTelemetrySuite' detected in any active source modules.` |
-| 44 | `src/analytics/governance/auditFramework.ts` | `AuditLogEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'AuditLogEntry' detected in any active source modules.` |
-| 45 | `src/analytics/governance/auditFramework.ts` | `getAuditLogs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getAuditLogs' detected in any active source modules.` |
-| 46 | `src/analytics/governance/auditFramework.ts` | `clearAuditLogs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'clearAuditLogs' detected in any active source modules.` |
-| 47 | `src/analytics/governance/businessRuleRegistry.ts` | `ENGINE_RULE_VERSIONS` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ENGINE_RULE_VERSIONS' detected in any active source modules.` |
-| 48 | `src/analytics/governance/canonicalEngineAdapter.ts` | `AdaptedCalculationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'AdaptedCalculationResult' detected in any active source modules.` |
-| 49 | `src/analytics/governance/canonicalEngineAdapter.ts` | `executeAdaptedCalculationPipeline` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'executeAdaptedCalculationPipeline' detected in any active source modules.` |
-| 50 | `src/analytics/governance/configurationRepository.ts` | `SystemConfiguration` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SystemConfiguration' detected in any active source modules.` |
-| 51 | `src/analytics/governance/configurationRepository.ts` | `DEFAULT_SYSTEM_CONFIGURATION` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DEFAULT_SYSTEM_CONFIGURATION' detected in any active source modules.` |
-| 52 | `src/analytics/governance/configurationRepository.ts` | `getSystemConfiguration` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getSystemConfiguration' detected in any active source modules.` |
-| 53 | `src/analytics/governance/configurationRepository.ts` | `updateSystemConfiguration` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'updateSystemConfiguration' detected in any active source modules.` |
-| 54 | `src/analytics/governance/goldenRegressionSuite.ts` | `InvariantCheckResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'InvariantCheckResult' detected in any active source modules.` |
-| 55 | `src/analytics/governance/goldenRegressionSuite.ts` | `GoldenRegisterTestResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'GoldenRegisterTestResult' detected in any active source modules.` |
-| 56 | `src/analytics/governance/goldenRegressionSuite.ts` | `GOLDEN_REGISTER_TYPES` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'GOLDEN_REGISTER_TYPES' detected in any active source modules.` |
-| 57 | `src/analytics/governance/validationFramework.ts` | `runInvariantGuards` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runInvariantGuards' detected in any active source modules.` |
-| 58 | `src/analytics/governance/validationFramework.ts` | `runGoldenRegressionSuite` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runGoldenRegressionSuite' detected in any active source modules.` |
-| 59 | `src/analytics/governance/validationFramework.ts` | `ENGINE_VERSIONS` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ENGINE_VERSIONS' detected in any active source modules.` |
-| 60 | `src/analytics/governance/validationFramework.ts` | `RuleVerificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RuleVerificationResult' detected in any active source modules.` |
-| 61 | `src/analytics/governance/validationFramework.ts` | `FormulaVerificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FormulaVerificationResult' detected in any active source modules.` |
-| 62 | `src/analytics/governance/validationFramework.ts` | `ParallelEquivalenceResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ParallelEquivalenceResult' detected in any active source modules.` |
-| 63 | `src/analytics/kpiEngine.ts` | `RegisterStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterStats' detected in any active source modules.` |
-| 64 | `src/analytics/kpiEngine.ts` | `CorrespondenceStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CorrespondenceStats' detected in any active source modules.` |
-| 65 | `src/analytics/kpiEngine.ts` | `KPIReport` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'KPIReport' detected in any active source modules.` |
-| 66 | `src/analytics/kpiEngine.ts` | `generateKpiReport` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateKpiReport' detected in any active source modules.` |
-| 67 | `src/analytics/models.ts` | `NormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NormalizedStatus' detected in any active source modules.` |
-| 68 | `src/analytics/models.ts` | `BaseRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BaseRecord' detected in any active source modules.` |
-| 69 | `src/analytics/models.ts` | `DocumentRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DocumentRecord' detected in any active source modules.` |
-| 70 | `src/analytics/models.ts` | `RFIRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFIRecord' detected in any active source modules.` |
-| 71 | `src/analytics/models.ts` | `NCRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRRecord' detected in any active source modules.` |
-| 72 | `src/analytics/models.ts` | `WIRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'WIRRecord' detected in any active source modules.` |
-| 73 | `src/analytics/models.ts` | `MIRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'MIRRecord' detected in any active source modules.` |
-| 74 | `src/analytics/models.ts` | `LetterInRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'LetterInRecord' detected in any active source modules.` |
-| 75 | `src/analytics/models.ts` | `LetterOutRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'LetterOutRecord' detected in any active source modules.` |
-| 76 | `src/analytics/models.ts` | `SiteInstructionRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SiteInstructionRecord' detected in any active source modules.` |
-| 77 | `src/analytics/models.ts` | `MeetingMinutesRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'MeetingMinutesRecord' detected in any active source modules.` |
-| 78 | `src/analytics/models.ts` | `ImportResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ImportResult' detected in any active source modules.` |
-| 79 | `src/analytics/ncr/ncrEngine.ts` | `isYes` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'isYes' detected in any active source modules.` |
-| 80 | `src/analytics/ncr/ncrEngine.ts` | `getLatestRev` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getLatestRev' detected in any active source modules.` |
-| 81 | `src/analytics/ncr/ncrEngine.ts` | `NCRStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRStats' detected in any active source modules.` |
-| 82 | `src/analytics/ncr/ncrEngine.ts` | `NCRClassificationStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRClassificationStats' detected in any active source modules.` |
-| 83 | `src/analytics/ncr/ncrEngine.ts` | `normalizeDiscipline` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'normalizeDiscipline' detected in any active source modules.` |
-| 84 | `src/analytics/ncr/ncrEngine.ts` | `normalizeNCRData` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'normalizeNCRData' detected in any active source modules.` |
-| 85 | `src/analytics/ncr/ncrEngine.ts` | `groupNCRByReference` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'groupNCRByReference' detected in any active source modules.` |
-| 86 | `src/analytics/ncr/ncrEngine.ts` | `NCREvidence` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCREvidence' detected in any active source modules.` |
-| 87 | `src/analytics/ncr/ncrEngine.ts` | `NCRIntegrityReport` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRIntegrityReport' detected in any active source modules.` |
-| 88 | `src/analytics/ncr/ncrEngine.ts` | `calculateCumulativeSnapshot` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateCumulativeSnapshot' detected in any active source modules.` |
-| 89 | `src/analytics/ncr/ncrEngine.ts` | `calculateMonthlyEvents` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateMonthlyEvents' detected in any active source modules.` |
-| 90 | `src/analytics/recordTransformer.ts` | `transformRecords` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'transformRecords' detected in any active source modules.` |
-| 91 | `src/analytics/sequenceAuditEngine.ts` | `ParsedDocIdentifier` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ParsedDocIdentifier' detected in any active source modules.` |
-| 92 | `src/analytics/sequenceAuditEngine.ts` | `getExpectedRegisterFromPrefix` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getExpectedRegisterFromPrefix' detected in any active source modules.` |
-| 93 | `src/analytics/sequenceAuditEngine.ts` | `parseDocIdentifier` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseDocIdentifier' detected in any active source modules.` |
-| 94 | `src/analytics/sequenceAuditEngine.ts` | `formatSequenceID` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatSequenceID' detected in any active source modules.` |
-| 95 | `src/analytics/sor/sorEngine.ts` | `isYes` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'isYes' detected in any active source modules.` |
-| 96 | `src/analytics/sor/sorEngine.ts` | `getLatestRev` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getLatestRev' detected in any active source modules.` |
-| 97 | `src/analytics/sor/sorEngine.ts` | `SORStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SORStats' detected in any active source modules.` |
-| 98 | `src/analytics/sor/sorEngine.ts` | `SORClassificationStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SORClassificationStats' detected in any active source modules.` |
-| 99 | `src/analytics/statusResolver.ts` | `CanonicalStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CanonicalStatus' detected in any active source modules.` |
-| 100 | `src/analytics/statusResolver.ts` | `StatusCategory` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'StatusCategory' detected in any active source modules.` |
-| 101 | `src/analytics/statusResolver.ts` | `RecordNormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RecordNormalizedStatus' detected in any active source modules.` |
-| 102 | `src/components/CommercialValidationGateCenter.tsx` | `CVGTestRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CVGTestRecord' detected in any active source modules.` |
-| 103 | `src/db/index.ts` | `createPool` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'createPool' detected in any active source modules.` |
-| 104 | `src/db/index.ts` | `db` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'db' detected in any active source modules.` |
-| 105 | `src/db/schema.ts` | `users` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'users' detected in any active source modules.` |
-| 106 | `src/db/schema.ts` | `roles` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'roles' detected in any active source modules.` |
-| 107 | `src/db/schema.ts` | `permissions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'permissions' detected in any active source modules.` |
-| 108 | `src/db/schema.ts` | `projects` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'projects' detected in any active source modules.` |
-| 109 | `src/db/schema.ts` | `projectMembers` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'projectMembers' detected in any active source modules.` |
-| 110 | `src/db/schema.ts` | `registers` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'registers' detected in any active source modules.` |
-| 111 | `src/db/schema.ts` | `documents` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documents' detected in any active source modules.` |
-| 112 | `src/db/schema.ts` | `documentRevisions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documentRevisions' detected in any active source modules.` |
-| 113 | `src/db/schema.ts` | `documentStatusHistory` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documentStatusHistory' detected in any active source modules.` |
-| 114 | `src/db/schema.ts` | `rfiRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'rfiRecords' detected in any active source modules.` |
-| 115 | `src/db/schema.ts` | `mirRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'mirRecords' detected in any active source modules.` |
-| 116 | `src/db/schema.ts` | `irRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'irRecords' detected in any active source modules.` |
-| 117 | `src/db/schema.ts` | `ncrRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ncrRecords' detected in any active source modules.` |
-| 118 | `src/db/schema.ts` | `sdwRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'sdwRecords' detected in any active source modules.` |
-| 119 | `src/db/schema.ts` | `analyticsSnapshots` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'analyticsSnapshots' detected in any active source modules.` |
-| 120 | `src/db/schema.ts` | `aiInsights` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'aiInsights' detected in any active source modules.` |
-| 121 | `src/db/schema.ts` | `auditLogs` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditLogs' detected in any active source modules.` |
-| 122 | `src/db/schema.ts` | `notifications` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'notifications' detected in any active source modules.` |
-| 123 | `src/db/schema.ts` | `savedFilters` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'savedFilters' detected in any active source modules.` |
-| 124 | `src/db/schema.ts` | `reports` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reports' detected in any active source modules.` |
-| 125 | `src/db/schema.ts` | `reportExports` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reportExports' detected in any active source modules.` |
-| 126 | `src/db/schema.ts` | `kpiResults` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'kpiResults' detected in any active source modules.` |
-| 127 | `src/db/schema.ts` | `reviewCycles` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reviewCycles' detected in any active source modules.` |
-| 128 | `src/db/schema.ts` | `reviewComments` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reviewComments' detected in any active source modules.` |
-| 129 | `src/db/schema.ts` | `rejectionReasons` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'rejectionReasons' detected in any active source modules.` |
-| 130 | `src/db/schema.ts` | `workflowEvents` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'workflowEvents' detected in any active source modules.` |
-| 131 | `src/db/schema.ts` | `auditLogsRelations` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditLogsRelations' detected in any active source modules.` |
-| 132 | `src/hooks/useFilters.ts` | `FilterState` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FilterState' detected in any active source modules.` |
-| 133 | `src/hooks/useFilters.ts` | `BackendMetricsResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BackendMetricsResult' detected in any active source modules.` |
-| 134 | `src/utils/calculationVerificationEngine.ts` | `BenchmarkTestCase` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BenchmarkTestCase' detected in any active source modules.` |
-| 135 | `src/utils/calculationVerificationEngine.ts` | `RawEvidenceSnapshot` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RawEvidenceSnapshot' detected in any active source modules.` |
-| 136 | `src/utils/calculationVerificationEngine.ts` | `StressBenchmarkResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'StressBenchmarkResult' detected in any active source modules.` |
-| 137 | `src/utils/calculationVerificationEngine.ts` | `RejectedItemAuditEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RejectedItemAuditEntry' detected in any active source modules.` |
-| 138 | `src/utils/calculationVerificationEngine.ts` | `VerificationEvidencePackSummary` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'VerificationEvidencePackSummary' detected in any active source modules.` |
-| 139 | `src/utils/calculationVerificationEngine.ts` | `generateExpandedGoldenDataset` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateExpandedGoldenDataset' detected in any active source modules.` |
-| 140 | `src/utils/calculationVerificationEngine.ts` | `runCalculationVerificationSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runCalculationVerificationSuite' detected in any active source modules.` |
-| 141 | `src/utils/calculations.ts` | `buildCanonicalDataset` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'buildCanonicalDataset' detected in any active source modules.` |
-| 142 | `src/utils/calculations.ts` | `evaluateSubmissionLayer` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'evaluateSubmissionLayer' detected in any active source modules.` |
-| 143 | `src/utils/calculations.ts` | `evaluatePerformanceLayer` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'evaluatePerformanceLayer' detected in any active source modules.` |
-| 144 | `src/utils/calculations.ts` | `calculateCanonicalKPIs` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateCanonicalKPIs' detected in any active source modules.` |
-| 145 | `src/utils/calculations.ts` | `resolveCanonicalTrade` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'resolveCanonicalTrade' detected in any active source modules.` |
-| 146 | `src/utils/calculations.ts` | `auditRegisterSequence` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditRegisterSequence' detected in any active source modules.` |
-| 147 | `src/utils/calculations.ts` | `generateForensicLifecycleLedger` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateForensicLifecycleLedger' detected in any active source modules.` |
-| 148 | `src/utils/calculations.ts` | `getStatusCategory` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getStatusCategory' detected in any active source modules.` |
-| 149 | `src/utils/calculations.ts` | `getRecordNormalizedStatus` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getRecordNormalizedStatus' detected in any active source modules.` |
-| 150 | `src/utils/calculations.ts` | `compareRevisions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'compareRevisions' detected in any active source modules.` |
-| 151 | `src/utils/calculations.ts` | `compareRevisionsCanonical` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'compareRevisionsCanonical' detected in any active source modules.` |
-| 152 | `src/utils/calculations.ts` | `mapDocumentToWorkflow` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'mapDocumentToWorkflow' detected in any active source modules.` |
-| 153 | `src/utils/calculations.ts` | `classifyRow` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'classifyRow' detected in any active source modules.` |
-| 154 | `src/utils/calculations.ts` | `classifySubmission` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'classifySubmission' detected in any active source modules.` |
-| 155 | `src/utils/calculations.ts` | `NcrClassificationResult` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NcrClassificationResult' detected in any active source modules.` |
-| 156 | `src/utils/calculations.ts` | `getUniqueNCRs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getUniqueNCRs' detected in any active source modules.` |
-| 157 | `src/utils/calculations.ts` | `formatDate` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatDate' detected in any active source modules.` |
-| 158 | `src/utils/calculations.ts` | `getMonthStr` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getMonthStr' detected in any active source modules.` |
-| 159 | `src/utils/calculations.ts` | `checkIfOverdueDynamically` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'checkIfOverdueDynamically' detected in any active source modules.` |
-| 160 | `src/utils/classificationEngine.ts` | `ClassificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ClassificationResult' detected in any active source modules.` |
-| 161 | `src/utils/classificationEngine.ts` | `detectDisciplineFromText` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'detectDisciplineFromText' detected in any active source modules.` |
-| 162 | `src/utils/classificationEngine.ts` | `buildCompositeIdentity` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'buildCompositeIdentity' detected in any active source modules.` |
-| 163 | `src/utils/enterpriseAnalyticsEngine.ts` | `ContractorPerformance` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ContractorPerformance' detected in any active source modules.` |
-| 164 | `src/utils/enterpriseAnalyticsEngine.ts` | `getProjectStatusMap` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getProjectStatusMap' detected in any active source modules.` |
-| 165 | `src/utils/enterpriseAnalyticsEngine.ts` | `getNormalizedStatus` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getNormalizedStatus' detected in any active source modules.` |
-| 166 | `src/utils/enterpriseAnalyticsEngine.ts` | `ValidationIssue` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ValidationIssue' detected in any active source modules.` |
-| 167 | `src/utils/enterpriseAnalyticsEngine.ts` | `RegisterQualityScorecard` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterQualityScorecard' detected in any active source modules.` |
-| 168 | `src/utils/enterpriseAnalyticsEngine.ts` | `RegisterHealth` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterHealth' detected in any active source modules.` |
-| 169 | `src/utils/enterpriseAnalyticsEngine.ts` | `DocLifecycleInfo` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DocLifecycleInfo' detected in any active source modules.` |
-| 170 | `src/utils/enterpriseAnalyticsEngine.ts` | `RootCauseStat` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RootCauseStat' detected in any active source modules.` |
-| 171 | `src/utils/enterpriseAnalyticsEngine.ts` | `ExecutiveInsightEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ExecutiveInsightEntry' detected in any active source modules.` |
-| 172 | `src/utils/enterpriseAnalyticsEngine.ts` | `CrossRegisterLink` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CrossRegisterLink' detected in any active source modules.` |
-| 173 | `src/utils/i18n.tsx` | `Language` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'Language' detected in any active source modules.` |
-| 174 | `src/utils/loadTestingSuite.ts` | `SimulationMetrics` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SimulationMetrics' detected in any active source modules.` |
-| 175 | `src/utils/loadTestingSuite.ts` | `PerformanceSnapshot` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'PerformanceSnapshot' detected in any active source modules.` |
-| 176 | `src/utils/loadTestingSuite.ts` | `runLoadTestingSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runLoadTestingSuite' detected in any active source modules.` |
-| 177 | `src/utils/ncrAnalytics.ts` | `NCRStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRStats' detected in any active source modules.` |
-| 178 | `src/utils/ncrAnalytics.ts` | `calculateNCRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateNCRStats' detected in any active source modules.` |
-| 179 | `src/utils/parser.ts` | `formatDate` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatDate' detected in any active source modules.` |
-| 180 | `src/utils/parser.ts` | `parseExcelWorkbook` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseExcelWorkbook' detected in any active source modules.` |
-| 181 | `src/utils/parser.ts` | `parseExcelBuffer` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseExcelBuffer' detected in any active source modules.` |
-| 182 | `src/utils/rfiAnalytics.ts` | `RFITradeStat` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFITradeStat' detected in any active source modules.` |
-| 183 | `src/utils/rfiAnalytics.ts` | `RFIStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFIStats' detected in any active source modules.` |
-| 184 | `src/utils/rfiAnalytics.ts` | `calculateRFIStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateRFIStats' detected in any active source modules.` |
-| 185 | `src/utils/securityRegressionSuite.ts` | `RegressionTestResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegressionTestResult' detected in any active source modules.` |
-| 186 | `src/utils/securityRegressionSuite.ts` | `SuiteSummary` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SuiteSummary' detected in any active source modules.` |
-| 187 | `src/utils/securityRegressionSuite.ts` | `runSecurityRegressionSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runSecurityRegressionSuite' detected in any active source modules.` |
-| 188 | `src/utils/statusMatrixEngine.ts` | `saveProjectStatusMap` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'saveProjectStatusMap' detected in any active source modules.` |
-| 189 | `src/utils/statusMatrixEngine.ts` | `NormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NormalizedStatus' detected in any active source modules.` |
-| 190 | `src/utils/universalRegisterSchema.ts` | `FieldRequirementType` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FieldRequirementType' detected in any active source modules.` |
-| 191 | `src/utils/universalRegisterSchema.ts` | `FieldRequirementSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FieldRequirementSpec' detected in any active source modules.` |
-| 192 | `src/utils/universalRegisterSchema.ts` | `KPICalculabilityStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'KPICalculabilityStatus' detected in any active source modules.` |
-| 193 | `src/utils/universalRegisterSchema.ts` | `CompatibilityScoreBreakdown` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CompatibilityScoreBreakdown' detected in any active source modules.` |
-| 194 | `src/utils/universalRegisterSchema.ts` | `ThreeTierDataArchitectureSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ThreeTierDataArchitectureSpec' detected in any active source modules.` |
-| 195 | `src/utils/universalRegisterSchema.ts` | `CommercialTierSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CommercialTierSpec' detected in any active source modules.` |
-| 196 | `src/utils/universalRegisterSchema.ts` | `ContractValidationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ContractValidationResult' detected in any active source modules.` |
-| 197 | `src/utils/universalRegisterSchema.ts` | `autoMapColumns` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'autoMapColumns' detected in any active source modules.` |
-| 198 | `src/utils/workflowMapping.ts` | `CalculationEngineType` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CalculationEngineType' detected in any active source modules.` |
+| 33 | `src/analytics/calculationFoundation.ts` | `calculateStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateStats' detected in any active source modules.` |
+| 34 | `src/analytics/calculationFoundation.ts` | `EngineeringItemClassification` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'EngineeringItemClassification' detected in any active source modules.` |
+| 35 | `src/analytics/calculationFoundation.ts` | `PerformanceValidationRow` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'PerformanceValidationRow' detected in any active source modules.` |
+| 36 | `src/analytics/calculationFoundation.ts` | `CanonicalTradeResolution` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CanonicalTradeResolution' detected in any active source modules.` |
+| 37 | `src/analytics/calculationFoundation.ts` | `calculateNCRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateNCRStats' detected in any active source modules.` |
+| 38 | `src/analytics/calculationFoundation.ts` | `calculateSORStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateSORStats' detected in any active source modules.` |
+| 39 | `src/analytics/calculationFoundation.ts` | `calculateLTRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateLTRStats' detected in any active source modules.` |
+| 40 | `src/analytics/dataValidator.ts` | `validateDataset` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'validateDataset' detected in any active source modules.` |
+| 41 | `src/analytics/exportHelpers.ts` | `ExecutiveDashboardData` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ExecutiveDashboardData' detected in any active source modules.` |
+| 42 | `src/analytics/exportTelemetryTestSuite.ts` | `runExportTelemetrySuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runExportTelemetrySuite' detected in any active source modules.` |
+| 43 | `src/analytics/governance/auditFramework.ts` | `AuditLogEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'AuditLogEntry' detected in any active source modules.` |
+| 44 | `src/analytics/governance/auditFramework.ts` | `getAuditLogs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getAuditLogs' detected in any active source modules.` |
+| 45 | `src/analytics/governance/auditFramework.ts` | `clearAuditLogs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'clearAuditLogs' detected in any active source modules.` |
+| 46 | `src/analytics/governance/businessRuleRegistry.ts` | `ENGINE_RULE_VERSIONS` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ENGINE_RULE_VERSIONS' detected in any active source modules.` |
+| 47 | `src/analytics/governance/canonicalEngineAdapter.ts` | `AdaptedCalculationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'AdaptedCalculationResult' detected in any active source modules.` |
+| 48 | `src/analytics/governance/canonicalEngineAdapter.ts` | `executeAdaptedCalculationPipeline` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'executeAdaptedCalculationPipeline' detected in any active source modules.` |
+| 49 | `src/analytics/governance/configurationRepository.ts` | `SystemConfiguration` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SystemConfiguration' detected in any active source modules.` |
+| 50 | `src/analytics/governance/configurationRepository.ts` | `DEFAULT_SYSTEM_CONFIGURATION` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DEFAULT_SYSTEM_CONFIGURATION' detected in any active source modules.` |
+| 51 | `src/analytics/governance/configurationRepository.ts` | `getSystemConfiguration` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getSystemConfiguration' detected in any active source modules.` |
+| 52 | `src/analytics/governance/configurationRepository.ts` | `updateSystemConfiguration` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'updateSystemConfiguration' detected in any active source modules.` |
+| 53 | `src/analytics/governance/goldenRegressionSuite.ts` | `InvariantCheckResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'InvariantCheckResult' detected in any active source modules.` |
+| 54 | `src/analytics/governance/goldenRegressionSuite.ts` | `GoldenRegisterTestResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'GoldenRegisterTestResult' detected in any active source modules.` |
+| 55 | `src/analytics/governance/goldenRegressionSuite.ts` | `GOLDEN_REGISTER_TYPES` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'GOLDEN_REGISTER_TYPES' detected in any active source modules.` |
+| 56 | `src/analytics/governance/validationFramework.ts` | `runInvariantGuards` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runInvariantGuards' detected in any active source modules.` |
+| 57 | `src/analytics/governance/validationFramework.ts` | `runGoldenRegressionSuite` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runGoldenRegressionSuite' detected in any active source modules.` |
+| 58 | `src/analytics/governance/validationFramework.ts` | `ENGINE_VERSIONS` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ENGINE_VERSIONS' detected in any active source modules.` |
+| 59 | `src/analytics/governance/validationFramework.ts` | `RuleVerificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RuleVerificationResult' detected in any active source modules.` |
+| 60 | `src/analytics/governance/validationFramework.ts` | `FormulaVerificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FormulaVerificationResult' detected in any active source modules.` |
+| 61 | `src/analytics/governance/validationFramework.ts` | `ParallelEquivalenceResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ParallelEquivalenceResult' detected in any active source modules.` |
+| 62 | `src/analytics/kpiEngine.ts` | `RegisterStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterStats' detected in any active source modules.` |
+| 63 | `src/analytics/kpiEngine.ts` | `CorrespondenceStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CorrespondenceStats' detected in any active source modules.` |
+| 64 | `src/analytics/kpiEngine.ts` | `KPIReport` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'KPIReport' detected in any active source modules.` |
+| 65 | `src/analytics/kpiEngine.ts` | `generateKpiReport` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateKpiReport' detected in any active source modules.` |
+| 66 | `src/analytics/models.ts` | `NormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NormalizedStatus' detected in any active source modules.` |
+| 67 | `src/analytics/models.ts` | `BaseRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BaseRecord' detected in any active source modules.` |
+| 68 | `src/analytics/models.ts` | `DocumentRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DocumentRecord' detected in any active source modules.` |
+| 69 | `src/analytics/models.ts` | `RFIRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFIRecord' detected in any active source modules.` |
+| 70 | `src/analytics/models.ts` | `NCRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRRecord' detected in any active source modules.` |
+| 71 | `src/analytics/models.ts` | `WIRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'WIRRecord' detected in any active source modules.` |
+| 72 | `src/analytics/models.ts` | `MIRRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'MIRRecord' detected in any active source modules.` |
+| 73 | `src/analytics/models.ts` | `LetterInRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'LetterInRecord' detected in any active source modules.` |
+| 74 | `src/analytics/models.ts` | `LetterOutRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'LetterOutRecord' detected in any active source modules.` |
+| 75 | `src/analytics/models.ts` | `SiteInstructionRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SiteInstructionRecord' detected in any active source modules.` |
+| 76 | `src/analytics/models.ts` | `MeetingMinutesRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'MeetingMinutesRecord' detected in any active source modules.` |
+| 77 | `src/analytics/models.ts` | `ImportResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ImportResult' detected in any active source modules.` |
+| 78 | `src/analytics/ncr/ncrEngine.ts` | `isYes` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'isYes' detected in any active source modules.` |
+| 79 | `src/analytics/ncr/ncrEngine.ts` | `getLatestRev` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getLatestRev' detected in any active source modules.` |
+| 80 | `src/analytics/ncr/ncrEngine.ts` | `NCRStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRStats' detected in any active source modules.` |
+| 81 | `src/analytics/ncr/ncrEngine.ts` | `NCRClassificationStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRClassificationStats' detected in any active source modules.` |
+| 82 | `src/analytics/ncr/ncrEngine.ts` | `normalizeDiscipline` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'normalizeDiscipline' detected in any active source modules.` |
+| 83 | `src/analytics/ncr/ncrEngine.ts` | `normalizeNCRData` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'normalizeNCRData' detected in any active source modules.` |
+| 84 | `src/analytics/ncr/ncrEngine.ts` | `groupNCRByReference` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'groupNCRByReference' detected in any active source modules.` |
+| 85 | `src/analytics/ncr/ncrEngine.ts` | `NCREvidence` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCREvidence' detected in any active source modules.` |
+| 86 | `src/analytics/ncr/ncrEngine.ts` | `NCRIntegrityReport` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRIntegrityReport' detected in any active source modules.` |
+| 87 | `src/analytics/ncr/ncrEngine.ts` | `calculateCumulativeSnapshot` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateCumulativeSnapshot' detected in any active source modules.` |
+| 88 | `src/analytics/ncr/ncrEngine.ts` | `calculateMonthlyEvents` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateMonthlyEvents' detected in any active source modules.` |
+| 89 | `src/analytics/recordTransformer.ts` | `transformRecords` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'transformRecords' detected in any active source modules.` |
+| 90 | `src/analytics/sequenceAuditEngine.ts` | `ParsedDocIdentifier` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ParsedDocIdentifier' detected in any active source modules.` |
+| 91 | `src/analytics/sequenceAuditEngine.ts` | `getExpectedRegisterFromPrefix` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getExpectedRegisterFromPrefix' detected in any active source modules.` |
+| 92 | `src/analytics/sequenceAuditEngine.ts` | `parseDocIdentifier` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseDocIdentifier' detected in any active source modules.` |
+| 93 | `src/analytics/sequenceAuditEngine.ts` | `formatSequenceID` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatSequenceID' detected in any active source modules.` |
+| 94 | `src/analytics/sor/sorEngine.ts` | `isYes` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'isYes' detected in any active source modules.` |
+| 95 | `src/analytics/sor/sorEngine.ts` | `getLatestRev` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getLatestRev' detected in any active source modules.` |
+| 96 | `src/analytics/sor/sorEngine.ts` | `SORStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SORStats' detected in any active source modules.` |
+| 97 | `src/analytics/sor/sorEngine.ts` | `SORClassificationStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SORClassificationStats' detected in any active source modules.` |
+| 98 | `src/analytics/statusResolver.ts` | `CanonicalStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CanonicalStatus' detected in any active source modules.` |
+| 99 | `src/analytics/statusResolver.ts` | `StatusCategory` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'StatusCategory' detected in any active source modules.` |
+| 100 | `src/analytics/statusResolver.ts` | `RecordNormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RecordNormalizedStatus' detected in any active source modules.` |
+| 101 | `src/components/CommercialValidationGateCenter.tsx` | `CVGTestRecord` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CVGTestRecord' detected in any active source modules.` |
+| 102 | `src/db/index.ts` | `createPool` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'createPool' detected in any active source modules.` |
+| 103 | `src/db/index.ts` | `db` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'db' detected in any active source modules.` |
+| 104 | `src/db/schema.ts` | `users` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'users' detected in any active source modules.` |
+| 105 | `src/db/schema.ts` | `roles` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'roles' detected in any active source modules.` |
+| 106 | `src/db/schema.ts` | `permissions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'permissions' detected in any active source modules.` |
+| 107 | `src/db/schema.ts` | `projects` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'projects' detected in any active source modules.` |
+| 108 | `src/db/schema.ts` | `projectMembers` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'projectMembers' detected in any active source modules.` |
+| 109 | `src/db/schema.ts` | `registers` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'registers' detected in any active source modules.` |
+| 110 | `src/db/schema.ts` | `documents` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documents' detected in any active source modules.` |
+| 111 | `src/db/schema.ts` | `documentRevisions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documentRevisions' detected in any active source modules.` |
+| 112 | `src/db/schema.ts` | `documentStatusHistory` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'documentStatusHistory' detected in any active source modules.` |
+| 113 | `src/db/schema.ts` | `rfiRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'rfiRecords' detected in any active source modules.` |
+| 114 | `src/db/schema.ts` | `mirRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'mirRecords' detected in any active source modules.` |
+| 115 | `src/db/schema.ts` | `irRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'irRecords' detected in any active source modules.` |
+| 116 | `src/db/schema.ts` | `ncrRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ncrRecords' detected in any active source modules.` |
+| 117 | `src/db/schema.ts` | `sdwRecords` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'sdwRecords' detected in any active source modules.` |
+| 118 | `src/db/schema.ts` | `analyticsSnapshots` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'analyticsSnapshots' detected in any active source modules.` |
+| 119 | `src/db/schema.ts` | `aiInsights` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'aiInsights' detected in any active source modules.` |
+| 120 | `src/db/schema.ts` | `auditLogs` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditLogs' detected in any active source modules.` |
+| 121 | `src/db/schema.ts` | `notifications` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'notifications' detected in any active source modules.` |
+| 122 | `src/db/schema.ts` | `savedFilters` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'savedFilters' detected in any active source modules.` |
+| 123 | `src/db/schema.ts` | `reports` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reports' detected in any active source modules.` |
+| 124 | `src/db/schema.ts` | `reportExports` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reportExports' detected in any active source modules.` |
+| 125 | `src/db/schema.ts` | `kpiResults` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'kpiResults' detected in any active source modules.` |
+| 126 | `src/db/schema.ts` | `reviewCycles` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reviewCycles' detected in any active source modules.` |
+| 127 | `src/db/schema.ts` | `reviewComments` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'reviewComments' detected in any active source modules.` |
+| 128 | `src/db/schema.ts` | `rejectionReasons` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'rejectionReasons' detected in any active source modules.` |
+| 129 | `src/db/schema.ts` | `workflowEvents` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'workflowEvents' detected in any active source modules.` |
+| 130 | `src/db/schema.ts` | `auditLogsRelations` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditLogsRelations' detected in any active source modules.` |
+| 131 | `src/hooks/useFilters.ts` | `FilterState` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FilterState' detected in any active source modules.` |
+| 132 | `src/hooks/useFilters.ts` | `BackendMetricsResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BackendMetricsResult' detected in any active source modules.` |
+| 133 | `src/utils/calculationVerificationEngine.ts` | `BenchmarkTestCase` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'BenchmarkTestCase' detected in any active source modules.` |
+| 134 | `src/utils/calculationVerificationEngine.ts` | `RawEvidenceSnapshot` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RawEvidenceSnapshot' detected in any active source modules.` |
+| 135 | `src/utils/calculationVerificationEngine.ts` | `StressBenchmarkResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'StressBenchmarkResult' detected in any active source modules.` |
+| 136 | `src/utils/calculationVerificationEngine.ts` | `RejectedItemAuditEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RejectedItemAuditEntry' detected in any active source modules.` |
+| 137 | `src/utils/calculationVerificationEngine.ts` | `VerificationEvidencePackSummary` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'VerificationEvidencePackSummary' detected in any active source modules.` |
+| 138 | `src/utils/calculationVerificationEngine.ts` | `generateExpandedGoldenDataset` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateExpandedGoldenDataset' detected in any active source modules.` |
+| 139 | `src/utils/calculationVerificationEngine.ts` | `runCalculationVerificationSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runCalculationVerificationSuite' detected in any active source modules.` |
+| 140 | `src/utils/calculations.ts` | `buildCanonicalDataset` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'buildCanonicalDataset' detected in any active source modules.` |
+| 141 | `src/utils/calculations.ts` | `evaluateSubmissionLayer` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'evaluateSubmissionLayer' detected in any active source modules.` |
+| 142 | `src/utils/calculations.ts` | `evaluatePerformanceLayer` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'evaluatePerformanceLayer' detected in any active source modules.` |
+| 143 | `src/utils/calculations.ts` | `calculateCanonicalKPIs` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateCanonicalKPIs' detected in any active source modules.` |
+| 144 | `src/utils/calculations.ts` | `resolveCanonicalTrade` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'resolveCanonicalTrade' detected in any active source modules.` |
+| 145 | `src/utils/calculations.ts` | `auditRegisterSequence` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'auditRegisterSequence' detected in any active source modules.` |
+| 146 | `src/utils/calculations.ts` | `generateForensicLifecycleLedger` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'generateForensicLifecycleLedger' detected in any active source modules.` |
+| 147 | `src/utils/calculations.ts` | `getStatusCategory` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getStatusCategory' detected in any active source modules.` |
+| 148 | `src/utils/calculations.ts` | `getRecordNormalizedStatus` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getRecordNormalizedStatus' detected in any active source modules.` |
+| 149 | `src/utils/calculations.ts` | `compareRevisions` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'compareRevisions' detected in any active source modules.` |
+| 150 | `src/utils/calculations.ts` | `compareRevisionsCanonical` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'compareRevisionsCanonical' detected in any active source modules.` |
+| 151 | `src/utils/calculations.ts` | `mapDocumentToWorkflow` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'mapDocumentToWorkflow' detected in any active source modules.` |
+| 152 | `src/utils/calculations.ts` | `classifyRow` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'classifyRow' detected in any active source modules.` |
+| 153 | `src/utils/calculations.ts` | `classifySubmission` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'classifySubmission' detected in any active source modules.` |
+| 154 | `src/utils/calculations.ts` | `NcrClassificationResult` | `Component` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NcrClassificationResult' detected in any active source modules.` |
+| 155 | `src/utils/calculations.ts` | `getUniqueNCRs` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getUniqueNCRs' detected in any active source modules.` |
+| 156 | `src/utils/calculations.ts` | `formatDate` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatDate' detected in any active source modules.` |
+| 157 | `src/utils/calculations.ts` | `getMonthStr` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getMonthStr' detected in any active source modules.` |
+| 158 | `src/utils/calculations.ts` | `checkIfOverdueDynamically` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'checkIfOverdueDynamically' detected in any active source modules.` |
+| 159 | `src/utils/classificationEngine.ts` | `ClassificationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ClassificationResult' detected in any active source modules.` |
+| 160 | `src/utils/classificationEngine.ts` | `detectDisciplineFromText` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'detectDisciplineFromText' detected in any active source modules.` |
+| 161 | `src/utils/classificationEngine.ts` | `buildCompositeIdentity` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'buildCompositeIdentity' detected in any active source modules.` |
+| 162 | `src/utils/enterpriseAnalyticsEngine.ts` | `ContractorPerformance` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ContractorPerformance' detected in any active source modules.` |
+| 163 | `src/utils/enterpriseAnalyticsEngine.ts` | `getProjectStatusMap` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getProjectStatusMap' detected in any active source modules.` |
+| 164 | `src/utils/enterpriseAnalyticsEngine.ts` | `getNormalizedStatus` | `Constant/Enum/Class` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'getNormalizedStatus' detected in any active source modules.` |
+| 165 | `src/utils/enterpriseAnalyticsEngine.ts` | `ValidationIssue` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ValidationIssue' detected in any active source modules.` |
+| 166 | `src/utils/enterpriseAnalyticsEngine.ts` | `RegisterQualityScorecard` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterQualityScorecard' detected in any active source modules.` |
+| 167 | `src/utils/enterpriseAnalyticsEngine.ts` | `RegisterHealth` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegisterHealth' detected in any active source modules.` |
+| 168 | `src/utils/enterpriseAnalyticsEngine.ts` | `DocLifecycleInfo` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'DocLifecycleInfo' detected in any active source modules.` |
+| 169 | `src/utils/enterpriseAnalyticsEngine.ts` | `RootCauseStat` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RootCauseStat' detected in any active source modules.` |
+| 170 | `src/utils/enterpriseAnalyticsEngine.ts` | `ExecutiveInsightEntry` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ExecutiveInsightEntry' detected in any active source modules.` |
+| 171 | `src/utils/enterpriseAnalyticsEngine.ts` | `CrossRegisterLink` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CrossRegisterLink' detected in any active source modules.` |
+| 172 | `src/utils/i18n.tsx` | `Language` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'Language' detected in any active source modules.` |
+| 173 | `src/utils/loadTestingSuite.ts` | `SimulationMetrics` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SimulationMetrics' detected in any active source modules.` |
+| 174 | `src/utils/loadTestingSuite.ts` | `PerformanceSnapshot` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'PerformanceSnapshot' detected in any active source modules.` |
+| 175 | `src/utils/loadTestingSuite.ts` | `runLoadTestingSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runLoadTestingSuite' detected in any active source modules.` |
+| 176 | `src/utils/ncrAnalytics.ts` | `NCRStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NCRStats' detected in any active source modules.` |
+| 177 | `src/utils/ncrAnalytics.ts` | `calculateNCRStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateNCRStats' detected in any active source modules.` |
+| 178 | `src/utils/parser.ts` | `formatDate` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'formatDate' detected in any active source modules.` |
+| 179 | `src/utils/parser.ts` | `parseExcelWorkbook` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseExcelWorkbook' detected in any active source modules.` |
+| 180 | `src/utils/parser.ts` | `parseExcelBuffer` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'parseExcelBuffer' detected in any active source modules.` |
+| 181 | `src/utils/rfiAnalytics.ts` | `RFITradeStat` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFITradeStat' detected in any active source modules.` |
+| 182 | `src/utils/rfiAnalytics.ts` | `RFIStats` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RFIStats' detected in any active source modules.` |
+| 183 | `src/utils/rfiAnalytics.ts` | `calculateRFIStats` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'calculateRFIStats' detected in any active source modules.` |
+| 184 | `src/utils/securityRegressionSuite.ts` | `RegressionTestResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'RegressionTestResult' detected in any active source modules.` |
+| 185 | `src/utils/securityRegressionSuite.ts` | `SuiteSummary` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'SuiteSummary' detected in any active source modules.` |
+| 186 | `src/utils/securityRegressionSuite.ts` | `runSecurityRegressionSuite` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'runSecurityRegressionSuite' detected in any active source modules.` |
+| 187 | `src/utils/statusMatrixEngine.ts` | `saveProjectStatusMap` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'saveProjectStatusMap' detected in any active source modules.` |
+| 188 | `src/utils/statusMatrixEngine.ts` | `NormalizedStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'NormalizedStatus' detected in any active source modules.` |
+| 189 | `src/utils/universalRegisterSchema.ts` | `FieldRequirementType` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FieldRequirementType' detected in any active source modules.` |
+| 190 | `src/utils/universalRegisterSchema.ts` | `FieldRequirementSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'FieldRequirementSpec' detected in any active source modules.` |
+| 191 | `src/utils/universalRegisterSchema.ts` | `KPICalculabilityStatus` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'KPICalculabilityStatus' detected in any active source modules.` |
+| 192 | `src/utils/universalRegisterSchema.ts` | `CompatibilityScoreBreakdown` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CompatibilityScoreBreakdown' detected in any active source modules.` |
+| 193 | `src/utils/universalRegisterSchema.ts` | `ThreeTierDataArchitectureSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ThreeTierDataArchitectureSpec' detected in any active source modules.` |
+| 194 | `src/utils/universalRegisterSchema.ts` | `CommercialTierSpec` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CommercialTierSpec' detected in any active source modules.` |
+| 195 | `src/utils/universalRegisterSchema.ts` | `ContractValidationResult` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'ContractValidationResult' detected in any active source modules.` |
+| 196 | `src/utils/universalRegisterSchema.ts` | `autoMapColumns` | `Function` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'autoMapColumns' detected in any active source modules.` |
+| 197 | `src/utils/workflowMapping.ts` | `CalculationEngineType` | `Type/Interface` | `100% (Strict Compiler-grade AST symbol resolution)` | `No incoming imports of 'CalculationEngineType' detected in any active source modules.` |
 
 ---
 

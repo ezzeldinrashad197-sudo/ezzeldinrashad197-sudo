@@ -85,8 +85,19 @@ export default function Presentation({
   const monthlyData = useMemo(() => data.filter(filterMonthly), [data, filterMonthly]);
   const cumulativeData = useMemo(() => data.filter(filterCumulative), [data, filterCumulative]);
 
+  const monthlyReferenceData = useMemo(() => {
+    let maxDateStr = '';
+    for (const r of monthlyData) {
+      if (r.submissionDate && (!maxDateStr || r.submissionDate > maxDateStr)) {
+        maxDateStr = r.submissionDate;
+      }
+    }
+    if (!maxDateStr) return data;
+    return data.filter(r => !r.submissionDate || r.submissionDate <= maxDateStr);
+  }, [monthlyData, data]);
+
     const overallMonthlyStats = useMemo(() => {
-    const s = calculateStats(monthlyData, data);
+    const s = calculateStats(monthlyData, monthlyReferenceData);
     const respondedItems = monthlyData.filter(d => d.responseDate && d.submissionDate);
     const slaMet = respondedItems.filter(d => d.delayDays <= 0).length;
     const slaCompliance = respondedItems.length > 0 ? (slaMet / respondedItems.length) * 100 : null;
@@ -294,16 +305,16 @@ export default function Presentation({
         return rDisc === disc;
       });
 
-      const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, dataset)));
+      const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
       const isMonthlyReport = !!monthlyStart;
-      const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD' || bt === 'RFI';
-      const totalSheets = (s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0);
+      const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
+      const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
       const totalSubmittals = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length;
-      const countForType = isSheetCountType 
-        ? totalSheets 
+      const countForType = isSheetCountType || bt === 'RFI'
+        ? totalWorkload 
         : (isMonthlyReport 
-            ? (s.totalSubmittedSheets ?? totalSheets)
-            : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalSheets));
+            ? totalWorkload
+            : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalWorkload));
 
       return {
         discipline: disc,
@@ -991,7 +1002,7 @@ export default function Presentation({
                 </thead>
                 <tbody>
                   {baseTypes.map(bt => {
-                    const bStats = compileStatsForBaseType(monthlyData, bt, startDate, data);
+                    const bStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
                     const workload = (bStats.totalRow.Rev00 || 0) + (bStats.totalRow.FurtherRev || 0);
                     const unique = bStats.totalRow.Total || 0;
                     return (
@@ -1071,7 +1082,7 @@ export default function Presentation({
                 </h4>
                 <div className="flex flex-col gap-3">
                   {baseTypes.slice(0, 3).map(bt => {
-                    const bStats = compileStatsForBaseType(monthlyData, bt, startDate, data);
+                    const bStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
                     return (
                       <div key={bt} className="flex justify-between items-center text-sm border-b border-amber-100 pb-2">
                         <span className="font-semibold text-slate-700">{bt} - {language === 'ar' ? 'المعاملات' : 'Log Items'}</span>
@@ -1388,7 +1399,7 @@ export default function Presentation({
 
     // --- SECTION 3: REGISTER BREAKDOWNS ---
     baseTypes.forEach((bt, idx) => {
-      const monthlyStats = compileStatsForBaseType(monthlyData, bt, startDate, data);
+      const monthlyStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
       const cumulativeStats = compileStatsForBaseType(cumulativeData, bt, undefined, data);
 
       if (!monthlyStats.hasData && !cumulativeStats.hasData) return;

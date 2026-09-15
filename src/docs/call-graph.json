@@ -218,469 +218,490 @@
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 89,
-    "context": "calculateStats(monthlyData, data)",
+    "line": 100,
+    "context": "calculateStats(monthlyData, monthlyReferenceData)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 119,
+    "line": 130,
     "context": "calculateStats(cumulativeData, data)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 177,
+    "line": 188,
     "context": "processNCRData(sourceData, monthlyStart)",
     "destination": "src/utils/calculations.ts::processNCRData",
     "functionName": "processNCRData"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 273,
+    "line": 284,
     "context": "resolveRowDiscipline(d, bt)",
     "destination": "src/utils/calculations.ts::resolveRowDiscipline",
     "functionName": "resolveRowDiscipline"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 293,
+    "line": 304,
     "context": "resolveRowDiscipline(d, bt)",
     "destination": "src/utils/calculations.ts::resolveRowDiscipline",
     "functionName": "resolveRowDiscipline"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 297,
+    "line": 308,
     "context": "calculateNCRStats(dData, false)",
     "destination": "src/utils/calculations.ts::calculateNCRStats",
     "functionName": "calculateNCRStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 297,
+    "line": 308,
     "context": "calculateSORStats(dData, false)",
     "destination": "src/utils/calculations.ts::calculateSORStats",
     "functionName": "calculateSORStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 297,
+    "line": 308,
     "context": "calculateLTRStats(dData, false)",
     "destination": "src/utils/calculations.ts::calculateLTRStats",
     "functionName": "calculateLTRStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 297,
-    "context": "calculateStats(dData, dataset)",
+    "line": 308,
+    "context": "calculateStats(dData, fullDataset || dataset)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 321,
+    "line": 332,
     "context": "getClosedOpenByDocType(bt, s)",
     "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
     "functionName": "getClosedOpenByDocType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 322,
+    "line": 333,
     "context": "getClosedOpenByDocType(bt, s)",
     "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
     "functionName": "getClosedOpenByDocType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 383,
+    "line": 394,
     "context": "getColLabel(c.label, language)",
     "destination": "src/utils/calculations.ts::getColLabel",
     "functionName": "getColLabel"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 392,
+    "line": 403,
     "context": "getDiscName(s.discipline, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 402,
+    "line": 413,
     "context": "getDiscName(statsData.totalRow.discipline, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 416,
+    "line": 427,
     "context": "getChartTitle(titleStr, language)",
     "destination": "src/utils/calculations.ts::getChartTitle",
     "functionName": "getChartTitle"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 420,
+    "line": 431,
     "context": "getDiscName(d, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 506,
+    "line": 517,
     "context": "getDiscName(s.discipline, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 516,
+    "line": 527,
     "context": "getPieLabelTranslator(String(name), language)",
     "destination": "src/utils/calculations.ts::getPieLabelTranslator",
     "functionName": "getPieLabelTranslator"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 524,
+    "line": 535,
     "context": "getPieLabelTranslator(p.name, language)",
     "destination": "src/utils/calculations.ts::getPieLabelTranslator",
     "functionName": "getPieLabelTranslator"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 539,
+    "line": 550,
     "context": "isEntityOverdue(d)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 560,
+    "line": 571,
     "context": "isEntityOverdue(a)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 561,
+    "line": 572,
     "context": "isEntityOverdue(b)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 831,
+    "line": 842,
     "context": "getMonthlySummary(overallMonthlyStats, language)",
     "destination": "src/utils/calculations.ts::getMonthlySummary",
     "functionName": "getMonthlySummary"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 994,
-    "context": "compileStatsForBaseType(monthlyData, bt, startDate, data)",
+    "line": 1005,
+    "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
     "destination": "src/utils/calculations.ts::compileStatsForBaseType",
     "functionName": "compileStatsForBaseType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1074,
-    "context": "compileStatsForBaseType(monthlyData, bt, startDate, data)",
+    "line": 1085,
+    "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
     "destination": "src/utils/calculations.ts::compileStatsForBaseType",
     "functionName": "compileStatsForBaseType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1112,
+    "line": 1123,
     "context": "getMonthlyRecommendations(overallMonthlyStats, language)",
     "destination": "src/utils/calculations.ts::getMonthlyRecommendations",
     "functionName": "getMonthlyRecommendations"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1165,
+    "line": 1176,
     "context": "getCumulativeSummary(overallCumulativeStats, language)",
     "destination": "src/utils/calculations.ts::getCumulativeSummary",
     "functionName": "getCumulativeSummary"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1328,
+    "line": 1339,
     "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
     "destination": "src/utils/calculations.ts::compileStatsForBaseType",
     "functionName": "compileStatsForBaseType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1391,
-    "context": "compileStatsForBaseType(monthlyData, bt, startDate, data)",
+    "line": 1402,
+    "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
     "destination": "src/utils/calculations.ts::compileStatsForBaseType",
     "functionName": "compileStatsForBaseType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1392,
+    "line": 1403,
     "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
     "destination": "src/utils/calculations.ts::compileStatsForBaseType",
     "functionName": "compileStatsForBaseType"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1396,
+    "line": 1407,
     "context": "getDiscName(bt, 'ar')",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1649,
+    "line": 1660,
     "context": "getDiscName(row.trade, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/Presentation.tsx",
-    "line": 1708,
+    "line": 1719,
     "context": "getDiscName(row.trade, language)",
     "destination": "src/utils/calculations.ts::getDiscName",
     "functionName": "getDiscName"
   },
   {
     "callerFile": "src/RFIAnalytics.tsx",
-    "line": 85,
+    "line": 83,
     "context": "resolveCanonicalTrade(row)",
     "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
     "functionName": "resolveCanonicalTrade"
   },
   {
     "callerFile": "src/RFIAnalytics.tsx",
+    "line": 85,
+    "context": "getDocumentIdentityKey(row)",
+    "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+    "functionName": "getDocumentIdentityKey"
+  },
+  {
+    "callerFile": "src/RFIAnalytics.tsx",
     "line": 92,
+    "context": "compareRevisionsCanonical(row.rev, ent.latestRow.rev)",
+    "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
+    "functionName": "compareRevisionsCanonical"
+  },
+  {
+    "callerFile": "src/RFIAnalytics.tsx",
+    "line": 104,
+    "context": "resolveCanonicalTrade(row)",
+    "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
+    "functionName": "resolveCanonicalTrade"
+  },
+  {
+    "callerFile": "src/RFIAnalytics.tsx",
+    "line": 110,
     "context": "isRevision0(row.rev, row.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/RFIAnalytics.tsx",
-    "line": 93,
+    "line": 111,
     "context": "isFurtherRevision(row.rev, row.isRev0)",
     "destination": "src/utils/calculations.ts::isFurtherRevision",
     "functionName": "isFurtherRevision"
   },
   {
     "callerFile": "src/RFIAnalytics.tsx",
-    "line": 98,
-    "context": "getNormalizedStatusCore(row, projectId, projectInfo)",
+    "line": 122,
+    "context": "getNormalizedStatusCore(ent.latestRow, projectId, projectInfo)",
     "destination": "src/utils/calculations.ts::getNormalizedStatusCore",
     "functionName": "getNormalizedStatusCore"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 97,
-    "context": "calculateStats(matchingRows, rawDataset || data)",
+    "line": 110,
+    "context": "calculateStats(matchingRows, contextDataset)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 151,
-    "context": "calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), rawDataset || data)",
+    "line": 164,
+    "context": "calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), contextDataset)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 156,
+    "line": 169,
     "context": "runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'))",
     "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
     "functionName": "runComprehensiveSequenceAudit"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 161,
+    "line": 174,
     "context": "calculateProjectPerformanceHealth(globalStats, language)",
     "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
     "functionName": "calculateProjectPerformanceHealth"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 253,
-    "context": "calculateStats(firstHalf, rawDataset || data)",
-    "destination": "src/utils/calculations.ts::calculateStats",
-    "functionName": "calculateStats"
-  },
-  {
-    "callerFile": "src/ReportTable.tsx",
-    "line": 254,
-    "context": "calculateStats(secondHalf, rawDataset || data)",
-    "destination": "src/utils/calculations.ts::calculateStats",
-    "functionName": "calculateStats"
-  },
-  {
-    "callerFile": "src/ReportTable.tsx",
     "line": 266,
+    "context": "calculateStats(firstHalf, contextDataset)",
+    "destination": "src/utils/calculations.ts::calculateStats",
+    "functionName": "calculateStats"
+  },
+  {
+    "callerFile": "src/ReportTable.tsx",
+    "line": 267,
+    "context": "calculateStats(secondHalf, contextDataset)",
+    "destination": "src/utils/calculations.ts::calculateStats",
+    "functionName": "calculateStats"
+  },
+  {
+    "callerFile": "src/ReportTable.tsx",
+    "line": 279,
     "context": "isEntityOverdue(d)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 329,
+    "line": 342,
     "context": "processRevisionEngine(baseForRevisions)",
     "destination": "src/utils/calculations.ts::processRevisionEngine",
     "functionName": "processRevisionEngine"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 330,
+    "line": 343,
     "context": "getBusinessEntityKey(r)",
     "destination": "src/utils/calculations.ts::getBusinessEntityKey",
     "functionName": "getBusinessEntityKey"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 338,
+    "line": 351,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 339,
+    "line": 352,
     "context": "isEntityOverdue(group.latest)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 413,
+    "line": 426,
     "context": "processRevisionEngine(baseForRevisions)",
     "destination": "src/utils/calculations.ts::processRevisionEngine",
     "functionName": "processRevisionEngine"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 414,
+    "line": 427,
     "context": "getBusinessEntityKey(r)",
     "destination": "src/utils/calculations.ts::getBusinessEntityKey",
     "functionName": "getBusinessEntityKey"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 420,
+    "line": 433,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 427,
+    "line": 440,
     "context": "resolveRowDiscipline(r)",
     "destination": "src/utils/calculations.ts::resolveRowDiscipline",
     "functionName": "resolveRowDiscipline"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 447,
+    "line": 460,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 459,
+    "line": 472,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 471,
+    "line": 484,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 483,
+    "line": 496,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 495,
+    "line": 508,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 507,
+    "line": 520,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 539,
+    "line": 552,
     "context": "getStatusCodeCategory(group.latest)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 541,
+    "line": 554,
     "context": "isEntityOverdue(group.latest)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 560,
+    "line": 573,
     "context": "isRevision0(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 564,
+    "line": 577,
     "context": "isFurtherRevision(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isFurtherRevision",
     "functionName": "isFurtherRevision"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 569,
+    "line": 582,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 575,
+    "line": 588,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 579,
+    "line": 592,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 591,
+    "line": 604,
     "context": "resolveRowDiscipline({ documentType: m.docType } as any)",
     "destination": "src/utils/calculations.ts::resolveRowDiscipline",
     "functionName": "resolveRowDiscipline"
   },
   {
     "callerFile": "src/ReportTable.tsx",
-    "line": 612,
+    "line": 625,
     "context": "resolveRowDiscipline({ documentType: docTypeFilter } as any)",
     "destination": "src/utils/calculations.ts::resolveRowDiscipline",
     "functionName": "resolveRowDiscipline"
@@ -1653,35 +1674,35 @@
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2460,
+    "line": 2487,
     "context": "resolveCanonicalTrade(row)",
     "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
     "functionName": "resolveCanonicalTrade"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2475,
+    "line": 2502,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2528,
+    "line": 2555,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2581,
+    "line": 2608,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2664,
+    "line": 2691,
     "context": "getPerformanceValidationRows(\n      rows\n    )",
     "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
     "functionName": "getPerformanceValidationRows"
@@ -3872,199 +3893,192 @@
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 155,
+    "line": 167,
     "context": "detectDisciplineFromText(fileName)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 156,
+    "line": 168,
     "context": "detectDisciplineFromText(sheetName)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 160,
+    "line": 172,
     "context": "detectDisciplineFromText(String(h || ''))",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 168,
+    "line": 180,
     "context": "detectDisciplineFromText(String(cell || ''))",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 275,
+    "line": 301,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 289,
+    "line": 315,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 430,
+    "line": 456,
     "context": "buildCompositeIdentity(lockedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 455,
+    "line": 481,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 460,
+    "line": 486,
     "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 470,
+    "line": 496,
     "context": "getLearningRules(projectId)",
     "destination": "src/utils/calculations.ts::getLearningRules",
     "functionName": "getLearningRules"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 475,
+    "line": 501,
     "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 692,
+    "line": 718,
     "context": "buildCompositeIdentity(bestFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 704,
+    "line": 730,
     "context": "buildCompositeIdentity(fallbackFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 722,
+    "line": 748,
     "context": "getLearningRules(projectId)",
     "destination": "src/utils/calculations.ts::getLearningRules",
     "functionName": "getLearningRules"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 728,
+    "line": 754,
     "context": "detectDisciplineFromText(clean)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 106,
+    "line": 107,
     "context": "compareRevisionsCanonical(a.rev, b.rev)",
     "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
     "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 121,
+    "line": 122,
     "context": "getStatusCategory(r.status, statusMap)",
     "destination": "src/utils/calculations.ts::getStatusCategory",
     "functionName": "getStatusCategory"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 139,
+    "line": 140,
     "context": "getStatusCategory(latestRev.status, statusMap)",
     "destination": "src/utils/calculations.ts::getStatusCategory",
     "functionName": "getStatusCategory"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 222,
+    "line": 223,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 305,
+    "line": 306,
     "context": "getStatusCategory(r.status, statusMap)",
     "destination": "src/utils/calculations.ts::getStatusCategory",
     "functionName": "getStatusCategory"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 324,
+    "line": 325,
     "context": "getRevisionWeight(h.rev)",
     "destination": "src/utils/calculations.ts::getRevisionWeight",
     "functionName": "getRevisionWeight"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 330,
+    "line": 331,
     "context": "getDocRegisterType(firstRow)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 349,
+    "line": 350,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 384,
+    "line": 385,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 450,
+    "line": 451,
     "context": "formatDate(currentMonthStart)",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 451,
+    "line": 452,
     "context": "formatDate(reportDate)",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 452,
+    "line": 453,
     "context": "formatDate(priorMonthStart)",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
-  },
-  {
-    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 456,
-    "context": "getDocRegisterType(r)",
-    "destination": "src/utils/calculations.ts::getDocRegisterType",
-    "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
@@ -4075,17 +4089,17 @@
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 466,
-    "context": "getRootCauseIntelligence(rows)",
-    "destination": "src/utils/calculations.ts::getRootCauseIntelligence",
-    "functionName": "getRootCauseIntelligence"
-  },
-  {
-    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 489,
+    "line": 458,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
+  },
+  {
+    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+    "line": 467,
+    "context": "getRootCauseIntelligence(rows)",
+    "destination": "src/utils/calculations.ts::getRootCauseIntelligence",
+    "functionName": "getRootCauseIntelligence"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
@@ -4096,42 +4110,42 @@
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 523,
+    "line": 491,
+    "context": "getDocRegisterType(r)",
+    "destination": "src/utils/calculations.ts::getDocRegisterType",
+    "functionName": "getDocRegisterType"
+  },
+  {
+    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+    "line": 524,
     "context": "checkIfOverdueDynamically(r)",
     "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
     "functionName": "checkIfOverdueDynamically"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 536,
+    "line": 537,
     "context": "scanDataIntegrity(rows, statusMap)",
     "destination": "src/utils/calculations.ts::scanDataIntegrity",
     "functionName": "scanDataIntegrity"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 585,
+    "line": 586,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 595,
+    "line": 596,
     "context": "getDocRegisterType(r)",
     "destination": "src/utils/calculations.ts::getDocRegisterType",
     "functionName": "getDocRegisterType"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 718,
-    "context": "getStatusCategory(r.status, statusMap)",
-    "destination": "src/utils/calculations.ts::getStatusCategory",
-    "functionName": "getStatusCategory"
-  },
-  {
-    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 721,
+    "line": 719,
     "context": "getStatusCategory(r.status, statusMap)",
     "destination": "src/utils/calculations.ts::getStatusCategory",
     "functionName": "getStatusCategory"
@@ -4139,30 +4153,44 @@
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
     "line": 722,
-    "context": "checkIfOverdueDynamically(r)",
-    "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
-    "functionName": "checkIfOverdueDynamically"
-  },
-  {
-    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 742,
     "context": "getStatusCategory(r.status, statusMap)",
     "destination": "src/utils/calculations.ts::getStatusCategory",
     "functionName": "getStatusCategory"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
-    "line": 792,
-    "context": "getRevisionWeight(existing.rev)",
-    "destination": "src/utils/calculations.ts::getRevisionWeight",
-    "functionName": "getRevisionWeight"
+    "line": 723,
+    "context": "checkIfOverdueDynamically(r)",
+    "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
+    "functionName": "checkIfOverdueDynamically"
+  },
+  {
+    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+    "line": 743,
+    "context": "getStatusCategory(r.status, statusMap)",
+    "destination": "src/utils/calculations.ts::getStatusCategory",
+    "functionName": "getStatusCategory"
+  },
+  {
+    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+    "line": 780,
+    "context": "getDocumentIdentityKey(r)",
+    "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+    "functionName": "getDocumentIdentityKey"
+  },
+  {
+    "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
+    "line": 788,
+    "context": "getDocumentIdentityKey(r)",
+    "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+    "functionName": "getDocumentIdentityKey"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
     "line": 793,
-    "context": "getRevisionWeight(r.rev)",
-    "destination": "src/utils/calculations.ts::getRevisionWeight",
-    "functionName": "getRevisionWeight"
+    "context": "compareRevisionsCanonical(r.rev, existing.rev)",
+    "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
+    "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/utils/enterpriseAnalyticsEngine.ts",
@@ -4397,70 +4425,70 @@
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1108,
+    "line": 1109,
     "context": "normalizeDiscipline(\n          disciplineVal,\n          activeProjectId,\n        )",
     "destination": "src/utils/calculations.ts::normalizeDiscipline",
     "functionName": "normalizeDiscipline"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1193,
+    "line": 1196,
     "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1254,
+    "line": 1257,
     "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1303,
+    "line": 1306,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1323,
+    "line": 1326,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1336,
+    "line": 1339,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1427,
+    "line": 1430,
     "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
     "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
     "functionName": "mapDocumentToWorkflow"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1560,
+    "line": 1563,
     "context": "normalizeData(parsed)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1573,
+    "line": 1576,
     "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1598,
+    "line": 1601,
     "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"

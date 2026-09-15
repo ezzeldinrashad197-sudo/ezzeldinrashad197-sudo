@@ -258,14 +258,6 @@
     },
     {
       "file": "src/analytics/calculationFoundation.ts",
-      "exportName": "getDocumentIdentityKey",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/calculationFoundation.ts",
       "exportName": "calculateStats",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",

@@ -331,6 +331,7 @@ digraph DependencyGraph {
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/types.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/utils/statusMatrixEngine.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/analytics/revisionResolver.ts";
+  "src/utils/enterpriseAnalyticsEngine.ts" -> "src/analytics/calculationFoundation.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/utils/calculations.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/analytics/statusResolver.ts";
   "src/utils/multiFileParser.ts" -> "src/utils/parser.ts";

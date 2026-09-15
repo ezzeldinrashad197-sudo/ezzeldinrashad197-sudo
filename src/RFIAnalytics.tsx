@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { SubmittalRow, ProjectSettings } from './types';
-import { getRevisionWeight, isRevision0, isFurtherRevision } from './analytics/revisionResolver';
+import { getRevisionWeight, isRevision0, isFurtherRevision, compareRevisionsCanonical } from './analytics/revisionResolver';
 import { getNormalizedStatusCore } from './analytics/analyticsCore';
-import { resolveCanonicalTrade } from './analytics/calculationFoundation';
+import { resolveCanonicalTrade, getDocumentIdentityKey } from './analytics/calculationFoundation';
 const parseRfiDate = (value?: string): Date | null => {
   if (!value) return null;
 
@@ -64,41 +64,65 @@ const targetYear = targetMonth.getFullYear();
 const targetMonthIndex = targetMonth.getMonth();
 
     const buildStats = (isMonthly: boolean) => {
-        const m = new Map<string, Record<string, any>>();
-        rfiData.forEach(row => {
-            if (isMonthly) {
-               const sd = row.submissionDate || row.responseDate;
-const dDate = parseRfiDate(sd);
+        const filteredRows = rfiData.filter(row => {
+          if (!isMonthly) return true;
+          if (!row.submissionDate) return false;
+          const dDate = parseRfiDate(row.submissionDate);
+          if (!dDate) return false;
+          return dDate.getFullYear() === targetYear && dDate.getMonth() === targetMonthIndex;
+        });
 
-if (!dDate) {
-  return;
-}
+        // Group by canonical document identity to track latest revision per entity
+        const entityMap = new Map<string, {
+          rows: SubmittalRow[];
+          latestRow: SubmittalRow;
+          displayDisc: string;
+        }>();
 
-if (
-  dDate.getFullYear() !== targetYear ||
-  dDate.getMonth() !== targetMonthIndex
-) {
-  return;
-}
+        filteredRows.forEach(row => {
+          const canonicalTrade = resolveCanonicalTrade(row);
+          const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
+          const key = getDocumentIdentityKey(row);
+
+          if (!entityMap.has(key)) {
+            entityMap.set(key, { rows: [row], latestRow: row, displayDisc });
+          } else {
+            const ent = entityMap.get(key)!;
+            ent.rows.push(row);
+            const cmp = compareRevisionsCanonical(row.rev, ent.latestRow.rev);
+            if (cmp > 0 || (cmp === 0 && (row.submissionDate || '') > (ent.latestRow.submissionDate || ''))) {
+              ent.latestRow = row;
+              ent.displayDisc = displayDisc;
             }
+          }
+        });
 
-            const canonicalTrade = resolveCanonicalTrade(row);
+        const m = new Map<string, Record<string, any>>();
 
-const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
+        // Workload breakdown across all submitted rows in the period
+        filteredRows.forEach(row => {
+          const canonicalTrade = resolveCanonicalTrade(row);
+          const displayDisc = canonicalTrade.presentationDisc || 'GENERAL';
+          if (!m.has(displayDisc)) {
+            m.set(displayDisc, { items: displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
+          }
+          const st = m.get(displayDisc)!;
+          const isRev0 = isRevision0(row.rev, row.isRev0);
+          const isFurther = isFurtherRevision(row.rev, row.isRev0);
+          if (isRev0) st.rev00++;
+          else if (isFurther) st.furtherRev++;
+        });
 
-            if (!m.has(displayDisc)) m.set(displayDisc, { items: displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
-            const st = m.get(displayDisc)!;
-
-            const isRev0 = isRevision0(row.rev, row.isRev0);
-            const isFurther = isFurtherRevision(row.rev, row.isRev0);
-            if (isRev0) st.rev00++; else if (isFurther) st.furtherRev++;
-            st.total = st.rev00 + st.furtherRev;
-
-            // Use centralized StatusMatrixEngine normalization through analyticsCore
-            const norm = getNormalizedStatusCore(row, projectId, projectInfo);
-            const isClosed = norm === 'CLOSED';
-
-            if (isClosed) st.closed++; else st.pending++;
+        // Current status (Pending / Closed) determined strictly by latest revision of each unique entity
+        entityMap.forEach(ent => {
+          if (!m.has(ent.displayDisc)) {
+            m.set(ent.displayDisc, { items: ent.displayDisc, rev00: 0, furtherRev: 0, total: 0, pending: 0, closed: 0 });
+          }
+          const st = m.get(ent.displayDisc)!;
+          const norm = getNormalizedStatusCore(ent.latestRow, projectId, projectInfo);
+          const isClosed = norm === 'CLOSED';
+          if (isClosed) st.closed++;
+          else st.pending++;
         });
 
         const arr = Array.from(m.values());

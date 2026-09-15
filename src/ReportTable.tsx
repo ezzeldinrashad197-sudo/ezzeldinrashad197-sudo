@@ -78,6 +78,19 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
      return filterFn ? data.filter(filterFn) : data;
   }, [data, filterFn]);
 
+  const contextDataset = useMemo(() => {
+    const base = rawDataset || data;
+    if (!isMonthly) return base;
+    let maxDateStr = '';
+    for (const r of filteredData) {
+      if (r.submissionDate && (!maxDateStr || r.submissionDate > maxDateStr)) {
+        maxDateStr = r.submissionDate;
+      }
+    }
+    if (!maxDateStr) return base;
+    return base.filter(r => !r.submissionDate || r.submissionDate <= maxDateStr);
+  }, [rawDataset, data, isMonthly, filteredData]);
+
   const rowToLabel = (d: SubmittalRow) => {
       let dt = (d.documentType || 'DOC-GEN').trim();
       if (dt === 'DOC') dt = 'DOC-GEN';
@@ -94,7 +107,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
          }) // Exclude NCRs from generic table based on actual documentType
          .map(typeLabel => {
              const matchingRows = filteredData.filter(d => rowToLabel(d) === typeLabel);
-             const stats = calculateStats(matchingRows, rawDataset || data);
+             const stats = calculateStats(matchingRows, contextDataset);
              const criticalCount = matchingRows.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).length;
              return {
                  documentType: typeLabel,
@@ -141,16 +154,16 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              
              return keyA.disc.localeCompare(keyB.disc);
          });
-  }, [filteredData, rawDataset, data]);
+  }, [filteredData, contextDataset]);
 
   const globalCriticalCount = useMemo(() => {
     return filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR' && (d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL'))).length;
   }, [filteredData]);
 
   const globalStats = useMemo(() => {
-       const stats = calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), rawDataset || data);
+       const stats = calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), contextDataset);
        return stats;
-  }, [filteredData, rawDataset, data]);
+  }, [filteredData, contextDataset]);
 
   const sequenceAuditResult = useMemo(() => {
     return runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'));
@@ -250,15 +263,15 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           return { approvalTrend: 3.2, submissionsTrend: 8, overdueTrend: -3 };
       }
       
-      const statsFirst = calculateStats(firstHalf, rawDataset || data);
-      const statsSecond = calculateStats(secondHalf, rawDataset || data);
+      const statsFirst = calculateStats(firstHalf, contextDataset);
+      const statsSecond = calculateStats(secondHalf, contextDataset);
       
       return {
           approvalTrend: parseFloat((statsSecond.approvalRate - statsFirst.approvalRate).toFixed(1)),
           submissionsTrend: statsSecond.totalSubmittedSheets - statsFirst.totalSubmittedSheets,
           overdueTrend: statsSecond.overdue - statsFirst.overdue
       };
-  }, [filteredData, rawDataset, data]);
+  }, [filteredData, contextDataset]);
 
   // Top 5 Oldest Pending Overdue Items
   const topOverdueItems = useMemo(() => {

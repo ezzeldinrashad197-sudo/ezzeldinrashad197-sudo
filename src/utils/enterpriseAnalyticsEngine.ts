@@ -26,6 +26,7 @@ export { DEFAULT_STATUS_MAP, getProjectStatusMap, getNormalizedStatus, checkIfOv
 
 // Canonical revision and status resolvers are imported from dedicated SSOT modules.
 import { getRevisionWeight, compareRevisionsCanonical, isFurtherRevision } from '../analytics/revisionResolver';
+import { getDocumentIdentityKey } from '../analytics/calculationFoundation';
 import { getStatusCodeCategory } from './calculations';
 import { getStatusCategory } from '../analytics/statusResolver';
 export { getStatusCategory } from '../analytics/statusResolver';
@@ -776,7 +777,7 @@ export const calculateLogicalRegisterKPIs = (
   
   const docHistoryMap: Record<string, SubmittalRow[]> = {};
   rows.forEach(r => {
-    const docId = (r.docNo || r.id).trim();
+    const docId = getDocumentIdentityKey(r);
     if (!docHistoryMap[docId]) docHistoryMap[docId] = [];
     docHistoryMap[docId].push(r);
   });
@@ -784,16 +785,15 @@ export const calculateLogicalRegisterKPIs = (
   const cumulativeGroup: Record<string, SubmittalRow> = {};
   rows.forEach(r => {
     if (r.submissionDate && r.submissionDate <= endDate) {
-      const docId = (r.docNo || r.id).trim();
+      const docId = getDocumentIdentityKey(r);
       const existing = cumulativeGroup[docId];
       if (!existing) {
         cumulativeGroup[docId] = r;
       } else {
-        const extRevVal = getRevisionWeight(existing.rev);
-        const curRevVal = getRevisionWeight(r.rev);
-        if (curRevVal > extRevVal) {
+        const cmp = compareRevisionsCanonical(r.rev, existing.rev);
+        if (cmp > 0) {
           cumulativeGroup[docId] = r;
-        } else if (curRevVal === extRevVal) {
+        } else if (cmp === 0) {
           if ((r.submissionDate || '') > (existing.submissionDate || '')) {
             cumulativeGroup[docId] = r;
           }
