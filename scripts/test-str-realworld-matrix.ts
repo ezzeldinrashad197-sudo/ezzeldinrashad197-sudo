@@ -56,13 +56,18 @@ assert(
   `Expected discipline to resolve to Structural, got: ${normalized[0].discipline}`
 );
 assert(
+  normalized[0].trade === 'Structural' || normalized[0].trade === 'STR',
+  'CASE-STR-001.3 Trade Field Locked to Structural',
+  `Expected trade to resolve to Structural, got: ${normalized[0].trade}`
+);
+assert(
   normalized[0].disciplineEvidenceSource === 'REGISTER_LOCK',
-  'CASE-STR-001.3 Audit Evidence Source',
+  'CASE-STR-001.4 Audit Evidence Source',
   `Expected disciplineEvidenceSource to be REGISTER_LOCK, got: ${normalized[0].disciplineEvidenceSource}`
 );
 assert(
   normalized[0].isDisciplineLocked === true,
-  'CASE-STR-001.4 Register Lock Invariant',
+  'CASE-STR-001.5 Register Lock Invariant',
   `Expected isDisciplineLocked to be true, got: ${normalized[0].isDisciplineLocked}`
 );
 
