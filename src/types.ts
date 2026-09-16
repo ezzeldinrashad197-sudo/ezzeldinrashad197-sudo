@@ -200,7 +200,7 @@ export interface KPIStats {
   reconciliationPassed?: boolean;
 
   // 6. Mandatory Missing-Sequence & Population Integrity Control
-  expectedPopulation?: number;       // Expected sequential items count (Max - Min + 1)
+  expectedPopulation?: number | null;       // Expected sequential items count or null if no baseline
   actualRev0Population?: number;     // Actual Rev 00 population found
   missingSequenceCount?: number;     // Expected Population - Actual Rev 00 Population (Delta)
   missingSequenceIds?: string[];     // Sample/All missing formatted document IDs
@@ -242,14 +242,16 @@ export interface RegisterSequenceAudit {
   paddingLength: number;         // e.g. 5
   minSequence: number;           // e.g. 1
   maxSequence: number;            // e.g. 2000
-  expectedPopulation: number;    // e.g. 2000 (max - min + 1)
+  expectedPopulation: number | null;    // null when baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+  baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE';
+  observedGapsCount: number;     // e.g. number of observed sequence jumps
   actualRev0Population: number;  // e.g. 1998
   actualUniquePopulation: number;// e.g. 1998
   totalWorkloadRows: number;     // e.g. 2045
   furtherRevRows: number;        // e.g. 47
   
-  missingCount: number;          // e.g. 2
-  missingIds: string[];          // ["WIR-SUR-00009", "WIR-SUR-00045"]
+  missingCount: number;          // 0 when BASELINE_NOT_ESTABLISHED; contractual delta when baseline present
+  missingIds: string[];          // [] when BASELINE_NOT_ESTABLISHED; actual missing list when baseline present
   sequenceGaps: SequenceGap[];
   duplicateRecords: { docNo: string; rev: string; count: number; ids: string[] }[];
   furtherRevWithoutRev0: { docNo: string; firstRecordedRev: string; count: number }[];
@@ -262,16 +264,18 @@ export interface RegisterSequenceAudit {
 }
 
 export interface SequenceAuditResult {
-  totalExpectedPopulation: number;
+  totalExpectedPopulation: number | null;
   totalActualRev0Population: number;
   totalMissingCount: number;
+  totalObservedGapsCount: number;
   totalDuplicatesCount: number;
   totalFurtherRevWithoutRev0: number;
   totalCrossRegisterCount: number;
   allCrossRegisterRecords: CrossRegisterRecord[];
   allMissingIds: { docType: string; docNo: string; seqNumber: number }[];
   registerAudits: Record<string, RegisterSequenceAudit>;
-  overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY';
+  baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE';
+  overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY' | 'OBSERVATION_ONLY';
   summaryNarrative: string;
   summaryNarrativeAr: string;
 }

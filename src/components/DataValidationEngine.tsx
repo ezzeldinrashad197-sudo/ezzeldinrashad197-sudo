@@ -312,8 +312,8 @@ export default function DataValidationEngine({ data }: Props) {
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-indigo-800/40 mb-8">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="flex items-start gap-4">
-                        <div className={`p-3.5 rounded-xl shrink-0 ${sequenceAuditResult.totalMissingCount === 0 ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-amber-500/20 border border-amber-500/40 text-amber-400'}`}>
-                            {sequenceAuditResult.totalMissingCount === 0 ? <ShieldCheck className="w-8 h-8" /> : <ShieldAlert className="w-8 h-8" />}
+                        <div className={`p-3.5 rounded-xl shrink-0 ${sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'bg-slate-700/40 border border-slate-600/40 text-slate-300' : sequenceAuditResult.totalMissingCount === 0 ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-amber-500/20 border border-amber-500/40 text-amber-400'}`}>
+                            {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? <Eye className="w-8 h-8 text-sky-400" /> : sequenceAuditResult.totalMissingCount === 0 ? <ShieldCheck className="w-8 h-8" /> : <ShieldAlert className="w-8 h-8" />}
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
@@ -321,11 +321,19 @@ export default function DataValidationEngine({ data }: Props) {
                                     Population Reconciliation & Missing Sequence Control
                                 </h2>
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                                    sequenceAuditResult.totalMissingCount === 0 
-                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                    sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                        ? 'bg-slate-700/50 text-slate-200 border-slate-600'
+                                        : sequenceAuditResult.totalMissingCount === 0 
+                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                 }`}>
-                                    {sequenceAuditResult.totalMissingCount === 0 ? '100% Sequence Reconciled' : `${sequenceAuditResult.totalMissingCount} Missing Sequence IDs`}
+                                    {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                        ? (sequenceAuditResult.totalObservedGapsCount > 0 
+                                            ? `${sequenceAuditResult.totalObservedGapsCount} Observed Jumps (Observation Only)` 
+                                            : 'Observation Only (Continuous)')
+                                        : sequenceAuditResult.totalMissingCount === 0 
+                                            ? '100% Sequence Reconciled' 
+                                            : `${sequenceAuditResult.totalMissingCount} Missing Sequence IDs`}
                                 </span>
                             </div>
                             <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
@@ -340,16 +348,28 @@ export default function DataValidationEngine({ data }: Props) {
                     <div className="grid grid-cols-3 gap-4 bg-white/10 p-4 rounded-xl border border-white/10 shrink-0 w-full lg:w-auto">
                         <div className="text-center px-2">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expected Rev 00</span>
-                            <span className="text-2xl font-black text-white font-mono">{sequenceAuditResult.totalExpectedPopulation}</span>
+                            <span className="text-2xl font-black text-white font-mono">
+                                {sequenceAuditResult.totalExpectedPopulation !== null ? sequenceAuditResult.totalExpectedPopulation : 'N/A (Obs.)'}
+                            </span>
                         </div>
                         <div className="text-center px-2 border-x border-white/10">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actual Rev 00</span>
                             <span className="text-2xl font-black text-indigo-300 font-mono">{sequenceAuditResult.totalActualRev0Population}</span>
                         </div>
                         <div className="text-center px-2">
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Missing Delta</span>
-                            <span className={`text-2xl font-black font-mono ${sequenceAuditResult.totalMissingCount === 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {sequenceAuditResult.totalMissingCount}
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'Observed Gaps' : 'Missing Delta'}
+                            </span>
+                            <span className={`text-2xl font-black font-mono ${
+                                sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                    ? 'text-sky-300'
+                                    : sequenceAuditResult.totalMissingCount === 0 
+                                        ? 'text-emerald-400' 
+                                        : 'text-rose-400'
+                            }`}>
+                                {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                    ? sequenceAuditResult.totalObservedGapsCount
+                                    : sequenceAuditResult.totalMissingCount}
                             </span>
                         </div>
                     </div>
@@ -365,9 +385,19 @@ export default function DataValidationEngine({ data }: Props) {
                     </div>
                 </div>
                 <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
-                    <AlertTriangle className={`w-8 h-8 ${sequenceAuditResult.totalMissingCount > 0 ? 'text-rose-500' : 'text-emerald-500'} mb-2`} />
-                    <span className="text-3xl font-bold text-slate-900">{sequenceAuditResult.totalMissingCount}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">Missing Expected IDs</span>
+                    <AlertTriangle className={`w-8 h-8 ${
+                        sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' 
+                            ? 'text-slate-400' 
+                            : sequenceAuditResult.totalMissingCount > 0 
+                                ? 'text-rose-500' 
+                                : 'text-emerald-500'
+                    } mb-2`} />
+                    <span className="text-3xl font-bold text-slate-900">
+                        {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 0 : sequenceAuditResult.totalMissingCount}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase text-center mt-1">
+                        {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'Confirmed Missing IDs' : 'Missing Expected IDs'}
+                    </span>
                 </div>
                 <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-center">
                     <DatabaseZap className="w-8 h-8 text-purple-500 mb-2" />
@@ -487,11 +517,15 @@ export default function DataValidationEngine({ data }: Props) {
                                                     Range: {reg.prefix}{String(reg.minSequence).padStart(reg.paddingLength, '0')} → {reg.prefix}{String(reg.maxSequence).padStart(reg.paddingLength, '0')}
                                                 </span>
                                                 <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
-                                                    reg.isSequenceFullyReconciled
-                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                                        ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                                        : reg.isSequenceFullyReconciled
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200'
                                                 }`}>
-                                                    {reg.isSequenceFullyReconciled ? 'Reconciled 100%' : `${reg.missingCount} Missing Sequence Numbers`}
+                                                    {reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                                        ? (reg.observedGapsCount > 0 ? `${reg.observedGapsCount} Observed Jumps (Observation Only)` : 'Observation Only (Continuous)')
+                                                        : (reg.isSequenceFullyReconciled ? 'Reconciled 100%' : `${reg.missingCount} Missing Sequence Numbers`)}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-slate-600 mt-1 font-medium">
@@ -505,7 +539,9 @@ export default function DataValidationEngine({ data }: Props) {
                                         <div className="flex items-center gap-6 bg-slate-50 px-4 py-2.5 rounded-lg border border-slate-200 shrink-0 text-xs">
                                             <div>
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Expected</span>
-                                                <span className="font-bold text-slate-900 text-sm font-mono">{reg.expectedPopulation}</span>
+                                                <span className="font-bold text-slate-900 text-sm font-mono">
+                                                    {reg.expectedPopulation !== null ? reg.expectedPopulation : 'N/A'}
+                                                </span>
                                             </div>
                                             <div className="border-l border-slate-200 pl-4">
                                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Actual Rev 00</span>
@@ -516,21 +552,27 @@ export default function DataValidationEngine({ data }: Props) {
                                                 <span className="font-bold text-purple-600 text-sm font-mono">{reg.furtherRevRows}</span>
                                             </div>
                                             <div className="border-l border-slate-200 pl-4">
-                                                <span className="block text-[10px] font-bold text-slate-400 uppercase">Missing</span>
-                                                <span className={`font-bold text-sm font-mono ${reg.missingCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                    {reg.missingCount}
+                                                <span className="block text-[10px] font-bold text-slate-400 uppercase">
+                                                    {reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'Observed Gaps' : 'Missing'}
+                                                </span>
+                                                <span className={`font-bold text-sm font-mono ${
+                                                    reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                                        ? 'text-sky-600'
+                                                        : reg.missingCount > 0 ? 'text-rose-600' : 'text-emerald-600'
+                                                }`}>
+                                                    {reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? reg.observedGapsCount : reg.missingCount}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Missing IDs & Gaps Breakdown */}
-                                    {reg.missingCount > 0 && (
+                                    {/* Authoritative Missing IDs Breakdown */}
+                                    {reg.baselineStatus === 'AUTHORITATIVE_BASELINE' && reg.missingCount > 0 && (
                                         <div className="bg-rose-50/60 border border-rose-200 p-4 rounded-lg mt-3">
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
                                                     <AlertTriangle className="w-4 h-4 text-rose-600" />
-                                                    Missing Document Numbers in Sequence ({reg.missingCount}):
+                                                    Authoritative Missing Document Numbers ({reg.missingCount}):
                                                 </span>
                                                 <span className="text-[11px] text-rose-700 font-medium">Click ID to copy</span>
                                             </div>
@@ -545,6 +587,25 @@ export default function DataValidationEngine({ data }: Props) {
                                                         {copiedDocId === mid ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3 text-rose-400" />}
                                                         {mid}
                                                     </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Observed Sequence Gaps (Observation Only) */}
+                                    {reg.baselineStatus === 'BASELINE_NOT_ESTABLISHED' && reg.sequenceGaps.length > 0 && (
+                                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg mt-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                                    <Eye className="w-4 h-4 text-sky-600" />
+                                                    Observed Sequence Discontinuity Intervals ({reg.sequenceGaps.length}) — Observation Only (No Contractual Baseline)
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {reg.sequenceGaps.map((gap, gIdx) => (
+                                                    <span key={gIdx} className="px-2.5 py-1 bg-white text-slate-700 border border-slate-200 rounded font-mono text-xs">
+                                                        {gap.formattedRange} <span className="text-slate-400">({gap.count} jumps)</span>
+                                                    </span>
                                                 ))}
                                             </div>
                                         </div>

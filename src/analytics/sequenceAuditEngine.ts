@@ -119,11 +119,28 @@ export const formatSequenceID = (prefix: string, seqNum: number, padding: number
  * Analyzes sequence integrity, detects missing records, gaps, and population deltas for a specific register group.
  * Supports cross-register sequence reconciliation against the full dataset.
  */
+export interface SequenceAuditOptions {
+  authoritativeExpectedIds?: string[];
+  authoritativeExpectedIdsByRegister?: Record<string, string[]>;
+  authoritativeRange?: {
+    min: number;
+    max: number;
+    status: 'RANGE_ONLY';
+  };
+}
+
 export const auditRegisterSequence = (
   docType: string, 
   rows: SubmittalRow[],
-  allDatasetRows?: SubmittalRow[]
+  allDatasetRows?: SubmittalRow[],
+  options?: SequenceAuditOptions
 ): RegisterSequenceAudit => {
+  const rawExpectedIds = options?.authoritativeExpectedIdsByRegister?.[docType] ?? options?.authoritativeExpectedIds;
+  const hasAuthoritativeBaseline = Array.isArray(rawExpectedIds) && rawExpectedIds.length > 0;
+  const baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE' = hasAuthoritativeBaseline 
+    ? 'AUTHORITATIVE_BASELINE' 
+    : 'BASELINE_NOT_ESTABLISHED';
+
   if (!rows || rows.length === 0) {
     return {
       docType,
@@ -131,22 +148,28 @@ export const auditRegisterSequence = (
       paddingLength: 5,
       minSequence: 0,
       maxSequence: 0,
-      expectedPopulation: 0,
+      expectedPopulation: hasAuthoritativeBaseline ? rawExpectedIds!.length : null,
+      baselineStatus,
+      observedGapsCount: 0,
       actualRev0Population: 0,
       actualUniquePopulation: 0,
       totalWorkloadRows: 0,
       furtherRevRows: 0,
-      missingCount: 0,
-      missingIds: [],
+      missingCount: hasAuthoritativeBaseline ? rawExpectedIds!.length : 0,
+      missingIds: hasAuthoritativeBaseline ? [...rawExpectedIds!] : [],
       sequenceGaps: [],
       duplicateRecords: [],
       furtherRevWithoutRev0: [],
       malformedIds: [],
       crossRegisterRecords: [],
       crossRegisterCount: 0,
-      isSequenceFullyReconciled: true,
-      deltaExplanation: 'No records present for this register.',
-      deltaExplanationAr: 'لا توجد سجلات مسجلة لهذا النوع من المعاملات.'
+      isSequenceFullyReconciled: !hasAuthoritativeBaseline || rawExpectedIds!.length === 0,
+      deltaExplanation: hasAuthoritativeBaseline 
+        ? `Authoritative Baseline expects ${rawExpectedIds!.length} items, but no records are present.` 
+        : 'No records present for this register (Observation Only).',
+      deltaExplanationAr: hasAuthoritativeBaseline 
+        ? `خط الأساس المعتمد يحدد ${rawExpectedIds!.length} وثيقة، ولكن لا توجد سجلات مسجلة.` 
+        : 'لا توجد سجلات مسجلة لهذا النوع من المعاملات (بيان استطلاعي للملاحظة فقط).'
     };
   }
 
@@ -320,7 +343,7 @@ export const auditRegisterSequence = (
 
   // Calculate Expected Sequence Range
   const allSeqArray = Array.from(allEntitySequenceNumbers);
-  let minSeq = 1;
+  let minSeq = 0;
   let maxSeq = 0;
 
   if (allSeqArray.length > 0) {
@@ -330,90 +353,160 @@ export const auditRegisterSequence = (
     maxSeq = rawMax;
   }
 
-  const expectedPopulation = maxSeq >= minSeq ? (maxSeq - minSeq + 1) : 0;
   const actualRev0Population = rev0SequenceNumbers.size;
   const actualUniquePopulation = entityHistory.size;
 
-  // Identify Missing Sequence IDs & Reconcile Cross-Register Records
+  let expectedPopulation: number | null = null;
   const missingNumbers: number[] = [];
   const missingIds: string[] = [];
   const sequenceGaps: SequenceGap[] = [];
 
-  if (expectedPopulation > 0 && maxSeq > 0) {
-    let currentGapStart: number | null = null;
-    let currentGapEnd: number | null = null;
+  let currentGapStart: number | null = null;
+  let currentGapEnd: number | null = null;
 
-    const commitCurrentGap = () => {
-      if (currentGapStart !== null && currentGapEnd !== null) {
-        const gapCount = currentGapEnd - currentGapStart + 1;
-        const sample = [
-          formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix),
-          ...(gapCount > 2 ? ['...'] : []),
-          ...(gapCount > 1 ? [formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)] : [])
-        ];
-        sequenceGaps.push({
-          fromNumber: currentGapStart,
-          toNumber: currentGapEnd,
-          count: gapCount,
-          formattedRange: currentGapStart === currentGapEnd 
-            ? formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)
-            : `${formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)} → ${formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)}`,
-          sampleMissingIds: sample
-        });
-        currentGapStart = null;
-        currentGapEnd = null;
+  const commitCurrentGap = () => {
+    if (currentGapStart !== null && currentGapEnd !== null) {
+      const gapCount = currentGapEnd - currentGapStart + 1;
+      const sample = [
+        formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix),
+        ...(gapCount > 2 ? ['...'] : []),
+        ...(gapCount > 1 ? [formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)] : [])
+      ];
+      sequenceGaps.push({
+        fromNumber: currentGapStart,
+        toNumber: currentGapEnd,
+        count: gapCount,
+        formattedRange: currentGapStart === currentGapEnd 
+          ? formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)
+          : `${formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)} → ${formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)}`,
+        sampleMissingIds: sample
+      });
+      currentGapStart = null;
+      currentGapEnd = null;
+    }
+  };
+
+  if (hasAuthoritativeBaseline) {
+    // -------------------------------------------------------------------------
+    // PATH 1: AUTHORITATIVE BASELINE ESTABLISHED
+    // Missing IDs are extracted SOLELY and STRICTLY from the authoritative list
+    // -------------------------------------------------------------------------
+    expectedPopulation = rawExpectedIds!.length;
+
+    // Collect all actual normalized keys in this register
+    const actualNormalizedKeys = new Set<string>();
+    entityHistory.forEach((_, docNo) => {
+      const trimmed = docNo.trim().toUpperCase();
+      actualNormalizedKeys.add(trimmed);
+      const parsed = parseDocIdentifier(docNo);
+      if (parsed.sequenceNumber !== null) {
+        actualNormalizedKeys.add(String(parsed.sequenceNumber));
+        actualNormalizedKeys.add(formatSequenceID(dominantPrefix, parsed.sequenceNumber, dominantPadding, dominantSuffix).toUpperCase());
       }
-    };
+    });
 
-    for (let s = minSeq; s <= maxSeq; s++) {
-      if (rev0SequenceNumbers.has(s) || allEntitySequenceNumbers.has(s)) {
-        // Valid or Further Rev present in this register
+    for (const expId of rawExpectedIds!) {
+      const cleanExpId = String(expId).trim();
+      const cleanExpKey = cleanExpId.toUpperCase();
+      const parsedExp = parseDocIdentifier(cleanExpId);
+      const expSeqNum = parsedExp.sequenceNumber;
+
+      const isPresent = actualNormalizedKeys.has(cleanExpKey) ||
+        (expSeqNum !== null && (allEntitySequenceNumbers.has(expSeqNum) || rev0SequenceNumbers.has(expSeqNum)));
+
+      if (isPresent) {
+        commitCurrentGap();
+        continue;
+      }
+
+      // Check global cross-register reconciliation
+      const candSeqKey = expSeqNum !== null ? `${dominantPrefix.toUpperCase()}__${expSeqNum}` : null;
+      const foundInGlobal = globalDocMap.get(cleanExpKey) || (candSeqKey ? globalSeqMap.get(candSeqKey) : undefined);
+
+      if (foundInGlobal && foundInGlobal.length > 0) {
+        const matched = foundInGlobal[0];
+        const actualReg = matched.reg || 'OTHER-REGISTER';
+        crossRegisterRecords.push({
+          docNo: cleanExpId,
+          seqNumber: expSeqNum || 0,
+          actualRegister: actualReg,
+          expectedRegister: docType,
+          rev: String(matched.row.rev || '00').trim(),
+          disposition: 'CROSS_REGISTER',
+          reasonEn: `Expected sequence candidate ${cleanExpId} exists as a valid source record in ${actualReg} register.`,
+          reasonAr: `المعاملة المتسلسلة ${cleanExpId} مسجلة وموجودة فعلياً كسجل صالح في سجل ${actualReg}.`
+        });
         commitCurrentGap();
       } else {
-        // Not in this register's rows. Check global cross-register existence!
-        const candidateFormatted = formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix);
-        const candidateKey = candidateFormatted.trim().toUpperCase();
-        const candidateSeqKey = `${dominantPrefix.toUpperCase()}__${s}`;
-
-        const foundInGlobal = globalDocMap.get(candidateKey) || globalSeqMap.get(candidateSeqKey);
-
-        if (foundInGlobal && foundInGlobal.length > 0) {
-          // Cross-Register Match! Record exists in source dataset under another register.
-          const matched = foundInGlobal[0];
-          const actualReg = matched.reg || 'OTHER-REGISTER';
-
-          crossRegisterRecords.push({
-            docNo: candidateFormatted,
-            seqNumber: s,
-            actualRegister: actualReg,
-            expectedRegister: docType,
-            rev: String(matched.row.rev || '00').trim(),
-            disposition: 'CROSS_REGISTER',
-            reasonEn: `Expected sequence candidate ${candidateFormatted} exists as a valid source record in ${actualReg} register.`,
-            reasonAr: `المعاملة المتسلسلة ${candidateFormatted} مسجلة وموجودة فعلياً كسجل صالح في سجل ${actualReg}.`
-          });
-
-          // NOT MISSING! Close any open gap.
-          commitCurrentGap();
-        } else {
-          // TRUE MISSING GAP
-          missingNumbers.push(s);
-          missingIds.push(candidateFormatted);
-
+        // Genuine missing document confirmed by contractual baseline
+        missingIds.push(cleanExpId);
+        if (expSeqNum !== null) {
+          missingNumbers.push(expSeqNum);
           if (currentGapStart === null) {
-            currentGapStart = s;
-            currentGapEnd = s;
+            currentGapStart = expSeqNum;
+            currentGapEnd = expSeqNum;
+          } else if (expSeqNum === currentGapEnd + 1) {
+            currentGapEnd = expSeqNum;
           } else {
-            currentGapEnd = s;
+            commitCurrentGap();
+            currentGapStart = expSeqNum;
+            currentGapEnd = expSeqNum;
           }
         }
       }
     }
-
     commitCurrentGap();
+  } else {
+    // -------------------------------------------------------------------------
+    // PATH 2: BASELINE NOT ESTABLISHED (OBSERVATION ONLY)
+    // expectedPopulation = null (Never max - min + 1; Never actualUniquePopulation)
+    // missingIds = [] (Never generate false missing documents)
+    // missingCount = 0
+    // Record sequence discontinuities as observed sequence gaps for technical inspection only
+    // -------------------------------------------------------------------------
+    expectedPopulation = null;
+
+    if (allSeqArray.length > 0 && maxSeq >= minSeq && minSeq > 0) {
+      for (let s = minSeq; s <= maxSeq; s++) {
+        if (rev0SequenceNumbers.has(s) || allEntitySequenceNumbers.has(s)) {
+          commitCurrentGap();
+        } else {
+          const candidateFormatted = formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix);
+          const candidateKey = candidateFormatted.trim().toUpperCase();
+          const candidateSeqKey = `${dominantPrefix.toUpperCase()}__${s}`;
+          const foundInGlobal = globalDocMap.get(candidateKey) || globalSeqMap.get(candidateSeqKey);
+
+          if (foundInGlobal && foundInGlobal.length > 0) {
+            const matched = foundInGlobal[0];
+            const actualReg = matched.reg || 'OTHER-REGISTER';
+            crossRegisterRecords.push({
+              docNo: candidateFormatted,
+              seqNumber: s,
+              actualRegister: actualReg,
+              expectedRegister: docType,
+              rev: String(matched.row.rev || '00').trim(),
+              disposition: 'CROSS_REGISTER',
+              reasonEn: `Observed sequence jump ${candidateFormatted} exists as a valid source record in ${actualReg} register.`,
+              reasonAr: `القفزة المتسلسلة ${candidateFormatted} مسجلة وموجودة فعلياً كسجل صالح في سجل ${actualReg}.`
+            });
+            commitCurrentGap();
+          } else {
+            // Observed discontinuity interval (Observation Only - NOT a missing document)
+            if (currentGapStart === null) {
+              currentGapStart = s;
+              currentGapEnd = s;
+            } else {
+              currentGapEnd = s;
+            }
+          }
+        }
+      }
+      commitCurrentGap();
+    }
   }
 
   const missingCount = missingIds.length;
+  const observedGapsCount = sequenceGaps.length;
   const crossRegisterCount = crossRegisterRecords.length;
   const isSequenceFullyReconciled = missingCount === 0 && duplicateRecords.length === 0;
 
@@ -424,24 +517,34 @@ export const auditRegisterSequence = (
   const crNote = crossRegisterCount > 0 ? ` (${crossRegisterCount} verified via Cross-Register source records)` : '';
   const crNoteAr = crossRegisterCount > 0 ? ` (تمت مطابقة ${crossRegisterCount} سجل عبر سجلات متداخلة)` : '';
 
-  if (isSequenceFullyReconciled) {
-    deltaExplanation = `Sequence perfectly reconciled: Expected ${expectedPopulation} = Actual Rev.00 (${actualRev0Population}) across range ${minSeq} to ${maxSeq}${crNote}.`;
-    deltaExplanationAr = `التسلسل مطابق بنسبة 100%: العدد المتوقع ${expectedPopulation} = عدد مراجعات 00 الفعلي (${actualRev0Population}) ضمن النطاق ${minSeq} إلى ${maxSeq}${crNoteAr}.`;
+  if (!hasAuthoritativeBaseline) {
+    if (observedGapsCount === 0) {
+      deltaExplanation = `Continuous sequence observed from ${dominantPrefix}${minSeq} to ${dominantPrefix}${maxSeq} (${actualRev0Population} Rev.00 items). Baseline Not Established (Observation Only).${crNote}`;
+      deltaExplanationAr = `تسلسل مستمر مرصود من ${dominantPrefix}${minSeq} إلى ${dominantPrefix}${maxSeq} (${actualRev0Population} معاملة مراجعة 00). لم يتم تحديد خط أساس معتمد (بيان استطلاعي للملاحظة فقط).${crNoteAr}`;
+    } else {
+      deltaExplanation = `Observation Only (Baseline Not Established): Observed span ${dominantPrefix}${minSeq} to ${dominantPrefix}${maxSeq} (${actualRev0Population} Rev.00 items). Detected ${observedGapsCount} sequence discontinuity gap(s) without contractual baseline. Missing IDs not asserted.${crNote}`;
+      deltaExplanationAr = `بيان استطلاعي للملاحظة فقط (خط الأساس غير معتمد): النطاق المرصود من ${dominantPrefix}${minSeq} إلى ${dominantPrefix}${maxSeq} (${actualRev0Population} معاملة مراجعة 00). تم رصد ${observedGapsCount} فجوة انقطاع تسلسلي دون توفر خط أساس تعاقدي. لا توجد وثائق مفقودة مؤكدة.${crNoteAr}`;
+    }
   } else {
-    const missingSummaryEn = missingCount > 0 ? `${missingCount} missing sequence ID${missingCount > 1 ? 's' : ''} (e.g. ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : '';
-    const missingSummaryAr = missingCount > 0 ? `${missingCount} رقم متسلسل مفقود من مراجعة 00 (مثل: ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})` : '';
-    
-    const furtherSummaryEn = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} entities started at Further Revisions without Rev.00` : '';
-    const furtherSummaryAr = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} معاملة مسجلة فقط بمراجعات لاحقة دون مراجعة 00` : '';
+    if (isSequenceFullyReconciled) {
+      deltaExplanation = `Authoritative Baseline fully reconciled: Expected ${expectedPopulation} = Actual Rev.00 (${actualRev0Population})${crNote}.`;
+      deltaExplanationAr = `خط الأساس المعتمد مطابق بنسبة 100%: المتوقع ${expectedPopulation} = الفعلي لمراجعة 00 (${actualRev0Population})${crNoteAr}.`;
+    } else {
+      const missingSummaryEn = `${missingCount} missing sequence ID${missingCount > 1 ? 's' : ''} (e.g. ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})`;
+      const missingSummaryAr = `${missingCount} رقم متسلسل مفقود من مراجعة 00 (مثل: ${missingIds.slice(0, 3).join(', ')}${missingIds.length > 3 ? '...' : ''})`;
+      
+      const furtherSummaryEn = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} entities started at Further Revisions without Rev.00` : '';
+      const furtherSummaryAr = furtherRevWithoutRev0.length > 0 ? `${furtherRevWithoutRev0.length} معاملة مسجلة فقط بمراجعات لاحقة دون مراجعة 00` : '';
 
-    const crSummaryEn = crossRegisterCount > 0 ? `${crossRegisterCount} cross-register records reconciled` : '';
-    const crSummaryAr = crossRegisterCount > 0 ? `${crossRegisterCount} معاملة متداخلة تمت مطابقتها` : '';
+      const crSummaryEn = crossRegisterCount > 0 ? `${crossRegisterCount} cross-register records reconciled` : '';
+      const crSummaryAr = crossRegisterCount > 0 ? `${crossRegisterCount} معاملة متداخلة تمت مطابقتها` : '';
 
-    const partsEn = [missingSummaryEn, furtherSummaryEn, crSummaryEn].filter(Boolean).join('; ');
-    const partsAr = [missingSummaryAr, furtherSummaryAr, crSummaryAr].filter(Boolean).join('؛ ');
+      const partsEn = [missingSummaryEn, furtherSummaryEn, crSummaryEn].filter(Boolean).join('; ');
+      const partsAr = [missingSummaryAr, furtherSummaryAr, crSummaryAr].filter(Boolean).join('؛ ');
 
-    deltaExplanation = `Sequence Delta Detected: Expected ${expectedPopulation} (from ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} to ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')}), Found Rev.00 = ${actualRev0Population}. Delta = ${missingCount}. Details: ${partsEn}.`;
-    deltaExplanationAr = `تم رصد فجوة في التسلسل: المتوقع ${expectedPopulation} (من ${dominantPrefix}${String(minSeq).padStart(dominantPadding, '0')} حتى ${dominantPrefix}${String(maxSeq).padStart(dominantPadding, '0')})، الفعلي لمراجعة 00 = ${actualRev0Population}. الفارق = ${missingCount}. التفاصيل: ${partsAr}.`;
+      deltaExplanation = `Authoritative Baseline Delta: Expected ${expectedPopulation}, Found Rev.00 = ${actualRev0Population}. Delta = ${missingCount}. Details: ${partsEn}.`;
+      deltaExplanationAr = `فارق خط الأساس المعتمد: المتوقع ${expectedPopulation}، الفعلي لمراجعة 00 = ${actualRev0Population}. الفارق = ${missingCount}. التفاصيل: ${partsAr}.`;
+    }
   }
 
   return {
@@ -451,6 +554,8 @@ export const auditRegisterSequence = (
     minSequence: minSeq,
     maxSequence: maxSeq,
     expectedPopulation,
+    baselineStatus,
+    observedGapsCount,
     actualRev0Population,
     actualUniquePopulation,
     totalWorkloadRows,
@@ -472,19 +577,33 @@ export const auditRegisterSequence = (
 /**
  * Analyzes the complete dataset across all registers/document types and generates full population reconciliation.
  */
-export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAuditResult => {
+export const runComprehensiveSequenceAudit = (
+  rows: SubmittalRow[],
+  options?: SequenceAuditOptions
+): SequenceAuditResult => {
+  const hasAuthoritativeBaseline = Boolean(
+    (options?.authoritativeExpectedIds && options.authoritativeExpectedIds.length > 0) ||
+    (options?.authoritativeExpectedIdsByRegister && Object.values(options.authoritativeExpectedIdsByRegister).some(arr => arr.length > 0))
+  );
+
+  const baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE' = hasAuthoritativeBaseline
+    ? 'AUTHORITATIVE_BASELINE'
+    : 'BASELINE_NOT_ESTABLISHED';
+
   if (!rows || rows.length === 0) {
     return {
-      totalExpectedPopulation: 0,
+      totalExpectedPopulation: hasAuthoritativeBaseline ? (options?.authoritativeExpectedIds?.length ?? 0) : null,
       totalActualRev0Population: 0,
       totalMissingCount: 0,
+      totalObservedGapsCount: 0,
       totalDuplicatesCount: 0,
       totalFurtherRevWithoutRev0: 0,
       totalCrossRegisterCount: 0,
       allCrossRegisterRecords: [],
       allMissingIds: [],
       registerAudits: {},
-      overallStatus: 'PERFECT_MATCH',
+      baselineStatus,
+      overallStatus: hasAuthoritativeBaseline ? 'PERFECT_MATCH' : 'OBSERVATION_ONLY',
       summaryNarrative: 'No records to audit.',
       summaryNarrativeAr: 'لا توجد سجلات للتدقيق.'
     };
@@ -501,9 +620,11 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
   });
 
   const registerAudits: Record<string, RegisterSequenceAudit> = {};
-  let totalExpectedPopulation = 0;
+  let anyBaselineSet = false;
+  let totalExpectedPopulationSum = 0;
   let totalActualRev0Population = 0;
   let totalMissingCount = 0;
+  let totalObservedGapsCount = 0;
   let totalDuplicatesCount = 0;
   let totalFurtherRevWithoutRev0 = 0;
   let totalCrossRegisterCount = 0;
@@ -511,12 +632,16 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
   const allMissingIds: { docType: string; docNo: string; seqNumber: number }[] = [];
 
   groups.forEach((groupRows, dt) => {
-    const audit = auditRegisterSequence(dt, groupRows, rows);
+    const audit = auditRegisterSequence(dt, groupRows, rows, options);
     registerAudits[dt] = audit;
 
-    totalExpectedPopulation += audit.expectedPopulation;
+    if (audit.expectedPopulation !== null) {
+      anyBaselineSet = true;
+      totalExpectedPopulationSum += audit.expectedPopulation;
+    }
     totalActualRev0Population += audit.actualRev0Population;
     totalMissingCount += audit.missingCount;
+    totalObservedGapsCount += audit.observedGapsCount;
     totalDuplicatesCount += audit.duplicateRecords.length;
     totalFurtherRevWithoutRev0 += audit.furtherRevWithoutRev0.length;
     totalCrossRegisterCount += audit.crossRegisterCount;
@@ -532,31 +657,48 @@ export const runComprehensiveSequenceAudit = (rows: SubmittalRow[]): SequenceAud
     });
   });
 
-  const overallStatus = totalMissingCount === 0 && totalDuplicatesCount === 0 
-    ? 'PERFECT_MATCH' 
-    : (totalMissingCount > 50 ? 'CRITICAL_DISCREPANCY' : 'GAPS_DETECTED');
+  const totalExpectedPopulation: number | null = anyBaselineSet ? totalExpectedPopulationSum : null;
+
+  let overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY' | 'OBSERVATION_ONLY';
+  if (!hasAuthoritativeBaseline) {
+    overallStatus = 'OBSERVATION_ONLY';
+  } else if (totalMissingCount === 0 && totalDuplicatesCount === 0) {
+    overallStatus = 'PERFECT_MATCH';
+  } else if (totalMissingCount > 50) {
+    overallStatus = 'CRITICAL_DISCREPANCY';
+  } else {
+    overallStatus = 'GAPS_DETECTED';
+  }
 
   const crSuffixEn = totalCrossRegisterCount > 0 ? ` [${totalCrossRegisterCount} Cross-Register records reconciled]` : '';
   const crSuffixAr = totalCrossRegisterCount > 0 ? ` [تمت مطابقة ${totalCrossRegisterCount} سجل متداخل بين الجداول]` : '';
 
-  const summaryNarrative = totalMissingCount === 0
-    ? `All ${Object.keys(registerAudits).length} registers show 100% continuous sequence reconciliation (${totalActualRev0Population} / ${totalExpectedPopulation})${crSuffixEn}.`
-    : `Forensic Sequence Audit detected ${totalMissingCount} missing expected sequence records across ${Object.keys(registerAudits).length} registers. Expected Rev.00: ${totalExpectedPopulation}, Actual Rev.00: ${totalActualRev0Population}, Delta: ${totalMissingCount}${crSuffixEn}.`;
+  let summaryNarrative = '';
+  let summaryNarrativeAr = '';
 
-  const summaryNarrativeAr = totalMissingCount === 0
-    ? `كافة السجلات (${Object.keys(registerAudits).length} نوع) متطابقة بنسبة 100% دون أي فجوة تسلسل (${totalActualRev0Population} / ${totalExpectedPopulation})${crSuffixAr}.`
-    : `تدقيق التسلسل الجنائي رصد ${totalMissingCount} رقماً متسلسلاً مفقوداً عبر ${Object.keys(registerAudits).length} نوع من السجلات. المتوقع لمراجعة 00: ${totalExpectedPopulation}، الفعلي لمراجعة 00: ${totalActualRev0Population}، الفارق: ${totalMissingCount}${crSuffixAr}.`;
+  if (!hasAuthoritativeBaseline) {
+    summaryNarrative = `Baseline Not Established (Observation Only): Reconciled ${totalActualRev0Population} Rev.00 documents across ${Object.keys(registerAudits).length} registers. Observed ${totalObservedGapsCount} sequence discontinuity gap(s) for technical inspection. Zero Missing IDs asserted without authoritative contractual baseline.${crSuffixEn}`;
+    summaryNarrativeAr = `خط الأساس غير معتمد (بيان استطلاعي للملاحظة فقط): تم حصر ${totalActualRev0Population} معاملة مراجعة 00 عبر ${Object.keys(registerAudits).length} نوع من السجلات. تم رصد ${totalObservedGapsCount} فجوة انقطاع تسلسلي للاطلاع الفني. لا توجد وثائق مفقودة مؤكدة لعدم وجود خط أساس تعاقدي معتمد.${crSuffixAr}`;
+  } else if (totalMissingCount === 0) {
+    summaryNarrative = `All ${Object.keys(registerAudits).length} registers show 100% continuous sequence reconciliation (${totalActualRev0Population} / ${totalExpectedPopulation})${crSuffixEn}.`;
+    summaryNarrativeAr = `كافة السجلات (${Object.keys(registerAudits).length} نوع) متطابقة بنسبة 100% دون أي فجوة تسلسل (${totalActualRev0Population} / ${totalExpectedPopulation})${crSuffixAr}.`;
+  } else {
+    summaryNarrative = `Forensic Sequence Audit detected ${totalMissingCount} missing expected sequence records across ${Object.keys(registerAudits).length} registers. Expected Rev.00: ${totalExpectedPopulation}, Actual Rev.00: ${totalActualRev0Population}, Delta: ${totalMissingCount}${crSuffixEn}.`;
+    summaryNarrativeAr = `تدقيق التسلسل الجنائي رصد ${totalMissingCount} رقماً متسلسلاً مفقوداً عبر ${Object.keys(registerAudits).length} نوع من السجلات. المتوقع لمراجعة 00: ${totalExpectedPopulation}، الفعلي لمراجعة 00: ${totalActualRev0Population}، الفارق: ${totalMissingCount}${crSuffixAr}.`;
+  }
 
   return {
     totalExpectedPopulation,
     totalActualRev0Population,
     totalMissingCount,
+    totalObservedGapsCount,
     totalDuplicatesCount,
     totalFurtherRevWithoutRev0,
     totalCrossRegisterCount,
     allCrossRegisterRecords,
     allMissingIds,
     registerAudits,
+    baselineStatus,
     overallStatus,
     summaryNarrative,
     summaryNarrativeAr
