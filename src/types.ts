@@ -266,6 +266,7 @@ export interface RegisterSequenceAudit {
 export interface SequenceAuditResult {
   totalExpectedPopulation: number | null;
   totalActualRev0Population: number;
+  totalBaselineActualRev0Population?: number;
   totalMissingCount: number;
   totalObservedGapsCount: number;
   totalDuplicatesCount: number;
@@ -274,8 +275,10 @@ export interface SequenceAuditResult {
   allCrossRegisterRecords: CrossRegisterRecord[];
   allMissingIds: { docType: string; docNo: string; seqNumber: number }[];
   registerAudits: Record<string, RegisterSequenceAudit>;
-  baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE';
-  overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY' | 'OBSERVATION_ONLY';
+  baselineStatus: 'BASELINE_NOT_ESTABLISHED' | 'AUTHORITATIVE_BASELINE' | 'MIXED_BASELINE';
+  baselineRegistersCount?: number;
+  observationalRegistersCount?: number;
+  overallStatus: 'PERFECT_MATCH' | 'GAPS_DETECTED' | 'CRITICAL_DISCREPANCY' | 'OBSERVATION_ONLY' | 'PARTIAL_RECONCILED';
   summaryNarrative: string;
   summaryNarrativeAr: string;
 }

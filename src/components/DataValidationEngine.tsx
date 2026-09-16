@@ -211,11 +211,17 @@ export default function DataValidationEngine({ data }: Props) {
 
     const handleExport = () => {
         if (activeTab === 'sequence_audit') {
-            let csv = '\uFEFFRegister,Prefix,Expected Population,Actual Rev 00,Missing Count,Range From,Range To,Sequence Gaps,Missing Sample IDs\r\n';
+            let csv = '\uFEFFRegister,Prefix,Baseline Status,Expected Population (Authoritative),Actual Rev 00,Confirmed Missing Count,Observed Discontinuity Gaps Count,Range Min,Range Max,Observed Sequence Discontinuity Intervals,Confirmed Missing Document IDs\r\n';
             Object.values(sequenceAuditResult.registerAudits).forEach(reg => {
                 const gapsStr = reg.sequenceGaps.map(g => g.formattedRange).join('; ');
                 const missingStr = reg.missingIds.join('; ');
-                csv += `"${reg.docType}","${reg.prefix}",${reg.expectedPopulation},${reg.actualRev0Population},${reg.missingCount},"${reg.prefix}${String(reg.minSequence).padStart(reg.paddingLength, '0')}","${reg.prefix}${String(reg.maxSequence).padStart(reg.paddingLength, '0')}","${gapsStr.replace(/"/g, '""')}","${missingStr.replace(/"/g, '""')}"\r\n`;
+                const baselineLabel = reg.baselineStatus === 'AUTHORITATIVE_BASELINE'
+                    ? 'Authoritative Baseline'
+                    : 'Baseline Not Established (Observation Only)';
+                const expectedPopStr = reg.expectedPopulation !== null ? String(reg.expectedPopulation) : 'N/A (Observation Only)';
+                const rangeFrom = `${reg.prefix}${String(reg.minSequence).padStart(reg.paddingLength, '0')}`;
+                const rangeTo = `${reg.prefix}${String(reg.maxSequence).padStart(reg.paddingLength, '0')}`;
+                csv += `"${reg.docType}","${reg.prefix}","${baselineLabel}",${expectedPopStr},${reg.actualRev0Population},${reg.missingCount},${reg.observedGapsCount},"${rangeFrom}","${rangeTo}","${gapsStr.replace(/"/g, '""')}","${missingStr.replace(/"/g, '""')}"\r\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -312,8 +318,22 @@ export default function DataValidationEngine({ data }: Props) {
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-indigo-800/40 mb-8">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="flex items-start gap-4">
-                        <div className={`p-3.5 rounded-xl shrink-0 ${sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'bg-slate-700/40 border border-slate-600/40 text-slate-300' : sequenceAuditResult.totalMissingCount === 0 ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-amber-500/20 border border-amber-500/40 text-amber-400'}`}>
-                            {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? <Eye className="w-8 h-8 text-sky-400" /> : sequenceAuditResult.totalMissingCount === 0 ? <ShieldCheck className="w-8 h-8" /> : <ShieldAlert className="w-8 h-8" />}
+                        <div className={`p-3.5 rounded-xl shrink-0 ${
+                            sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                ? 'bg-slate-700/40 border border-slate-600/40 text-slate-300'
+                                : sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                    ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                                    : sequenceAuditResult.totalMissingCount === 0
+                                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                                        : 'bg-amber-500/20 border border-amber-500/40 text-amber-400'
+                        }`}>
+                            {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' 
+                                ? <Eye className="w-8 h-8 text-sky-400" /> 
+                                : sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                    ? <ShieldCheck className="w-8 h-8 text-indigo-300" />
+                                    : sequenceAuditResult.totalMissingCount === 0 
+                                        ? <ShieldCheck className="w-8 h-8" /> 
+                                        : <ShieldAlert className="w-8 h-8" />}
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
@@ -323,17 +343,21 @@ export default function DataValidationEngine({ data }: Props) {
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
                                     sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
                                         ? 'bg-slate-700/50 text-slate-200 border-slate-600'
-                                        : sequenceAuditResult.totalMissingCount === 0 
-                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                        : sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                            ? 'bg-indigo-500/30 text-indigo-200 border-indigo-500/40'
+                                            : sequenceAuditResult.totalMissingCount === 0 
+                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                                                : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                 }`}>
                                     {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
                                         ? (sequenceAuditResult.totalObservedGapsCount > 0 
                                             ? `${sequenceAuditResult.totalObservedGapsCount} Observed Jumps (Observation Only)` 
                                             : 'Observation Only (Continuous)')
-                                        : sequenceAuditResult.totalMissingCount === 0 
-                                            ? '100% Sequence Reconciled' 
-                                            : `${sequenceAuditResult.totalMissingCount} Missing Sequence IDs`}
+                                        : sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                            ? `Partial Baseline (${sequenceAuditResult.baselineRegistersCount ?? 0} Baseline / ${sequenceAuditResult.observationalRegistersCount ?? 0} Obs. Only)`
+                                            : sequenceAuditResult.totalMissingCount === 0 
+                                                ? '100% Sequence Reconciled' 
+                                                : `${sequenceAuditResult.totalMissingCount} Missing Sequence IDs`}
                                 </span>
                             </div>
                             <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
@@ -347,18 +371,30 @@ export default function DataValidationEngine({ data }: Props) {
 
                     <div className="grid grid-cols-3 gap-4 bg-white/10 p-4 rounded-xl border border-white/10 shrink-0 w-full lg:w-auto">
                         <div className="text-center px-2">
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expected Rev 00</span>
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                {sequenceAuditResult.baselineStatus === 'MIXED_BASELINE' ? 'Expected (Base)' : 'Expected Rev 00'}
+                            </span>
                             <span className="text-2xl font-black text-white font-mono">
                                 {sequenceAuditResult.totalExpectedPopulation !== null ? sequenceAuditResult.totalExpectedPopulation : 'N/A (Obs.)'}
                             </span>
                         </div>
                         <div className="text-center px-2 border-x border-white/10">
-                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actual Rev 00</span>
-                            <span className="text-2xl font-black text-indigo-300 font-mono">{sequenceAuditResult.totalActualRev0Population}</span>
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                {sequenceAuditResult.baselineStatus === 'MIXED_BASELINE' ? 'Actual (Base / All)' : 'Actual Rev 00'}
+                            </span>
+                            <span className="text-2xl font-black text-indigo-300 font-mono">
+                                {sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                    ? `${sequenceAuditResult.totalBaselineActualRev0Population ?? 0} / ${sequenceAuditResult.totalActualRev0Population}`
+                                    : sequenceAuditResult.totalActualRev0Population}
+                            </span>
                         </div>
                         <div className="text-center px-2">
                             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED' ? 'Observed Gaps' : 'Missing Delta'}
+                                {sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
+                                    ? 'Observed Gaps'
+                                    : sequenceAuditResult.baselineStatus === 'MIXED_BASELINE'
+                                        ? 'Missing (Base)'
+                                        : 'Missing Delta'}
                             </span>
                             <span className={`text-2xl font-black font-mono ${
                                 sequenceAuditResult.baselineStatus === 'BASELINE_NOT_ESTABLISHED'
