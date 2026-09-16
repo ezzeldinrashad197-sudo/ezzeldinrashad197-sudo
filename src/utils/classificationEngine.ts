@@ -144,12 +144,31 @@ export function detectDisciplineFromText(text: string): { discipline: string; ra
   return null;
 }
 
+export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: string): string | null {
+  const cleanSheet = (sheetName || '').trim();
+  const isGenericSheet = !cleanSheet || /^(Sheet\s*\d*|Feuil\s*\d*|Tabelle\s*\d*|ورقة\s*\d*|Table\s*\d*|Page\s*\d*|Worksheet\s*\d*|Data\s*\d*|Export\s*\d*)$/i.test(cleanSheet);
+  
+  if (!isGenericSheet) {
+    return cleanSheet;
+  }
+  
+  const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
+  const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*)$/i.test(fileBase);
+  
+  if (!isGenericFile) {
+    return fileBase;
+  }
+  
+  return null;
+}
+
 export function buildCompositeIdentity(
   family: string,
   fileName: string,
   sheetName: string,
   headers: string[],
-  sampleRows: any[][]
+  sampleRows: any[][],
+  authoritativeName?: string
 ): CompositeIdentity {
   const getShortCode = (d: string) => {
     if (d === 'SURVEY' || d === 'SUR') return 'SUR';
@@ -163,6 +182,53 @@ export function buildCompositeIdentity(
     if (d === 'HSE') return 'HSE';
     return d;
   };
+
+  // Helper to determine if register is a locked single-discipline register
+  const checkRegisterLock = (fam: string, disc: string) => {
+    return fam !== 'RFI' && !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(disc);
+  };
+
+  // =========================================================================
+  // UNIVERSAL SOURCE IDENTITY RULE (AUTHORITATIVE PRECEDENCE)
+  // If the source Register or Sheet explicitly carries a name, that name is
+  // authoritative and must be preserved exactly as the classification identity.
+  // =========================================================================
+  const authName = (authoritativeName || getAuthoritativeSourceRegisterName(fileName, sheetName) || '').trim();
+  if (authName) {
+    const upperAuth = authName.toUpperCase();
+    const parts = upperAuth.split(/[-_.]+/);
+    const knownFamilies = ['SDW', 'ABD', 'MIR', 'WIR', 'QS', 'DOC', 'MAR', 'RFI', 'NCR', 'SOR', 'LTR', 'LETTER'];
+
+    let resolvedFamily = family;
+    if (parts.length > 1 && knownFamilies.includes(parts[0])) {
+      resolvedFamily = parts[0] === 'LETTER' ? 'LTR' : parts[0];
+    } else if (knownFamilies.includes(upperAuth)) {
+      resolvedFamily = upperAuth === 'LETTER' ? 'LTR' : upperAuth;
+    } else if (resolvedFamily === 'SDW' && !upperAuth.startsWith('SDW')) {
+      resolvedFamily = upperAuth;
+    }
+
+    const authDisc = detectDisciplineFromText(authName);
+    const discipline = authDisc ? authDisc.discipline : 'GEN';
+    const isRegisterLocked = checkRegisterLock(resolvedFamily, discipline);
+
+    return {
+      family: resolvedFamily,
+      discipline,
+      compositeCode: upperAuth,
+      rawSourceIdentity: `${fileName}::${sheetName}`,
+      evidenceSource: 'authoritative_source_register',
+      evidenceLevel: 'LEVEL_2_WORKSHEET_COMPOSITE',
+      confidence: 1.0,
+      lockedBy: `Authoritative Source Register: ${authName}`,
+      fallbackState: false,
+      hasConflict: false,
+      isRegisterLocked,
+      disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'ROW_EXPLICIT',
+      isAuthoritative: true,
+      authoritativeRegister: upperAuth
+    };
+  }
 
   const fileDisc = detectDisciplineFromText(fileName);
   const sheetDisc = detectDisciplineFromText(sheetName);
@@ -182,11 +248,6 @@ export function buildCompositeIdentity(
     }
     if (rowDisc) break;
   }
-
-  // Helper to determine if register is a locked single-discipline register
-  const checkRegisterLock = (fam: string, disc: string) => {
-    return fam !== 'RFI' && !['UNCLASSIFIED', 'MULTIDISCIPLINE', 'MIXED', 'ALL', 'GEN', 'GENERAL'].includes(disc);
-  };
 
   // 7-Level Hierarchy Resolution
   if (fileDisc) {
@@ -387,8 +448,40 @@ export function classifyRegisterSheet(params: {
   headers: string[];
   sampleRows: any[][];
   projectId?: string;
+  authoritativeName?: string;
 }): ClassificationResult {
-  const { fileName, sheetName, headers, sampleRows, projectId = 'default_project' } = params;
+  const { fileName, sheetName, headers, sampleRows, projectId = 'default_project', authoritativeName } = params;
+
+  // =========================================================================
+  // UNIVERSAL SOURCE IDENTITY RULE (MANDATORY FOR ALL REGISTERS)
+  // If the source Register or Sheet explicitly carries a name, that name is
+  // authoritative and must be preserved exactly as the classification identity.
+  // =========================================================================
+  const authName = (authoritativeName || getAuthoritativeSourceRegisterName(fileName, sheetName) || '').trim();
+  if (authName) {
+    const compositeIdentity = buildCompositeIdentity('DOC', fileName, sheetName, headers, sampleRows, authName);
+    const knownFamilies: Record<string, WorkflowFamily> = {
+      SDW: 'SDW',
+      ABD: 'ABD',
+      MIR: 'MIR',
+      WIR: 'WIR',
+      MAR: 'MAR',
+      QS: 'QS',
+      RFI: 'RFI',
+      NCR: 'NCR',
+      SOR: 'SOR',
+      LETTER: 'LETTER',
+      LTR: 'LETTER',
+      DOC: 'DOC',
+    };
+    const detectedFamily: WorkflowFamily = knownFamilies[compositeIdentity.family] || 'DOC';
+    return {
+      detectedFamily,
+      confidence: 1.0,
+      evidence: [`[UNIVERSAL SOURCE IDENTITY] Preserved authoritative source register: "${authName}"`],
+      compositeIdentity
+    };
+  }
 
   const evidence: string[] = [];
   const cleanFileName = fileName.toUpperCase().trim();

@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { SubmittalRow } from "../types";
 import { normalizeData } from "./calculations";
 import { isRevision0 } from "../analytics/revisionResolver";
-import { classifyRegisterSheet, normalizeDiscipline } from "./classificationEngine";
+import { classifyRegisterSheet, normalizeDiscipline, getAuthoritativeSourceRegisterName } from "./classificationEngine";
 import { mapDocumentToWorkflow } from "./workflowMapping";
 
 const MONTH_NAME_MAP: Record<string, string> = {
@@ -228,12 +228,15 @@ export const parseExcelWorkbook = (
           "default_project"
         : "default_project";
 
+    const authoritativeSourceName = getAuthoritativeSourceRegisterName(fileName, sheetName);
+
     const classification = classifyRegisterSheet({
       fileName,
       sheetName,
       headers: headers.map((h) => String(h || "")),
       sampleRows: rows.slice(0, 20) as any[][],
       projectId: activeProjectId,
+      authoritativeName: authoritativeSourceName || undefined,
     });
 
     const detectedType = classification.detectedFamily;
@@ -909,17 +912,17 @@ export const parseExcelWorkbook = (
         fileName.includes("خطابات");
 
       const isNcr =
-        contextualStr.includes("ncr") ||
         sheetName.toLowerCase().includes("ncr") ||
         fileName.toLowerCase().includes("ncr") ||
         sheetName.includes("عدم") ||
         fileName.includes("عدم") ||
-        contextualStr.includes("hse") ||
-        sheetName.toLowerCase().includes("hse") ||
-        fileName.toLowerCase().includes("hse") ||
-        contextualStr.includes("safety") ||
-        sheetName.toLowerCase().includes("safety") ||
-        fileName.toLowerCase().includes("safety");
+        (detectedType === "NCR") ||
+        (compIdent?.family === "NCR") ||
+        (!authoritativeSourceName && (
+          contextualStr.includes("ncr") ||
+          contextualStr.includes("hse") ||
+          contextualStr.includes("safety")
+        ));
 
       /*
        * ============================================================
@@ -1160,16 +1163,23 @@ export const parseExcelWorkbook = (
           ? String(r[colDrawingNo] || "").trim()
           : "";
 
+      const isAuthoritative = Boolean(authoritativeSourceName || compIdent?.isAuthoritative);
+      const authIdentity = authoritativeSourceName?.toUpperCase() || compIdent?.authoritativeRegister || compIdent?.compositeCode;
+
       parsed.push({
         id: `${sheetName}-${idx}`,
 
         logType:
-          compIdent?.compositeCode ||
-          (
-            detectedType !== "UNKNOWN"
-              ? detectedType
-              : sheetName.trim().toUpperCase()
-          ),
+          isAuthoritative && authIdentity
+            ? authIdentity
+            : (
+                compIdent?.compositeCode ||
+                (
+                  detectedType !== "UNKNOWN"
+                    ? detectedType
+                    : sheetName.trim().toUpperCase()
+                )
+              ),
 
         sourceFile:
           fileName.replace(/\.[^/.]+$/, ""),
@@ -1186,9 +1196,15 @@ export const parseExcelWorkbook = (
 
         disciplineEvidenceSource,
         isDisciplineLocked: isRegisterDisciplineLocked,
+        hasAuthoritativeSourceIdentity: isAuthoritative,
+        sourceRegisterIdentity: isAuthoritative ? authIdentity : undefined,
 
         documentType:
-          compIdent?.compositeCode || (detectedType && compDisc ? `${detectedType}-${compDisc}` : (detectedType || "")),
+          isAuthoritative && authIdentity
+            ? authIdentity
+            : (
+                compIdent?.compositeCode || (detectedType && compDisc ? `${detectedType}-${compDisc}` : (detectedType || ""))
+              ),
         trade:
           finalDisciplineVal || "",
         workflowStage: "",

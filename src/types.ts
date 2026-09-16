@@ -104,6 +104,8 @@ export interface SubmittalRow {
   compositeIdentity?: CompositeIdentity;
   disciplineEvidenceSource?: 'REGISTER_LOCK' | 'ROW_EXPLICIT' | 'COMPOSITE_FALLBACK' | 'REFERENCE_FALLBACK' | 'UNCLASSIFIED' | string;
   isDisciplineLocked?: boolean;
+  hasAuthoritativeSourceIdentity?: boolean;
+  sourceRegisterIdentity?: string;
 }
 
 export type EvidenceLevel = 
@@ -129,6 +131,8 @@ export interface CompositeIdentity {
   conflictDetails?: string;
   isRegisterLocked?: boolean;
   disciplineEvidenceSource?: string;
+  isAuthoritative?: boolean;
+  authoritativeRegister?: string;
 }
 
 export interface KPIStats {
