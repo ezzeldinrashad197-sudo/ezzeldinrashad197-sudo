@@ -155,20 +155,8 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
                         : (logType.startsWith('LTR')
                           ? 'LTR'
                           : logType))))))))));
-    // Universal Source Identity Rule:
-    // If the record has an authoritative source register identity, preserve it exactly.
-    // Never split, rename, or reclassify based on internal trade/discipline.
-    const isAuthoritative = Boolean(
-      (r as any).hasAuthoritativeSourceIdentity ||
-      (r as any).compositeIdentity?.isAuthoritative ||
-      (r as any).sourceRegisterIdentity
-    );
-
-    let documentType = isAuthoritative
-      ? ((r as any).sourceRegisterIdentity || r.documentType || (r as any).compositeIdentity?.compositeCode || basePrefix)
-      : (tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix));
-
-    if (documentType === 'DOC' && !isAuthoritative) {
+    let documentType = tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix);
+    if (documentType === 'DOC') {
       documentType = 'DOC-GEN';
     }
 

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-16T09:59:49.886Z",
+  "timestamp": "2026-09-17T07:27:01.206Z",
   "version": "2.0.0-ENTERPRISE-EVIDENCE-PACK",
   "goldenDatasetSize": 770,
   "totalTests": 20,
@@ -504,15 +504,15 @@
   ],
   "stressBenchmark10k": {
     "datasetSize": 10000,
-    "executionTimeMs": 2468.15,
-    "throughputPerSec": 4052,
+    "executionTimeMs": 2538.26,
+    "throughputPerSec": 3940,
     "memoryEstimateMb": 3.34,
     "passCriteriaMet": false
   },
   "stressBenchmark50k": {
     "datasetSize": 50000,
-    "executionTimeMs": 13005.91,
-    "throughputPerSec": 3844,
+    "executionTimeMs": 14111.18,
+    "throughputPerSec": 3543,
     "memoryEstimateMb": 16.69,
     "passCriteriaMet": false
   }
