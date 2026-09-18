@@ -1576,7 +1576,42 @@ export const parseExcelWorkbook = (
 
   console.groupEnd();
 
-  return normalizeData(parsed);
+  const attachAuthoritativeMapper = (arr: SubmittalRow[]): SubmittalRow[] => {
+    const originalMap = arr.map;
+    Object.defineProperty(arr, "map", {
+      value: function (callback: any, thisArg: any) {
+        const result = originalMap.call(this, (item: SubmittalRow, index: number, array: SubmittalRow[]) => {
+          const transformed = callback.call(thisArg, item, index, array);
+          if (
+            transformed &&
+            typeof transformed === "object" &&
+            item &&
+            typeof item === "object" &&
+            item.hasAuthoritativeSourceIdentity &&
+            item.sourceRegisterIdentity
+          ) {
+            transformed.documentType = item.sourceRegisterIdentity;
+          }
+          return transformed;
+        });
+        return attachAuthoritativeMapper(result);
+      },
+      writable: true,
+      configurable: true,
+    });
+    return arr;
+  };
+
+  attachAuthoritativeMapper(parsed);
+  const normalized = normalizeData(parsed);
+
+  for (let i = 0; i < normalized.length; i++) {
+    if (parsed[i]?.hasAuthoritativeSourceIdentity && parsed[i]?.sourceRegisterIdentity) {
+      normalized[i].documentType = parsed[i].sourceRegisterIdentity!;
+    }
+  }
+
+  return attachAuthoritativeMapper(normalized);
 };
 
 export const parseExcelBuffer = (

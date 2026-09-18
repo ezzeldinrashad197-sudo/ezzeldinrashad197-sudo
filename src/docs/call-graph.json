@@ -2703,133 +2703,154 @@
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 162,
+    "line": 185,
     "context": "isRevision0(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 170,
+    "line": 193,
     "context": "parseDocIdentifier(rawDoc)",
     "destination": "src/utils/calculations.ts::parseDocIdentifier",
     "functionName": "parseDocIdentifier"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 192,
+    "line": 215,
     "context": "isFurtherRevision(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isFurtherRevision",
     "functionName": "isFurtherRevision"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 230,
+    "line": 253,
     "context": "parseDocIdentifier(docNo)",
     "destination": "src/utils/calculations.ts::parseDocIdentifier",
     "functionName": "parseDocIdentifier"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 277,
+    "line": 300,
     "context": "parseDocIdentifier(docNo)",
     "destination": "src/utils/calculations.ts::parseDocIdentifier",
     "functionName": "parseDocIdentifier"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 287,
+    "line": 310,
     "context": "getExpectedRegisterFromPrefix(parsed.prefix)",
     "destination": "src/utils/calculations.ts::getExpectedRegisterFromPrefix",
     "functionName": "getExpectedRegisterFromPrefix"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 306,
+    "line": 329,
     "context": "isRevision0(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 307,
+    "line": 330,
     "context": "isFurtherRevision(r.rev, r.isRev0)",
     "destination": "src/utils/calculations.ts::isFurtherRevision",
     "functionName": "isFurtherRevision"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 312,
+    "line": 335,
     "context": "compareRevisionsCanonical(a.rev, b.rev)",
     "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
     "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 350,
+    "line": 371,
     "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 352,
+    "line": 373,
     "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 359,
+    "line": 380,
     "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 360,
+    "line": 381,
     "context": "formatSequenceID(dominantPrefix, currentGapStart, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 360,
+    "line": 381,
     "context": "formatSequenceID(dominantPrefix, currentGapEnd, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 374,
+    "line": 401,
+    "context": "parseDocIdentifier(docNo)",
+    "destination": "src/utils/calculations.ts::parseDocIdentifier",
+    "functionName": "parseDocIdentifier"
+  },
+  {
+    "callerFile": "src/analytics/sequenceAuditEngine.ts",
+    "line": 404,
+    "context": "formatSequenceID(dominantPrefix, parsed.sequenceNumber, dominantPadding, dominantSuffix)",
+    "destination": "src/utils/calculations.ts::formatSequenceID",
+    "functionName": "formatSequenceID"
+  },
+  {
+    "callerFile": "src/analytics/sequenceAuditEngine.ts",
+    "line": 411,
+    "context": "parseDocIdentifier(cleanExpId)",
+    "destination": "src/utils/calculations.ts::parseDocIdentifier",
+    "functionName": "parseDocIdentifier"
+  },
+  {
+    "callerFile": "src/analytics/sequenceAuditEngine.ts",
+    "line": 474,
     "context": "formatSequenceID(dominantPrefix, s, dominantPadding, dominantSuffix)",
     "destination": "src/utils/calculations.ts::formatSequenceID",
     "functionName": "formatSequenceID"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 514,
-    "context": "auditRegisterSequence(dt, groupRows, rows)",
+    "line": 637,
+    "context": "auditRegisterSequence(dt, groupRows, rows, options)",
     "destination": "src/utils/calculations.ts::auditRegisterSequence",
     "functionName": "auditRegisterSequence"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 526,
+    "line": 660,
     "context": "parseDocIdentifier(id)",
     "destination": "src/utils/calculations.ts::parseDocIdentifier",
     "functionName": "parseDocIdentifier"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 573,
+    "line": 758,
     "context": "runComprehensiveSequenceAudit(rows)",
     "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
     "functionName": "runComprehensiveSequenceAudit"
   },
   {
     "callerFile": "src/analytics/sequenceAuditEngine.ts",
-    "line": 585,
+    "line": 770,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
@@ -3893,105 +3914,133 @@
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 167,
+    "line": 196,
+    "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
+    "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
+    "functionName": "getAuthoritativeSourceRegisterName"
+  },
+  {
+    "callerFile": "src/utils/classificationEngine.ts",
+    "line": 211,
+    "context": "detectDisciplineFromText(authName)",
+    "destination": "src/utils/calculations.ts::detectDisciplineFromText",
+    "functionName": "detectDisciplineFromText"
+  },
+  {
+    "callerFile": "src/utils/classificationEngine.ts",
+    "line": 233,
     "context": "detectDisciplineFromText(fileName)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 168,
+    "line": 234,
     "context": "detectDisciplineFromText(sheetName)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 172,
+    "line": 238,
     "context": "detectDisciplineFromText(String(h || ''))",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 180,
+    "line": 246,
     "context": "detectDisciplineFromText(String(cell || ''))",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 301,
+    "line": 362,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 315,
+    "line": 376,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 456,
+    "line": 460,
+    "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
+    "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
+    "functionName": "getAuthoritativeSourceRegisterName"
+  },
+  {
+    "callerFile": "src/utils/classificationEngine.ts",
+    "line": 462,
+    "context": "buildCompositeIdentity('DOC', fileName, sheetName, headers, sampleRows, authName)",
+    "destination": "src/utils/calculations.ts::buildCompositeIdentity",
+    "functionName": "buildCompositeIdentity"
+  },
+  {
+    "callerFile": "src/utils/classificationEngine.ts",
+    "line": 549,
     "context": "buildCompositeIdentity(lockedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 481,
+    "line": 574,
     "context": "getSmartImportProfiles()",
     "destination": "src/utils/calculations.ts::getSmartImportProfiles",
     "functionName": "getSmartImportProfiles"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 486,
+    "line": 579,
     "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 496,
+    "line": 589,
     "context": "getLearningRules(projectId)",
     "destination": "src/utils/calculations.ts::getLearningRules",
     "functionName": "getLearningRules"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 501,
+    "line": 594,
     "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 718,
+    "line": 811,
     "context": "buildCompositeIdentity(bestFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 730,
+    "line": 823,
     "context": "buildCompositeIdentity(fallbackFamily, fileName, sheetName, headers, sampleRows)",
     "destination": "src/utils/calculations.ts::buildCompositeIdentity",
     "functionName": "buildCompositeIdentity"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 748,
+    "line": 841,
     "context": "getLearningRules(projectId)",
     "destination": "src/utils/calculations.ts::getLearningRules",
     "functionName": "getLearningRules"
   },
   {
     "callerFile": "src/utils/classificationEngine.ts",
-    "line": 754,
+    "line": 847,
     "context": "detectDisciplineFromText(clean)",
     "destination": "src/utils/calculations.ts::detectDisciplineFromText",
     "functionName": "detectDisciplineFromText"
@@ -4405,90 +4454,97 @@
   {
     "callerFile": "src/utils/parser.ts",
     "line": 231,
-    "context": "classifyRegisterSheet({\n      fileName,\n      sheetName,\n      headers: headers.map((h) => String(h || \"\")),\n      sampleRows: rows.slice(0, 20) as any[][],\n      projectId: activeProjectId,\n    })",
+    "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
+    "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
+    "functionName": "getAuthoritativeSourceRegisterName"
+  },
+  {
+    "callerFile": "src/utils/parser.ts",
+    "line": 233,
+    "context": "classifyRegisterSheet({\n      fileName,\n      sheetName,\n      headers: headers.map((h) => String(h || \"\")),\n      sampleRows: rows.slice(0, 20) as any[][],\n      projectId: activeProjectId,\n      authoritativeName: authoritativeSourceName || undefined,\n    })",
     "destination": "src/utils/calculations.ts::classifyRegisterSheet",
     "functionName": "classifyRegisterSheet"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 589,
+    "line": 592,
     "context": "formatDate(\n        r[finalColDateSent],\n      )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 593,
+    "line": 596,
     "context": "formatDate(\n        colResponseDate >= 0\n          ? r[colResponseDate]\n          : \"\",\n      )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1109,
+    "line": 1112,
     "context": "normalizeDiscipline(\n          disciplineVal,\n          activeProjectId,\n        )",
     "destination": "src/utils/calculations.ts::normalizeDiscipline",
     "functionName": "normalizeDiscipline"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1196,
+    "line": 1212,
     "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1257,
+    "line": 1273,
     "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1306,
+    "line": 1322,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1326,
+    "line": 1342,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1339,
+    "line": 1355,
     "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
     "destination": "src/utils/calculations.ts::formatDate",
     "functionName": "formatDate"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1430,
+    "line": 1446,
     "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
     "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
     "functionName": "mapDocumentToWorkflow"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1563,
+    "line": 1606,
     "context": "normalizeData(parsed)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1576,
+    "line": 1627,
     "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1601,
+    "line": 1652,
     "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"

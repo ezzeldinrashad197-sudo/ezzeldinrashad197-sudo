@@ -745,6 +745,14 @@
       "referencedBy": []
     },
     {
+      "file": "src/analytics/sequenceAuditEngine.ts",
+      "exportName": "SequenceAuditOptions",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'SequenceAuditOptions' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/sor/sorEngine.ts",
       "exportName": "isYes",
       "type": "Function",
