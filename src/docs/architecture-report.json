@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-18T14:04:45.013Z",
+    "generatedAt": "2026-09-19T08:42:40.196Z",
     "totalFilesScanned": 84,
     "architecturalViolations": 10,
     "complianceScore": 50,
@@ -5247,133 +5247,140 @@
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 196,
+      "line": 166,
+      "context": "isKnownRegisterName(fileBase)",
+      "destination": "src/utils/calculations.ts::isKnownRegisterName",
+      "functionName": "isKnownRegisterName"
+    },
+    {
+      "callerFile": "src/utils/classificationEngine.ts",
+      "line": 204,
       "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
       "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
       "functionName": "getAuthoritativeSourceRegisterName"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 211,
+      "line": 219,
       "context": "detectDisciplineFromText(authName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 233,
+      "line": 241,
       "context": "detectDisciplineFromText(fileName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 234,
+      "line": 242,
       "context": "detectDisciplineFromText(sheetName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 238,
+      "line": 246,
       "context": "detectDisciplineFromText(String(h || ''))",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 246,
+      "line": 254,
       "context": "detectDisciplineFromText(String(cell || ''))",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 362,
+      "line": 370,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 376,
+      "line": 384,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 460,
+      "line": 468,
       "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
       "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
       "functionName": "getAuthoritativeSourceRegisterName"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 462,
+      "line": 470,
       "context": "buildCompositeIdentity('DOC', fileName, sheetName, headers, sampleRows, authName)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 549,
+      "line": 557,
       "context": "buildCompositeIdentity(lockedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 574,
+      "line": 582,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 579,
+      "line": 587,
       "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 589,
+      "line": 597,
       "context": "getLearningRules(projectId)",
       "destination": "src/utils/calculations.ts::getLearningRules",
       "functionName": "getLearningRules"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 594,
+      "line": 602,
       "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 811,
+      "line": 819,
       "context": "buildCompositeIdentity(bestFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 823,
+      "line": 831,
       "context": "buildCompositeIdentity(fallbackFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 841,
+      "line": 849,
       "context": "getLearningRules(projectId)",
       "destination": "src/utils/calculations.ts::getLearningRules",
       "functionName": "getLearningRules"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 847,
+      "line": 855,
       "context": "detectDisciplineFromText(clean)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
@@ -5863,21 +5870,21 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1606,
+      "line": 1579,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1627,
+      "line": 1600,
       "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1652,
+      "line": 1625,
       "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -7297,6 +7304,22 @@
         "type": "Function",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'detectDisciplineFromText' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/classificationEngine.ts",
+        "exportName": "KNOWN_REGISTER_FAMILY_PREFIXES",
+        "type": "Component",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'KNOWN_REGISTER_FAMILY_PREFIXES' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/classificationEngine.ts",
+        "exportName": "isKnownRegisterName",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'isKnownRegisterName' detected in any active source modules.",
         "referencedBy": []
       },
       {

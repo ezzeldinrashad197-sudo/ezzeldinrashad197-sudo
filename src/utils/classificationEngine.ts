@@ -144,6 +144,14 @@ export function detectDisciplineFromText(text: string): { discipline: string; ra
   return null;
 }
 
+export const KNOWN_REGISTER_FAMILY_PREFIXES =
+  /^(SDW|ABD|MIR|WIR|QS|DOC|MAR|RFI|NCR|SOR|LTR|LETTER)([-_.]|$)/i;
+
+export function isKnownRegisterName(name: string): boolean {
+  if (!name) return false;
+  return KNOWN_REGISTER_FAMILY_PREFIXES.test(name.trim());
+}
+
 export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: string): string | null {
   const cleanSheet = (sheetName || '').trim();
   const isGenericSheet = !cleanSheet || /^(Sheet\s*\d*|Feuil\s*\d*|Tabelle\s*\d*|ورقة\s*\d*|Table\s*\d*|Page\s*\d*|Worksheet\s*\d*|Data\s*\d*|Export\s*\d*)$/i.test(cleanSheet);
@@ -155,7 +163,7 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
   const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
   const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*)$/i.test(fileBase);
   
-  if (!isGenericFile) {
+  if (!isGenericFile && isKnownRegisterName(fileBase)) {
     return fileBase;
   }
   

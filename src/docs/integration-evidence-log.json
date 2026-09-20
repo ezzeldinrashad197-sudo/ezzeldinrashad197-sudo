@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-15T12:50:37.777Z",
+  "generatedAt": "2026-09-19T08:42:36.560Z",
   "overallStatus": "APPROVED",
   "steps": [
     {
@@ -52,7 +52,7 @@
           {
             "docNo": "DOC-ST-001",
             "category": "PENDING",
-            "delayDays": 65,
+            "delayDays": 69,
             "isOverdue": true
           },
           {
@@ -64,7 +64,7 @@
           {
             "docNo": "DOC-ME-003",
             "category": "REJECTED_CLOSED",
-            "delayDays": 72,
+            "delayDays": 76,
             "isOverdue": true
           },
           {
@@ -143,7 +143,7 @@
             "invalidRevisionsCount": 0,
             "totalIssuesCount": 0
           },
-          "expectedPopulation": 4,
+          "expectedPopulation": null,
           "actualRev0Population": 4,
           "missingSequenceCount": 0,
           "missingSequenceIds": [],

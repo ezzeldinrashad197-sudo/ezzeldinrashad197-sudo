@@ -1290,6 +1290,22 @@
     },
     {
       "file": "src/utils/classificationEngine.ts",
+      "exportName": "KNOWN_REGISTER_FAMILY_PREFIXES",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'KNOWN_REGISTER_FAMILY_PREFIXES' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/classificationEngine.ts",
+      "exportName": "isKnownRegisterName",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isKnownRegisterName' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/classificationEngine.ts",
       "exportName": "buildCompositeIdentity",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
