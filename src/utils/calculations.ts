@@ -130,7 +130,9 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const resolved = resolveCanonicalTrade(r);
     const trade = resolved.trade || r.trade;
     const tradeShort = resolved.tradeShort || (r as any).tradeShort || '';
-    const logType = (r.logType || (r as any).compositeIdentity?.family || 'SDW').toUpperCase();
+    const logType = (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity === 'GEN')
+      ? 'GEN'
+      : (r.logType || (r as any).compositeIdentity?.family || 'SDW').toUpperCase();
 
     const basePrefix = logType.startsWith('SDW')
       ? 'SDW'
@@ -155,7 +157,9 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
                         : (logType.startsWith('LTR')
                           ? 'LTR'
                           : logType))))))))));
-    let documentType = tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix);
+    let documentType = (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity)
+      ? r.sourceRegisterIdentity
+      : (tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix));
     if (documentType === 'DOC') {
       documentType = 'DOC-GEN';
     }

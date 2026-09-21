@@ -66,7 +66,7 @@
     },
     {
       "id": "src/analytics/analyticsCore.ts",
-      "layer": 2
+      "layer": 1
     },
     {
       "id": "src/analytics/analyticsService.ts",
@@ -74,7 +74,7 @@
     },
     {
       "id": "src/analytics/calculationFoundation.ts",
-      "layer": 2
+      "layer": 1
     },
     {
       "id": "src/analytics/dataValidator.ts",
@@ -142,11 +142,11 @@
     },
     {
       "id": "src/analytics/revisionResolver.ts",
-      "layer": 2
+      "layer": 1
     },
     {
       "id": "src/analytics/sequenceAuditEngine.ts",
-      "layer": 2
+      "layer": 1
     },
     {
       "id": "src/analytics/sor/sorEngine.ts",
@@ -154,7 +154,7 @@
     },
     {
       "id": "src/analytics/statusResolver.ts",
-      "layer": 2
+      "layer": 1
     },
     {
       "id": "src/components/ActionTracker.tsx",
@@ -290,7 +290,7 @@
     },
     {
       "id": "src/utils/classificationEngine.ts",
-      "layer": 3
+      "layer": 1
     },
     {
       "id": "src/utils/enterpriseAnalyticsEngine.ts",
@@ -334,7 +334,7 @@
     },
     {
       "id": "src/utils/workflowMapping.ts",
-      "layer": 3
+      "layer": 1
     }
   ],
   "edges": [

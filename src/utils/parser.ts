@@ -1576,15 +1576,7 @@ export const parseExcelWorkbook = (
 
   console.groupEnd();
 
-  const normalized = normalizeData(parsed);
-
-  for (let i = 0; i < normalized.length; i++) {
-    if (parsed[i]?.hasAuthoritativeSourceIdentity && parsed[i]?.sourceRegisterIdentity) {
-      normalized[i].documentType = parsed[i].sourceRegisterIdentity!;
-    }
-  }
-
-  return normalized;
+  return normalizeData(parsed);
 };
 
 export const parseExcelBuffer = (

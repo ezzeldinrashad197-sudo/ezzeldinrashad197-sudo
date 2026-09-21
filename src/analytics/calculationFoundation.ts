@@ -2274,6 +2274,29 @@ export function resolveCanonicalTrade(
    * by an accidental row-level value.
    * ============================================================
    */
+  if (row.hasAuthoritativeSourceIdentity && row.sourceRegisterIdentity) {
+    const authReg = row.sourceRegisterIdentity.trim().toUpperCase();
+    if (authReg === 'GEN' || authReg === 'GENERAL') {
+      return {
+        trade: 'General',
+        tradeShort: '',
+        presentationDisc: 'GENERAL'
+      };
+    }
+    const direct = checkText(authReg);
+    if (direct) {
+      return direct;
+    }
+    const parts = authReg.split(/[-_/ ]+/);
+    if (parts.length > 1) {
+      const suffix = parts[parts.length - 1];
+      const suffixTrade = checkText(suffix);
+      if (suffixTrade) {
+        return suffixTrade;
+      }
+    }
+  }
+
   const compDisc = String(compositeIdentity?.discipline || '').toUpperCase().trim();
   const compFamily = String(compositeIdentity?.family || row.workflowFamily || '').toUpperCase().trim();
   const rawSource = String(row.rawSourceIdentity || row.sourceFile || '').toUpperCase().trim();

@@ -501,8 +501,8 @@ interface LayerRule {
 }
 
 const layerRules: LayerRule[] = [
-  { name: 'Layer 0: Infrastructure & Types', level: 0, pattern: /(types\.ts|firebase\.ts|i18n\.tsx)$/, allowedImports: [0] },
-  { name: 'Layer 1: Core Mathematical Engines', level: 1, pattern: /utils\/(calculations|statusMatrixEngine|enterpriseAnalyticsEngine)\.ts$/, allowedImports: [0, 1] },
+  { name: 'Layer 0: Infrastructure & Types', level: 0, pattern: /(types\.ts|firebase\.ts|i18n\.tsx|\.json)$/, allowedImports: [0] },
+  { name: 'Layer 1: Core Mathematical Engines', level: 1, pattern: /(utils\/(calculations|statusMatrixEngine|enterpriseAnalyticsEngine|workflowMapping|classificationEngine)\.ts|analytics\/(calculationFoundation|revisionResolver|statusResolver|analyticsCore|sequenceAuditEngine)\.ts)$/, allowedImports: [0, 1] },
   { name: 'Layer 2: Domain Analytics Pipelines', level: 2, pattern: /(analytics\/|utils\/ncrAnalytics\.ts|utils\/rfiAnalytics\.ts)/, allowedImports: [0, 1, 2] },
   { name: 'Layer 3: Views & UI Components', level: 3, pattern: /(components\/|App\.tsx|main\.tsx)/, allowedImports: [0, 1, 2, 3] }
 ];

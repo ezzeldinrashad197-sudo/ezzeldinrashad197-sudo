@@ -1674,35 +1674,35 @@
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2487,
+    "line": 2510,
     "context": "resolveCanonicalTrade(row)",
     "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
     "functionName": "resolveCanonicalTrade"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2502,
+    "line": 2525,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2555,
+    "line": 2578,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2608,
+    "line": 2631,
     "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
     "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
     "functionName": "calculateCanonicalKPIs"
   },
   {
     "callerFile": "src/analytics/calculationFoundation.ts",
-    "line": 2691,
+    "line": 2714,
     "context": "getPerformanceValidationRows(\n      rows\n    )",
     "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
     "functionName": "getPerformanceValidationRows"
@@ -3858,56 +3858,56 @@
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 163,
+    "line": 167,
     "context": "getRevisionWeight(revUpper)",
     "destination": "src/utils/calculations.ts::getRevisionWeight",
     "functionName": "getRevisionWeight"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 164,
+    "line": 168,
     "context": "isRevision0(revUpper, r.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 167,
+    "line": 171,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 179,
+    "line": 183,
     "context": "getDelayDays(submissionDate, responseDate, dueDate)",
     "destination": "src/utils/calculations.ts::getDelayDays",
     "functionName": "getDelayDays"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 181,
+    "line": 185,
     "context": "parseDateTimestamp(dueDate)",
     "destination": "src/utils/calculations.ts::parseDateTimestamp",
     "functionName": "parseDateTimestamp"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 181,
+    "line": 185,
     "context": "parseDateTimestamp(dueDate)",
     "destination": "src/utils/calculations.ts::parseDateTimestamp",
     "functionName": "parseDateTimestamp"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 181,
+    "line": 185,
     "context": "checkIfOverdueDynamically(submissionDate, responseDate, 14)",
     "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
     "functionName": "checkIfOverdueDynamically"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 329,
+    "line": 333,
     "context": "getDelayDays(submission, response, '')",
     "destination": "src/utils/calculations.ts::getDelayDays",
     "functionName": "getDelayDays"
@@ -4544,14 +4544,14 @@
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1600,
+    "line": 1592,
     "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"
   },
   {
     "callerFile": "src/utils/parser.ts",
-    "line": 1625,
+    "line": 1617,
     "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
     "destination": "src/utils/calculations.ts::parseExcelWorkbook",
     "functionName": "parseExcelWorkbook"

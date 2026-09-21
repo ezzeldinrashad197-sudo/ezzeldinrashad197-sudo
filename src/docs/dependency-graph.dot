@@ -50,22 +50,18 @@ digraph DependencyGraph {
     "src/hooks/useUpload.ts" [fillcolor=white];
     "src/main.tsx" [fillcolor=white];
     "src/utils/calculationVerificationEngine.ts" [fillcolor=white];
-    "src/utils/classificationEngine.ts" [fillcolor=white];
     "src/utils/loadTestingSuite.ts" [fillcolor=white];
     "src/utils/multiFileParser.ts" [fillcolor=white];
     "src/utils/parser.ts" [fillcolor=white];
     "src/utils/securityRegressionSuite.ts" [fillcolor=white];
     "src/utils/universalRegisterSchema.ts" [fillcolor=white];
-    "src/utils/workflowMapping.ts" [fillcolor=white];
   }
   subgraph cluster_layer_2 {
     label="Tier 2: Layer 2: Domain Analytics Pipelines"
     style=dashed;
     color=gray;
     "src/analytics/__tests__/canonicalCalculations.test.ts" [fillcolor=lightgreen];
-    "src/analytics/analyticsCore.ts" [fillcolor=lightgreen];
     "src/analytics/analyticsService.ts" [fillcolor=lightgreen];
-    "src/analytics/calculationFoundation.ts" [fillcolor=lightgreen];
     "src/analytics/dataValidator.ts" [fillcolor=lightgreen];
     "src/analytics/exportEngine.ts" [fillcolor=lightgreen];
     "src/analytics/exportHelpers.ts" [fillcolor=lightgreen];
@@ -82,12 +78,24 @@ digraph DependencyGraph {
     "src/analytics/ncr/ncrEngine.ts" [fillcolor=lightgreen];
     "src/analytics/recordTransformer.ts" [fillcolor=lightgreen];
     "src/analytics/revisionEngine.ts" [fillcolor=lightgreen];
-    "src/analytics/revisionResolver.ts" [fillcolor=lightgreen];
-    "src/analytics/sequenceAuditEngine.ts" [fillcolor=lightgreen];
     "src/analytics/sor/sorEngine.ts" [fillcolor=lightgreen];
-    "src/analytics/statusResolver.ts" [fillcolor=lightgreen];
     "src/utils/ncrAnalytics.ts" [fillcolor=lightgreen];
     "src/utils/rfiAnalytics.ts" [fillcolor=lightgreen];
+  }
+  subgraph cluster_layer_1 {
+    label="Tier 1: Layer 1: Core Mathematical Engines"
+    style=dashed;
+    color=gray;
+    "src/analytics/analyticsCore.ts" [fillcolor=gold];
+    "src/analytics/calculationFoundation.ts" [fillcolor=gold];
+    "src/analytics/revisionResolver.ts" [fillcolor=gold];
+    "src/analytics/sequenceAuditEngine.ts" [fillcolor=gold];
+    "src/analytics/statusResolver.ts" [fillcolor=gold];
+    "src/utils/calculations.ts" [fillcolor=gold];
+    "src/utils/classificationEngine.ts" [fillcolor=gold];
+    "src/utils/enterpriseAnalyticsEngine.ts" [fillcolor=gold];
+    "src/utils/statusMatrixEngine.ts" [fillcolor=gold];
+    "src/utils/workflowMapping.ts" [fillcolor=gold];
   }
   subgraph cluster_layer_0 {
     label="Tier 0: Layer 0: Infrastructure & Types"
@@ -96,14 +104,6 @@ digraph DependencyGraph {
     "src/firebase.ts" [fillcolor=lightgrey];
     "src/types.ts" [fillcolor=lightgrey];
     "src/utils/i18n.tsx" [fillcolor=lightgrey];
-  }
-  subgraph cluster_layer_1 {
-    label="Tier 1: Layer 1: Core Mathematical Engines"
-    style=dashed;
-    color=gray;
-    "src/utils/calculations.ts" [fillcolor=gold];
-    "src/utils/enterpriseAnalyticsEngine.ts" [fillcolor=gold];
-    "src/utils/statusMatrixEngine.ts" [fillcolor=gold];
   }
   "src/AIInsights.tsx" -> "src/types.ts";
   "src/AIInsights.tsx" -> "src/utils/calculations.ts";
