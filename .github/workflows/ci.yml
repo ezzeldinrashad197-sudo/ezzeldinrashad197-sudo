@@ -36,11 +36,47 @@ jobs:
       - name: 'Gate 4: Zero-Trust Authentication, Tenant Isolation & Negative Auth Tests'
         run: npm run test:auth
 
-      - name: 'Gate 5: End-to-End Integration & Golden Dataset Parity (0 Variance)'
+      - name: 'Gate 5: Sequence Population Integrity & Observation-Only Audit'
+        run: npm run test:sequence
+
+      - name: 'Gate 6: Cross-Layer Overdue Calculations Audit'
+        run: npm run test:overdue
+
+      - name: 'Gate 7: RFI Invariant Total Regression Suite'
+        run: npm run test:rfi
+
+      - name: 'Gate 8: Universal Source Identity & Ingestion Classification Audit'
+        run: npm run test:usi
+
+      - name: 'Gate 9: Structural & Trade Classification Matrix Invariants'
+        run: npm run test:str-matrix
+
+      - name: 'Gate 10: WIR-STR Real-World Registry E2E Verification'
+        run: npm run test:wir-str
+
+      - name: 'Gate 11: L99 Identity Equality & Independent Provenance Audits'
+        run: npm run test:l99
+
+      - name: 'Gate 12: Lifecycle Provenance & History Traceability Suite'
+        run: npm run test:lifecycle
+
+      - name: 'Gate 13: Presentation & Export Matrix Audit (PPTX)'
+        run: npm run test:pptx
+
+      - name: 'Gate 14: Chapter 16 / ER-013 Backend Metrics Calculation Engine'
+        run: npm run test:er013
+
+      - name: 'Gate 15: End-to-End Integration & Golden Dataset Parity (0 Variance)'
         run: npm run run-integration-tests
 
-      - name: 'Gate 6: Forensic E2E Regression & Revision Invariance Suite'
+      - name: 'Gate 16: Forensic E2E Regression & Revision Invariance Suite'
         run: npm run test:forensic
 
-      - name: 'Gate 7: Production Build & Asset Verification'
+      - name: 'Gate 17: Comprehensive Production Benchmark Regression Harness'
+        run: npm run test:regression-suite
+
+      - name: 'Gate 18: Generate Authoritative Audit Evidence Report'
+        run: npm run generate-evidence-report
+
+      - name: 'Gate 19: Production Build & Asset Verification'
         run: npm run build

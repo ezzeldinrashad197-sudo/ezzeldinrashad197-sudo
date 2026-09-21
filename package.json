@@ -18,8 +18,16 @@
     "test:overdue": "tsx scripts/test-overdue-cross-layer-audit.ts",
     "test:rfi": "tsx scripts/test-rfi-total-regression.ts",
     "test:sequence": "tsx scripts/test-sequence-population-integrity.ts",
+    "test:usi": "tsx scripts/test-universal-source-identity.ts",
+    "test:str-matrix": "tsx scripts/test-str-realworld-matrix.ts",
+    "test:wir-str": "tsx scripts/test-wir-str-1854-e2e.ts",
+    "test:l99": "tsx scripts/test-l99-identity-equality.ts",
+    "test:lifecycle": "tsx scripts/test-lifecycle-provenance.ts",
+    "test:pptx": "tsx scripts/test-pptx-audit.ts",
+    "test:er013": "tsx scripts/test-er013-backend-metrics.ts",
+    "test:regression-suite": "tsx scripts/runRegressionSuite.ts",
     "generate-evidence-report": "tsx scripts/generate-evidence-report.ts",
-    "verify-all": "npm run lint && npm run test && npm run test:sequence && npm run test:auth && npm run test:forensic && npm run test:overdue && npm run test:rfi && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build",
+    "verify-all": "npm run lint && npm run test && npm run test:sequence && npm run test:auth && npm run test:forensic && npm run test:overdue && npm run test:rfi && npm run test:usi && npm run test:str-matrix && npm run test:wir-str && npm run test:l99 && npm run test:lifecycle && npm run test:pptx && npm run test:er013 && npm run test:regression-suite && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build",
     "remediation-audit": "node scripts/engineering-remediation-audit.mjs"
   },
   "dependencies": {

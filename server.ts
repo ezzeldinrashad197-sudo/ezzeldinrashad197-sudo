@@ -148,7 +148,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   }));
 
-  // 2. CORS configuration with dynamic origin validation (Explicitly whitelists staging and development runtimes)
+  // 2. CORS configuration with explicit origin allowlist
   const allowedOrigins = [
     "https://ais-dev-k33a24ou3xwld6wy37hakh-382959131929.europe-west2.run.app",
     "https://ais-pre-k33a24ou3xwld6wy37hakh-382959131929.europe-west2.run.app"
@@ -165,11 +165,9 @@ export async function createApp(opts?: { skipVite?: boolean }) {
                       host === "127.0.0.1";
                       
       const isAllowedOrigin = allowedOrigins.includes(origin);
-      
-      // Sandbox and specific AI Studio preview runtime bounds
-      const isAISandbox = /^ais-(dev|pre)-[a-z0-9-]+-[a-z0-9-]+\.europe-west2\.run\.app$/.test(host) ||
-                          host.endsWith('.run.app') && host.startsWith('ais-');
-      const isGoogleSandbox = host.endsWith('.google.com') || host.endsWith('.ai.studio');
+      const isAISandbox = host === "ais-dev-k33a24ou3xwld6wy37hakh-382959131929.europe-west2.run.app" ||
+                          host === "ais-pre-k33a24ou3xwld6wy37hakh-382959131929.europe-west2.run.app";
+      const isGoogleSandbox = host === 'ai.studio' || host.endsWith('.ai.studio') || host.endsWith('.google.com');
 
       let isAllowed = false;
       if (isDev) {
@@ -187,23 +185,22 @@ export async function createApp(opts?: { skipVite?: boolean }) {
       } else {
         systemMetrics.corsBlockedCount++;
         logSecurityEvent('CORS_VIOLATION', 'CRITICAL', `Access rejected from unauthorized origin: ${origin}`, { host, path: origin });
-        // Use callback(null, false) instead of passing an error to prevent Express 500 Internal Server crashes on static asset delivery
         callback(null, false);
       }
     },
     credentials: true
   }));
 
-  // Add JSON & URL-encoded parsing middleware with high capacity bounds (100MB)
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+  // Add JSON & URL-encoded parsing middleware with capacity bounds (50MB for batch tabular datasets)
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Global body parser error handler for payload size / syntax issues
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err?.type === 'entity.too.large' || err?.status === 413 || err?.name === 'PayloadTooLargeError') {
       logSecurityEvent('PAYLOAD_TOO_LARGE', 'WARN', `Request entity too large at ${req.path}: ${err.message}`);
       return res.status(413).json({
-        error: "Payload too large. Request entity exceeds server capacity limit (100MB).",
+        error: "Payload too large. Request entity exceeds server capacity limit (50MB).",
         code: "PAYLOAD_TOO_LARGE"
       });
     }
@@ -237,7 +234,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
     res.json({ 
       status: "ok", 
       time: new Date().toISOString(),
-      governedLimit: "128KB",
+      governedLimit: "50MB (Batch Datasets) | Standard API: 1MB",
       activeQueueCount: activeJobs.size
     });
   });

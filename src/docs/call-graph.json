@@ -22,49 +22,49 @@
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 255,
+    "line": 256,
     "context": "useUpload(setData, setActiveTab as any, setStartDate, setEndDate)",
     "destination": "src/utils/calculations.ts::useUpload",
     "functionName": "useUpload"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 256,
+    "line": 257,
     "context": "useFilters(data, startDate, endDate)",
     "destination": "src/utils/calculations.ts::useFilters",
     "functionName": "useFilters"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 266,
+    "line": 267,
     "context": "calculateStats(generalData)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 271,
+    "line": 272,
     "context": "calculateProjectPerformanceHealth(stats, language)",
     "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
     "functionName": "calculateProjectPerformanceHealth"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 273,
+    "line": 274,
     "context": "syncProjectStats(activeProjectId, {\n             totalDocs,\n             approvalRate,\n             overdueRate,\n             healthScore\n         })",
     "destination": "src/utils/calculations.ts::syncProjectStats",
     "functionName": "syncProjectStats"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 284,
+    "line": 285,
     "context": "useExport({\n      data,\n      activeTab,\n      filterMonthly,\n      filterCumulative,\n      activeProject,\n      setParseMessage,\n      setIsError,\n      startDate,\n      endDate\n  })",
     "destination": "src/utils/calculations.ts::useExport",
     "functionName": "useExport"
   },
   {
     "callerFile": "src/App.tsx",
-    "line": 721,
+    "line": 722,
     "context": "normalizeData(prev)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
@@ -3732,105 +3732,105 @@
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 330,
+    "line": 348,
     "context": "buildCanonicalDataset(dataset)",
     "destination": "src/utils/calculations.ts::buildCanonicalDataset",
     "functionName": "buildCanonicalDataset"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 331,
+    "line": 349,
     "context": "evaluateSubmissionLayer(canonical)",
     "destination": "src/utils/calculations.ts::evaluateSubmissionLayer",
     "functionName": "evaluateSubmissionLayer"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 332,
+    "line": 350,
     "context": "evaluatePerformanceLayer(canonical)",
     "destination": "src/utils/calculations.ts::evaluatePerformanceLayer",
     "functionName": "evaluatePerformanceLayer"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 333,
+    "line": 351,
     "context": "calculateStats(dataset)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 358,
+    "line": 376,
     "context": "generateExpandedGoldenDataset()",
     "destination": "src/utils/calculations.ts::generateExpandedGoldenDataset",
     "functionName": "generateExpandedGoldenDataset"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 397,
+    "line": 415,
     "context": "buildCanonicalDataset(goldenDataset)",
     "destination": "src/utils/calculations.ts::buildCanonicalDataset",
     "functionName": "buildCanonicalDataset"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 398,
+    "line": 416,
     "context": "evaluateSubmissionLayer(canonical)",
     "destination": "src/utils/calculations.ts::evaluateSubmissionLayer",
     "functionName": "evaluateSubmissionLayer"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 399,
+    "line": 417,
     "context": "evaluatePerformanceLayer(canonical)",
     "destination": "src/utils/calculations.ts::evaluatePerformanceLayer",
     "functionName": "evaluatePerformanceLayer"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 472,
+    "line": 490,
     "context": "calculateStats(goldenDataset.filter(r => r.documentType === 'SHD'))",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 486,
+    "line": 504,
     "context": "calculateStats(goldenDataset.filter(r => r.documentType === 'MAR'))",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 494,
+    "line": 512,
     "context": "calculateStats(goldenDataset)",
     "destination": "src/utils/calculations.ts::calculateStats",
     "functionName": "calculateStats"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 539,
+    "line": 557,
     "context": "normalizeData(discTestRows)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 598,
+    "line": 616,
     "context": "normalizeData(simCumulativeRows)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 626,
+    "line": 644,
     "context": "normalizeData(simMonthlyRows)",
     "destination": "src/utils/calculations.ts::normalizeData",
     "functionName": "normalizeData"
   },
   {
     "callerFile": "src/utils/calculationVerificationEngine.ts",
-    "line": 686,
+    "line": 704,
     "context": "getPerformanceValidationRows(goldenDataset)",
     "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
     "functionName": "getPerformanceValidationRows"

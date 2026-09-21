@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * TEST / EVIDENCE HARNESS (NON-PRODUCTION CALCULATION ENGINE)
+ * ============================================================================
+ * CLASSIFICATION: VERIFICATION & AUDIT BENCHMARK HARNESS ONLY
+ * 
+ * IMPORTANT ARCHITECTURAL DIRECTIVE:
+ * This module is exclusively a test-only evidence & verification harness
+ * utilized by offline benchmarking suites (e.g. `runRegressionSuite.ts`,
+ * integration tests).
+ * 
+ * It is NOT the runtime production calculation path.
+ * Production calculations are strictly governed by:
+ * - `src/analytics/calculationFoundation.ts` (SSOT Canonical Foundation)
+ * - `src/utils/calculations.ts` (Layer 2 Production Analytics Engine)
+ * ============================================================================
+ */
+
 import { SubmittalRow } from "../types";
 import { calculateStats, normalizeData } from "./calculations";
 import { 

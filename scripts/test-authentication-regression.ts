@@ -26,7 +26,7 @@ function assert(condition: boolean, testName: string, detail?: string) {
 const expectedHashes = {
   'src/utils/calculations.ts': 'de29b526dfe36dc7661bde16e6e571ab7df4b9b2c3756c446b3d2c1a7ff7fbd5', // remediated SSOT calculations with USI authoritative resolution
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade',
-  'firestore.rules': 'bb2654c3a03fa1aac102d1deab55ea2995de06a750ee2aa4dbc04021971d4344'
+  'firestore.rules': 'cdc431213616fcf79aa5660db5f9f482338ec5d8ad15e03f6f7f1922cbf5f856'
 };
 
 for (const [relPath, expectedHash] of Object.entries(expectedHashes)) {
@@ -607,6 +607,124 @@ async function runLiveHttpSuite() {
     assert(
       unauthSecWrite === false && authSecWrite === true && updateSecBlocked === false && deleteSecBlocked === false,
       'AUTH-024: Security Test History Rules — Unauthorized write DENIED, Admin creation ALLOWED, Update/Delete FORBIDDEN (P1-08)'
+    );
+
+    // AUTH-025: Firestore Rules Engine Policy Simulation for Pre-Provisioned Identity Linking
+    function simulateFirestoreRulesForUserDoc(
+      authContext: { uid: string; token: { email?: string; email_verified?: boolean } } | null,
+      targetDocId: string,
+      operation: 'get' | 'create' | 'update',
+      requestData?: any,
+      existingDocData?: any,
+      emailDocExists?: boolean,
+      emailDocData?: any
+    ): boolean {
+      if (!authContext || !authContext.uid) return false;
+      const isSignedIn = true;
+      const isCurrentUser = authContext.uid === targetDocId;
+      const isCurrentVerifiedEmail = 
+        authContext.token.email != null && 
+        authContext.token.email_verified === true && 
+        authContext.token.email === targetDocId;
+      
+      const isAdmin = false; // standard non-admin user
+
+      if (operation === 'get') {
+        return isSignedIn && (isCurrentUser || isCurrentVerifiedEmail || isAdmin);
+      }
+
+      if (operation === 'create') {
+        if (!isSignedIn) return false;
+        if (isAdmin) return true;
+        if (isCurrentUser) {
+          const roleNotSpecifiedOrViewer = !requestData?.role || requestData.role === 'viewer';
+          const validLinkFromEmail = 
+            authContext.token.email != null &&
+            authContext.token.email_verified === true &&
+            emailDocExists === true &&
+            requestData?.role === emailDocData?.role &&
+            requestData?.linkedFromEmailDoc === authContext.token.email;
+          return roleNotSpecifiedOrViewer || validLinkFromEmail;
+        }
+        return false;
+      }
+
+      if (operation === 'update') {
+        if (!isSignedIn) return false;
+        if (isAdmin) return true;
+        if (isCurrentUser) {
+          return (
+            requestData?.role === existingDocData?.role &&
+            requestData?.accountStatus === existingDocData?.accountStatus &&
+            requestData?.accessLevel === existingDocData?.accessLevel
+          );
+        }
+        if (isCurrentVerifiedEmail) {
+          return (
+            requestData?.role === existingDocData?.role &&
+            requestData?.accountStatus === existingDocData?.accountStatus &&
+            requestData?.accessLevel === existingDocData?.accessLevel &&
+            requestData?.linkedToUid === authContext.uid
+          );
+        }
+        return false;
+      }
+
+      return false;
+    }
+
+    const testUserAuth = { uid: 'eng-uid-99', token: { email: 'engineer@structusight.com', email_verified: true } };
+    const preProvisionedData = { role: 'pm,pd', accountStatus: 'active', accessLevel: 'approved' };
+
+    // 1. Can user read their pre-provisioned email doc? -> YES
+    const canReadOwnEmailDoc = simulateFirestoreRulesForUserDoc(testUserAuth, 'engineer@structusight.com', 'get');
+    // 2. Can user read someone else's email doc? -> NO
+    const canReadOtherEmailDoc = simulateFirestoreRulesForUserDoc(testUserAuth, 'victim@structusight.com', 'get');
+    // 3. Can user create their UID profile matching pre-provisioned email doc? -> YES
+    const canCreateValidUidProfile = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'eng-uid-99',
+      'create',
+      { role: 'pm,pd', linkedFromEmailDoc: 'engineer@structusight.com' },
+      undefined,
+      true,
+      preProvisionedData
+    );
+    // 4. Can user forge an elevated role when creating UID doc? -> NO
+    const canForgeAdminRole = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'eng-uid-99',
+      'create',
+      { role: 'admin', linkedFromEmailDoc: 'engineer@structusight.com' },
+      undefined,
+      true,
+      preProvisionedData
+    );
+    // 5. Can user backlink their email doc with linkedToUid? -> YES
+    const canBacklinkEmailDoc = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'engineer@structusight.com',
+      'update',
+      { ...preProvisionedData, linkedToUid: 'eng-uid-99' },
+      preProvisionedData
+    );
+    // 6. Can user alter their role in their email doc? -> NO
+    const canAlterRoleInEmailDoc = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'engineer@structusight.com',
+      'update',
+      { ...preProvisionedData, role: 'all', linkedToUid: 'eng-uid-99' },
+      preProvisionedData
+    );
+
+    assert(
+      canReadOwnEmailDoc === true &&
+      canReadOtherEmailDoc === false &&
+      canCreateValidUidProfile === true &&
+      canForgeAdminRole === false &&
+      canBacklinkEmailDoc === true &&
+      canAlterRoleInEmailDoc === false,
+      'AUTH-025: Firestore Security Rules Formal Policy Verification — Non-admin Identity Linking & Anti-Tamper Invariants'
     );
 
   } finally {

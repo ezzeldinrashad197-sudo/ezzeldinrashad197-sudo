@@ -1,5 +1,5 @@
 # StructuSight Mathematical & Architecture Evidence Log
-*Generated on 2026-09-21T07:39:28.798Z via StructuSight Custom AST Compliance Engine*
+*Generated on 2026-09-21T09:05:04.506Z via StructuSight Custom AST Compliance Engine*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -12,24 +12,24 @@ To guarantee absolute reproducibility and transparency under independent review,
 
 | Metric | System Signature Value | Description |
 | :--- | :--- | :--- |
-| **Audit Timestamp** | `2026-09-21T07:39:28.798Z` | Universal Coordinated Time (UTC) of verification run |
+| **Audit Timestamp** | `2026-09-21T09:05:04.506Z` | Universal Coordinated Time (UTC) of verification run |
 | **Node.js Engine** | `v22.23.2` | Active Node runtime engine executing verification |
 | **TypeScript Version** | `v5.8.3` | Version of TypeScript Compiler API used for parsing |
 | **System Platform** | `linux (x64)` | Host kernel and architecture fingerprint |
 | **Build Project ID** | `b1fedb55-c17f-4221-b883-f1ee17f1362f` | Unique platform identifier of active workspace |
 | **Report Schema Version** | `1.4.0` | Schema specification version for exported JSON and reporting layers |
 | **Verification Engine** | `2.4.1-Prod` | Release build version of custom AST scanner |
-| **Total Pipeline Wall Time**| `**1.457 seconds**` | Combined execution duration of AST scanning and verification pipeline |
+| **Total Pipeline Wall Time**| `**1.755 seconds**` | Combined execution duration of AST scanning and verification pipeline |
 
 ### ⏱️ VERIFICATION RUNTIME METRIC SPLIT
 
 | Verification Stage | Processed Task | Measured Duration | Percentage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.430 seconds` | `98.1%` | COMPLETED ✅ |
+| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.723 seconds` | `98.2%` | COMPLETED ✅ |
 | **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.001 seconds` | `0.1%` | COMPLETED ✅ |
-| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.013 seconds` | `0.9%` | COMPLETED ✅ |
-| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.013 seconds` | `0.9%` | COMPLETED ✅ |
-| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.457 seconds**` | `100.0%` | **SUCCESS** ✅ |
+| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.017 seconds` | `1.0%` | COMPLETED ✅ |
+| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.014 seconds` | `0.8%` | COMPLETED ✅ |
+| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.755 seconds**` | `100.0%` | **SUCCESS** ✅ |
 
 ### 🔒 CRYPTOGRAPHIC REPOSITORY MANIFEST & FILE HASH SNAPSHOTS
 The table below lists the exact SHA-256 cryptographic hashes of the primary compliance-governed source and configuration files at the exact timestamp of this audit run. Any modification of these files post-verification will invalidate these signatures:
@@ -42,7 +42,7 @@ The table below lists the exact SHA-256 cryptographic hashes of the primary comp
 | **architecture-audit.ts (SSOT structure checker)** | `scripts/architecture-audit.ts` | `812ba87696a7f09c2943c7629899a967955756d357186d06da81948e9cf520b6` | `6.76 KB` | `2026-09-21T06:40:21.458Z` | `Included` |
 | **run-integration-tests.ts (E2E simulation harness)** | `scripts/run-integration-tests.ts` | `8fb3de62c89bd1494e6029dfb0b7392d1ab165f91dd8d058e5156aca0a931c8e` | `15.39 KB` | `2026-09-21T06:40:21.526Z` | `Included` |
 | **package-lock.json (Resolved lockfile)** | `package-lock.json` | `6240ce9e80fb0f9563c4c496b5c8e248292b6de8ef86abaf91137ca662758910` | `401.76 KB` | `2026-09-21T06:40:21.479Z` | `Excluded (Config/Lockfile)` |
-| **package.json (Project manifest)** | `package.json` | `2ffa12c92e937cde2f82f99cb4bc133a3b39c5a170fc1434197ffdeba4ad9dc0` | `2.62 KB` | `2026-09-21T06:40:21.411Z` | `Excluded (Config/Manifest)` |
+| **package.json (Project manifest)** | `package.json` | `9551ebfc2e4f64a092dba1f38f0f709511635039f11a3f82309bf15a75edbb62` | `3.30 KB` | `2026-09-21T09:03:33.165Z` | `Excluded (Config/Manifest)` |
 | **tsconfig.json (TS compiler options)** | `tsconfig.json` | `f434f1f4865916847fcc5b897a7b520371e8aa051ccbc46187a66b48f2ae9cf6` | `0.64 KB` | `2026-09-21T06:40:21.413Z` | `Excluded (Config/Compiler)` |
 
 ---

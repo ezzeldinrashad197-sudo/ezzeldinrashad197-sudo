@@ -11,19 +11,32 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isCurrentVerifiedEmail(email) {
+      return isSignedIn() && 
+        request.auth.token.email != null && 
+        request.auth.token.email_verified == true && 
+        request.auth.token.email == email;
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function getUserRole() {
-      return getUserData().role;
+      return hasUserDoc() ? getUserData().role : '';
     }
 
     function isAdmin() {
       return isSignedIn() && (
-        getUserRole() == 'all' || 
-        getUserRole() == 'executive' || 
-        getUserRole() == 'admin' ||
+        (hasUserDoc() && (
+          getUserRole() == 'all' || 
+          getUserRole() == 'executive' || 
+          getUserRole() == 'admin'
+        )) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -73,24 +86,46 @@ service cloud.firestore {
     }
 
     // --- COLLECTION: users ---
-    // Protected: Users can read their own profile, or admins can read all profiles.
-    // Non-admins cannot edit sensitive security fields (roles, accessLevel, accountStatus).
+    // Protected: Users can read their own profile or their pre-provisioned email document, or admins can read all profiles.
+    // Non-admins can create their own UID profile either with default viewer role, or by linking from their
+    // verified pre-provisioned email document where the role and linkedFromEmailDoc match exactly.
     match /users/{userId} {
-      allow read: if isSignedIn() && (isCurrentUser(userId) || isAdmin());
+      allow read: if isSignedIn() && (
+        isCurrentUser(userId) || 
+        isCurrentVerifiedEmail(userId) || 
+        isAdmin()
+      );
+      
       allow create: if isSignedIn() && (
         isAdmin() || (
-          isCurrentUser(userId) && 
-          (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'viewer')
+          isCurrentUser(userId) && (
+            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'viewer') ||
+            (
+              request.auth.token.email != null &&
+              request.auth.token.email_verified == true &&
+              exists(/databases/$(database)/documents/users/$(request.auth.token.email)) &&
+              request.resource.data.role == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role &&
+              request.resource.data.linkedFromEmailDoc == request.auth.token.email
+            )
+          )
         )
       );
+
       allow update: if isSignedIn() && (
         isAdmin() || (
           isCurrentUser(userId) && 
           request.resource.data.role == resource.data.role &&
           request.resource.data.accountStatus == resource.data.accountStatus &&
           request.resource.data.accessLevel == resource.data.accessLevel
+        ) || (
+          isCurrentVerifiedEmail(userId) &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.accountStatus == resource.data.accountStatus &&
+          request.resource.data.accessLevel == resource.data.accessLevel &&
+          request.resource.data.linkedToUid == request.auth.uid
         )
       );
+
       allow delete: if isSignedIn() && isAdmin();
     }
 

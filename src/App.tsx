@@ -42,7 +42,7 @@ export default function App() {
   const { t, language, setLanguage, isRtl } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'enterprise_dashboard' | 'portfolio' | 'master_register' | 'validation' | 'aging' | 'sla' | 'actions' | 'monthly' | 'cumulative' | 'delay' | 'rfi' | 'presentation' | 'insights' | 'ncr' | 'sor' | 'ltr' | 'trend_forecast' | 'warehouse' | 'monitoring' | 'engineering_dataset' | 'final_audit' | 'mapping' | 'calc_audit' | 'universal_engine'>('portfolio');
-  const [activeRole, setActiveRole] = useState<string>('all');
+  const [activeRole, setActiveRole] = useState<string>('unresolved');
 
   const activeRoleRef = useRef(activeRole);
   const activeTabRef = useRef(activeTab);
@@ -114,7 +114,7 @@ export default function App() {
               localStorage.removeItem('docuCtrl_activeRole');
               localStorage.removeItem('docuCtrl_activeEmail');
               setIsAuthenticated(false);
-              setActiveRole('viewer');
+              setActiveRole('unresolved');
             };
 
             if (auth.currentUser) {
@@ -169,6 +169,7 @@ export default function App() {
   }, [isAuthenticated]);
   
   const hasPermission = (allowedRoles: string[]) => {
+    if (!isAuthenticated || !activeRole || activeRole === 'unresolved') return false;
     const rolesList = activeRole.split(',').map(r => r.trim().toLowerCase());
     if (rolesList.includes('all')) return true;
     return allowedRoles.some(allowed => rolesList.includes(allowed.toLowerCase()));
@@ -518,7 +519,7 @@ export default function App() {
                         localStorage.removeItem('docuCtrl_activeRole');
                         localStorage.removeItem('docuCtrl_activeEmail');
                         setIsAuthenticated(false);
-                        setActiveRole('viewer');
+                        setActiveRole('unresolved');
                     };
                     auth.signOut().then(performManualLogout).catch(performManualLogout);
                 }}
