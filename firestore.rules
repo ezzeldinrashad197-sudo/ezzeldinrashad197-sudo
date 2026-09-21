@@ -80,6 +80,23 @@ service cloud.firestore {
       return isSignedIn() && request.resource.data.projectId is string && isAdminOrProjectMember(request.resource.data.projectId);
     }
 
+    // Security Authorization & Tenancy Invariant Checks
+    function hasSameAuthorizationField(field) {
+      return (!request.resource.data.keys().hasAny([field]) && !resource.data.keys().hasAny([field])) ||
+             (request.resource.data.keys().hasAny([field]) && resource.data.keys().hasAny([field]) && request.resource.data[field] == resource.data[field]);
+    }
+
+    function isImmutableAuthorizationUpdate() {
+      return hasSameAuthorizationField('role') &&
+             hasSameAuthorizationField('roles') &&
+             hasSameAuthorizationField('accountStatus') &&
+             hasSameAuthorizationField('accessLevel') &&
+             hasSameAuthorizationField('projectScope') &&
+             hasSameAuthorizationField('tenantId') &&
+             hasSameAuthorizationField('authorizedProjects') &&
+             hasSameAuthorizationField('permissions');
+    }
+
     // Default Lockout (Enterprise Least-Privilege Baseline)
     match /{document=**} {
       allow read, write: if false;
@@ -99,13 +116,30 @@ service cloud.firestore {
       allow create: if isSignedIn() && (
         isAdmin() || (
           isCurrentUser(userId) && (
-            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'viewer') ||
+            (
+              (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'viewer') &&
+              !request.resource.data.keys().hasAny(['projectScope', 'tenantId', 'authorizedProjects', 'permissions', 'accessLevel', 'accountStatus'])
+            ) ||
             (
               request.auth.token.email != null &&
               request.auth.token.email_verified == true &&
               exists(/databases/$(database)/documents/users/$(request.auth.token.email)) &&
               request.resource.data.role == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role &&
-              request.resource.data.linkedFromEmailDoc == request.auth.token.email
+              request.resource.data.linkedFromEmailDoc == request.auth.token.email &&
+              (
+                !request.resource.data.keys().hasAny(['projectScope']) ||
+                (
+                  get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.keys().hasAny(['projectScope']) &&
+                  request.resource.data.projectScope == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.projectScope
+                )
+              ) &&
+              (
+                !request.resource.data.keys().hasAny(['tenantId']) ||
+                (
+                  get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.keys().hasAny(['tenantId']) &&
+                  request.resource.data.tenantId == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.tenantId
+                )
+              )
             )
           )
         )
@@ -114,14 +148,10 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isAdmin() || (
           isCurrentUser(userId) && 
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.accountStatus == resource.data.accountStatus &&
-          request.resource.data.accessLevel == resource.data.accessLevel
+          isImmutableAuthorizationUpdate()
         ) || (
           isCurrentVerifiedEmail(userId) &&
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.accountStatus == resource.data.accountStatus &&
-          request.resource.data.accessLevel == resource.data.accessLevel &&
+          isImmutableAuthorizationUpdate() &&
           request.resource.data.linkedToUid == request.auth.uid
         )
       );

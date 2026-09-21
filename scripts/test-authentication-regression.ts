@@ -22,11 +22,14 @@ function assert(condition: boolean, testName: string, detail?: string) {
   }
 }
 
-// 1. Verify SHA-256 hashes of the remediated protected artifacts
+// 1. Verify SHA-256 hashes of the 5 Immutable SSOT Artifacts + firestore.rules (Release Integrity Baseline)
 const expectedHashes = {
-  'src/utils/calculations.ts': 'de29b526dfe36dc7661bde16e6e571ab7df4b9b2c3756c446b3d2c1a7ff7fbd5', // remediated SSOT calculations with USI authoritative resolution
-  'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade',
-  'firestore.rules': 'cdc431213616fcf79aa5660db5f9f482338ec5d8ad15e03f6f7f1922cbf5f856'
+  'src/utils/calculations.ts': 'de29b526dfe36dc7661bde16e6e571ab7df4b9b2c3756c446b3d2c1a7ff7fbd5', // Layer 2 Production Analytics Engine
+  'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT
+  'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT
+  'src/analytics/calculationFoundation.ts': '9e6bf9034395b754836ee1ce5d0e5da13b36d8cbdba2bedede55aa7270f20203', // Layer 1 Universal Source Identity & Taxonic Lock
+  'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard
+  'firestore.rules': 'a23aa401964b257f7b044ea42e56e5bd88f123d19847615ab0908b3eca62257e' // Hardened Firestore Authorization Rules
 };
 
 for (const [relPath, expectedHash] of Object.entries(expectedHashes)) {
@@ -637,13 +640,16 @@ async function runLiveHttpSuite() {
         if (!isSignedIn) return false;
         if (isAdmin) return true;
         if (isCurrentUser) {
-          const roleNotSpecifiedOrViewer = !requestData?.role || requestData.role === 'viewer';
+          const roleNotSpecifiedOrViewer = (!requestData?.role || requestData.role === 'viewer') &&
+            !requestData?.projectScope && !requestData?.tenantId && !requestData?.authorizedProjects;
           const validLinkFromEmail = 
             authContext.token.email != null &&
             authContext.token.email_verified === true &&
             emailDocExists === true &&
             requestData?.role === emailDocData?.role &&
-            requestData?.linkedFromEmailDoc === authContext.token.email;
+            requestData?.linkedFromEmailDoc === authContext.token.email &&
+            (!requestData?.projectScope || JSON.stringify(requestData.projectScope) === JSON.stringify(emailDocData?.projectScope)) &&
+            (!requestData?.tenantId || requestData.tenantId === emailDocData?.tenantId);
           return roleNotSpecifiedOrViewer || validLinkFromEmail;
         }
         return false;
@@ -652,20 +658,18 @@ async function runLiveHttpSuite() {
       if (operation === 'update') {
         if (!isSignedIn) return false;
         if (isAdmin) return true;
+        const immutableFieldsPass = 
+          requestData?.role === existingDocData?.role &&
+          requestData?.accountStatus === existingDocData?.accountStatus &&
+          requestData?.accessLevel === existingDocData?.accessLevel &&
+          JSON.stringify(requestData?.projectScope) === JSON.stringify(existingDocData?.projectScope) &&
+          requestData?.tenantId === existingDocData?.tenantId;
+
         if (isCurrentUser) {
-          return (
-            requestData?.role === existingDocData?.role &&
-            requestData?.accountStatus === existingDocData?.accountStatus &&
-            requestData?.accessLevel === existingDocData?.accessLevel
-          );
+          return immutableFieldsPass;
         }
         if (isCurrentVerifiedEmail) {
-          return (
-            requestData?.role === existingDocData?.role &&
-            requestData?.accountStatus === existingDocData?.accountStatus &&
-            requestData?.accessLevel === existingDocData?.accessLevel &&
-            requestData?.linkedToUid === authContext.uid
-          );
+          return immutableFieldsPass && requestData?.linkedToUid === authContext.uid;
         }
         return false;
       }
@@ -674,7 +678,7 @@ async function runLiveHttpSuite() {
     }
 
     const testUserAuth = { uid: 'eng-uid-99', token: { email: 'engineer@structusight.com', email_verified: true } };
-    const preProvisionedData = { role: 'pm,pd', accountStatus: 'active', accessLevel: 'approved' };
+    const preProvisionedData = { role: 'pm,pd', accountStatus: 'active', accessLevel: 'approved', projectScope: ['P-101'], tenantId: 'tenant-main' };
 
     // 1. Can user read their pre-provisioned email doc? -> YES
     const canReadOwnEmailDoc = simulateFirestoreRulesForUserDoc(testUserAuth, 'engineer@structusight.com', 'get');
@@ -685,7 +689,7 @@ async function runLiveHttpSuite() {
       testUserAuth,
       'eng-uid-99',
       'create',
-      { role: 'pm,pd', linkedFromEmailDoc: 'engineer@structusight.com' },
+      { role: 'pm,pd', linkedFromEmailDoc: 'engineer@structusight.com', projectScope: ['P-101'], tenantId: 'tenant-main' },
       undefined,
       true,
       preProvisionedData
@@ -700,7 +704,17 @@ async function runLiveHttpSuite() {
       true,
       preProvisionedData
     );
-    // 5. Can user backlink their email doc with linkedToUid? -> YES
+    // 5. Can user escalate projectScope on creation? -> NO
+    const canEscalateProjectScopeOnCreate = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'eng-uid-99',
+      'create',
+      { role: 'pm,pd', linkedFromEmailDoc: 'engineer@structusight.com', projectScope: ['P-101', 'P-999'], tenantId: 'tenant-main' },
+      undefined,
+      true,
+      preProvisionedData
+    );
+    // 6. Can user backlink their email doc with linkedToUid? -> YES
     const canBacklinkEmailDoc = simulateFirestoreRulesForUserDoc(
       testUserAuth,
       'engineer@structusight.com',
@@ -708,12 +722,27 @@ async function runLiveHttpSuite() {
       { ...preProvisionedData, linkedToUid: 'eng-uid-99' },
       preProvisionedData
     );
-    // 6. Can user alter their role in their email doc? -> NO
+    // 7. Can user alter their role in their email doc? -> NO
     const canAlterRoleInEmailDoc = simulateFirestoreRulesForUserDoc(
       testUserAuth,
       'engineer@structusight.com',
       'update',
       { ...preProvisionedData, role: 'all', linkedToUid: 'eng-uid-99' },
+      preProvisionedData
+    );
+    // 8. (F-01 / F-02 Finding Check) Can user alter projectScope or tenantId on update? -> NO
+    const canMutateProjectScopeOnUpdate = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'eng-uid-99',
+      'update',
+      { ...preProvisionedData, projectScope: ['P-101', 'P-999'] },
+      preProvisionedData
+    );
+    const canMutateTenantOnEmailDoc = simulateFirestoreRulesForUserDoc(
+      testUserAuth,
+      'engineer@structusight.com',
+      'update',
+      { ...preProvisionedData, tenantId: 'tenant-evil', linkedToUid: 'eng-uid-99' },
       preProvisionedData
     );
 
@@ -722,9 +751,12 @@ async function runLiveHttpSuite() {
       canReadOtherEmailDoc === false &&
       canCreateValidUidProfile === true &&
       canForgeAdminRole === false &&
+      canEscalateProjectScopeOnCreate === false &&
       canBacklinkEmailDoc === true &&
-      canAlterRoleInEmailDoc === false,
-      'AUTH-025: Firestore Security Rules Formal Policy Verification — Non-admin Identity Linking & Anti-Tamper Invariants'
+      canAlterRoleInEmailDoc === false &&
+      canMutateProjectScopeOnUpdate === false &&
+      canMutateTenantOnEmailDoc === false,
+      'AUTH-025: Firestore Security Rules Formal Policy Verification — Non-admin Identity Linking, ProjectScope & Anti-Tamper Invariants (F-01, F-02 Remediation)'
     );
 
   } finally {
