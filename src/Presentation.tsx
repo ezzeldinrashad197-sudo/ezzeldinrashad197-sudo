@@ -51,6 +51,157 @@ import {
   getMonthlyRecommendations,
 } from "./components/presentation/PresHelpers";
 
+export function getRegisterTitle(bt: string, language: 'ar' | 'en'): { name: string; subtitle: string } {
+  const titles: Record<string, { ar: string; en: string; subtitleAr: string; subtitleEn: string }> = {
+    SDW: {
+      ar: 'المخططات التنفيذية (Shop Drawings)',
+      en: 'Shop Drawings Register',
+      subtitleAr: 'سجل اعتمادات ومراجعات مخططات الورشة التنفيذية',
+      subtitleEn: 'Shop Drawing Approval & Engineering Review'
+    },
+    SHD: {
+      ar: 'المخططات التنفيذية (Shop Drawings)',
+      en: 'Shop Drawings Register',
+      subtitleAr: 'سجل اعتمادات ومراجعات مخططات الورشة التنفيذية',
+      subtitleEn: 'Shop Drawing Approval & Engineering Review'
+    },
+    ABD: {
+      ar: 'مخططات كما تم التنفيذ (As-Built Drawings)',
+      en: 'As-Built Drawings Register',
+      subtitleAr: 'سجل اعتمادات المخططات المنفذة على الطبيعة',
+      subtitleEn: 'As-Built Drawings & Record Documentation'
+    },
+    WIR: {
+      ar: 'طلبات فحص الأعمال (Work Inspection Requests)',
+      en: 'Work Inspection Requests (WIR)',
+      subtitleAr: 'سجل استلام وفحص الأعمال بالموقع',
+      subtitleEn: 'Site Works Inspection & Approvals'
+    },
+    MIR: {
+      ar: 'طلبات فحص المواد (Material Inspection Requests)',
+      en: 'Material Inspection Requests (MIR)',
+      subtitleAr: 'سجل فحص واستلام المواد الموردة للموقع',
+      subtitleEn: 'Material Delivery & Site Inspection'
+    },
+    MAR: {
+      ar: 'اعتمادات المواد (Material Approval Requests)',
+      en: 'Material Approval Requests (MAR)',
+      subtitleAr: 'سجل اعتمادات وتوريد المواد والعينات',
+      subtitleEn: 'Material Submittal & Vendor Approval'
+    },
+    RFI: {
+      ar: 'طلبات الاستفسار الفني (Requests for Information)',
+      en: 'Requests for Information (RFI)',
+      subtitleAr: 'سجل الاستفسارات الفنية والتوضيحات الهندسية',
+      subtitleEn: 'Technical Requests & Clarifications'
+    },
+    NCR: {
+      ar: 'تقارير عدم المطابقة (Non-Conformance Reports)',
+      en: 'Non-Conformance Reports (NCR)',
+      subtitleAr: 'سجل تقارير عدم المطابقة والإجراءات التصحيحية',
+      subtitleEn: 'Quality Non-Conformance & Corrective Actions'
+    },
+    SOR: {
+      ar: 'ملاحظات الموقع الميدانية (Site Observation Reports)',
+      en: 'Site Observation Reports (SOR)',
+      subtitleAr: 'سجل ملاحظات السلامة والجودة بالموقع',
+      subtitleEn: 'Site Safety & Quality Observations'
+    },
+    DOC: {
+      ar: 'الوثائق والمستندات الفنية (Technical Submittals)',
+      en: 'Document Submittals (DOC)',
+      subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية',
+      subtitleEn: 'Technical Documents & Transmittals'
+    },
+    QS: {
+      ar: 'حصر الكميات (Quantity Surveying)',
+      en: 'Quantity Survey Submittals (QS)',
+      subtitleAr: 'سجل حصر الكميات والمستخلصات',
+      subtitleEn: 'Quantity Survey & BOQ Submittals'
+    },
+    LTR: {
+      ar: 'المراسلات والخطابات الرسمية (Correspondence)',
+      en: 'Project Correspondence (LTR)',
+      subtitleAr: 'سجل الخطابات والمراسلات المتبادلة',
+      subtitleEn: 'Project Letters & Communications'
+    }
+  };
+
+  const t = titles[bt] || {
+    ar: `سجل ${bt}`,
+    en: `${bt} Register`,
+    subtitleAr: `سجل تفصيلي للمعاملات الهندسية لـ ${bt}`,
+    subtitleEn: `Detailed Engineering Register for ${bt}`
+  };
+
+  return {
+    name: language === 'ar' ? t.ar : t.en,
+    subtitle: language === 'ar' ? t.subtitleAr : t.subtitleEn
+  };
+}
+
+export function resolveRowRegister(d: SubmittalRow): string {
+  if (!d) return 'SDW';
+
+  if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
+    const wf = d.workflowFamily.toUpperCase().trim();
+    if (wf === 'LETTER') return 'LTR';
+    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
+      return wf === 'SHD' ? 'SDW' : wf;
+    }
+  }
+
+  const docT = (d.documentType || '').toUpperCase().trim();
+  const docNo = (d.docNo || '').toUpperCase().trim();
+  const lt = (d.logType || '').toUpperCase().trim();
+  const sf = (d.sourceFile || '').toUpperCase().trim();
+  const wf = (d.workflowFamily || '').toUpperCase().trim();
+
+  if (
+    wf === 'ABD' ||
+    docT.startsWith('ABD') ||
+    docT.includes('AS-BUILT') ||
+    docT.includes('AS BUILT') ||
+    docNo.startsWith('ABD') ||
+    lt.includes('ABD') ||
+    lt.includes('AS-BUILT') ||
+    lt.includes('AS BUILT') ||
+    sf.includes('ABD') ||
+    sf.includes('AS-BUILT')
+  ) {
+    return 'ABD';
+  }
+
+  if (docT.includes('WIR') || wf === 'WIR' || docNo.startsWith('WIR') || lt.includes('WIR') || lt.includes('WORK INSP') || sf.includes('WIR')) return 'WIR';
+  if (docT.includes('MIR') || wf === 'MIR' || docNo.startsWith('MIR') || lt.includes('MIR') || lt.includes('MATERIAL INSP') || sf.includes('MIR')) return 'MIR';
+  if (docT.includes('MAR') || wf === 'MAR' || docNo.startsWith('MAR') || lt.includes('MAR') || lt.includes('MATERIAL SUB') || lt.includes('MATERIAL APP') || sf.includes('MAR')) return 'MAR';
+  if (docT.includes('RFI') || wf === 'RFI' || docNo.startsWith('RFI') || lt.includes('RFI') || sf.includes('RFI')) return 'RFI';
+  if (docT.includes('NCR') || wf === 'NCR' || docNo.startsWith('NCR') || lt.includes('NCR') || sf.includes('NCR')) return 'NCR';
+  if (docT.includes('SOR') || wf === 'SOR' || docNo.startsWith('SOR') || lt.includes('SOR') || sf.includes('SOR')) return 'SOR';
+  if (docT.includes('LTR') || docT.includes('CORRES') || wf === 'LETTER' || docNo.startsWith('LTR') || lt.includes('LTR') || lt.includes('LETTER') || lt.includes('CORRES') || sf.includes('LTR')) return 'LTR';
+  if (docT.includes('QS') || wf === 'QS' || docNo.startsWith('QS') || lt.includes('QS') || sf.includes('QS')) return 'QS';
+  if (docT.startsWith('DOC-') || docT === 'DOC' || wf === 'DOC' || lt.includes('TECHNICAL DOC') || lt.includes('TRANSMITTAL')) return 'DOC';
+
+  if (
+    docT.includes('SDW') ||
+    wf === 'SDW' ||
+    docT.includes('SHD') ||
+    wf === 'SHD' ||
+    docNo.startsWith('SDW') ||
+    docNo.startsWith('SHD') ||
+    lt.includes('SDW') ||
+    lt.includes('SHD') ||
+    lt.includes('SHOP') ||
+    lt.includes('DRAWING') ||
+    sf.includes('SDW') ||
+    sf.includes('SHOP')
+  ) {
+    return 'SDW';
+  }
+
+  return 'SDW';
+}
+
 interface PresentationProps {
   data: SubmittalRow[];
   filterMonthly: (row: SubmittalRow) => boolean;
@@ -255,47 +406,31 @@ export default function Presentation({
       return { stats, totalRow, hasData: totalRow.Total > 0 };
     }
 
-    const typeData = dataset.filter(d => {
-      const docT = (d.documentType || 'GENERAL').toUpperCase();
-      const wf = (d.workflowFamily || '').toUpperCase();
-      const docNo = (d.docNo || '').toUpperCase();
-      const lt = (d.logType || '').toUpperCase();
-      const sf = (d.sourceFile || '').toUpperCase();
-
-      const isABD = wf === 'ABD' || docT.startsWith('ABD') || docT.includes('AS-BUILT') || docT.includes('AS BUILT') || docNo.startsWith('ABD-') || lt.includes('ABD') || lt.includes('AS-BUILT') || lt.includes('AS BUILT') || sf.includes('ABD') || sf.includes('AS-BUILT');
-
-      if (bt === 'ABD') return isABD;
-      if (bt === 'SDW' || bt === 'SHD') return !isABD && (docT.includes('SDW') || wf === 'SDW' || docT.includes('SHD') || wf === 'SHD' || docNo.startsWith('SDW-') || docNo.startsWith('SHD-') || lt.includes('SDW') || lt.includes('SHD') || lt.includes('SHOP'));
-      if (wf === bt) return true;
-      if (docT.startsWith(`${bt}-`) || docT === bt) return true;
-      if (bt === 'NCR' && (docT.includes('NCR') || wf === 'NCR' || docNo.startsWith('NCR-'))) return true;
-      if (bt === 'SOR' && (docT.includes('SOR') || wf === 'SOR' || docNo.startsWith('SOR-'))) return true;
-      if (bt === 'RFI' && (docT.includes('RFI') || wf === 'RFI' || docNo.startsWith('RFI-'))) return true;
-      if (bt === 'QS' && (docT.includes('QS') || wf === 'QS' || docNo.startsWith('QS-'))) return true;
-      if (bt === 'LTR' && (docT.includes('LTR') || docT.includes('CORRES') || wf === 'LETTER' || docNo.startsWith('LTR-'))) return true;
-      return false;
-    });
+    const typeData = dataset.filter(d => resolveRowRegister(d) === bt);
 
     let disciplinesInThisType: string[] = [];
     if (bt === 'LTR') {
       disciplinesInThisType = Array.from(new Set(typeData.map(d => d.stakeholder || 'GENERAL')));
     } else {
-      const predefinedDisciplines = bt === 'NCR' ? ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE'] : ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'];
+      const predefinedDisciplines = bt === 'NCR'
+        ? ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE']
+        : ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape'];
+
       const parsedDisciplines = typeData.map(d => resolveRowDiscipline(d, bt));
       const activeDisciplinesSet = new Set(parsedDisciplines);
 
-      let list: string[] = [];
-      predefinedDisciplines.forEach(b => {
-        list.push(b);
-        if (b === 'STR' && activeDisciplinesSet.has('STR/SUR')) {
-          list.push('STR/SUR');
-        }
-      });
+      let list: string[] = [...predefinedDisciplines];
+
+      if (activeDisciplinesSet.has('STR/SUR') && !list.includes('STR/SUR')) {
+        list.push('STR/SUR');
+      }
+
       parsedDisciplines.forEach(p => {
         if (p && p !== 'GENERAL' && !list.includes(p)) {
           list.push(p);
         }
       });
+
       disciplinesInThisType = list;
     }
 
@@ -327,8 +462,6 @@ export default function Presentation({
         Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
         Pending: s.pending,
         Total: countForType,
-              // ARCHITECTURE FIX (F-01/F-07, 2026-08-25): Closed/Open classification moved to
-        // calculations.ts (getClosedOpenByDocType) — same formula, single source of truth.
         Closed: getClosedOpenByDocType(bt, s).closed,
         Open: getClosedOpenByDocType(bt, s).open,
       };
@@ -349,31 +482,18 @@ export default function Presentation({
       Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
     };
 
-    return { stats, totalRow, hasData: totalRow.Total > 0 };
+    return { stats, totalRow, hasData: totalRow.Total > 0 || typeData.length > 0 };
   };
 
-  const orderedPredefinedBaseTypes = ['ABD', 'SDW', 'SHD', 'MAR', 'QS', 'DOC', 'RFI', 'LTR', 'WIR', 'MIR', 'NCR', 'SOR'];
+  const orderedPredefinedBaseTypes = ['SDW', 'WIR', 'MIR', 'MAR', 'RFI', 'NCR', 'SOR', 'DOC', 'ABD', 'QS', 'LTR'];
   const baseTypes = useMemo(() => {
-    return Array.from(new Set(data.flatMap(d => {
-      const types: string[] = [];
-      if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
-        const wf = d.workflowFamily.toUpperCase();
-        types.push(wf === 'LETTER' ? 'LTR' : wf);
-      }
-      let dt = d.documentType || "GENERAL";
-      if (dt === 'NCR') dt = 'HSE';
-      const prefix = dt.split('-')[0].trim().toUpperCase();
-      if (prefix) types.push(prefix);
-      return types;
-    }))).filter(Boolean)
-      .filter(t => !['CORRESPONDENCE', 'LETTERS'].includes(t))
-      .sort((a, b) => {
-        let ai = orderedPredefinedBaseTypes.indexOf(a);
-        let bi = orderedPredefinedBaseTypes.indexOf(b);
-        if (ai === -1) ai = 999;
-        if (bi === -1) bi = 999;
-        return ai - bi;
-      });
+    const presentRegisters = new Set<string>();
+    data.forEach(d => {
+      const reg = resolveRowRegister(d);
+      if (reg) presentRegisters.add(reg);
+    });
+
+    return orderedPredefinedBaseTypes.filter(bt => presentRegisters.has(bt));
   }, [data]);
 
   // Standard visual render parts
@@ -383,7 +503,9 @@ export default function Presentation({
       <table className={`${isEightCol ? 'w-[52%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
         <thead>
           <tr style={{ backgroundColor: PRIMARY_BLUE, color: 'white' }}>
-            <th className="p-2 border border-[#4472c4] font-bold" colSpan={isEightCol ? 1 : 1}></th>
+            <th className="p-2 border border-[#4472c4] font-bold text-xs" colSpan={1}>
+              {language === 'ar' ? 'التخصص' : 'Status'}
+            </th>
             <th className="p-2 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
               {language === 'ar' ? 'الحالة' : 'STATUS'}
             </th>
@@ -404,7 +526,7 @@ export default function Presentation({
               </td>
               {cols.slice(1).map((c, i) => (
                 <td key={i} className={`p-2 border border-[#cbd5e1] text-xs ${c.key === "Total" ? "font-bold" : ""}`}>
-                  {s[c.key] !== undefined && s[c.key] !== null ? s[c.key] : ''}
+                  {s[c.key] !== undefined && s[c.key] !== null ? s[c.key] : 0}
                 </td>
               ))}
             </tr>
@@ -413,7 +535,7 @@ export default function Presentation({
             <td className="p-2 border border-[#cbd5e1]">{getDiscName(statsData.totalRow.discipline, language)}</td>
             {cols.slice(1).map((c, i) => (
               <td key={i} className="p-2 border border-[#cbd5e1]">
-                {statsData.totalRow[c.key]}
+                {statsData.totalRow[c.key] !== undefined && statsData.totalRow[c.key] !== null ? statsData.totalRow[c.key] : 0}
               </td>
             ))}
           </tr>
@@ -1005,9 +1127,10 @@ export default function Presentation({
                     const bStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
                     const workload = (bStats.totalRow.Rev00 || 0) + (bStats.totalRow.FurtherRev || 0);
                     const unique = bStats.totalRow.Total || 0;
+                    const regTitle = getRegisterTitle(bt, language);
                     return (
                       <tr key={bt} className="even:bg-slate-50 hover:bg-slate-100/70 h-9 transition-colors text-xs">
-                        <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{bt}</td>
+                        <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{regTitle.name}</td>
                         <td className="p-2 border border-slate-200 font-medium">{workload}</td>
                         <td className="p-2 border border-slate-200">{bStats.totalRow.Rev00}</td>
                         <td className="p-2 border border-slate-200">{bStats.totalRow.FurtherRev}</td>
@@ -1021,6 +1144,34 @@ export default function Presentation({
                       </tr>
                     );
                   })}
+                  {(() => {
+                    const allStats = baseTypes.map(bt => compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData).totalRow);
+                    const totWorkload = allStats.reduce((acc, r) => acc + (r.Rev00 || 0) + (r.FurtherRev || 0), 0);
+                    const totRev00 = allStats.reduce((acc, r) => acc + (r.Rev00 || 0), 0);
+                    const totFurther = allStats.reduce((acc, r) => acc + (r.FurtherRev || 0), 0);
+                    const totUnique = allStats.reduce((acc, r) => acc + (r.Total || 0), 0);
+                    const totApproved = allStats.reduce((acc, r) => acc + (r.Approved || 0), 0);
+                    const totRejOpen = allStats.reduce((acc, r) => acc + (r.RejectedOpen || 0), 0);
+                    const totRejClosed = allStats.reduce((acc, r) => acc + (r.RejectedClosed || 0), 0);
+                    const totRejected = totRejOpen + totRejClosed;
+                    const totPending = allStats.reduce((acc, r) => acc + (r.Pending || 0), 0);
+                    const totActive = totRejOpen + totPending;
+                    return (
+                      <tr className="bg-[#ddebf7] h-9 font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
+                        <td className="p-2 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'TOTAL'}</td>
+                        <td className="p-2 border border-slate-300">{totWorkload}</td>
+                        <td className="p-2 border border-slate-300">{totRev00}</td>
+                        <td className="p-2 border border-slate-300">{totFurther}</td>
+                        <td className="p-2 border border-slate-300">{totUnique}</td>
+                        <td className="p-2 border border-slate-300 text-emerald-700">{totApproved}</td>
+                        <td className="p-2 border border-slate-300 text-rose-700">{totRejOpen}</td>
+                        <td className="p-2 border border-slate-300 text-red-950">{totRejClosed}</td>
+                        <td className="p-2 border border-slate-300 text-red-800">{totRejected}</td>
+                        <td className="p-2 border border-slate-300 text-amber-700">{totPending}</td>
+                        <td className="p-2 border border-slate-300 text-amber-900">{totActive}</td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1339,9 +1490,10 @@ export default function Presentation({
                     const bStats = compileStatsForBaseType(cumulativeData, bt, undefined, data);
                     const workload = (bStats.totalRow.Rev00 || 0) + (bStats.totalRow.FurtherRev || 0);
                     const unique = bStats.totalRow.Total || 0;
+                    const regTitle = getRegisterTitle(bt, language);
                     return (
                       <tr key={bt} className="even:bg-slate-50 hover:bg-slate-100/70 h-9 transition-colors text-xs">
-                        <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{bt}</td>
+                        <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{regTitle.name}</td>
                         <td className="p-2 border border-slate-200 font-medium">{workload}</td>
                         <td className="p-2 border border-slate-200">{bStats.totalRow.Rev00}</td>
                         <td className="p-2 border border-slate-200">{bStats.totalRow.FurtherRev}</td>
@@ -1355,6 +1507,34 @@ export default function Presentation({
                       </tr>
                     );
                   })}
+                  {(() => {
+                    const allStats = baseTypes.map(bt => compileStatsForBaseType(cumulativeData, bt, undefined, data).totalRow);
+                    const totWorkload = allStats.reduce((acc, r) => acc + (r.Rev00 || 0) + (r.FurtherRev || 0), 0);
+                    const totRev00 = allStats.reduce((acc, r) => acc + (r.Rev00 || 0), 0);
+                    const totFurther = allStats.reduce((acc, r) => acc + (r.FurtherRev || 0), 0);
+                    const totUnique = allStats.reduce((acc, r) => acc + (r.Total || 0), 0);
+                    const totApproved = allStats.reduce((acc, r) => acc + (r.Approved || 0), 0);
+                    const totRejOpen = allStats.reduce((acc, r) => acc + (r.RejectedOpen || 0), 0);
+                    const totRejClosed = allStats.reduce((acc, r) => acc + (r.RejectedClosed || 0), 0);
+                    const totRejected = totRejOpen + totRejClosed;
+                    const totPending = allStats.reduce((acc, r) => acc + (r.Pending || 0), 0);
+                    const totActive = totRejOpen + totPending;
+                    return (
+                      <tr className="bg-[#ddebf7] h-9 font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
+                        <td className="p-2 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'TOTAL'}</td>
+                        <td className="p-2 border border-slate-300">{totWorkload}</td>
+                        <td className="p-2 border border-slate-300">{totRev00}</td>
+                        <td className="p-2 border border-slate-300">{totFurther}</td>
+                        <td className="p-2 border border-slate-300">{totUnique}</td>
+                        <td className="p-2 border border-slate-300 text-emerald-700">{totApproved}</td>
+                        <td className="p-2 border border-slate-300 text-rose-700">{totRejOpen}</td>
+                        <td className="p-2 border border-slate-300 text-red-950">{totRejClosed}</td>
+                        <td className="p-2 border border-slate-300 text-red-800">{totRejected}</td>
+                        <td className="p-2 border border-slate-300 text-amber-700">{totPending}</td>
+                        <td className="p-2 border border-slate-300 text-amber-900">{totActive}</td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1398,69 +1578,44 @@ export default function Presentation({
     }
 
     // --- SECTION 3: REGISTER BREAKDOWNS ---
-    baseTypes.forEach((bt, idx) => {
+    let registerSlideIndex = 0;
+    baseTypes.forEach((bt) => {
       const monthlyStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
       const cumulativeStats = compileStatsForBaseType(cumulativeData, bt, undefined, data);
 
       if (!monthlyStats.hasData && !cumulativeStats.hasData) return;
 
-      const longName = language === 'ar' ? getDiscName(bt, 'ar') : bt;
-      const sectionTitle = `${String(idx + 3).padStart(2, '0')} ${longName}`;
+      const regTitle = getRegisterTitle(bt, language);
+      registerSlideIndex += 1;
+      const sectionNum = String(registerSlideIndex + 3).padStart(2, '0');
 
       // A: Divider Cover Slide for Register
       slides.push({
         id: `reg-cover-${bt}`,
         view: "registers",
-        title: `${bt} - Section Divider`,
-        element: renderDividerSlide(bt, sectionTitle, `reg-cover-${bt}`)
+        title: `${sectionNum} ${regTitle.name}`,
+        element: renderDividerSlide(
+          regTitle.subtitle,
+          `${sectionNum} ${regTitle.name.toUpperCase()}`,
+          `reg-cover-${bt}`
+        )
       });
 
-      // B: Monthly stats slide for Register
-      if (monthlyStats.hasData) {
-        let cols = [
+      // B: Monthly slides for Register
+      if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
+        let monthlyCols = [
           { label: "Items", key: "discipline" },
           { label: "Total Rev.00", key: "Rev00" },
           { label: "Total Further Rev.", key: "FurtherRev" },
           { label: "Total", key: "Total" },
           { label: "Approved", key: "Approved" },
-          { label: "Rejected", key: "RejectedOpen" },
+          { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
         ];
-        if (bt === 'DOC') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Workload", key: "TotalSubmittals" },
-            { label: "Rev.00", key: "Rev00" },
-            { label: "Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Approved", key: "Approved" },
-            { label: "Rej. Open", key: "RejectedOpen" },
-            { label: "Rej. Closed", key: "RejectedClosed" },
-            { label: "Total Rej.", key: "Rejected" },
-            { label: "Pending", key: "Pending" },
-          ];
-        } else if (bt === 'SDW' || bt === 'SHD' || bt === 'ABD') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Total Submittals", key: "TotalSubmittals" },
-            { label: "Total Sheets Rev.00", key: "Rev00" },
-            { label: "Total Sheets Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Approved", key: "Approved" },
-            { label: "Rejected", key: "Rejected" },
-            { label: "Pending", key: "Pending" },
-          ];
-        } else if (bt === 'RFI') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Total Rev.00", key: "Rev00" },
-            { label: "Total Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Pending", key: "Pending" },
-            { label: "Closed", key: "Closed" },
-          ];
-        } else if (bt === 'NCR' || bt === 'SOR') {
-          cols = [
+
+        let pieLabels = ["Approved", "Rejected", "Pending"];
+        if (bt === 'NCR' || bt === 'SOR') {
+          monthlyCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
             { label: "Total Further Rev.", key: "FurtherRev" },
@@ -1469,89 +1624,82 @@ export default function Presentation({
             { label: "Open", key: "Open" },
             { label: "Pending", key: "Pending" },
           ];
+          pieLabels = ["Closed", "Open", "Pending"];
+        } else if (bt === 'RFI') {
+          monthlyCols = [
+            { label: "Items", key: "discipline" },
+            { label: "Total Rev.00", key: "Rev00" },
+            { label: "Total Further Rev.", key: "FurtherRev" },
+            { label: "Total", key: "Total" },
+            { label: "Closed", key: "Closed" },
+            { label: "Pending", key: "Pending" },
+          ];
+          pieLabels = ["Closed", "Pending"];
         } else if (bt === 'LTR') {
-          cols = [
+          monthlyCols = [
             { label: "Stakeholder", key: "discipline" },
             { label: "Sent", key: "Rev00" },
             { label: "Received", key: "FurtherRev" },
             { label: "Total", key: "Total" },
           ];
+          pieLabels = ["Sent", "Received"];
         }
 
+        // Monthly Status Slide: Table + Bar Chart
         slides.push({
           id: `reg-monthly-status-${bt}`,
           view: "registers",
-          title: `${bt} - Monthly Status`,
+          title: `${regTitle.name} - ${language === 'ar' ? 'الحالة الشهرية' : 'Monthly Status'}`,
           element: renderContentSlide(
-            <div className="flex w-full items-start justify-between mt-12 px-6">
-              {renderStandardTable(monthlyStats, cols)}
-              {renderStandardBar(monthlyStats, `${bt} This Period Status`)}
+            <div className="p-8 flex flex-col h-full justify-between">
+              <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+                <span>{language === 'ar' ? `حالة معاملات ${regTitle.name} (لهذه الفترة الشهرية)` : `${regTitle.name} Status (Monthly Period)`}</span>
+                <span className="text-xs font-normal text-slate-500">{regTitle.subtitle}</span>
+              </h3>
+              <div className="flex items-center justify-between gap-6 my-auto">
+                {renderStandardTable(monthlyStats, monthlyCols)}
+                {renderStandardBar(monthlyStats, `${bt} (This Period)`)}
+              </div>
             </div>,
-            `${longName} (${bt}) ${language === 'ar' ? 'لهذه الفترة' : 'This Period'}`,
+            language === 'ar' ? `حالة معاملات ${regTitle.name} (شهري)` : `${bt} SUBMITTALS STATUS (MONTHLY)`,
             `reg-monthly-status-${bt}`
           )
         });
 
-        // Pie Grid for Quality
-        const pieLabels = bt === 'DOC' ? ["Approved", "Rej. Open", "Rej. Closed", "Pending"] : (bt === 'RFI' ? ["Closed", "Pending"] : (bt === 'NCR' || bt === 'SOR' ? ["Closed", "Open", "Pending"] : (bt === 'LTR' ? ["Sent", "Received"] : ["Approved", "Rejected", "Pending"])));
+        // Monthly Quality Slide: Pie Grid
         slides.push({
           id: `reg-monthly-pie-${bt}`,
           view: "registers",
-          title: `${bt} - Monthly Quality`,
+          title: `${regTitle.name} - ${language === 'ar' ? 'اعتمادات الجودة الشهرية' : 'Monthly Quality'}`,
           element: renderContentSlide(
-            renderPieGrid(monthlyStats, bt === 'LTR' ? "" : (language === 'ar' ? `اعتمادات الجودة لـ (${bt})` : `${bt} Quality Approval`), pieLabels),
-            `${longName} (${bt}) ${language === 'ar' ? 'لهذه الفترة' : 'This Period'}`,
+            <div className="p-6 flex flex-col h-full justify-start">
+              <h3 className="font-bold text-lg border-b pb-2 mb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+                <span>{language === 'ar' ? `تحليل جودة اعتمادات ${regTitle.name} (لهذه الفترة الشهرية)` : `${regTitle.name} Quality Distribution (Monthly)`}</span>
+                <span className="text-xs font-normal text-slate-500">{regTitle.subtitle}</span>
+              </h3>
+              {renderPieGrid(monthlyStats, "", pieLabels)}
+            </div>,
+            language === 'ar' ? `تحليل جودة ${regTitle.name} (شهري)` : `${bt} QUALITY BREAKDOWN (MONTHLY)`,
             `reg-monthly-pie-${bt}`
           )
         });
       }
 
-      // C: Cumulative stats slide for Register
-      if (cumulativeStats.hasData) {
-        let cols = [
+      // C: Cumulative slides for Register
+      if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
+        let cumulativeCols = [
           { label: "Items", key: "discipline" },
           { label: "Total Rev.00", key: "Rev00" },
           { label: "Total Further Rev.", key: "FurtherRev" },
           { label: "Total", key: "Total" },
           { label: "Approved", key: "Approved" },
-          { label: "Rejected", key: "RejectedOpen" },
+          { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
         ];
-        if (bt === 'DOC') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Workload", key: "TotalSubmittals" },
-            { label: "Rev.00", key: "Rev00" },
-            { label: "Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Approved", key: "Approved" },
-            { label: "Rej. Open", key: "RejectedOpen" },
-            { label: "Rej. Closed", key: "RejectedClosed" },
-            { label: "Total Rej.", key: "Rejected" },
-            { label: "Pending", key: "Pending" },
-          ];
-        } else if (bt === 'SDW' || bt === 'SHD' || bt === 'ABD') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Total Submittals", key: "TotalSubmittals" },
-            { label: "Total Sheets Rev.00", key: "Rev00" },
-            { label: "Total Sheets Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Approved", key: "Approved" },
-            { label: "Rejected", key: "Rejected" },
-            { label: "Pending", key: "Pending" },
-          ];
-        } else if (bt === 'RFI') {
-          cols = [
-            { label: "Items", key: "discipline" },
-            { label: "Total Rev.00", key: "Rev00" },
-            { label: "Total Further Rev.", key: "FurtherRev" },
-            { label: "Total", key: "Total" },
-            { label: "Pending", key: "Pending" },
-            { label: "Closed", key: "Closed" },
-          ];
-        } else if (bt === 'NCR' || bt === 'SOR') {
-          cols = [
+
+        let pieLabels = ["Approved", "Rejected", "Pending"];
+        if (bt === 'NCR' || bt === 'SOR') {
+          cumulativeCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
             { label: "Total Further Rev.", key: "FurtherRev" },
@@ -1560,38 +1708,62 @@ export default function Presentation({
             { label: "Open", key: "Open" },
             { label: "Pending", key: "Pending" },
           ];
+          pieLabels = ["Closed", "Open", "Pending"];
+        } else if (bt === 'RFI') {
+          cumulativeCols = [
+            { label: "Items", key: "discipline" },
+            { label: "Total Rev.00", key: "Rev00" },
+            { label: "Total Further Rev.", key: "FurtherRev" },
+            { label: "Total", key: "Total" },
+            { label: "Closed", key: "Closed" },
+            { label: "Pending", key: "Pending" },
+          ];
+          pieLabels = ["Closed", "Pending"];
         } else if (bt === 'LTR') {
-          cols = [
+          cumulativeCols = [
             { label: "Stakeholder", key: "discipline" },
             { label: "Sent", key: "Rev00" },
             { label: "Received", key: "FurtherRev" },
             { label: "Total", key: "Total" },
           ];
+          pieLabels = ["Sent", "Received"];
         }
 
+        // Cumulative Status Slide: Table + Bar Chart
         slides.push({
           id: `reg-cumulative-status-${bt}`,
           view: "registers",
-          title: `${bt} - Cumulative Status`,
+          title: `${regTitle.name} - ${language === 'ar' ? 'الحالة التراكمية' : 'Cumulative Status'}`,
           element: renderContentSlide(
-            <div className="flex w-full items-start justify-between mt-12 px-6">
-              {renderStandardTable(cumulativeStats, cols)}
-              {renderStandardBar(cumulativeStats, `${bt} Cumulative Status`)}
+            <div className="p-8 flex flex-col h-full justify-between">
+              <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+                <span>{language === 'ar' ? `حالة معاملات ${regTitle.name} (تراكمي للمشروع)` : `${regTitle.name} Cumulative Status`}</span>
+                <span className="text-xs font-normal text-slate-500">{regTitle.subtitle}</span>
+              </h3>
+              <div className="flex items-center justify-between gap-6 my-auto">
+                {renderStandardTable(cumulativeStats, cumulativeCols)}
+                {renderStandardBar(cumulativeStats, `${bt} (Cumulative)`)}
+              </div>
             </div>,
-            `${longName} (${bt}) ${language === 'ar' ? 'تراكمي' : 'Cumulative'}`,
+            language === 'ar' ? `حالة معاملات ${regTitle.name} (تراكمي)` : `${bt} SUBMITTALS STATUS (CUMULATIVE)`,
             `reg-cumulative-status-${bt}`
           )
         });
 
-        // Pie Grid for Quality
-        const pieLabels = bt === 'DOC' ? ["Approved", "Rej. Open", "Rej. Closed", "Pending"] : (bt === 'RFI' ? ["Closed", "Pending"] : (bt === 'NCR' || bt === 'SOR' ? ["Closed", "Open", "Pending"] : (bt === 'LTR' ? ["Sent", "Received"] : ["Approved", "Rejected", "Pending"])));
+        // Cumulative Quality Slide: Pie Grid
         slides.push({
           id: `reg-cumulative-pie-${bt}`,
           view: "registers",
-          title: `${bt} - Cumulative Quality`,
+          title: `${regTitle.name} - ${language === 'ar' ? 'اعتمادات الجودة التراكمية' : 'Cumulative Quality'}`,
           element: renderContentSlide(
-            renderPieGrid(cumulativeStats, bt === 'LTR' ? "" : (language === 'ar' ? `اعتمادات الجودة لـ (${bt})` : `${bt} Quality Approval`), pieLabels),
-            `${longName} (${bt}) ${language === 'ar' ? 'تراكمي' : 'Cumulative'}`,
+            <div className="p-6 flex flex-col h-full justify-start">
+              <h3 className="font-bold text-lg border-b pb-2 mb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+                <span>{language === 'ar' ? `تحليل جودة اعتمادات ${regTitle.name} (تراكمي للمشروع)` : `${regTitle.name} Cumulative Quality Distribution`}</span>
+                <span className="text-xs font-normal text-slate-500">{regTitle.subtitle}</span>
+              </h3>
+              {renderPieGrid(cumulativeStats, "", pieLabels)}
+            </div>,
+            language === 'ar' ? `تحليل جودة ${regTitle.name} (تراكمي)` : `${bt} QUALITY BREAKDOWN (CUMULATIVE)`,
             `reg-cumulative-pie-${bt}`
           )
         });
