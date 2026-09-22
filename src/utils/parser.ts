@@ -1163,11 +1163,12 @@ export const parseExcelWorkbook = (
           ? String(r[colDrawingNo] || "").trim()
           : "";
 
+      const cleanFileBase = fileName.replace(/\.[^/.]+$/, "").trim();
       const isAuthoritative = Boolean(authoritativeSourceName || compIdent?.isAuthoritative);
-      const authIdentity = authoritativeSourceName?.toUpperCase() || compIdent?.authoritativeRegister || compIdent?.compositeCode;
+      const authIdentity = authoritativeSourceName?.trim() || compIdent?.authoritativeRegister || compIdent?.compositeCode || cleanFileBase;
 
       parsed.push({
-        id: `${sheetName}-${idx}`,
+        id: `${sheetName}::${cleanFileBase}::${idx}`,
 
         logType:
           isAuthoritative && authIdentity
@@ -1182,7 +1183,7 @@ export const parseExcelWorkbook = (
               ),
 
         sourceFile:
-          fileName.replace(/\.[^/.]+$/, ""),
+          cleanFileBase,
 
         rawSourceIdentity:
           compIdent?.rawSourceIdentity ||
@@ -1197,7 +1198,8 @@ export const parseExcelWorkbook = (
         disciplineEvidenceSource,
         isDisciplineLocked: isRegisterDisciplineLocked,
         hasAuthoritativeSourceIdentity: isAuthoritative,
-        sourceRegisterIdentity: isAuthoritative ? authIdentity : undefined,
+        sourceRegisterIdentity: authIdentity,
+        workflowFamily: compIdent?.family && compIdent.family !== 'UNKNOWN' ? compIdent.family : (detectedType !== 'UNKNOWN' ? detectedType : undefined),
 
         documentType:
           isAuthoritative && authIdentity

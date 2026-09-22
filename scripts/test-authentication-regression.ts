@@ -24,7 +24,7 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 // 1. Verify SHA-256 hashes of the 5 Immutable SSOT Artifacts + firestore.rules (Release Integrity Baseline)
 const expectedHashes = {
-  'src/utils/calculations.ts': 'de29b526dfe36dc7661bde16e6e571ab7df4b9b2c3756c446b3d2c1a7ff7fbd5', // Layer 2 Production Analytics Engine
+  'src/utils/calculations.ts': 'f3650a20789bf28e680eedfdb070a6b43a75e677705a85e2faf7a0605cbfbc03', // Layer 2 Production Analytics Engine
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT
   'src/analytics/calculationFoundation.ts': '9e6bf9034395b754836ee1ce5d0e5da13b36d8cbdba2bedede55aa7270f20203', // Layer 1 Universal Source Identity & Taxonic Lock

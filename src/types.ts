@@ -48,6 +48,7 @@ export interface SubmittalRow {
   // Document Identity = Submission Ref + DWG No.
   submissionRef?: string;
   drawingNo?: string;
+  documentIdentityKey?: string;
 
   discipline: string;
   contractor: string;

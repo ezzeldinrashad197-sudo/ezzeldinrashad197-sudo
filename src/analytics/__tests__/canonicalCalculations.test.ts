@@ -753,5 +753,164 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     if (kpi.totalSheetsFurtherRev !== 1) throw new Error(`Expected totalSheetsFurtherRev=1 (only ROW-2), got ${kpi.totalSheetsFurtherRev}`);
   });
 
+  // Test 17: Multi-Register SUB Ref collision safety
+  test('ER-017: Multi-Register SUB Ref collision safety -> DOC, WIR, MIR, SDW sharing identical SUB Ref remain completely distinct and unmerged', () => {
+    const commonSubRef = 'SUB-COMMON-REF-999';
+
+    const multiRegisterRows: SubmittalRow[] = [
+      // 1. DOC Submittal (Rev 00)
+      {
+        id: 'DOC-FILE::Sheet1::1',
+        docNo: commonSubRef,
+        submittalRef: commonSubRef,
+        rev: '00',
+        sheetNo: '01',
+        documentType: 'DOC',
+        discipline: 'STR',
+        trade: 'Structural',
+        status: 'B',
+        workflowStage: 'Approved with Comments',
+        submissionDate: '2026-02-01',
+        logType: 'DOC',
+        sourceRegisterIdentity: 'DOC Technical Register',
+        sourceFile: 'DOC_Register.xlsx',
+        workflowFamily: 'DOC',
+        isRev0: true
+      } as unknown as SubmittalRow,
+
+      // 2. WIR Submittal (Rev 00) - Identical SUB Ref
+      {
+        id: 'WIR-FILE::Sheet1::1',
+        docNo: commonSubRef,
+        submittalRef: commonSubRef,
+        rev: '00',
+        sheetNo: '01',
+        documentType: 'WIR',
+        discipline: 'STR',
+        trade: 'Structural',
+        status: 'A',
+        workflowStage: 'Approved',
+        submissionDate: '2026-02-02',
+        logType: 'WIR',
+        sourceRegisterIdentity: 'WIR Work Inspection Register',
+        sourceFile: 'WIR_Register.xlsx',
+        workflowFamily: 'WIR',
+        isRev0: true
+      } as unknown as SubmittalRow,
+
+      // 3. MIR Submittal (Rev 00) - Identical SUB Ref
+      {
+        id: 'MIR-FILE::Sheet1::1',
+        docNo: commonSubRef,
+        submittalRef: commonSubRef,
+        rev: '00',
+        sheetNo: '01',
+        documentType: 'MIR',
+        discipline: 'MECH',
+        trade: 'Mechanical',
+        status: 'C',
+        recordStatus: 'open',
+        workflowStage: 'Rejected',
+        submissionDate: '2026-02-03',
+        logType: 'MIR',
+        sourceRegisterIdentity: 'MIR Material Inspection Register',
+        sourceFile: 'MIR_Register.xlsx',
+        workflowFamily: 'MIR',
+        isRev0: true
+      } as unknown as SubmittalRow,
+
+      // 4. SDW Submittal (Rev 00) - Identical SUB Ref with DWG
+      {
+        id: 'SDW-FILE::Sheet1::1',
+        docNo: commonSubRef,
+        submittalRef: commonSubRef,
+        drawingNumber: 'DWG-STR-1001',
+        rev: '00',
+        sheetNo: '01',
+        documentType: 'SDW',
+        discipline: 'STR',
+        trade: 'Structural',
+        status: 'A',
+        workflowStage: 'Approved',
+        submissionDate: '2026-02-04',
+        logType: 'SDW',
+        sourceRegisterIdentity: 'Shop Drawings Technical Register',
+        sourceFile: 'SDW_Register.xlsx',
+        workflowFamily: 'SDW',
+        isRev0: true
+      } as unknown as SubmittalRow,
+
+      // 5. DOC Revision (Rev 01) - Must ONLY attach to DOC and NOT WIR/MIR/SDW
+      {
+        id: 'DOC-FILE::Sheet1::2',
+        docNo: commonSubRef,
+        submittalRef: commonSubRef,
+        rev: '01',
+        sheetNo: '01',
+        documentType: 'DOC',
+        discipline: 'STR',
+        trade: 'Structural',
+        status: 'A',
+        workflowStage: 'Approved',
+        submissionDate: '2026-02-10',
+        logType: 'DOC',
+        sourceRegisterIdentity: 'DOC Technical Register',
+        sourceFile: 'DOC_Register.xlsx',
+        workflowFamily: 'DOC',
+        isRev0: false
+      } as unknown as SubmittalRow
+    ];
+
+    // Normalize through calculation pipeline
+    const normalized = normalizeData(multiRegisterRows);
+
+    // Assert that we preserve all distinct document entities
+    const identityKeys = new Set(normalized.map(r => r.documentIdentityKey));
+    if (identityKeys.size !== 4) {
+      throw new Error(`Expected 4 distinct documentIdentityKeys across 4 registers, got ${identityKeys.size}. Keys: ${Array.from(identityKeys).join(', ')}`);
+    }
+
+    // Filter each register family from normalized data
+    const docRows = normalized.filter(r => r.sourceRegisterIdentity === 'DOC Technical Register');
+    const wirRows = normalized.filter(r => r.sourceRegisterIdentity === 'WIR Work Inspection Register');
+    const mirRows = normalized.filter(r => r.sourceRegisterIdentity === 'MIR Material Inspection Register');
+    const sdwRows = normalized.filter(r => r.sourceRegisterIdentity === 'Shop Drawings Technical Register');
+
+    if (docRows.length !== 2) throw new Error(`Expected 2 DOC rows (Rev00 + Rev01), got ${docRows.length}`);
+    if (wirRows.length !== 1) throw new Error(`Expected 1 WIR row, got ${wirRows.length}`);
+    if (mirRows.length !== 1) throw new Error(`Expected 1 MIR row, got ${mirRows.length}`);
+    if (sdwRows.length !== 1) throw new Error(`Expected 1 SDW row, got ${sdwRows.length}`);
+
+    // Verify DOC revision progression: Rev01 is latest, Rev00 is not latest
+    const docRev0 = docRows.find(r => r.rev === '00');
+    const docRev1 = docRows.find(r => r.rev === '01');
+    if (!docRev1?.isLatestRev) throw new Error(`DOC Rev 01 must be latest revision`);
+    if (docRev0?.isLatestRev) throw new Error(`DOC Rev 00 must NOT be latest revision`);
+
+    // Verify other registers were NOT touched by DOC Rev 01
+    if (!wirRows[0].isLatestRev) throw new Error(`WIR Rev 00 must remain latest revision in its own register`);
+    if (!mirRows[0].isLatestRev) throw new Error(`MIR Rev 00 must remain latest revision in its own register`);
+    if (!sdwRows[0].isLatestRev) throw new Error(`SDW Rev 00 must remain latest revision in its own register`);
+
+    // Verify KPIs calculated per register remain isolated
+    const docKpi = calculateCanonicalKPIs(docRows);
+    const wirKpi = calculateCanonicalKPIs(wirRows);
+    const mirKpi = calculateCanonicalKPIs(mirRows);
+    const sdwKpi = calculateCanonicalKPIs(sdwRows);
+
+    if (docKpi.totalUniqueDrawings !== 1 || docKpi.approved !== 1) {
+      throw new Error(`DOC KPI mismatch: expected unique=1, approved=1, got unique=${docKpi.totalUniqueDrawings}, approved=${docKpi.approved}`);
+    }
+    if (wirKpi.totalUniqueDrawings !== 1 || wirKpi.approved !== 1) {
+      throw new Error(`WIR KPI mismatch: expected unique=1, approved=1, got unique=${wirKpi.totalUniqueDrawings}, approved=${wirKpi.approved}`);
+    }
+    if (mirKpi.totalUniqueDrawings !== 1 || mirKpi.rejectedOpen !== 1) {
+      throw new Error(`MIR KPI mismatch: expected unique=1, rejectedOpen=1, got unique=${mirKpi.totalUniqueDrawings}, rejectedOpen=${mirKpi.rejectedOpen}`);
+    }
+    if (sdwKpi.totalUniqueDrawings !== 1 || sdwKpi.approved !== 1) {
+      throw new Error(`SDW KPI mismatch: expected unique=1, approved=1, got unique=${sdwKpi.totalUniqueDrawings}, approved=${sdwKpi.approved}`);
+    }
+  });
+
   return testResults;
 }

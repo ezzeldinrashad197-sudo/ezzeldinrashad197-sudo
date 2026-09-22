@@ -9,6 +9,38 @@
       "referencedBy": []
     },
     {
+      "file": "src/Presentation.tsx",
+      "exportName": "resolveRegisterFamilyFromKey",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveRegisterFamilyFromKey' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/Presentation.tsx",
+      "exportName": "resolveRowRegisterFamily",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveRowRegisterFamily' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/Presentation.tsx",
+      "exportName": "resolveRowRegister",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveRowRegister' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/Presentation.tsx",
+      "exportName": "getRegisterTitle",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getRegisterTitle' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/__tests__/canonicalCalculations.test.ts",
       "exportName": "runCanonicalCalculationTests",
       "type": "Function",

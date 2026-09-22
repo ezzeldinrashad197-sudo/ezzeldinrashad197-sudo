@@ -63,9 +63,21 @@ export const calculateLTRStats = (rows: SubmittalRow[], fullDataset?: SubmittalR
 export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
   if (!rows || rows.length === 0) return [];
   
-  // Group rows by document identity to find highest revision.
-  // Engineering / Shop Drawing identity = SUB Ref + DWG No.
-  // Other registers retain the existing reference-based identity.
+  // Group rows by document identity within register scope to find highest revision.
+  // Engineering / Shop Drawing identity = Register Identity + SUB Ref + DWG No.
+  // Other registers retain the Register Identity + reference-based identity.
+  const getRowRegisterScope = (r: SubmittalRow): string => {
+    return (
+      r.sourceRegisterIdentity ||
+      (r as any).compositeIdentity?.authoritativeRegister ||
+      (r as any).compositeIdentity?.compositeCode ||
+      r.workflowFamily ||
+      r.logType ||
+      r.sourceFile ||
+      'REGISTER'
+    ).trim().toUpperCase();
+  };
+
   const docHistory = new Map<string, string[]>();
   rows.forEach(r => {
     const submissionRef = (
@@ -80,12 +92,15 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
 
     const drawingNo = (
       r.drawingNo ||
+      (r as any).drawingNumber ||
       ''
     ).trim().toUpperCase();
 
+    const regScope = getRowRegisterScope(r);
+
     const documentIdentityKey = drawingNo
-      ? `${submissionRef}::DWG:${drawingNo}`
-      : submissionRef;
+      ? `${regScope}::${submissionRef}::DWG:${drawingNo}`
+      : `${regScope}::${submissionRef}`;
 
     const revUpper = (r.rev || '').trim().toUpperCase();
 
@@ -112,12 +127,15 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
 
     const drawingNo = (
       r.drawingNo ||
+      (r as any).drawingNumber ||
       ''
     ).trim().toUpperCase();
 
+    const regScope = getRowRegisterScope(r);
+
     const documentIdentityKey = drawingNo
-      ? `${submissionRef}::DWG:${drawingNo}`
-      : submissionRef;
+      ? `${regScope}::${submissionRef}::DWG:${drawingNo}`
+      : `${regScope}::${submissionRef}`;
 
     const revUpper = (r.rev || '').trim().toUpperCase();
     const allRevs = docHistory.get(documentIdentityKey) || [];
@@ -207,12 +225,14 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
 
     return {
       ...r,
+      documentIdentityKey,
       discipline: isLockedRow ? (trade || r.discipline) : r.discipline,
       disciplineEvidenceSource: r.disciplineEvidenceSource || (isLockedRow ? 'REGISTER_LOCK' : undefined),
       isDisciplineLocked: r.isDisciplineLocked || isLockedRow,
       trade: trade || r.trade,
       tradeShort: tradeShort || (r as any).tradeShort,
       documentType,
+      sourceRegisterIdentity: r.sourceRegisterIdentity || documentType,
       workflowStage,
       delayDays,
       overdue,

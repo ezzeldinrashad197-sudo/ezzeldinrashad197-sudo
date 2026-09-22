@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-21T14:21:11.705Z",
+    "generatedAt": "2026-09-22T13:13:18.546Z",
     "totalFilesScanned": 84,
     "architecturalViolations": 0,
     "complianceScore": 100,
@@ -1551,231 +1551,322 @@
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 100,
+      "line": 56,
+      "context": "resolveRowRegisterFamily(sampleRow)",
+      "destination": "src/utils/calculations.ts::resolveRowRegisterFamily",
+      "functionName": "resolveRowRegisterFamily"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 223,
+      "context": "resolveRowRegisterFamily(d)",
+      "destination": "src/utils/calculations.ts::resolveRowRegisterFamily",
+      "functionName": "resolveRowRegisterFamily"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 310,
+      "context": "resolveRegisterFamilyFromKey(bt, sampleRow)",
+      "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
+      "functionName": "resolveRegisterFamilyFromKey"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 368,
       "context": "calculateStats(monthlyData, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 130,
+      "line": 398,
       "context": "calculateStats(cumulativeData, data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 188,
+      "line": 454,
+      "context": "resolveRowRegister(d)",
+      "destination": "src/utils/calculations.ts::resolveRowRegister",
+      "functionName": "resolveRowRegister"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 456,
+      "context": "resolveRegisterFamilyFromKey(bt, sampleRow)",
+      "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
+      "functionName": "resolveRegisterFamilyFromKey"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 460,
       "context": "processNCRData(sourceData, monthlyStart)",
       "destination": "src/utils/calculations.ts::processNCRData",
       "functionName": "processNCRData"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 284,
-      "context": "resolveRowDiscipline(d, bt)",
+      "line": 538,
+      "context": "resolveRowDiscipline(d, family)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 304,
-      "context": "resolveRowDiscipline(d, bt)",
+      "line": 558,
+      "context": "resolveRowDiscipline(d, family)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 308,
+      "line": 562,
       "context": "calculateNCRStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateNCRStats",
       "functionName": "calculateNCRStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 308,
+      "line": 562,
       "context": "calculateSORStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateSORStats",
       "functionName": "calculateSORStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 308,
+      "line": 562,
       "context": "calculateLTRStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateLTRStats",
       "functionName": "calculateLTRStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 308,
+      "line": 562,
       "context": "calculateStats(dData, fullDataset || dataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 332,
-      "context": "getClosedOpenByDocType(bt, s)",
+      "line": 584,
+      "context": "getClosedOpenByDocType(family, s)",
       "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
       "functionName": "getClosedOpenByDocType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 333,
-      "context": "getClosedOpenByDocType(bt, s)",
+      "line": 585,
+      "context": "getClosedOpenByDocType(family, s)",
       "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
       "functionName": "getClosedOpenByDocType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 394,
+      "line": 612,
+      "context": "resolveRowRegister(d)",
+      "destination": "src/utils/calculations.ts::resolveRowRegister",
+      "functionName": "resolveRowRegister"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 624,
+      "context": "resolveRegisterFamilyFromKey(a)",
+      "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
+      "functionName": "resolveRegisterFamilyFromKey"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 625,
+      "context": "resolveRegisterFamilyFromKey(b)",
+      "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
+      "functionName": "resolveRegisterFamilyFromKey"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 650,
       "context": "getColLabel(c.label, language)",
       "destination": "src/utils/calculations.ts::getColLabel",
       "functionName": "getColLabel"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 403,
+      "line": 659,
       "context": "getDiscName(s.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 413,
+      "line": 669,
       "context": "getDiscName(statsData.totalRow.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 427,
+      "line": 683,
       "context": "getChartTitle(titleStr, language)",
       "destination": "src/utils/calculations.ts::getChartTitle",
       "functionName": "getChartTitle"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 431,
+      "line": 687,
       "context": "getDiscName(d, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 517,
+      "line": 773,
       "context": "getDiscName(s.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 527,
+      "line": 783,
       "context": "getPieLabelTranslator(String(name), language)",
       "destination": "src/utils/calculations.ts::getPieLabelTranslator",
       "functionName": "getPieLabelTranslator"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 535,
+      "line": 791,
       "context": "getPieLabelTranslator(p.name, language)",
       "destination": "src/utils/calculations.ts::getPieLabelTranslator",
       "functionName": "getPieLabelTranslator"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 550,
+      "line": 806,
       "context": "isEntityOverdue(d)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 571,
+      "line": 827,
       "context": "isEntityOverdue(a)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 572,
+      "line": 828,
       "context": "isEntityOverdue(b)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 842,
+      "line": 1098,
       "context": "getMonthlySummary(overallMonthlyStats, language)",
       "destination": "src/utils/calculations.ts::getMonthlySummary",
       "functionName": "getMonthlySummary"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1005,
+      "line": 1261,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1085,
+      "line": 1264,
+      "context": "getRegisterTitle(bt, language)",
+      "destination": "src/utils/calculations.ts::getRegisterTitle",
+      "functionName": "getRegisterTitle"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1282,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1123,
+      "line": 1370,
+      "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
+      "destination": "src/utils/calculations.ts::compileStatsForBaseType",
+      "functionName": "compileStatsForBaseType"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1408,
       "context": "getMonthlyRecommendations(overallMonthlyStats, language)",
       "destination": "src/utils/calculations.ts::getMonthlyRecommendations",
       "functionName": "getMonthlyRecommendations"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1176,
+      "line": 1461,
       "context": "getCumulativeSummary(overallCumulativeStats, language)",
       "destination": "src/utils/calculations.ts::getCumulativeSummary",
       "functionName": "getCumulativeSummary"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1339,
+      "line": 1624,
       "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1402,
+      "line": 1627,
+      "context": "getRegisterTitle(bt, language)",
+      "destination": "src/utils/calculations.ts::getRegisterTitle",
+      "functionName": "getRegisterTitle"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1645,
+      "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
+      "destination": "src/utils/calculations.ts::compileStatsForBaseType",
+      "functionName": "compileStatsForBaseType"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1717,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1403,
+      "line": 1718,
       "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1407,
-      "context": "getDiscName(bt, 'ar')",
-      "destination": "src/utils/calculations.ts::getDiscName",
-      "functionName": "getDiscName"
+      "line": 1722,
+      "context": "resolveRegisterFamilyFromKey(bt)",
+      "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
+      "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1660,
+      "line": 1723,
+      "context": "getRegisterTitle(bt, language)",
+      "destination": "src/utils/calculations.ts::getRegisterTitle",
+      "functionName": "getRegisterTitle"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1967,
       "context": "getDiscName(row.trade, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1719,
+      "line": 2026,
       "context": "getDiscName(row.trade, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
@@ -2442,6 +2533,41 @@
       "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
       "line": 743,
       "context": "calculateCanonicalKPIs(testRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 865,
+      "context": "normalizeData(multiRegisterRows)",
+      "destination": "src/utils/calculations.ts::normalizeData",
+      "functionName": "normalizeData"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 896,
+      "context": "calculateCanonicalKPIs(docRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 897,
+      "context": "calculateCanonicalKPIs(wirRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 898,
+      "context": "calculateCanonicalKPIs(mirRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 899,
+      "context": "calculateCanonicalKPIs(sdwRows)",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
@@ -5177,70 +5303,70 @@
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 124,
+      "line": 142,
       "context": "compareRevisionsCanonical(b, a)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 130,
+      "line": 148,
       "context": "resolveCanonicalTrade(r)",
       "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
       "functionName": "resolveCanonicalTrade"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 167,
+      "line": 185,
       "context": "getRevisionWeight(revUpper)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 168,
+      "line": 186,
       "context": "isRevision0(revUpper, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 171,
+      "line": 189,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 183,
+      "line": 201,
       "context": "getDelayDays(submissionDate, responseDate, dueDate)",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 185,
+      "line": 203,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 185,
+      "line": 203,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 185,
+      "line": 203,
       "context": "checkIfOverdueDynamically(submissionDate, responseDate, 14)",
       "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
       "functionName": "checkIfOverdueDynamically"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 333,
+      "line": 353,
       "context": "getDelayDays(submission, response, '')",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
@@ -5828,63 +5954,63 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1212,
+      "line": 1214,
       "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1273,
+      "line": 1275,
       "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1322,
+      "line": 1324,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1342,
+      "line": 1344,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1355,
+      "line": 1357,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1446,
+      "line": 1448,
       "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
       "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
       "functionName": "mapDocumentToWorkflow"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1579,
+      "line": 1581,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1592,
+      "line": 1594,
       "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1617,
+      "line": 1619,
       "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -6024,6 +6150,38 @@
         "type": "Type/Interface",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'AuditLogEntry' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/Presentation.tsx",
+        "exportName": "resolveRegisterFamilyFromKey",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'resolveRegisterFamilyFromKey' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/Presentation.tsx",
+        "exportName": "resolveRowRegisterFamily",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'resolveRowRegisterFamily' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/Presentation.tsx",
+        "exportName": "resolveRowRegister",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'resolveRowRegister' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/Presentation.tsx",
+        "exportName": "getRegisterTitle",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getRegisterTitle' detected in any active source modules.",
         "referencedBy": []
       },
       {
@@ -7637,13 +7795,13 @@
     ]
   },
   "staticReachability": {
-    "totalLines": 372,
-    "coveredLines": 180,
-    "totalStatements": 29,
-    "coveredStatements": 14,
+    "totalLines": 392,
+    "coveredLines": 196,
+    "totalStatements": 30,
+    "coveredStatements": 15,
     "totalBranches": 29,
     "coveredBranches": 6,
-    "totalFunctions": 18,
-    "coveredFunctions": 9
+    "totalFunctions": 19,
+    "coveredFunctions": 10
   }
 }

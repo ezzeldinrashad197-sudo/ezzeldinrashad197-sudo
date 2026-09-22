@@ -51,7 +51,179 @@ import {
   getMonthlyRecommendations,
 } from "./components/presentation/PresHelpers";
 
-export function getRegisterTitle(bt: string, language: 'ar' | 'en'): { name: string; subtitle: string } {
+export function resolveRegisterFamilyFromKey(regKey: string, sampleRow?: SubmittalRow): string {
+  if (sampleRow) {
+    const fam = resolveRowRegisterFamily(sampleRow);
+    if (fam && fam !== 'UNCLASSIFIED') return fam;
+  }
+  const upper = regKey.toUpperCase().trim();
+  if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(upper)) {
+    return upper === 'SHD' ? 'SDW' : upper;
+  }
+  if (upper === 'LETTER') return 'LTR';
+
+  if (upper.startsWith('DOC') || upper.includes('TECHNICAL') || upper.includes('TRANSMITTAL') || upper.includes('DOCUMENT')) return 'DOC';
+  if (upper.startsWith('WIR') || upper.includes('WORK INSP')) return 'WIR';
+  if (upper.startsWith('MIR') || upper.includes('MATERIAL INSP')) return 'MIR';
+  if (upper.startsWith('MAR') || upper.includes('MATERIAL SUB') || upper.includes('MATERIAL APP')) return 'MAR';
+  if (upper.startsWith('RFI') || upper.includes('REQUEST FOR INFO')) return 'RFI';
+  if (upper.startsWith('NCR') || upper.includes('NON CONFORM') || upper.includes('NON-CONFORM')) return 'NCR';
+  if (upper.startsWith('SOR') || upper.includes('SITE OBS') || upper.includes('SITE-OBS')) return 'SOR';
+  if (upper.startsWith('ABD') || upper.includes('AS-BUILT') || upper.includes('AS BUILT')) return 'ABD';
+  if (upper.startsWith('LTR') || upper.startsWith('LETTER') || upper.includes('CORRES')) return 'LTR';
+  if (upper.startsWith('QS') || upper.includes('QUANTITY')) return 'QS';
+  if (upper.startsWith('SDW') || upper.startsWith('SHD') || upper.includes('SHOP') || upper.includes('DRAWING')) return 'SDW';
+
+  return 'UNCLASSIFIED';
+}
+
+export function resolveRowRegisterFamily(d: SubmittalRow): string {
+  if (!d) return 'UNCLASSIFIED';
+
+  // 1. Check explicit workflowFamily if valid and not UNKNOWN
+  if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
+    const wf = d.workflowFamily.toUpperCase().trim();
+    if (wf === 'LETTER') return 'LTR';
+    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
+      return wf === 'SHD' ? 'SDW' : wf;
+    }
+  }
+
+  // 2. Check compositeIdentity
+  if ((d as any).compositeIdentity?.family && (d as any).compositeIdentity.family !== 'UNKNOWN') {
+    const cf = (d as any).compositeIdentity.family.toUpperCase().trim();
+    if (cf === 'LETTER') return 'LTR';
+    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(cf)) {
+      return cf === 'SHD' ? 'SDW' : cf;
+    }
+  }
+
+  // 3. Inspect sourceRegisterIdentity first!
+  const srcId = (d.sourceRegisterIdentity || '').toUpperCase().trim();
+  if (srcId && srcId !== 'GEN' && srcId !== 'GENERAL' && srcId !== 'UNCLASSIFIED') {
+    if (srcId.startsWith('DOC') || srcId.includes('TECHNICAL') || srcId.includes('TRANSMITTAL') || srcId.includes('DOCUMENT')) return 'DOC';
+    if (srcId.startsWith('WIR') || srcId.includes('WORK INSP')) return 'WIR';
+    if (srcId.startsWith('MIR') || srcId.includes('MATERIAL INSP')) return 'MIR';
+    if (srcId.startsWith('MAR') || srcId.includes('MATERIAL SUB') || srcId.includes('MATERIAL APP')) return 'MAR';
+    if (srcId.startsWith('RFI') || srcId.includes('REQUEST FOR INFO')) return 'RFI';
+    if (srcId.startsWith('NCR') || srcId.includes('NON CONFORM') || srcId.includes('NON-CONFORM')) return 'NCR';
+    if (srcId.startsWith('SOR') || srcId.includes('SITE OBS') || srcId.includes('SITE-OBS')) return 'SOR';
+    if (srcId.startsWith('ABD') || srcId.includes('AS-BUILT') || srcId.includes('AS BUILT')) return 'ABD';
+    if (srcId.startsWith('LTR') || srcId.startsWith('LETTER') || srcId.includes('CORRES')) return 'LTR';
+    if (srcId.startsWith('QS') || srcId.includes('QUANTITY')) return 'QS';
+    if (srcId.startsWith('SDW') || srcId.startsWith('SHD') || srcId.includes('SHOP') || srcId.includes('DRAWING')) return 'SDW';
+  }
+
+  // 4. Inspect documentType, logType, docNo, sourceFile
+  const docT = (d.documentType || '').toUpperCase().trim();
+  const docNo = (d.docNo || '').toUpperCase().trim();
+  const lt = (d.logType || '').toUpperCase().trim();
+  const sf = (d.sourceFile || '').toUpperCase().trim();
+
+  // ABD
+  if (
+    docT.startsWith('ABD') ||
+    docT.includes('AS-BUILT') ||
+    docT.includes('AS BUILT') ||
+    docNo.startsWith('ABD') ||
+    lt.includes('ABD') ||
+    lt.includes('AS-BUILT') ||
+    lt.includes('AS BUILT') ||
+    sf.includes('ABD') ||
+    sf.includes('AS-BUILT')
+  ) {
+    return 'ABD';
+  }
+
+  // WIR
+  if (docT.startsWith('WIR') || docT.includes('WIR') || docNo.startsWith('WIR') || lt.includes('WIR') || lt.includes('WORK INSP') || sf.includes('WIR')) return 'WIR';
+
+  // MIR
+  if (docT.startsWith('MIR') || docT.includes('MIR') || docNo.startsWith('MIR') || lt.includes('MIR') || lt.includes('MATERIAL INSP') || sf.includes('MIR')) return 'MIR';
+
+  // MAR
+  if (docT.startsWith('MAR') || docT.includes('MAR') || docNo.startsWith('MAR') || lt.includes('MAR') || lt.includes('MATERIAL SUB') || lt.includes('MATERIAL APP') || sf.includes('MAR')) return 'MAR';
+
+  // RFI
+  if (docT.startsWith('RFI') || docT.includes('RFI') || docNo.startsWith('RFI') || lt.includes('RFI') || sf.includes('RFI')) return 'RFI';
+
+  // NCR
+  if (docT.startsWith('NCR') || docT.includes('NCR') || docNo.startsWith('NCR') || lt.includes('NCR') || sf.includes('NCR')) return 'NCR';
+
+  // SOR
+  if (docT.startsWith('SOR') || docT.includes('SOR') || docNo.startsWith('SOR') || lt.includes('SOR') || sf.includes('SOR')) return 'SOR';
+
+  // LTR
+  if (docT.startsWith('LTR') || docT.includes('LETTER') || docT.includes('CORRES') || docNo.startsWith('LTR') || lt.includes('LTR') || lt.includes('LETTER') || lt.includes('CORRES') || sf.includes('LTR')) return 'LTR';
+
+  // QS
+  if (docT.startsWith('QS') || docT.includes('QS') || docNo.startsWith('QS') || lt.includes('QS') || sf.includes('QS')) return 'QS';
+
+  // DOC
+  if (
+    docT.startsWith('DOC') ||
+    docT.includes('DOCUMENT') ||
+    docT.includes('TECHNICAL') ||
+    docNo.startsWith('DOC') ||
+    lt.includes('DOC') ||
+    lt.includes('TECHNICAL DOC') ||
+    lt.includes('TRANSMITTAL') ||
+    sf.includes('DOC')
+  ) {
+    return 'DOC';
+  }
+
+  // SDW
+  if (
+    docT.startsWith('SDW') ||
+    docT.startsWith('SHD') ||
+    docT.includes('SHOP') ||
+    docT.includes('DRAWING') ||
+    docNo.startsWith('SDW') ||
+    docNo.startsWith('SHD') ||
+    lt.includes('SDW') ||
+    lt.includes('SHD') ||
+    lt.includes('SHOP') ||
+    lt.includes('DRAWING') ||
+    sf.includes('SDW') ||
+    sf.includes('SHOP')
+  ) {
+    return 'SDW';
+  }
+
+  return 'UNCLASSIFIED';
+}
+
+export function resolveRowRegister(d: SubmittalRow): string {
+  if (!d) return 'UNCLASSIFIED';
+
+  // 1. SSOT: Check sourceRegisterIdentity first!
+  const srcId = (d.sourceRegisterIdentity || '').trim();
+  if (srcId && srcId !== 'GEN' && srcId !== 'GENERAL' && srcId !== 'UNCLASSIFIED') {
+    return srcId;
+  }
+
+  // 2. Check if compositeIdentity has an authoritativeRegister
+  if ((d as any).compositeIdentity?.authoritativeRegister) {
+    const authReg = String((d as any).compositeIdentity.authoritativeRegister).trim();
+    if (authReg && authReg !== 'GEN' && authReg !== 'GENERAL' && authReg !== 'UNCLASSIFIED') {
+      return authReg;
+    }
+  }
+
+  // 3. Check documentType if it holds a full descriptive name
+  const docType = (d.documentType || '').trim();
+  if (docType && !docType.match(/^[A-Z]{3,4}-[A-Z]{2,4}$/)) {
+    if (docType.includes(' ') || docType.length > 8) {
+      return docType;
+    }
+  }
+
+  // 4. Fallback to resolving the workflow family
+  return resolveRowRegisterFamily(d);
+}
+
+export function getRegisterTitle(bt: string, language: 'ar' | 'en', sampleRow?: SubmittalRow): { name: string; subtitle: string } {
   const titles: Record<string, { ar: string; en: string; subtitleAr: string; subtitleEn: string }> = {
     SDW: {
       ar: 'المخططات التنفيذية (Shop Drawings)',
@@ -127,79 +299,24 @@ export function getRegisterTitle(bt: string, language: 'ar' | 'en'): { name: str
     }
   };
 
-  const t = titles[bt] || {
-    ar: `سجل ${bt}`,
-    en: `${bt} Register`,
-    subtitleAr: `سجل تفصيلي للمعاملات الهندسية لـ ${bt}`,
-    subtitleEn: `Detailed Engineering Register for ${bt}`
-  };
+  if (titles[bt]) {
+    return {
+      name: language === 'ar' ? titles[bt].ar : titles[bt].en,
+      subtitle: language === 'ar' ? titles[bt].subtitleAr : titles[bt].subtitleEn
+    };
+  }
+
+  // Real Source Register Identity Display
+  const family = resolveRegisterFamilyFromKey(bt, sampleRow);
+  const famTitle = titles[family];
+  const displayName = bt;
+  const subtitleAr = famTitle ? `${famTitle.subtitleAr} (${displayName})` : `سجل هندسي: ${displayName}`;
+  const subtitleEn = famTitle ? `${famTitle.subtitleEn} (${displayName})` : `Engineering Register: ${displayName}`;
 
   return {
-    name: language === 'ar' ? t.ar : t.en,
-    subtitle: language === 'ar' ? t.subtitleAr : t.subtitleEn
+    name: displayName,
+    subtitle: language === 'ar' ? subtitleAr : subtitleEn
   };
-}
-
-export function resolveRowRegister(d: SubmittalRow): string {
-  if (!d) return 'SDW';
-
-  if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
-    const wf = d.workflowFamily.toUpperCase().trim();
-    if (wf === 'LETTER') return 'LTR';
-    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
-      return wf === 'SHD' ? 'SDW' : wf;
-    }
-  }
-
-  const docT = (d.documentType || '').toUpperCase().trim();
-  const docNo = (d.docNo || '').toUpperCase().trim();
-  const lt = (d.logType || '').toUpperCase().trim();
-  const sf = (d.sourceFile || '').toUpperCase().trim();
-  const wf = (d.workflowFamily || '').toUpperCase().trim();
-
-  if (
-    wf === 'ABD' ||
-    docT.startsWith('ABD') ||
-    docT.includes('AS-BUILT') ||
-    docT.includes('AS BUILT') ||
-    docNo.startsWith('ABD') ||
-    lt.includes('ABD') ||
-    lt.includes('AS-BUILT') ||
-    lt.includes('AS BUILT') ||
-    sf.includes('ABD') ||
-    sf.includes('AS-BUILT')
-  ) {
-    return 'ABD';
-  }
-
-  if (docT.includes('WIR') || wf === 'WIR' || docNo.startsWith('WIR') || lt.includes('WIR') || lt.includes('WORK INSP') || sf.includes('WIR')) return 'WIR';
-  if (docT.includes('MIR') || wf === 'MIR' || docNo.startsWith('MIR') || lt.includes('MIR') || lt.includes('MATERIAL INSP') || sf.includes('MIR')) return 'MIR';
-  if (docT.includes('MAR') || wf === 'MAR' || docNo.startsWith('MAR') || lt.includes('MAR') || lt.includes('MATERIAL SUB') || lt.includes('MATERIAL APP') || sf.includes('MAR')) return 'MAR';
-  if (docT.includes('RFI') || wf === 'RFI' || docNo.startsWith('RFI') || lt.includes('RFI') || sf.includes('RFI')) return 'RFI';
-  if (docT.includes('NCR') || wf === 'NCR' || docNo.startsWith('NCR') || lt.includes('NCR') || sf.includes('NCR')) return 'NCR';
-  if (docT.includes('SOR') || wf === 'SOR' || docNo.startsWith('SOR') || lt.includes('SOR') || sf.includes('SOR')) return 'SOR';
-  if (docT.includes('LTR') || docT.includes('CORRES') || wf === 'LETTER' || docNo.startsWith('LTR') || lt.includes('LTR') || lt.includes('LETTER') || lt.includes('CORRES') || sf.includes('LTR')) return 'LTR';
-  if (docT.includes('QS') || wf === 'QS' || docNo.startsWith('QS') || lt.includes('QS') || sf.includes('QS')) return 'QS';
-  if (docT.startsWith('DOC-') || docT === 'DOC' || wf === 'DOC' || lt.includes('TECHNICAL DOC') || lt.includes('TRANSMITTAL')) return 'DOC';
-
-  if (
-    docT.includes('SDW') ||
-    wf === 'SDW' ||
-    docT.includes('SHD') ||
-    wf === 'SHD' ||
-    docNo.startsWith('SDW') ||
-    docNo.startsWith('SHD') ||
-    lt.includes('SDW') ||
-    lt.includes('SHD') ||
-    lt.includes('SHOP') ||
-    lt.includes('DRAWING') ||
-    sf.includes('SDW') ||
-    sf.includes('SHOP')
-  ) {
-    return 'SDW';
-  }
-
-  return 'SDW';
 }
 
 interface PresentationProps {
@@ -334,7 +451,11 @@ export default function Presentation({
 
   // Helper compiler
   const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
-    if (bt === 'NCR') {
+    const typeData = dataset.filter(d => resolveRowRegister(d) === bt);
+    const sampleRow = typeData[0];
+    const family = resolveRegisterFamilyFromKey(bt, sampleRow);
+
+    if (family === 'NCR') {
       const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
       const ncrResult = processNCRData(sourceData, monthlyStart);
       const disciplines = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE'];
@@ -406,17 +527,15 @@ export default function Presentation({
       return { stats, totalRow, hasData: totalRow.Total > 0 };
     }
 
-    const typeData = dataset.filter(d => resolveRowRegister(d) === bt);
-
     let disciplinesInThisType: string[] = [];
-    if (bt === 'LTR') {
+    if (family === 'LTR') {
       disciplinesInThisType = Array.from(new Set(typeData.map(d => d.stakeholder || 'GENERAL')));
     } else {
-      const predefinedDisciplines = bt === 'NCR'
+      const predefinedDisciplines = family === 'NCR'
         ? ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE']
         : ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape'];
 
-      const parsedDisciplines = typeData.map(d => resolveRowDiscipline(d, bt));
+      const parsedDisciplines = typeData.map(d => resolveRowDiscipline(d, family));
       const activeDisciplinesSet = new Set(parsedDisciplines);
 
       let list: string[] = [...predefinedDisciplines];
@@ -436,16 +555,16 @@ export default function Presentation({
 
     const stats = disciplinesInThisType.map((disc) => {
       const dData = typeData.filter((d) => {
-        const rDisc = resolveRowDiscipline(d, bt);
+        const rDisc = resolveRowDiscipline(d, family);
         return rDisc === disc;
       });
 
-      const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
+      const s = family === 'NCR' ? calculateNCRStats(dData, false) : (family === 'SOR' ? calculateSORStats(dData, false) : (family === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
       const isMonthlyReport = !!monthlyStart;
-      const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
+      const isSheetCountType = family === 'SDW' || family === 'SHD' || family === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
       const totalSubmittals = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length;
-      const countForType = isSheetCountType || bt === 'RFI'
+      const countForType = isSheetCountType || family === 'RFI'
         ? totalWorkload 
         : (isMonthlyReport 
             ? totalWorkload
@@ -462,8 +581,8 @@ export default function Presentation({
         Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
         Pending: s.pending,
         Total: countForType,
-        Closed: getClosedOpenByDocType(bt, s).closed,
-        Open: getClosedOpenByDocType(bt, s).open,
+        Closed: getClosedOpenByDocType(family, s).closed,
+        Open: getClosedOpenByDocType(family, s).open,
       };
     });
 
@@ -485,15 +604,30 @@ export default function Presentation({
     return { stats, totalRow, hasData: totalRow.Total > 0 || typeData.length > 0 };
   };
 
-  const orderedPredefinedBaseTypes = ['SDW', 'WIR', 'MIR', 'MAR', 'RFI', 'NCR', 'SOR', 'DOC', 'ABD', 'QS', 'LTR'];
   const baseTypes = useMemo(() => {
-    const presentRegisters = new Set<string>();
+    const registerSet = new Set<string>();
+    const registerList: string[] = [];
+
     data.forEach(d => {
       const reg = resolveRowRegister(d);
-      if (reg) presentRegisters.add(reg);
+      if (reg && reg !== 'UNKNOWN' && reg !== 'UNCLASSIFIED' && !registerSet.has(reg)) {
+        registerSet.add(reg);
+        registerList.push(reg);
+      }
     });
 
-    return orderedPredefinedBaseTypes.filter(bt => presentRegisters.has(bt));
+    const familyOrder: Record<string, number> = {
+      SDW: 1, SHD: 1, WIR: 2, MIR: 3, MAR: 4, RFI: 5, NCR: 6, SOR: 7, DOC: 8, ABD: 9, QS: 10, LTR: 11
+    };
+
+    return registerList.sort((a, b) => {
+      const famA = resolveRegisterFamilyFromKey(a);
+      const famB = resolveRegisterFamilyFromKey(b);
+      const orderA = familyOrder[famA] ?? 99;
+      const orderB = familyOrder[famB] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
   }, [data]);
 
   // Standard visual render parts
@@ -1585,6 +1719,7 @@ export default function Presentation({
 
       if (!monthlyStats.hasData && !cumulativeStats.hasData) return;
 
+      const regFamily = resolveRegisterFamilyFromKey(bt);
       const regTitle = getRegisterTitle(bt, language);
       registerSlideIndex += 1;
       const sectionNum = String(registerSlideIndex + 3).padStart(2, '0');
@@ -1614,7 +1749,7 @@ export default function Presentation({
         ];
 
         let pieLabels = ["Approved", "Rejected", "Pending"];
-        if (bt === 'NCR' || bt === 'SOR') {
+        if (regFamily === 'NCR' || regFamily === 'SOR') {
           monthlyCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
@@ -1625,7 +1760,7 @@ export default function Presentation({
             { label: "Pending", key: "Pending" },
           ];
           pieLabels = ["Closed", "Open", "Pending"];
-        } else if (bt === 'RFI') {
+        } else if (regFamily === 'RFI') {
           monthlyCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
@@ -1635,7 +1770,7 @@ export default function Presentation({
             { label: "Pending", key: "Pending" },
           ];
           pieLabels = ["Closed", "Pending"];
-        } else if (bt === 'LTR') {
+        } else if (regFamily === 'LTR') {
           monthlyCols = [
             { label: "Stakeholder", key: "discipline" },
             { label: "Sent", key: "Rev00" },
@@ -1698,7 +1833,7 @@ export default function Presentation({
         ];
 
         let pieLabels = ["Approved", "Rejected", "Pending"];
-        if (bt === 'NCR' || bt === 'SOR') {
+        if (regFamily === 'NCR' || regFamily === 'SOR') {
           cumulativeCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
@@ -1709,7 +1844,7 @@ export default function Presentation({
             { label: "Pending", key: "Pending" },
           ];
           pieLabels = ["Closed", "Open", "Pending"];
-        } else if (bt === 'RFI') {
+        } else if (regFamily === 'RFI') {
           cumulativeCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
@@ -1719,7 +1854,7 @@ export default function Presentation({
             { label: "Pending", key: "Pending" },
           ];
           pieLabels = ["Closed", "Pending"];
-        } else if (bt === 'LTR') {
+        } else if (regFamily === 'LTR') {
           cumulativeCols = [
             { label: "Stakeholder", key: "discipline" },
             { label: "Sent", key: "Rev00" },
