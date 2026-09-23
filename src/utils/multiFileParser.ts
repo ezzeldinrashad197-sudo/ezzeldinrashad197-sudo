@@ -18,13 +18,25 @@ export const processMultiUpload = async (files: FileList | File[]): Promise<Subm
                     const blob = await zipEntry.async('blob');
                     const extractedFile = new File([blob], zipEntry.name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                     const rows = await parseExcelFile(extractedFile);
-                    allParsed = allParsed.concat(rows);
+                    const validatedRows = rows.map(r => ({
+                        ...r,
+                        sourceWorkbookName: r.sourceWorkbookName || extractedFile.name,
+                        sourceFileName: r.sourceFileName || extractedFile.name,
+                        registerIdentity: r.registerIdentity || r.documentType || 'UNCLASSIFIED'
+                    }));
+                    allParsed = allParsed.concat(validatedRows);
                 }
             }
         } 
         else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
             const rows = await parseExcelFile(file);
-            allParsed = allParsed.concat(rows);
+            const validatedRows = rows.map(r => ({
+                ...r,
+                sourceWorkbookName: r.sourceWorkbookName || file.name,
+                sourceFileName: r.sourceFileName || file.name,
+                registerIdentity: r.registerIdentity || r.documentType || 'UNCLASSIFIED'
+            }));
+            allParsed = allParsed.concat(validatedRows);
         }
     }
 

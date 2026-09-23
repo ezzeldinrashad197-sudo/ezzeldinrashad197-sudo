@@ -68,13 +68,14 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
   // Other registers retain the Register Identity + reference-based identity.
   const getRowRegisterScope = (r: SubmittalRow): string => {
     return (
+      r.registerIdentity ||
       r.sourceRegisterIdentity ||
       (r as any).compositeIdentity?.authoritativeRegister ||
       (r as any).compositeIdentity?.compositeCode ||
       r.workflowFamily ||
       r.logType ||
       r.sourceFile ||
-      'REGISTER'
+      'UNCLASSIFIED'
     ).trim().toUpperCase();
   };
 
@@ -148,9 +149,13 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const resolved = resolveCanonicalTrade(r);
     const trade = resolved.trade || r.trade;
     const tradeShort = resolved.tradeShort || (r as any).tradeShort || '';
-    const logType = (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity === 'GEN')
-      ? 'GEN'
-      : (r.logType || (r as any).compositeIdentity?.family || 'SDW').toUpperCase();
+    const logType = (
+      r.registerIdentity ||
+      (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity) ||
+      r.logType ||
+      (r as any).compositeIdentity?.family ||
+      'UNCLASSIFIED'
+    ).toUpperCase();
 
     const basePrefix = logType.startsWith('SDW')
       ? 'SDW'
@@ -178,9 +183,6 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     let documentType = (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity)
       ? r.sourceRegisterIdentity
       : (tradeShort ? `${basePrefix}-${tradeShort}` : (r.documentType || basePrefix));
-    if (documentType === 'DOC') {
-      documentType = 'DOC-GEN';
-    }
 
     const revWeight = getRevisionWeight(revUpper);
     const isRev0 = isRevision0(revUpper, r.isRev0);
@@ -223,16 +225,24 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
         String(r.compositeIdentity?.family).toUpperCase() !== 'RFI'
       );
 
+    const regIdentity = (r.registerIdentity || (basePrefix !== 'UNCLASSIFIED' ? basePrefix : '') || r.sourceRegisterIdentity || 'UNCLASSIFIED').trim().toUpperCase();
+
     return {
       ...r,
+      registerIdentity: regIdentity,
+      registerDisplayName: r.registerDisplayName,
+      sourceWorkbookName: r.sourceWorkbookName,
+      sourceSheetName: r.sourceSheetName,
+      disciplineSourceSheet: r.disciplineSourceSheet,
+      disciplineCode: r.disciplineCode,
       documentIdentityKey,
-      discipline: isLockedRow ? (trade || r.discipline) : r.discipline,
+      discipline: isLockedRow ? (trade || r.discipline) : (r.discipline || trade),
       disciplineEvidenceSource: r.disciplineEvidenceSource || (isLockedRow ? 'REGISTER_LOCK' : undefined),
       isDisciplineLocked: r.isDisciplineLocked || isLockedRow,
       trade: trade || r.trade,
       tradeShort: tradeShort || (r as any).tradeShort,
-      documentType,
-      sourceRegisterIdentity: r.sourceRegisterIdentity || documentType,
+      documentType: r.documentType && r.documentType !== 'DOC-GEN' ? r.documentType : regIdentity,
+      sourceRegisterIdentity: regIdentity,
       workflowStage,
       delayDays,
       overdue,

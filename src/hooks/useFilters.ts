@@ -3,6 +3,7 @@ import { SubmittalRow } from '../types';
 import { auth } from '../firebase';
 
 export interface FilterState {
+  registerIdentity: string;
   documentType: string;
   discipline: string;
   contractor: string;
@@ -25,6 +26,7 @@ export interface BackendMetricsResult {
 }
 
 const defaultFilters: FilterState = {
+  registerIdentity: 'All',
   documentType: 'All',
   discipline: 'All',
   contractor: 'All',
@@ -62,6 +64,7 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
         logType: d.logType,
         documentType: d.documentType,
         workflowFamily: d.workflowFamily,
+        registerIdentity: d.registerIdentity,
         area: d.area,
         tradeSystem: d.tradeSystem,
         submissionDate: d.submissionDate,
@@ -108,6 +111,18 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
          return Array.from(s).sort();
      };
      
+     // Canonical Authoritative Register Identities (Phase W SSOT)
+     const getRegisterIdentities = () => {
+         const s = new Set<string>();
+         data.forEach(d => {
+             const reg = (d.registerIdentity || (d as any).sourceRegisterIdentity || '').trim().toUpperCase();
+             if (reg && reg !== 'UNCLASSIFIED') {
+               s.add(reg);
+             }
+         });
+         return Array.from(s).sort();
+     };
+
      // Special logic for documentType (Register Type & Workflow Family)
      const getRegisterTypes = () => {
          const s = new Set<string>();
@@ -124,6 +139,7 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
      };
 
      return {
+         registerIdentity: getRegisterIdentities(),
          documentType: getRegisterTypes(),
          discipline: getUniques('discipline'),
          contractor: getUniques('contractor'),
@@ -167,6 +183,16 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
            return false;
        };
 
+       // 1. Authoritative Parent Register Filter (Phase W SSOT)
+       if (filters.registerIdentity && filters.registerIdentity !== 'All') {
+           const targetReg = filters.registerIdentity.toUpperCase().trim();
+           const rowReg = (row.registerIdentity || (row as any).sourceRegisterIdentity || row.workflowFamily || '').toUpperCase().trim();
+           if (rowReg !== targetReg) {
+               return false;
+           }
+       }
+
+       // 2. Compatibility DocumentType Filter
        if (filters.documentType !== 'All') {
            const target = filters.documentType.toUpperCase().trim();
            const wf = (row.workflowFamily || '').toUpperCase().trim();

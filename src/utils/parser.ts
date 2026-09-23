@@ -5,6 +5,7 @@ import { normalizeData } from "./calculations";
 import { isRevision0 } from "../analytics/revisionResolver";
 import { classifyRegisterSheet, normalizeDiscipline, getAuthoritativeSourceRegisterName } from "./classificationEngine";
 import { mapDocumentToWorkflow } from "./workflowMapping";
+import { resolveParentRegister, normalizeDisciplineName, isDisciplineSheet, KNOWN_PARENT_REGISTERS } from "./parentRegisterResolver";
 
 const MONTH_NAME_MAP: Record<string, string> = {
   jan: "01",
@@ -177,6 +178,35 @@ export const parseExcelWorkbook = (
 ): SubmittalRow[] => {
   const parsed: SubmittalRow[] = [];
   const traces: any[] = [];
+
+  // =========================================================================
+  // PHASE W — WORKBOOK-LEVEL CANONICAL PARENT REGISTER RESOLUTION
+  // =========================================================================
+  const sampleWorkbookRefs: string[] = [];
+  for (const sName of wb.SheetNames) {
+    const ws = wb.Sheets[sName];
+    if (!ws) continue;
+    const sampleJson = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as any[][];
+    for (let rIdx = 0; rIdx < Math.min(25, sampleJson.length); rIdx++) {
+      const row = sampleJson[rIdx];
+      if (Array.isArray(row)) {
+        for (const cell of row) {
+          const str = String(cell || '').trim();
+          if (str.length > 5 && (str.includes('-') || str.includes('/')) && /[A-Z]/.test(str)) {
+            sampleWorkbookRefs.push(str);
+            if (sampleWorkbookRefs.length > 30) break;
+          }
+        }
+      }
+      if (sampleWorkbookRefs.length > 30) break;
+    }
+  }
+
+  const parentRegister = resolveParentRegister({
+    fileName,
+    sheetNames: wb.SheetNames,
+    sampleDocRefs: sampleWorkbookRefs
+  });
 
   wb.SheetNames.forEach((sheetName) => {
     const ws = wb.Sheets[sheetName];
@@ -1164,51 +1194,37 @@ export const parseExcelWorkbook = (
           : "";
 
       const cleanFileBase = fileName.replace(/\.[^/.]+$/, "").trim();
-      const isAuthoritative = Boolean(authoritativeSourceName || compIdent?.isAuthoritative);
-      const authIdentity = authoritativeSourceName?.trim() || compIdent?.authoritativeRegister || compIdent?.compositeCode || cleanFileBase;
+      const sheetDiscInfo = normalizeDisciplineName(sheetName);
+      const isSheetDisc = isDisciplineSheet(sheetName);
+      const resolvedDiscipline = isSheetDisc ? sheetDiscInfo.normalized : (finalDisciplineVal || sheetDiscInfo.normalized);
 
       parsed.push({
         id: `${sheetName}::${cleanFileBase}::${idx}`,
 
-        logType:
-          isAuthoritative && authIdentity
-            ? authIdentity
-            : (
-                compIdent?.compositeCode ||
-                (
-                  detectedType !== "UNKNOWN"
-                    ? detectedType
-                    : sheetName.trim().toUpperCase()
-                )
-              ),
+        // Phase W Canonical Parent Register Identity
+        registerIdentity: parentRegister.identity,
+        registerDisplayName: parentRegister.displayNameEn,
+        sourceWorkbookName: fileName,
+        sourceFileName: fileName,
+        sourceSheetName: sheetName,
+        disciplineSourceSheet: sheetName,
+        disciplineCode: sheetDiscInfo.code,
 
-        sourceFile:
-          cleanFileBase,
-
-        rawSourceIdentity:
-          compIdent?.rawSourceIdentity ||
-          fileName,
-
-        contextDiscipline:
-          rowContextDiscipline,
-
-        compositeIdentity:
-          compIdent,
+        logType: parentRegister.identity,
+        sourceFile: cleanFileBase,
+        rawSourceIdentity: `${fileName}::${sheetName}`,
+        contextDiscipline: rowContextDiscipline,
+        compositeIdentity: compIdent,
 
         disciplineEvidenceSource,
         isDisciplineLocked: isRegisterDisciplineLocked,
-        hasAuthoritativeSourceIdentity: isAuthoritative,
-        sourceRegisterIdentity: authIdentity,
-        workflowFamily: compIdent?.family && compIdent.family !== 'UNKNOWN' ? compIdent.family : (detectedType !== 'UNKNOWN' ? detectedType : undefined),
+        hasAuthoritativeSourceIdentity: true,
+        sourceRegisterIdentity: parentRegister.identity,
+        workflowFamily: parentRegister.workflowFamily,
 
-        documentType:
-          isAuthoritative && authIdentity
-            ? authIdentity
-            : (
-                compIdent?.compositeCode || (detectedType && compDisc ? `${detectedType}-${compDisc}` : (detectedType || ""))
-              ),
-        trade:
-          finalDisciplineVal || "",
+        documentType: parentRegister.identity,
+        trade: resolvedDiscipline,
+        discipline: resolvedDiscipline,
         workflowStage: "",
         isLatestRev: false,
         isRev0: isRevision0(
@@ -1255,9 +1271,6 @@ export const parseExcelWorkbook = (
 
         drawingNo:
           parsedDrawingNo || undefined,
-
-        discipline:
-          finalDisciplineVal,
 
         contractor:
           colContractor >= 0

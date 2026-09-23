@@ -241,7 +241,7 @@ registersList.forEach(regId => {
   const regStats = calculateStats(regRows, normalizedDataset);
 
   console.log(`\n📁 REGISTER: [${regId}] ${KNOWN_PARENT_REGISTERS[regId]?.displayNameEn || regId}`);
-  console.log(`   Cumulative Stats: Workload=${regStats.totalSubmitted}, Approved=${regStats.approved}, Pending=${regStats.pending}, ApprovalRate=${regStats.approvalRate.toFixed(1)}%`);
+  console.log(`   Cumulative Stats: Workload=${regStats.totalSubmittedSheets}, Approved=${regStats.approved}, Pending=${regStats.pending}, ApprovalRate=${regStats.approvalRate.toFixed(1)}%`);
 
   // Nested Discipline Breakdown
   const discList = Array.from(new Set(regRows.map(r => r.trade || r.discipline)));
@@ -249,7 +249,7 @@ registersList.forEach(regId => {
   discList.forEach(disc => {
     const discRows = regRows.filter(r => (r.trade || r.discipline) === disc);
     const discStats = calculateStats(discRows, regRows);
-    console.log(`       ├── ${disc.padEnd(14)}: Workload=${discStats.totalSubmitted}, Approved=${discStats.approved}, Pending=${discStats.pending}, Rate=${discStats.approvalRate.toFixed(1)}%`);
+    console.log(`       ├── ${disc.padEnd(14)}: Workload=${discStats.totalSubmittedSheets}, Approved=${discStats.approved}, Pending=${discStats.pending}, Rate=${discStats.approvalRate.toFixed(1)}%`);
   });
 });
 

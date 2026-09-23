@@ -3,6 +3,7 @@
 
 import { WorkflowFamily, WORKFLOW_FAMILIES_META, AliasMapping } from './workflowMapping';
 import { CompositeIdentity, EvidenceLevel } from '../types';
+import { isDisciplineSheet, normalizeDisciplineName, resolveParentRegister, KNOWN_PARENT_REGISTERS } from './parentRegisterResolver';
 
 export interface ClassificationResult {
   detectedFamily: WorkflowFamily;
@@ -154,19 +155,48 @@ export function isKnownRegisterName(name: string): boolean {
 
 export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: string): string | null {
   const cleanSheet = (sheetName || '').trim();
+  const upperSheet = cleanSheet.toUpperCase();
   const isGenericSheet = !cleanSheet || /^(Sheet\s*\d*|Feuil\s*\d*|Tabelle\s*\d*|ورقة\s*\d*|Table\s*\d*|Page\s*\d*|Worksheet\s*\d*|Data\s*\d*|Export\s*\d*)$/i.test(cleanSheet);
-  
-  if (!isGenericSheet) {
-    return cleanSheet;
+
+  // 1. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN), it CANNOT be a parent register!
+  if (isDisciplineSheet(cleanSheet)) {
+    // Resolve parent register from workbook/filename context
+    const resolved = resolveParentRegister({ fileName });
+    if (resolved && resolved.identity !== 'UNCLASSIFIED') {
+      return resolved.identity;
+    }
+    return null; // Must not promote discipline to register!
   }
-  
+
+  // 2. Check compound sheet names like WIR-STR, DOC-GEN
+  const parts = upperSheet.split(/[-_ ]+/);
+  if (parts.length > 1 && KNOWN_PARENT_REGISTERS[parts[0]]) {
+    return KNOWN_PARENT_REGISTERS[parts[0]].identity;
+  }
+
+  // 3. If sheet name matches a known parent register directly (and is not a discipline)
+  if (KNOWN_PARENT_REGISTERS[upperSheet] && !isDisciplineSheet(upperSheet)) {
+    return KNOWN_PARENT_REGISTERS[upperSheet].identity;
+  }
+
+  // 4. Check filename context
   const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
   const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*)$/i.test(fileBase);
   
-  if (!isGenericFile && isKnownRegisterName(fileBase)) {
-    return fileBase;
+  if (!isGenericFile) {
+    const fileResolved = resolveParentRegister({ fileName });
+    if (fileResolved && fileResolved.identity !== 'UNCLASSIFIED') {
+      return fileResolved.identity;
+    }
+    if (isKnownRegisterName(fileBase)) {
+      return fileBase;
+    }
   }
-  
+
+  if (!isGenericSheet && !isDisciplineSheet(cleanSheet)) {
+    return cleanSheet;
+  }
+
   return null;
 }
 

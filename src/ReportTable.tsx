@@ -91,10 +91,18 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     return base.filter(r => !r.submissionDate || r.submissionDate <= maxDateStr);
   }, [rawDataset, data, isMonthly, filteredData]);
 
+  const rowToRegisterIdentity = (d: SubmittalRow): string => {
+    return (
+      d.registerIdentity ||
+      (d as any).sourceRegisterIdentity ||
+      d.workflowFamily ||
+      (d.documentType ? d.documentType.split('-')[0] : '') ||
+      'UNCLASSIFIED'
+    ).trim().toUpperCase();
+  };
+
   const rowToLabel = (d: SubmittalRow) => {
-      let dt = (d.documentType || 'DOC-GEN').trim();
-      if (dt === 'DOC') dt = 'DOC-GEN';
-      return dt;
+    return rowToRegisterIdentity(d);
   };
 
   const byDocType = useMemo(() => {

@@ -80,7 +80,13 @@ export function resolveRegisterFamilyFromKey(regKey: string, sampleRow?: Submitt
 export function resolveRowRegisterFamily(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
 
-  // 1. Check explicit workflowFamily if valid and not UNKNOWN
+  // 1. Direct canonical registerIdentity
+  if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
+    const reg = d.registerIdentity.trim().toUpperCase();
+    return reg === 'SHD' ? 'SDW' : (reg === 'LETTER' ? 'LTR' : reg);
+  }
+
+  // 2. Check explicit workflowFamily if valid and not UNKNOWN
   if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
     const wf = d.workflowFamily.toUpperCase().trim();
     if (wf === 'LETTER') return 'LTR';
@@ -89,18 +95,10 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
     }
   }
 
-  // 2. Check compositeIdentity
-  if ((d as any).compositeIdentity?.family && (d as any).compositeIdentity.family !== 'UNKNOWN') {
-    const cf = (d as any).compositeIdentity.family.toUpperCase().trim();
-    if (cf === 'LETTER') return 'LTR';
-    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(cf)) {
-      return cf === 'SHD' ? 'SDW' : cf;
-    }
-  }
-
-  // 3. Inspect sourceRegisterIdentity first!
+  // 3. Inspect sourceRegisterIdentity if not pure discipline
+  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL']);
   const srcId = (d.sourceRegisterIdentity || '').toUpperCase().trim();
-  if (srcId && srcId !== 'GEN' && srcId !== 'GENERAL' && srcId !== 'UNCLASSIFIED') {
+  if (srcId && !pureDisciplines.has(srcId) && srcId !== 'UNCLASSIFIED') {
     if (srcId.startsWith('DOC') || srcId.includes('TECHNICAL') || srcId.includes('TRANSMITTAL') || srcId.includes('DOCUMENT')) return 'DOC';
     if (srcId.startsWith('WIR') || srcId.includes('WORK INSP')) return 'WIR';
     if (srcId.startsWith('MIR') || srcId.includes('MATERIAL INSP')) return 'MIR';
@@ -197,26 +195,23 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
 export function resolveRowRegister(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
 
-  // 1. SSOT: Check sourceRegisterIdentity first!
-  const srcId = (d.sourceRegisterIdentity || '').trim();
-  if (srcId && srcId !== 'GEN' && srcId !== 'GENERAL' && srcId !== 'UNCLASSIFIED') {
+  // 1. SSOT: Check authoritative canonical registerIdentity first!
+  if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
+    return d.registerIdentity.trim().toUpperCase();
+  }
+
+  // 2. Check sourceRegisterIdentity if not pure discipline
+  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL']);
+  const srcId = (d.sourceRegisterIdentity || '').trim().toUpperCase();
+  if (srcId && !pureDisciplines.has(srcId) && srcId !== 'UNCLASSIFIED') {
     return srcId;
   }
 
-  // 2. Check if compositeIdentity has an authoritativeRegister
-  if ((d as any).compositeIdentity?.authoritativeRegister) {
-    const authReg = String((d as any).compositeIdentity.authoritativeRegister).trim();
-    if (authReg && authReg !== 'GEN' && authReg !== 'GENERAL' && authReg !== 'UNCLASSIFIED') {
-      return authReg;
-    }
-  }
-
-  // 3. Check documentType if it holds a full descriptive name
-  const docType = (d.documentType || '').trim();
-  if (docType && !docType.match(/^[A-Z]{3,4}-[A-Z]{2,4}$/)) {
-    if (docType.includes(' ') || docType.length > 8) {
-      return docType;
-    }
+  // 3. Check workflowFamily
+  if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
+    const wf = d.workflowFamily.toUpperCase().trim();
+    if (wf === 'LETTER') return 'LTR';
+    return wf;
   }
 
   // 4. Fallback to resolving the workflow family
@@ -1191,11 +1186,7 @@ export default function Presentation({
           <div className="p-12 flex h-full items-center justify-between">
             <div className="w-[48%] flex flex-col justify-center items-center h-full">
               <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'توزيع التقديمات حسب نوع السجل (شهري)' : 'Monthly Submittal Volume by Log Type'}</h3>
-              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: monthlyData.filter(d => {
-                const docT = (d.documentType || d.logType || 'GENERAL').toUpperCase();
-                const wf = (d.workflowFamily || '').toUpperCase();
-                return wf === bt || docT.startsWith(`${bt}-`) || docT === bt || docT.includes(bt);
-              }).length }))}>
+              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: monthlyData.filter(d => resolveRowRegister(d) === bt).length }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -1554,11 +1545,7 @@ export default function Presentation({
           <div className="p-12 flex h-full items-center justify-between">
             <div className="w-[48%] flex flex-col justify-center items-center h-full">
               <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'تراكم إجمالي التقديمات عبر فترات المشروع' : 'Cumulative Submittal Volume by Log Type'}</h3>
-              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: cumulativeData.filter(d => {
-                const docT = (d.documentType || d.logType || 'GENERAL').toUpperCase();
-                const wf = (d.workflowFamily || '').toUpperCase();
-                return wf === bt || docT.startsWith(`${bt}-`) || docT === bt || docT.includes(bt);
-              }).length }))}>
+              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: cumulativeData.filter(d => resolveRowRegister(d) === bt).length }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />

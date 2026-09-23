@@ -634,7 +634,7 @@ export default function App() {
                 
                 {showFilters && (
                     <div className="px-6 pt-4 pb-4 animate-in slide-in-from-top-2 border-t border-slate-100 mt-3 bg-slate-50/50 rounded-b-lg">
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3 mb-4">
                             {Object.entries(uniqueOpts).map(([key, opts]) => (
                                 <div key={key} className="flex flex-col gap-1">
                                     <label className="text-xs font-bold text-[#64748b] uppercase tracking-wider capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>

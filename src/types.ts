@@ -99,6 +99,15 @@ export interface SubmittalRow {
   isUnknownWorkflow?: boolean;
   calculationEngine?: string;
 
+  // Phase W Authoritative Parent Register Identity Fields
+  registerIdentity?: string;        // 'DOC', 'MAR', 'WIR', 'SDW', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR', 'ABD', 'QS', 'UNCLASSIFIED'
+  registerDisplayName?: string;     // e.g. 'Document Submittals (DOC)'
+  sourceWorkbookName?: string;      // e.g. 'DOC_Register.xlsx'
+  sourceFileName?: string;          // e.g. 'DOC_Register.xlsx'
+  sourceSheetName?: string;         // e.g. 'STR'
+  disciplineSourceSheet?: string;   // e.g. 'STR'
+  disciplineCode?: string;          // e.g. 'STR'
+
   // Composite Identity Fields
   rawSourceIdentity?: string;
   contextDiscipline?: string;
