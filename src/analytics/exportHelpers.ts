@@ -134,7 +134,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
-      const totalSubmittals = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length;
+      const totalSubmittals = s.totalUniqueSubmittals ?? (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length);
       const countForType = isSheetCountType || bt === 'RFI'
         ? totalWorkload
         : (isMonthlyReport

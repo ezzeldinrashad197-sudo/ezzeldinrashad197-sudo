@@ -1,4 +1,4 @@
-import { calculateCanonicalKPIs, getBusinessEntityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
+import { calculateCanonicalKPIs, getBusinessEntityKey, getDocumentIdentityKey, getSubmissionIdentityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
 import {
   isValidRevision,
   getRevisionWeight,
@@ -910,6 +910,108 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     if (sdwKpi.totalUniqueDrawings !== 1 || sdwKpi.approved !== 1) {
       throw new Error(`SDW KPI mismatch: expected unique=1, approved=1, got unique=${sdwKpi.totalUniqueDrawings}, approved=${sdwKpi.approved}`);
     }
+  });
+
+  // Test 18: Three-Grain Identity: Raw Row vs Submission Grain vs Document Grain
+  test('ER-018: 3-Grain Separation -> Raw Rows=3, Unique Submittals=2, Rev00 Submittals=2, Unique Drawings=3', () => {
+    const sdwTestRows: SubmittalRow[] = [
+      {
+        id: 'ROW-1',
+        registerIdentity: 'SDW',
+        discipline: 'Structural',
+        disciplineCode: 'STR',
+        submissionRef: 'SUB-001',
+        drawingNo: 'DWG-001',
+        rev: '00',
+        status: 'APPROVED',
+        documentType: 'SDW'
+      } as SubmittalRow,
+      {
+        id: 'ROW-2',
+        registerIdentity: 'SDW',
+        discipline: 'Structural',
+        disciplineCode: 'STR',
+        submissionRef: 'SUB-001',
+        drawingNo: 'DWG-002',
+        rev: '00',
+        status: 'APPROVED',
+        documentType: 'SDW'
+      } as SubmittalRow,
+      {
+        id: 'ROW-3',
+        registerIdentity: 'SDW',
+        discipline: 'Structural',
+        disciplineCode: 'STR',
+        submissionRef: 'SUB-002',
+        drawingNo: 'DWG-003',
+        rev: '00',
+        status: 'PENDING',
+        documentType: 'SDW'
+      } as SubmittalRow
+    ];
+
+    const kpi = calculateCanonicalKPIs(sdwTestRows);
+
+    if (kpi.totalSubmittedSheets !== 3) {
+      throw new Error(`Expected Raw Rows (totalSubmittedSheets)=3, got ${kpi.totalSubmittedSheets}`);
+    }
+    if (kpi.totalUniqueSubmittals !== 2) {
+      throw new Error(`Expected Unique Submittals=2, got ${kpi.totalUniqueSubmittals}`);
+    }
+    if (kpi.totalSubmittalsRev0 !== 2) {
+      throw new Error(`Expected Rev.00 Submittals=2, got ${kpi.totalSubmittalsRev0}`);
+    }
+    if (kpi.totalUniqueDrawings !== 3) {
+      throw new Error(`Expected Unique Drawings=3, got ${kpi.totalUniqueDrawings}`);
+    }
+  });
+
+  // Test 19: Submission Identity Key Isolation & Multi-drawing Submittal
+  test('ER-019: Same SUB Ref with 2 Drawings -> Unique Submittals=1, Unique Drawings=2 + Cross-Register Isolation', () => {
+    const multiDwgRows: SubmittalRow[] = [
+      {
+        id: 'ROW-A',
+        registerIdentity: 'SDW',
+        discipline: 'Structural',
+        disciplineCode: 'STR',
+        submissionRef: 'SUB-001',
+        drawingNo: 'DWG-001',
+        rev: '00',
+        status: 'APPROVED',
+        documentType: 'SDW'
+      } as SubmittalRow,
+      {
+        id: 'ROW-B',
+        registerIdentity: 'SDW',
+        discipline: 'Structural',
+        disciplineCode: 'STR',
+        submissionRef: 'SUB-001',
+        drawingNo: 'DWG-002',
+        rev: '00',
+        status: 'APPROVED',
+        documentType: 'SDW'
+      } as SubmittalRow
+    ];
+
+    const kpi = calculateCanonicalKPIs(multiDwgRows);
+    if (kpi.totalSubmittedSheets !== 2) throw new Error(`Expected Raw Rows=2, got ${kpi.totalSubmittedSheets}`);
+    if (kpi.totalUniqueSubmittals !== 1) throw new Error(`Expected Unique Submittals=1, got ${kpi.totalUniqueSubmittals}`);
+    if (kpi.totalSubmittalsRev0 !== 1) throw new Error(`Expected Rev00 Submittals=1, got ${kpi.totalSubmittalsRev0}`);
+    if (kpi.totalUniqueDrawings !== 2) throw new Error(`Expected Unique Drawings=2, got ${kpi.totalUniqueDrawings}`);
+
+    // Verify submission identity keys across different registers remain distinct
+    const keyDoc = getSubmissionIdentityKey({ registerIdentity: 'DOC', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any);
+    const keyMar = getSubmissionIdentityKey({ registerIdentity: 'MAR', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any);
+    const keyWir = getSubmissionIdentityKey({ registerIdentity: 'WIR', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any);
+    const keySdw = getSubmissionIdentityKey({ registerIdentity: 'SDW', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any);
+
+    if (keyDoc !== 'DOC|STR|SUB-001') throw new Error(`Expected DOC|STR|SUB-001, got ${keyDoc}`);
+    if (keyMar !== 'MAR|STR|SUB-001') throw new Error(`Expected MAR|STR|SUB-001, got ${keyMar}`);
+    if (keyWir !== 'WIR|STR|SUB-001') throw new Error(`Expected WIR|STR|SUB-001, got ${keyWir}`);
+    if (keySdw !== 'SDW|STR|SUB-001') throw new Error(`Expected SDW|STR|SUB-001, got ${keySdw}`);
+
+    const uniqueKeys = new Set([keyDoc, keyMar, keyWir, keySdw]);
+    if (uniqueKeys.size !== 4) throw new Error(`Expected 4 distinct register submission keys, got ${uniqueKeys.size}`);
   });
 
   return testResults;

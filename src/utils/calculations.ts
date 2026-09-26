@@ -5,6 +5,8 @@ import {
   evaluateSubmissionLayer, 
   evaluatePerformanceLayer, 
   getBusinessEntityKey, 
+  getDocumentIdentityKey,
+  getSubmissionIdentityKey,
   parseDateTimestamp, 
   calculateCanonicalKPIs,
   processRevisionEngine,
@@ -18,13 +20,53 @@ import {
   runComprehensiveSequenceAudit,
   generateForensicLifecycleLedger
 } from "../analytics/calculationFoundation";
-export { parseDateTimestamp, buildCanonicalDataset, evaluateSubmissionLayer, evaluatePerformanceLayer, getBusinessEntityKey, calculateCanonicalKPIs, processRevisionEngine, resolveRowDiscipline, resolveCanonicalTrade, auditRegisterSequence, runComprehensiveSequenceAudit, generateForensicLifecycleLedger };
+export { 
+  parseDateTimestamp, 
+  buildCanonicalDataset, 
+  evaluateSubmissionLayer, 
+  evaluatePerformanceLayer, 
+  getBusinessEntityKey, 
+  getDocumentIdentityKey,
+  getSubmissionIdentityKey,
+  calculateCanonicalKPIs, 
+  processRevisionEngine, 
+  resolveRowDiscipline, 
+  resolveCanonicalTrade, 
+  auditRegisterSequence, 
+  runComprehensiveSequenceAudit, 
+  generateForensicLifecycleLedger 
+};
 import { compareRevisions } from "../analytics/analyticsCore";
 import { compareRevisionsCanonical, getRevisionWeight, isRevision0 } from "../analytics/revisionResolver";
 import { mapDocumentToWorkflow } from "./workflowMapping";
 import { getStatusCodeCategory, getStatusCategory, getRecordNormalizedStatus, classifyNcrStatus, NcrClassificationResult, classifyRow, classifySubmission } from '../analytics/statusResolver';
 export { getStatusCodeCategory, getStatusCategory, getRecordNormalizedStatus, classifyNcrStatus, compareRevisions, compareRevisionsCanonical, getRevisionWeight, mapDocumentToWorkflow, classifyRow, classifySubmission };
 export type { NcrClassificationResult };
+
+export const getUniqueSubmittals = (rows: SubmittalRow[]): SubmittalRow[] => {
+  if (!rows || rows.length === 0) return [];
+  const map = new Map<string, SubmittalRow[]>();
+  rows.forEach(r => {
+    const key = getSubmissionIdentityKey(r);
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
+    map.get(key)!.push(r);
+  });
+  const result: SubmittalRow[] = [];
+  map.forEach((list) => {
+    list.sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
+    result.push(list[list.length - 1]);
+  });
+  return result;
+};
+
+export const getUniqueSubmittalCount = (rows: SubmittalRow[]): number => {
+  if (!rows || rows.length === 0) return 0;
+  const set = new Set<string>();
+  rows.forEach(r => set.add(getSubmissionIdentityKey(r)));
+  return set.size;
+};
 
 export const getUniqueNCRs = (rows: SubmittalRow[]): SubmittalRow[] => {
   if (!rows || rows.length === 0) return [];
@@ -236,13 +278,14 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
       disciplineSourceSheet: r.disciplineSourceSheet,
       disciplineCode: r.disciplineCode,
       documentIdentityKey,
+      submissionIdentityKey: getSubmissionIdentityKey(r),
       discipline: isLockedRow ? (trade || r.discipline) : (r.discipline || trade),
       disciplineEvidenceSource: r.disciplineEvidenceSource || (isLockedRow ? 'REGISTER_LOCK' : undefined),
       isDisciplineLocked: r.isDisciplineLocked || isLockedRow,
       trade: trade || r.trade,
       tradeShort: tradeShort || (r as any).tradeShort,
-      documentType: r.documentType && r.documentType !== 'DOC-GEN' ? r.documentType : regIdentity,
-      sourceRegisterIdentity: regIdentity,
+      documentType,
+      sourceRegisterIdentity: r.sourceRegisterIdentity || regIdentity,
       workflowStage,
       delayDays,
       overdue,

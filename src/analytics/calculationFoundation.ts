@@ -512,6 +512,95 @@ export function getDocumentIdentityKey(row: SubmittalRow): string {
 }
 
 /**
+ * 2b. Submission Identity Resolver (Submission Grain)
+ *
+ * Distinct from:
+ *   1. Raw Row Grain (row.id)
+ *   2. Physical Document / Drawing Grain (getDocumentIdentityKey: SUB Ref + DWG No.)
+ *
+ * Grain: Submission Package / Event
+ * Identity: Register + Canonical Discipline + SUB Ref
+ * Example: 'SDW|STR|SUB-001'
+ *
+ * Used for:
+ *   - Unique Submittals
+ *   - Rev.00 Submittals
+ *   - Further Revision Submittals
+ *   - Submittal-level KPIs
+ */
+export function getSubmissionIdentityKey(row: SubmittalRow): string {
+  // If already computed and valid
+  if (row.submissionIdentityKey && typeof row.submissionIdentityKey === 'string' && row.submissionIdentityKey.includes('|')) {
+    return row.submissionIdentityKey;
+  }
+
+  // 1. Register Identity Resolution
+  let reg = (
+    row.registerIdentity ||
+    row.sourceRegisterIdentity ||
+    (row as unknown as Record<string, unknown>).logType ||
+    (row as unknown as Record<string, unknown>).documentType ||
+    (row as unknown as Record<string, unknown>).workflowFamily ||
+    'UNCLASSIFIED'
+  ).toString().trim().toUpperCase();
+
+  if (reg.includes('.')) {
+    reg = reg.split('.')[0].trim();
+  }
+
+  const knownPrefixes = ['SDW', 'WIR', 'MIR', 'NCR', 'SOR', 'RFI', 'MAR', 'DOC', 'ABD', 'QS', 'LTR', 'TRS'];
+  for (const p of knownPrefixes) {
+    if (reg.startsWith(p)) {
+      reg = p;
+      break;
+    }
+  }
+
+  // 2. Canonical Discipline Resolution
+  let disc = '';
+  if (row.disciplineCode && String(row.disciplineCode).trim()) {
+    disc = String(row.disciplineCode).trim().toUpperCase();
+  } else {
+    const canonicalTrade = resolveCanonicalTrade(row);
+    disc = (
+      canonicalTrade?.tradeShort ||
+      (row as unknown as Record<string, unknown>).tradeShort ||
+      canonicalTrade?.trade ||
+      row.discipline ||
+      row.trade ||
+      'GEN'
+    ).toString().trim().toUpperCase();
+  }
+
+  // Normalize full names to standard discipline codes
+  if (disc === 'STRUCTURAL' || disc === 'CIVIL') disc = 'STR';
+  else if (disc === 'ARCHITECTURAL') disc = 'ARCH';
+  else if (disc === 'MECHANICAL') disc = 'MECH';
+  else if (disc === 'ELECTRICAL') disc = 'ELEC';
+  else if (disc === 'INFRASTRUCTURE') disc = 'INFRA';
+  else if (disc === 'LANDSCAPE') disc = 'LAND';
+  else if (disc === 'GENERAL' || disc === 'UNCLASSIFIED' || !disc) disc = 'GEN';
+
+  // 3. Submission Ref Resolution
+  const rawSubRef = getSubmissionReference(row) ||
+    row.submissionRef ||
+    row.docNo ||
+    (row as unknown as Record<string, unknown>).submittalRef ||
+    (row as unknown as Record<string, unknown>).ncrRef ||
+    (row as unknown as Record<string, unknown>).sorRef ||
+    (row as unknown as Record<string, unknown>).rfiRef ||
+    row.id ||
+    'UNKNOWN';
+
+  let cleanSubRef = String(rawSubRef).trim().toUpperCase();
+
+  // Strip trailing revision token if explicitly attached (e.g. -REV00, -R01)
+  cleanSubRef = cleanSubRef.replace(/[-_/\\s]+(?:REV|REVISION|R)\.?(?:[-_/\\s]*)([0-9]{1,2}|[A-Z])$/i, '').trim() || cleanSubRef;
+
+  return `${reg}|${disc}|${cleanSubRef}`;
+}
+
+/**
  * 3. Revision & History Engine
  *
  * Revision precedence itself is unchanged.
@@ -907,6 +996,12 @@ export function calculateCanonicalKPIs(
       totalSheetsFurtherRev: 0,
       totalDrawingsRev0: 0,
       totalDrawingsFurtherRev: 0,
+      totalUniqueSubmittals: 0,
+      uniqueSubmittals: 0,
+      totalSubmittalsRev0: 0,
+      rev0Submittals: 0,
+      totalSubmittalsFurtherRev: 0,
+      furtherRevSubmittals: 0,
       rowApproved: 0,
       rowApprovedClosed: 0,
       rowRejectedOpen: 0,
@@ -968,6 +1063,9 @@ export function calculateCanonicalKPIs(
   let rowApproved = 0;
   let rowPending = 0;
 
+  // 1b. SUBMISSION GRAIN (Register + Canonical Discipline + SUB Ref)
+  const uniqueSubmittalsMap = new Map<string, { rev0: boolean; furtherRev: boolean; rows: SubmittalRow[] }>();
+
   validRows.forEach(r => {
     const rawRev = extractRevisionRaw(r);
     const isRev0 = isRevision0(rawRev, r.isRev0);
@@ -978,6 +1076,17 @@ export function calculateCanonicalKPIs(
     } else if (isFurtherRev) {
       totalSheetsFurtherRev++;
     }
+
+    // Track at Submission Grain (SDW|STR|SUB-001)
+    const subKey = getSubmissionIdentityKey(r);
+    let subEntry = uniqueSubmittalsMap.get(subKey);
+    if (!subEntry) {
+      subEntry = { rev0: false, furtherRev: false, rows: [] };
+      uniqueSubmittalsMap.set(subKey, subEntry);
+    }
+    subEntry.rows.push(r);
+    if (isRev0) subEntry.rev0 = true;
+    if (isFurtherRev) subEntry.furtherRev = true;
 
     const rowStatusCat =
       getStatusCodeCategory(r);
@@ -1005,6 +1114,14 @@ export function calculateCanonicalKPIs(
     } else {
       rowPending++;
     }
+  });
+
+  const totalUniqueSubmittals = uniqueSubmittalsMap.size;
+  let totalSubmittalsRev0 = 0;
+  let totalSubmittalsFurtherRev = 0;
+  uniqueSubmittalsMap.forEach(subEntry => {
+    if (subEntry.rev0) totalSubmittalsRev0++;
+    if (subEntry.furtherRev) totalSubmittalsFurtherRev++;
   });
 
   const rowApprovedClosed =
@@ -1297,6 +1414,14 @@ export function calculateCanonicalKPIs(
 
     totalDrawingsFurtherRev:
       totalSheetsFurtherRev,
+
+    // 1b. Submission Grain Metrics (Register + Canonical Discipline + SUB Ref)
+    totalUniqueSubmittals,
+    uniqueSubmittals: totalUniqueSubmittals,
+    totalSubmittalsRev0,
+    rev0Submittals: totalSubmittalsRev0,
+    totalSubmittalsFurtherRev,
+    furtherRevSubmittals: totalSubmittalsFurtherRev,
 
     rowApproved,
     rowApprovedClosed,

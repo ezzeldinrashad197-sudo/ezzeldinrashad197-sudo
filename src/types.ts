@@ -116,6 +116,7 @@ export interface SubmittalRow {
   isDisciplineLocked?: boolean;
   hasAuthoritativeSourceIdentity?: boolean;
   sourceRegisterIdentity?: string;
+  submissionIdentityKey?: string;   // Submission grain: 'Register|Discipline|SUB Ref' (e.g. 'SDW|STR|SUB-001')
 }
 
 export type EvidenceLevel = 
@@ -153,6 +154,14 @@ export interface KPIStats {
   totalSheetsFurtherRev: number; // Rows with Rev > 0
   totalDrawingsRev0: number;    // Legacy alias
   totalDrawingsFurtherRev: number; // Legacy alias
+
+  // 1b. Submission Grain Metrics (Register + Discipline + SUB Ref)
+  totalUniqueSubmittals?: number;     // Unique Submittals count (Grain: Register|Discipline|SUB Ref)
+  uniqueSubmittals?: number;          // Alias for totalUniqueSubmittals
+  totalSubmittalsRev0?: number;       // Unique Submittals at Rev.00
+  rev0Submittals?: number;            // Alias for totalSubmittalsRev0
+  totalSubmittalsFurtherRev?: number; // Unique Submittals at Further Revisions (>0)
+  furtherRevSubmittals?: number;      // Alias for totalSubmittalsFurtherRev
 
   // Row-Level Workload Status Metrics (Grain: Row / Physical Submission Event)
   rowApproved?: number;         // Total rows with Approved Status (Code A, Code B, etc.)

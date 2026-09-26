@@ -558,7 +558,7 @@ export default function Presentation({
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = family === 'SDW' || family === 'SHD' || family === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
-      const totalSubmittals = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length;
+      const totalSubmittals = s.totalUniqueSubmittals ?? (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length);
       const countForType = isSheetCountType || family === 'RFI'
         ? totalWorkload 
         : (isMonthlyReport 
