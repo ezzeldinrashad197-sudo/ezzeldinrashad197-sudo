@@ -224,7 +224,18 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       let enSummary = '';
       let arSummary = '';
 
-      if (score >= 80) {
+      const activeCount = totalPending + (globalStats.rejectedOpen || 0);
+      const overdueRateActive = activeCount > 0 ? (totalOverdue / activeCount) * 100 : 0;
+
+      if (overdueRateActive >= 50 && totalOverdue > 5) {
+          // High operational SLA exposure (e.g. cumulative: 376 / 388 = 96.9%)
+          enSummary = `The project maintains a ${appRate.toFixed(1)}% current-state approval rate; however, significant operational SLA exposure remains, with ${totalOverdue} of ${activeCount} active items currently overdue (${overdueRateActive.toFixed(1)}%). Immediate backlog resolution is required.`;
+          arSummary = `يحافظ المشروع على نسبة اعتماد حالية تبلغ ${appRate.toFixed(1)}%؛ غير أن هناك مخاطر تشغيلية ومستوى تعرض عالياً لاتفاقية مستوى الخدمة (SLA)، حيث إن ${totalOverdue} من أصل ${activeCount} معاملة نشطة متأخرة حالياً (${overdueRateActive.toFixed(1)}%). يتطلب هذا تدخلاً فورياً لمعالجة المتأخرات المتراكمة.`;
+      } else if (overdueRateActive >= 15 || totalOverdue > 2) {
+          // Moderate operational SLA exposure (e.g. monthly: 4 of 15 = 26.7%)
+          enSummary = `The project achieved an ${appRate.toFixed(1)}% current-state approval rate. However, ${totalOverdue} of ${activeCount} active items (${overdueRateActive.toFixed(1)}%) are currently overdue and require focused SLA follow-up.`;
+          arSummary = `حقق المشروع نسبة اعتماد حالية بلغت ${appRate.toFixed(1)}%. ومع ذلك، فإن ${totalOverdue} من أصل ${activeCount} معاملة نشطة (${overdueRateActive.toFixed(1)}%) متأخرة حالياً وتتطلب متابعة دقيقة لتجاوزات اتفاقية مستوى الخدمة.`;
+      } else if (score >= 80) {
           enSummary = `Project health is performing within excellent limits with an approval rate of ${appRate.toFixed(1)}%. Workflow processing times satisfy the SLA thresholds with minimal backlog overdue.`;
           arSummary = `يؤدي المشروع أداءً ممتازاً ومستقراً بنسبة اعتماد بلغت ${appRate.toFixed(1)}%. سرعة تدفق المراجعات والاعتمادات تتوافق تماماً مع فترات اتفاقية مستوى الخدمة مع حد أدنى من التأخيرات المتراكمة.`;
       } else if (score >= 65) {
@@ -722,13 +733,28 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       }
 
       if (totalOverdue > 0) {
+          const odRejOpen = activeOverdueCounts.rejectedOpen;
+          const odPending = activeOverdueCounts.pending;
+          let breakdownEn = '';
+          let breakdownAr = '';
+          if (odRejOpen > 0 && odPending > 0) {
+              breakdownEn = `, comprising ${odRejOpen} Rejected/Open items and ${odPending} Pending Review items`;
+              breakdownAr = `، منها ${odRejOpen} بندًا مرفوضًا/مفتوحًا و${odPending} بنود معلقة قيد المراجعة`;
+          } else if (odRejOpen > 0) {
+              breakdownEn = `, comprising ${odRejOpen} Rejected/Open items`;
+              breakdownAr = `، تتكون بالكامل من ${odRejOpen} بندًا مرفوضًا/مفتوحًا`;
+          } else if (odPending > 0) {
+              breakdownEn = `, comprising ${odPending} Pending Review items`;
+              breakdownAr = `، تتكون بالكامل من ${odPending} بنود معلقة قيد المراجعة`;
+          }
+
           recs.push({
               id: 'rec-2',
-              en: `Deploy senior engineering task forces to specifically target and clear the ${totalOverdue} critical SLA overdue bottlenecks to unblock downstream procurement and site works.`,
-              ar: `توجيه مهندسين كبار لسرعة تصفية المعاملات المتأخرة والبالغ عددها ${totalOverdue} معاملة، لضمان عدم تأثر أعمال التوريدات والتركيبات الموقعية المرتبطة بها.`,
+              en: `Prioritize resolution of the ${totalOverdue} active items currently exceeding the applicable SLA${breakdownEn}.`,
+              ar: `إعطاء الأولوية لمعالجة ${totalOverdue} بندًا نشطًا متجاوزًا للمدة المحددة${breakdownAr}.`,
               priority: 'CRITICAL',
               action: 'Resolve SLA Overdues',
-              actionAr: 'تصفية المتأخرات الحرجة'
+              actionAr: 'تصفية متأخرات SLA'
           });
       }
 
@@ -983,7 +1009,24 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         </div>
                         <div>
                             <div className="text-4xl font-extrabold text-slate-800">{healthData.score}<span className="text-sm font-medium text-slate-400">/100</span></div>
-                            <div className={`text-xs font-bold mt-1 uppercase ${healthData.textClass}`}>{healthData.rating}</div>
+                            <div className={`text-xs font-bold mt-1 uppercase ${healthData.textClass}`}>
+                                {healthData.score >= 80 ? (language === 'ar' ? 'ضمن النطاق المستهدف' : 'Within KPI Band') : healthData.rating}
+                            </div>
+                            <div className="text-[11px] font-bold mt-1 text-slate-500">
+                                {(() => {
+                                    const actCount = (globalStats.rejectedOpen || 0) + (globalStats.pending || 0);
+                                    const odRate = actCount > 0 ? (globalStats.overdue / actCount) * 100 : 0;
+                                    const isCrit = odRate >= 50 && globalStats.overdue > 5;
+                                    const isElev = odRate >= 15 || globalStats.overdue > 2;
+                                    return (
+                                        <span className={`inline-flex items-center gap-1 font-semibold ${isCrit ? 'text-rose-700' : isElev ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isCrit ? 'bg-rose-500' : isElev ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                            {isCrit ? (language === 'ar' ? 'انتباه حرج لـ SLA' : 'SLA: Critical Attention') : isElev ? (language === 'ar' ? 'متابعة مكثفة لـ SLA' : 'SLA: Elevated Attention') : (language === 'ar' ? 'التزام مستقر بـ SLA' : 'SLA: Controlled')}
+                                            <span className="text-slate-400 font-normal">({globalStats.overdue}/{actCount})</span>
+                                        </span>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1037,14 +1080,24 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                     {(() => {
                         const activeCount = (globalStats.rejectedOpen || 0) + (globalStats.pending || 0);
                         const overduePct = activeCount > 0 ? ((globalStats.overdue / activeCount) * 100).toFixed(1) : '0.0';
+                        const odRejOpen = activeOverdueCounts.rejectedOpen;
+                        const odPending = activeOverdueCounts.pending;
                         return (
                             <div className="flex items-start gap-2.5">
                                 <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0"></div>
                                 <p className="text-sm text-slate-600 leading-relaxed">
                                     {language === 'ar' ? (
-                                        <>حالة الأعمال النشطة المتأخرة: <strong className="text-rose-600">{globalStats.overdue}</strong> من أصل <strong className="text-slate-800">{activeCount}</strong> معاملة نشطة متجاوزة للمدة المحددة بالاتفاقية (<strong className="text-rose-700">{overduePct}%</strong> من المعاملات النشطة تشمل {globalStats.rejectedOpen} مرفوض مفتوح و {globalStats.pending} قيد المراجعة).</>
+                                        globalStats.overdue > 0 ? (
+                                            <>حالة الأعمال النشطة المتأخرة: <strong className="text-rose-600">{globalStats.overdue}</strong> من أصل <strong className="text-slate-800">{activeCount}</strong> معاملة نشطة متجاوزة للمدة المحددة بالاتفاقية (<strong className="text-rose-700">{overduePct}%</strong> من إجمالي المعاملات النشطة). تتكون المعاملات النشطة من <strong>{globalStats.rejectedOpen}</strong> معاملة مرفوضة/مفتوحة و<strong>{globalStats.pending}</strong> معاملة معلقة قيد المراجعة. ومن بين هذه المعاملات النشطة، هناك <strong className="text-rose-700">{odRejOpen}</strong> معاملة مرفوضة/مفتوحة و<strong className="text-amber-700">{odPending}</strong> معاملات معلقة متأخرة متجاوزة للمدة المحددة.</>
+                                        ) : (
+                                            <>حالة الأعمال النشطة: جميع المعاملات النشطة البالغ عددها <strong className="text-slate-800">{activeCount}</strong> معاملة ({globalStats.rejectedOpen} مرفوض مفتوح و{globalStats.pending} قيد المراجعة) تسير ضمن المدد التعاقدية دون أي تأخيرات.</>
+                                        )
                                     ) : (
-                                        <>Active Backlog Status: <strong className="text-rose-600">{globalStats.overdue}</strong> of <strong className="text-slate-800">{activeCount}</strong> active items are overdue (<strong className="text-rose-700">{overduePct}%</strong> of active items comprising {globalStats.rejectedOpen} rejected open and {globalStats.pending} pending review).</>
+                                        globalStats.overdue > 0 ? (
+                                            <>Active Backlog Status: <strong className="text-rose-600">{globalStats.overdue}</strong> of <strong className="text-slate-800">{activeCount}</strong> active items are overdue (<strong className="text-rose-700">{overduePct}%</strong> of the active population). The active population comprises <strong>{globalStats.rejectedOpen}</strong> Rejected/Open items and <strong>{globalStats.pending}</strong> Pending Review items. Of these active items, <strong className="text-rose-700">{odRejOpen}</strong> Rejected/Open and <strong className="text-amber-700">{odPending}</strong> Pending Review items are overdue.</>
+                                        ) : (
+                                            <>Active Backlog Status: All <strong className="text-slate-800">{activeCount}</strong> active items ({globalStats.rejectedOpen} Rejected/Open and {globalStats.pending} Pending Review) are progressing within SLA limits with zero overdue items.</>
+                                        )
                                     )}
                                 </p>
                             </div>
@@ -1243,7 +1296,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                    e.stopPropagation();
                    setIsAuditMatrixOpen(!isAuditMatrixOpen);
                  }}
-                 className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg text-xs font-bold shadow-2xs hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer"
+                 className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg text-xs font-bold shadow-2xs hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer print:hidden [body.pdf-export_&]:hidden"
                >
                  {isAuditMatrixOpen ? (
                    <>
@@ -1260,11 +1313,10 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              </div>
            </div>
 
-           {/* Collapsible Content */}
-           {isAuditMatrixOpen && (
-             <div className="p-4 space-y-3 bg-slate-50/30 border-t border-slate-100">
+           {/* Collapsible Content: rendered if open in UI or in static PDF export */}
+            <div className={`${isAuditMatrixOpen ? "block" : "hidden"} print:block [body.pdf-export_&]:block p-4 space-y-3 bg-slate-50/30 border-t border-slate-100`}>
                {/* Interactive Drill-down Hint Banner */}
-               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 bg-blue-50/90 border border-blue-200/90 rounded-xl text-xs text-[#203864] shadow-xs">
+               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 bg-blue-50/90 border border-blue-200/90 rounded-xl text-xs text-[#203864] shadow-xs print:hidden [body.pdf-export_&]:hidden">
                  <div className="flex items-center gap-2">
                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
                    <span className="font-semibold">
@@ -1818,7 +1870,6 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
             </div>
           </div>
         </div>
-      )}
     </div>
   </div>
 
@@ -1906,6 +1957,10 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                 >
                   <X className="w-5 h-5" />
                 </button>
+                <div className="hidden print:flex [body.pdf-export_&]:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-[#203864] border border-blue-200 rounded-lg text-xs font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{language === "ar" ? "مصفوفة التدقيق والتحليل الشاملة" : "Full Multi-Grain Audit Matrix"}</span>
+                </div>
               </div>
             </div>
 

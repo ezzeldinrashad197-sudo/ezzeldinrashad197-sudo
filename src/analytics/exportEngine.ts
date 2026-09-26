@@ -753,7 +753,7 @@ export const generatePptxReport = async (
     });
 
     // ----------------------------------------------------
-    // REJECTED ITEMS SECTION
+    // REJECTED ITEMS SECTION (PART II: DETAILED ANALYTICS DOSSIER)
     // ----------------------------------------------------
     if (isSectionSelected('rejected')) {
         const presRejectedPageSize = options?.rejectedPageSize || 14;
@@ -765,11 +765,6 @@ export const generatePptxReport = async (
         const seenRejectedRefs = new Set<string>();
         const targetRejectedDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
         const presRejectedItems = targetRejectedDataset
-            // FIX (2026-09-02): previously required BOTH overdue AND Rejected, which silently
-            // hid all 6 currently-open rejected items whenever none happened to be overdue yet
-            // — directly contradicting the "6 unique items in Rejected/Open status" figure shown
-            // on the Executive Summary and Recommendations slides. This section now lists every
-            // rejected/open item (matching those slides), sorted so overdue ones surface first.
             .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
             .filter(d => {
                 const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
@@ -784,32 +779,52 @@ export const generatePptxReport = async (
                 return (b.delayDays || 0) - (a.delayDays || 0);
             });
 
-        const rejectedPages: SubmittalRow[][] = [];
+        const allRejectedPages: SubmittalRow[][] = [];
         for (let i = 0; i < presRejectedItems.length; i += presRejectedPageSize) {
-            rejectedPages.push(presRejectedItems.slice(i, i + presRejectedPageSize));
+            allRejectedPages.push(presRejectedItems.slice(i, i + presRejectedPageSize));
         }
 
+        const isExecutiveOnly = options?.deckType === 'executive' || options?.executiveOnly === true;
+        const rejectedPages = isExecutiveOnly ? allRejectedPages.slice(0, 2) : allRejectedPages;
+
+        // Architectural separation: Part II Detailed Analytics Dossier
+        addDividerSlide(
+            pres,
+            isArabic ? "الملف التحليلي وسجلات التدقيق التاريخية الشاملة" : "Detailed Analytics Dossier & Complete Historical Registers",
+            isArabic ? "القسم الثاني: الملف التحليلي التفصيلي" : "PART II: DETAILED ANALYTICS DOSSIER",
+            projectInfo,
+            logoUrl,
+            options
+        );
+
         const sectionNumRejected = baseTypes.length + 5;
-        addDividerSlide(pres, isArabic ? "الوثائق التي تتطلب إعادة تقديم (إجراء المقاول)" : "Items Requiring Resubmission (Contractor Action)", `${String(sectionNumRejected).padStart(2, '0')} REJECTED ITEMS`, projectInfo, logoUrl, options);
+        addDividerSlide(
+            pres,
+            isArabic ? "سجلات ووقائع الرفض التاريخية (إجراء المقاول)" : "Historical Rejection Events & Rows (Contractor Action)",
+            `${String(sectionNumRejected).padStart(2, '0')} HISTORICAL REJECTION EVENTS / ROWS`,
+            projectInfo,
+            logoUrl,
+            options
+        );
 
         if (rejectedPages.length === 0) {
             let slide: any = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
-            addHeaderAndFooter(pres, slide, "REJECTED ITEMS", projectInfo, logoUrl, options);
-            slide.addText(isArabic ? "لا توجد وثائق مرفوضة" : "No Rejected Items", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
+            addHeaderAndFooter(pres, slide, "HISTORICAL REJECTION EVENTS / ROWS", projectInfo, logoUrl, options);
+            slide.addText(isArabic ? "لا توجد وقائع رفض تاريخية" : "No Rejection Events", { x: 1.0, y: 2.2, w: 8, h: 0.6, fontSize: 24, bold: true, color: "7A1515", align: "center", rtl: isArabic });
             slide.addText(isArabic ? "لا توجد مستندات في حالة مرفوض/مفتوح حالياً." : "No submittals are currently in Rejected/Open status.", { x: 1.0, y: 2.9, w: 8, h: 0.4, fontSize: 14, color: "666666", align: "center", rtl: isArabic });
         } else {
             rejectedPages.forEach((pageData, pageIdx) => {
                 let slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
                 const slideHeaderTitle = isArabic
-                    ? (pageIdx > 0 ? "الوثائق المرفوضة (متابعة)" : "الوثائق المرفوضة")
-                    : (pageIdx > 0 ? "REJECTED ITEMS (CONTINUED)" : "REJECTED ITEMS");
+                    ? (pageIdx > 0 ? "سجلات الرفض التاريخية (متابعة)" : "سجلات الرفض التاريخية")
+                    : (pageIdx > 0 ? "HISTORICAL REJECTION EVENTS / ROWS (CONTINUED)" : "HISTORICAL REJECTION EVENTS / ROWS");
                 addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options);
                 
-                // Slide title with page indication
+                // Slide title with page indication and explicit grain labeling
                 const totalCountLabel = presRejectedItems.length;
                 const pageTitle = isArabic 
-                    ? `أعلى الوثائق المرفوضة تأخيراً (إجمالي: ${totalCountLabel}) - صفحة ${pageIdx + 1} من ${rejectedPages.length}${pageIdx > 0 ? " (متابعة)" : ""}` 
-                    : `Top Rejected Items by Delay (Total: ${totalCountLabel}) - Page ${pageIdx + 1} of ${rejectedPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
+                    ? `أعلى سجلات ووقائع الرفض التاريخية حسب مدة التأخير (إجمالي وقائع الرفض: ${totalCountLabel}) - صفحة ${pageIdx + 1} من ${rejectedPages.length}${pageIdx > 0 ? " (متابعة)" : ""}` 
+                    : `Historical Rejection Events / Rows by Delay (Total: ${totalCountLabel}) - Page ${pageIdx + 1} of ${rejectedPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
                 slide.addText(pageTitle, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "7A1515" });
                 
                 // Build Table with repeated header
@@ -880,10 +895,13 @@ export const generatePptxReport = async (
             })
             .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
 
-        const pendingPages: SubmittalRow[][] = [];
+        const allPendingPages: SubmittalRow[][] = [];
         for (let i = 0; i < presPendingItems.length; i += presPendingPageSize) {
-            pendingPages.push(presPendingItems.slice(i, i + presPendingPageSize));
+            allPendingPages.push(presPendingItems.slice(i, i + presPendingPageSize));
         }
+
+        const isExecutiveOnly = options?.deckType === 'executive' || options?.executiveOnly === true;
+        const pendingPages = isExecutiveOnly ? allPendingPages.slice(0, 2) : allPendingPages;
 
         const sectionNumPending = baseTypes.length + 6;
         addDividerSlide(pres, isArabic ? "الوثائق تحت المراجعة المتأخرة (إجراء الاستشاري)" : "Items Requiring Response (Consultant Action)", `${String(sectionNumPending).padStart(2, '0')} PENDING ITEMS`, projectInfo, logoUrl, options);
@@ -901,11 +919,11 @@ export const generatePptxReport = async (
                     : (pageIdx > 0 ? "PENDING ITEMS (CONTINUED)" : "PENDING ITEMS");
                 addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options);
                 
-                // Slide title with page indication
+                // Slide title with page indication and explicit grain labeling
                 const totalPendingCount = presPendingItems.length;
                 const pageTitle = isArabic 
                     ? `المعلقات المتأخرة (قيد المراجعة - إجمالي: ${totalPendingCount}) - صفحة ${pageIdx + 1} من ${pendingPages.length}${pageIdx > 0 ? " (متابعة)" : ""}` 
-                    : `Top Pending Items Overdue (Total: ${totalPendingCount}) - Page ${pageIdx + 1} of ${pendingPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
+                    : `Pending Review Items Overdue by SLA (Total: ${totalPendingCount}) - Page ${pageIdx + 1} of ${pendingPages.length}${pageIdx > 0 ? " (Continued)" : ""}`;
                 slide.addText(pageTitle, { x: 0.5, y: 1.0, w: 9.0, h: 0.35, fontSize: 13, bold: true, color: "0A192F" });
                 
                 // Build Table with repeated header

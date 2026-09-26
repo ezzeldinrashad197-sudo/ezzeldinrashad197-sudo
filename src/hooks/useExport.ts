@@ -633,10 +633,8 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                 };
 
                 await (html2pdf().set(opt).from(exportElement).toPdf().get('pdf').then((pdf: any) => {
-                    drawPdfHeaderFooter(pdf, activeProject, activeTab, startDate, endDate, options);
-
-                    // Apply Custom Page Range filter if options provided (e.g. from slideRangeStart to slideRangeEnd)
-                    const totalPages = pdf.internal.getNumberOfPages();
+                    // Apply Custom Page Range filter first if options provided
+                    let totalPages = pdf.internal.getNumberOfPages();
                     if (options?.slideRangeStart !== undefined && options?.slideRangeEnd !== undefined && totalPages > 1) {
                         const start = Math.max(1, Math.min(options.slideRangeStart, totalPages));
                         const end = Math.max(start, Math.min(options.slideRangeEnd, totalPages));
@@ -656,6 +654,9 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                             }
                         }
                     }
+
+                    // Draw clean headers and footers with local pagination: Page 1 of N, Page 2 of N, etc.
+                    drawPdfHeaderFooter(pdf, activeProject, activeTab, startDate, endDate, options);
                 }) as any).save();
             }
 

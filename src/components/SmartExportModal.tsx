@@ -266,7 +266,31 @@ export default function SmartExportModal({
                 };
 
                 await (html2pdf().set(opt).from(exportElement).toPdf().get('pdf').then((pdf: any) => {
-                    const totalPages = pdf.internal.getNumberOfPages();
+                    // Apply Custom Page Range filter first if selected (e.g. from page X to page Y)
+                    let totalPages = pdf.internal.getNumberOfPages();
+                    if (rangeType === 'custom' && totalPages > 1) {
+                        const start = Math.max(1, Math.min(rangeStart, totalPages));
+                        const end = Math.max(start, Math.min(rangeEnd, totalPages));
+                        
+                        // Delete trailing pages after `end`
+                        for (let p = totalPages; p > end; p--) {
+                            try {
+                                pdf.deletePage(p);
+                            } catch (e) {
+                                console.warn('Could not delete page', p, e);
+                            }
+                        }
+                        // Delete leading pages before `start`
+                        for (let p = start - 1; p >= 1; p--) {
+                            try {
+                                pdf.deletePage(p);
+                            } catch (e) {
+                                console.warn('Could not delete page', p, e);
+                            }
+                        }
+                        totalPages = pdf.internal.getNumberOfPages();
+                    }
+
                     const pdfWidth = pdf.internal.pageSize.getWidth();
                     const pdfHeight = pdf.internal.pageSize.getHeight();
                     const dateStr = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -306,8 +330,8 @@ export default function SmartExportModal({
                         const accRgb = hexToRgb(accentColor);
 
                         for (let i = 1; i <= totalPages; i++) {
-                            // Skip header/footer on first cover page if selected
-                            if (i === 1 && selectedSections.cover) continue;
+                            // In document reports, every page receives consistent local numbering (Page 1 of N, Page 2 of N, etc.)
+                            if (activeTab === 'presentation' && i === 1 && selectedSections.cover) continue;
 
                             pdf.setPage(i);
                             
@@ -383,29 +407,6 @@ export default function SmartExportModal({
                             const footerBottomText = customFooter || `StructuSight Enterprise Engineering Intelligence Platform | CONCEPT & PRODUCT VISION BY EZZ RASHAD`;
                             pdf.text(footerBottomText, 10, pdfHeight - 7);
                             pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 30, pdfHeight - 7);
-                        }
-                    }
-
-                    // Apply Custom Page Range filter if selected (e.g. from page X to page Y)
-                    if (rangeType === 'custom' && totalPages > 1) {
-                        const start = Math.max(1, Math.min(rangeStart, totalPages));
-                        const end = Math.max(start, Math.min(rangeEnd, totalPages));
-                        
-                        // Delete trailing pages after `end`
-                        for (let p = totalPages; p > end; p--) {
-                            try {
-                                pdf.deletePage(p);
-                            } catch (e) {
-                                console.warn('Could not delete page', p, e);
-                            }
-                        }
-                        // Delete leading pages before `start`
-                        for (let p = start - 1; p >= 1; p--) {
-                            try {
-                                pdf.deletePage(p);
-                            } catch (e) {
-                                console.warn('Could not delete page', p, e);
-                            }
                         }
                     }
                 }) as any).save();

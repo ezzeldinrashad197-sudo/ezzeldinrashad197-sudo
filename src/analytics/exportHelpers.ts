@@ -583,7 +583,20 @@ export const calculateExecutiveDashboardData = (
     let arSummary = '';
     const finalScore = healthData.score;
     const appRate = globalStats.approvalRate;
-    if (finalScore >= 80) {
+    const activeCount = (globalStats.rejectedOpen || 0) + (globalStats.pending || 0);
+    const overdueCount = globalStats.overdue || 0;
+    const overdueRateActive = activeCount > 0 ? (overdueCount / activeCount) * 100 : 0;
+
+    // Mathematical Governance: decouple PPI score from SLA Exposure narrative
+    if (overdueRateActive >= 50 && overdueCount > 5) {
+        // High operational SLA exposure (e.g. cumulative: 376 / 388 = 96.9%)
+        enSummary = `The project maintains a ${appRate.toFixed(1)}% current-state approval rate; however, significant operational SLA exposure remains, with ${overdueCount} of ${activeCount} active items currently overdue (${overdueRateActive.toFixed(1)}%). Immediate backlog resolution is required.`;
+        arSummary = `يحافظ المشروع على نسبة اعتماد حالية تبلغ ${appRate.toFixed(1)}%؛ غير أن هناك مخاطر تشغيلية ومستوى تعرض عالياً لاتفاقية مستوى الخدمة (SLA)، حيث إن ${overdueCount} من أصل ${activeCount} معاملة نشطة متأخرة حالياً (${overdueRateActive.toFixed(1)}%). يتطلب هذا تدخلاً فورياً لمعالجة المتأخرات المتراكمة.`;
+    } else if (overdueRateActive >= 15 || overdueCount > 2) {
+        // Moderate operational SLA exposure (e.g. monthly: 4 of 15 = 26.7%)
+        enSummary = `The project achieved an ${appRate.toFixed(1)}% current-state approval rate. However, ${overdueCount} of ${activeCount} active items (${overdueRateActive.toFixed(1)}%) are currently overdue and require focused SLA follow-up.`;
+        arSummary = `حقق المشروع نسبة اعتماد حالية بلغت ${appRate.toFixed(1)}%. ومع ذلك، فإن ${overdueCount} من أصل ${activeCount} معاملة نشطة (${overdueRateActive.toFixed(1)}%) متأخرة حالياً وتتطلب متابعة دقيقة لتجاوزات اتفاقية مستوى الخدمة.`;
+    } else if (finalScore >= 80) {
         enSummary = `Project health is performing within excellent limits with an approval rate of ${appRate.toFixed(1)}%. Workflow processing times satisfy the SLA thresholds with minimal backlog overdue.`;
         arSummary = `يؤدي المشروع أداءً ممتازاً ومستقراً بنسبة اعتماد بلغت ${appRate.toFixed(1)}%. سرعة تدفق المراجعات والاعتمادات تتوافق تماماً مع فترات اتفاقية مستوى الخدمة مع حد أدنى من التأخيرات المتراكمة.`;
     } else if (finalScore >= 65) {
@@ -631,13 +644,28 @@ export const calculateExecutiveDashboardData = (
         });
     }
     if (globalStats.overdue > 0) {
+        const odRejOpen = globalStats.overdueRejectedOpen ?? 0;
+        const odPending = globalStats.overduePending ?? 0;
+        let breakdownEn = '';
+        let breakdownAr = '';
+        if (odRejOpen > 0 && odPending > 0) {
+            breakdownEn = `, comprising ${odRejOpen} Rejected/Open items and ${odPending} Pending Review items`;
+            breakdownAr = `، منها ${odRejOpen} بندًا مرفوضًا/مفتوحًا و${odPending} بنود معلقة قيد المراجعة`;
+        } else if (odRejOpen > 0) {
+            breakdownEn = `, comprising ${odRejOpen} Rejected/Open items`;
+            breakdownAr = `، تتكون بالكامل من ${odRejOpen} بندًا مرفوضًا/مفتوحًا`;
+        } else if (odPending > 0) {
+            breakdownEn = `, comprising ${odPending} Pending Review items`;
+            breakdownAr = `، تتكون بالكامل من ${odPending} بنود معلقة قيد المراجعة`;
+        }
+
         recs.push({
             id: 'rec-overdue',
-            en: `Deploy senior engineering task forces to expedite clearance of the ${globalStats.overdue} unique pending items that have exceeded consultant SLA review turnaround times.`,
-            ar: `توجيه فرق هندسية متخصصة لسرعة مراجعة واعتماد البنود المعلقة المتأخرة والبالغ عددها ${globalStats.overdue} بنداً فريداً متجاوزة للمدد التعاقدية المحددة.`,
+            en: `Prioritize resolution of the ${globalStats.overdue} active items currently exceeding the applicable SLA${breakdownEn}.`,
+            ar: `إعطاء الأولوية لمعالجة ${globalStats.overdue} بندًا نشطًا متجاوزًا للمدة المحددة${breakdownAr}.`,
             priority: 'CRITICAL',
             action: 'Clear SLA Overdues',
-            actionAr: 'تصفية المتأخرات الحرجة'
+            actionAr: 'تصفية متأخرات SLA'
         });
     }
     let worstActiveDocType = '';
@@ -810,6 +838,23 @@ export const addExecutiveOverviewSlide = (
     const botY = 2.9;
     const botH = 2.25;
 
+    const activeItems = (dashData.globalStats.rejectedOpen || 0) + (dashData.globalStats.pending || 0);
+    const overduePctNum = activeItems > 0 ? ((dashData.globalStats.overdue / activeItems) * 100) : 0;
+    const overduePct = overduePctNum.toFixed(1);
+
+    let slaStatusEn = "Controlled SLA Exposure";
+    let slaStatusAr = "مستوى التزام مستقر بـ SLA";
+    let slaColor = "10B981";
+    if (overduePctNum >= 50 && dashData.globalStats.overdue > 5) {
+        slaStatusEn = "Critical Attention Required";
+        slaStatusAr = "انتباه حرج وتدخل فوري";
+        slaColor = "E11D48";
+    } else if (overduePctNum >= 15 || dashData.globalStats.overdue > 2) {
+        slaStatusEn = "Elevated SLA Attention";
+        slaStatusAr = "متابعة مكثفة لتجاوزات SLA";
+        slaColor = "D97706";
+    }
+
     // Health Score Card
     slide.addShape(pres.ShapeType.roundRect, {
         x: 0.4, y: botY, w: 3.0, h: botH,
@@ -817,34 +862,38 @@ export const addExecutiveOverviewSlide = (
         line: { color: "CBD5E1", width: 1 }
     });
     slide.addText(isArabic ? "مؤشر وتقييم أداء المشروع" : "PROJECT PERFORMANCE INDEX", {
-        x: 0.5, y: botY + 0.1, w: 2.8, h: 0.25,
-        fontSize: 8.5, bold: true, color: "64748B", fontFace: font, align: isArabic ? "right" : "left"
+        x: 0.5, y: botY + 0.08, w: 2.8, h: 0.22,
+        fontSize: 8, bold: true, color: "64748B", fontFace: font, align: isArabic ? "right" : "left"
     });
     slide.addText(`${dashData.healthData.score}`, {
-        x: 0.5, y: botY + 0.35, w: 1.4, h: 0.6,
-        fontSize: 32, bold: true, color: dashData.healthData.color, fontFace: font
+        x: 0.5, y: botY + 0.28, w: 1.2, h: 0.55,
+        fontSize: 28, bold: true, color: dashData.healthData.color, fontFace: font
     });
     slide.addText("/ 100", {
-        x: 1.8, y: botY + 0.5, w: 1.3, h: 0.35,
-        fontSize: 12, bold: true, color: "94A3B8", fontFace: font
+        x: 1.7, y: botY + 0.42, w: 1.3, h: 0.3,
+        fontSize: 11, bold: true, color: "94A3B8", fontFace: font
     });
-    slide.addText(dashData.healthData.rating, {
-        x: 0.5, y: botY + 0.95, w: 2.8, h: 0.25,
-        fontSize: 9, bold: true, color: dashData.healthData.color, fontFace: font, align: isArabic ? "right" : "left"
+    slide.addText(isArabic ? `حالة المؤشر: ${dashData.healthData.rating}` : `INDEX BAND: ${dashData.healthData.score >= 80 ? 'Within Configured KPI Band' : dashData.healthData.rating}`, {
+        x: 0.5, y: botY + 0.78, w: 2.8, h: 0.2,
+        fontSize: 7.5, bold: true, color: dashData.healthData.color, fontFace: font, align: isArabic ? "right" : "left"
+    });
+    slide.addText(isArabic ? `مستوى SLA: ${slaStatusAr} (${dashData.globalStats.overdue} متأخر)` : `SLA STATUS: ${slaStatusEn} (${dashData.globalStats.overdue} Overdue)`, {
+        x: 0.5, y: botY + 0.98, w: 2.8, h: 0.2,
+        fontSize: 7.5, bold: true, color: slaColor, fontFace: font, align: isArabic ? "right" : "left"
     });
 
     // Formula Breakdown Box
     slide.addShape(pres.ShapeType.roundRect, {
-        x: 0.5, y: botY + 1.25, w: 2.8, h: 0.88,
+        x: 0.5, y: botY + 1.22, w: 2.8, h: 0.92,
         fill: { color: "F8FAFC" },
         line: { color: "E2E8F0", width: 1 }
     });
     slide.addText(isArabic ? "معادلة تدقيق مؤشر الأداء:" : "KPI Math & Audit Formula:", {
-        x: 0.55, y: botY + 1.28, w: 2.7, h: 0.18,
+        x: 0.55, y: botY + 1.25, w: 2.7, h: 0.18,
         fontSize: 7, bold: true, color: "475569", fontFace: font, align: isArabic ? "right" : "left"
     });
     slide.addText(`• P1 (Approval Penalty - 35%): -${dashData.healthData.breakdown.approvalPenalty}\n• P2 (Overdue Ratio - 35%): -${dashData.healthData.breakdown.pendingOverduePenalty}\n• P3 (Overdue Density - 30%): -${dashData.healthData.breakdown.overdueDensityPenalty}`, {
-        x: 0.55, y: botY + 1.46, w: 2.7, h: 0.62,
+        x: 0.55, y: botY + 1.43, w: 2.7, h: 0.65,
         fontSize: 6.5, color: "64748B", fontFace: font
     });
 
@@ -863,12 +912,16 @@ export const addExecutiveOverviewSlide = (
         ? `• معدل الاعتماد: يبلغ حالياً ${dashData.globalStats.approvalRate.toFixed(1)}%. ${dashData.globalStats.approvalRate >= 80 ? 'هذا يتجاوز النسبة المستهدفة (80%) ويعكس جودة جيدة في المخرجات.' : 'هذا يقل عن النسبة المستهدفة (80%)، مما يتطلب تدقيق الجودة قبل التقديم.'}`
         : `• Approval Quality: Currently at ${dashData.globalStats.approvalRate.toFixed(1)}%. ${dashData.globalStats.approvalRate >= 80 ? 'Satisfies the 80% benchmark indicating robust initial submittal standards.' : 'Below the 80% benchmark, requiring pre-submission QA checks to reduce rework.'}`;
 
-    const activeItems = (dashData.globalStats.rejectedOpen || 0) + (dashData.globalStats.pending || 0);
-    const overduePct = activeItems > 0 ? ((dashData.globalStats.overdue / activeItems) * 100).toFixed(1) : "0.0";
+    const odRejOpen = dashData.globalStats.overdueRejectedOpen ?? Math.max(0, dashData.globalStats.overdue - (dashData.globalStats.overduePending ?? Math.min(dashData.globalStats.pending, dashData.globalStats.overdue)));
+    const odPending = dashData.globalStats.overduePending ?? (dashData.globalStats.overdue - odRejOpen);
 
     const obsText2 = isArabic
-        ? `• حالة الأعمال النشطة: ${dashData.globalStats.overdue} من أصل ${activeItems} معاملة نشطة متأخرة متجاوزة للمدة (${overduePct}% من المعاملات النشطة تشمل ${dashData.globalStats.rejectedOpen} مرفوض مفتوح و ${dashData.globalStats.pending} معلق).`
-        : `• Active Backlog Status: ${dashData.globalStats.overdue} of ${activeItems} active items are overdue (${overduePct}% of active items comprising ${dashData.globalStats.rejectedOpen} rejected open and ${dashData.globalStats.pending} pending review).`;
+        ? (dashData.globalStats.overdue > 0
+            ? `• حالة الأعمال النشطة: ${dashData.globalStats.overdue} من أصل ${activeItems} معاملة نشطة متأخرة متجاوزة للمدة (${overduePct}% من إجمالي المعاملات النشطة). تتكون المعاملات النشطة من ${dashData.globalStats.rejectedOpen} معاملة مرفوضة/مفتوحة و${dashData.globalStats.pending} معاملة معلقة قيد المراجعة. ومن بين هذه المعاملات النشطة، هناك ${odRejOpen} معاملة مرفوضة/مفتوحة و${odPending} معاملات معلقة متأخرة متجاوزة للمدة المحددة.`
+            : `• حالة الأعمال النشطة: جميع المعاملات النشطة البالغ عددها ${activeItems} معاملة (${dashData.globalStats.rejectedOpen} مرفوض مفتوح و${dashData.globalStats.pending} معلق) تسير ضمن المدد التعاقدية دون أي تأخيرات.`)
+        : (dashData.globalStats.overdue > 0
+            ? `• Active Backlog Status: ${dashData.globalStats.overdue} of ${activeItems} active items are overdue (${overduePct}% of the active population). The active population comprises ${dashData.globalStats.rejectedOpen} Rejected/Open items and ${dashData.globalStats.pending} Pending Review items. Of these active items, ${odRejOpen} Rejected/Open and ${odPending} Pending Review items are overdue.`
+            : `• Active Backlog Status: All ${activeItems} active items (${dashData.globalStats.rejectedOpen} Rejected/Open and ${dashData.globalStats.pending} Pending Review) are progressing within SLA limits with zero overdue items.`);
 
     const obsText3 = isArabic
         ? `• دورات المراجعة: تشكل المراجعات المتكررة ${(dashData.globalStats.totalSubmittedSheets > 0 ? (dashData.globalStats.totalSheetsFurtherRev / dashData.globalStats.totalSubmittedSheets * 100) : 0).toFixed(1)}% من إجمالي حجم العمل المستندي للمشروع.`

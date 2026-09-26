@@ -1132,7 +1132,7 @@ export default function Presentation({
               <div className="bg-[#e2f0d9] p-6 rounded-xl border border-emerald-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-emerald-800 tracking-wider uppercase">{language === 'ar' ? 'نسبة الموافقات' : 'Quality Approval'}</span>
                 <span className="text-4xl font-extrabold text-emerald-700">{overallMonthlyStats.approvalRate.toFixed(1)}%</span>
-                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'رمز الكود أ و ب' : 'Code A & B status'}</span>
+                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'حالات الاعتماد: أ / ب / د' : 'Approved: Codes A / B / D'}</span>
               </div>
               <div className="bg-[#fce4d6] p-6 rounded-xl border border-red-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-red-800 tracking-wider uppercase">{language === 'ar' ? 'وثائق مرفوضة مفتوحة' : 'Open Rejections'}</span>
