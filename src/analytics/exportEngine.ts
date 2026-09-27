@@ -45,6 +45,8 @@ export const generatePptxReport = async (
         customHeader?: string;
         customFooter?: string;
         logoUrl?: string;
+        deckType?: 'executive' | 'dossier' | 'full';
+        executiveOnly?: boolean;
     }
 ) => {
     let pres = new pptxgen();
