@@ -567,7 +567,15 @@ export default function Presentation({
 
       return {
         discipline: disc,
+        // Explicitly separate submission-grain KPIs from physical row/sheet workload.
+        // Unique counts use Register + Discipline + SUB Ref; row counts preserve every source row.
         TotalSubmittals: totalSubmittals,
+        UniqueRev00: s.totalSubmittalsRev0 || 0,
+        UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+        Rev00Rows: s.totalSheetsRev0 || 0,
+        FurtherRevRows: s.totalSheetsFurtherRev || 0,
+        TotalRows: s.totalSubmittedSheets || 0,
+        // Legacy display keys retained for charts/compatibility. These are ROW counts.
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
         Approved: s.approved,
@@ -584,6 +592,11 @@ export default function Presentation({
     const totalRow = {
       discipline: "TOTAL",
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
+      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+      Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+      FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+      TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
       Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
       FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
       Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
@@ -627,21 +640,21 @@ export default function Presentation({
 
   // Standard visual render parts
   const renderStandardTable = (statsData: Record<string, any>, cols: Record<string, any>[]) => {
-    const isEightCol = cols.length === 8;
+    const isMultiCol = cols.length >= 8;
     return (
-      <table className={`${isEightCol ? 'w-[52%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
+      <table className={`${isMultiCol ? 'w-[54%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
         <thead>
           <tr style={{ backgroundColor: PRIMARY_BLUE, color: 'white' }}>
-            <th className="p-2 border border-[#4472c4] font-bold text-xs" colSpan={1}>
+            <th className="p-1.5 border border-[#4472c4] font-bold text-xs" colSpan={1}>
               {language === 'ar' ? 'التخصص' : 'Status'}
             </th>
-            <th className="p-2 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
+            <th className="p-1.5 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
               {language === 'ar' ? 'الحالة' : 'STATUS'}
             </th>
           </tr>
-          <tr style={{ backgroundColor: '#2f75b5', color: 'white', fontSize: isEightCol ? '11px' : '13px' }}>
+          <tr style={{ backgroundColor: '#2f75b5', color: 'white', fontSize: isMultiCol ? (cols.length >= 10 ? '10px' : '11px') : '13px' }}>
             {cols.map((c, i) => (
-              <th key={i} className="p-2 border border-[#4472c4] font-bold whitespace-normal">
+              <th key={i} className="p-1.5 border border-[#4472c4] font-bold whitespace-normal">
                 {getColLabel(c.label, language)}
               </th>
             ))}
@@ -649,21 +662,21 @@ export default function Presentation({
         </thead>
         <tbody className="bg-white text-[#333]">
           {statsData.stats.map((s: Record<string, any>, index: number) => (
-            <tr key={`${s.discipline}-${index}`} className="even:bg-[#f2f2f2] h-[36px]">
-              <td className="p-2 border border-[#cbd5e1] font-medium text-xs">
+            <tr key={`${s.discipline}-${index}`} className="even:bg-[#f2f2f2] h-[34px]">
+              <td className="p-1.5 border border-[#cbd5e1] font-medium text-xs">
                 {getDiscName(s.discipline, language)}
               </td>
               {cols.slice(1).map((c, i) => (
-                <td key={i} className={`p-2 border border-[#cbd5e1] text-xs ${c.key === "Total" ? "font-bold" : ""}`}>
+                <td key={i} className={`p-1.5 border border-[#cbd5e1] text-xs ${c.key === "Total" || c.key === "TotalRows" ? "font-bold" : ""}`}>
                   {s[c.key] !== undefined && s[c.key] !== null ? s[c.key] : 0}
                 </td>
               ))}
             </tr>
           ))}
-          <tr className="bg-[#ddebf7] h-[45px] font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
-            <td className="p-2 border border-[#cbd5e1]">{getDiscName(statsData.totalRow.discipline, language)}</td>
+          <tr className="bg-[#ddebf7] h-[40px] font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
+            <td className="p-1.5 border border-[#cbd5e1]">{getDiscName(statsData.totalRow.discipline, language)}</td>
             {cols.slice(1).map((c, i) => (
-              <td key={i} className="p-2 border border-[#cbd5e1]">
+              <td key={i} className="p-1.5 border border-[#cbd5e1]">
                 {statsData.totalRow[c.key] !== undefined && statsData.totalRow[c.key] !== null ? statsData.totalRow[c.key] : 0}
               </td>
             ))}
@@ -1235,10 +1248,11 @@ export default function Presentation({
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل' : 'Register'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'حجم العمل' : 'Workload'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مراجعة 00' : 'Rev 00'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'لاحقة' : 'Further'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'الفريدة' : 'Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
@@ -1250,16 +1264,16 @@ export default function Presentation({
                 <tbody>
                   {baseTypes.map(bt => {
                     const bStats = compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData);
-                    const workload = (bStats.totalRow.Rev00 || 0) + (bStats.totalRow.FurtherRev || 0);
-                    const unique = bStats.totalRow.Total || 0;
                     const regTitle = getRegisterTitle(bt, language);
+                    const isRevisionBasedRegister = bt !== 'LTR';
                     return (
                       <tr key={bt} className="even:bg-slate-50 hover:bg-slate-100/70 h-9 transition-colors text-xs">
                         <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{regTitle.name}</td>
-                        <td className="p-2 border border-slate-200 font-medium">{workload}</td>
-                        <td className="p-2 border border-slate-200">{bStats.totalRow.Rev00}</td>
-                        <td className="p-2 border border-slate-200">{bStats.totalRow.FurtherRev}</td>
-                        <td className="p-2 border border-slate-200 font-semibold">{unique}</td>
+                        <td className="p-2 border border-slate-200 font-semibold">{isRevisionBasedRegister ? bStats.totalRow.UniqueRev00 : '—'}</td>
+                        <td className="p-2 border border-slate-200 font-semibold">{isRevisionBasedRegister ? bStats.totalRow.UniqueFurtherRev : '—'}</td>
+                        <td className="p-2 border border-slate-200">{isRevisionBasedRegister ? bStats.totalRow.Rev00Rows : '—'}</td>
+                        <td className="p-2 border border-slate-200">{isRevisionBasedRegister ? bStats.totalRow.FurtherRevRows : '—'}</td>
+                        <td className="p-2 border border-slate-200 font-bold">{isRevisionBasedRegister ? bStats.totalRow.TotalRows : bStats.totalRow.Total}</td>
                         <td className="p-2 border border-slate-200 text-emerald-600 font-semibold">{bStats.totalRow.Approved}</td>
                         <td className="p-2 border border-slate-200 text-rose-600 font-semibold">{bStats.totalRow.RejectedOpen}</td>
                         <td className="p-2 border border-slate-200 text-red-900 font-semibold">{bStats.totalRow.RejectedClosed}</td>
@@ -1271,10 +1285,11 @@ export default function Presentation({
                   })}
                   {(() => {
                     const allStats = baseTypes.map(bt => compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData).totalRow);
-                    const totWorkload = allStats.reduce((acc, r) => acc + (r.Rev00 || 0) + (r.FurtherRev || 0), 0);
-                    const totRev00 = allStats.reduce((acc, r) => acc + (r.Rev00 || 0), 0);
-                    const totFurther = allStats.reduce((acc, r) => acc + (r.FurtherRev || 0), 0);
-                    const totUnique = allStats.reduce((acc, r) => acc + (r.Total || 0), 0);
+                    const totUniqueRev00 = allStats.reduce((acc, r) => acc + (r.UniqueRev00 || 0), 0);
+                    const totUniqueFurther = allStats.reduce((acc, r) => acc + (r.UniqueFurtherRev || 0), 0);
+                    const totRev00Rows = allStats.reduce((acc, r) => acc + (r.Rev00Rows || 0), 0);
+                    const totFurtherRows = allStats.reduce((acc, r) => acc + (r.FurtherRevRows || 0), 0);
+                    const totRows = allStats.reduce((acc, r) => acc + (r.TotalRows || 0), 0);
                     const totApproved = allStats.reduce((acc, r) => acc + (r.Approved || 0), 0);
                     const totRejOpen = allStats.reduce((acc, r) => acc + (r.RejectedOpen || 0), 0);
                     const totRejClosed = allStats.reduce((acc, r) => acc + (r.RejectedClosed || 0), 0);
@@ -1284,10 +1299,11 @@ export default function Presentation({
                     return (
                       <tr className="bg-[#ddebf7] h-9 font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
                         <td className="p-2 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'TOTAL'}</td>
-                        <td className="p-2 border border-slate-300">{totWorkload}</td>
-                        <td className="p-2 border border-slate-300">{totRev00}</td>
-                        <td className="p-2 border border-slate-300">{totFurther}</td>
-                        <td className="p-2 border border-slate-300">{totUnique}</td>
+                        <td className="p-2 border border-slate-300">{totUniqueRev00}</td>
+                        <td className="p-2 border border-slate-300">{totUniqueFurther}</td>
+                        <td className="p-2 border border-slate-300">{totRev00Rows}</td>
+                        <td className="p-2 border border-slate-300">{totFurtherRows}</td>
+                        <td className="p-2 border border-slate-300">{totRows}</td>
                         <td className="p-2 border border-slate-300 text-emerald-700">{totApproved}</td>
                         <td className="p-2 border border-slate-300 text-rose-700">{totRejOpen}</td>
                         <td className="p-2 border border-slate-300 text-red-950">{totRejClosed}</td>
@@ -1594,10 +1610,11 @@ export default function Presentation({
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل' : 'Register'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'حجم العمل' : 'Workload'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مراجعة 00' : 'Rev 00'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'لاحقة' : 'Further'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'الفريدة' : 'Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
                     <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
@@ -1609,16 +1626,16 @@ export default function Presentation({
                 <tbody>
                   {baseTypes.map(bt => {
                     const bStats = compileStatsForBaseType(cumulativeData, bt, undefined, data);
-                    const workload = (bStats.totalRow.Rev00 || 0) + (bStats.totalRow.FurtherRev || 0);
-                    const unique = bStats.totalRow.Total || 0;
                     const regTitle = getRegisterTitle(bt, language);
+                    const isRevisionBasedRegister = bt !== 'LTR';
                     return (
                       <tr key={bt} className="even:bg-slate-50 hover:bg-slate-100/70 h-9 transition-colors text-xs">
                         <td className="p-2 border border-slate-200 font-bold" style={{ color: primaryColor }}>{regTitle.name}</td>
-                        <td className="p-2 border border-slate-200 font-medium">{workload}</td>
-                        <td className="p-2 border border-slate-200">{bStats.totalRow.Rev00}</td>
-                        <td className="p-2 border border-slate-200">{bStats.totalRow.FurtherRev}</td>
-                        <td className="p-2 border border-slate-200 font-semibold">{unique}</td>
+                        <td className="p-2 border border-slate-200 font-semibold">{isRevisionBasedRegister ? bStats.totalRow.UniqueRev00 : '—'}</td>
+                        <td className="p-2 border border-slate-200 font-semibold">{isRevisionBasedRegister ? bStats.totalRow.UniqueFurtherRev : '—'}</td>
+                        <td className="p-2 border border-slate-200">{isRevisionBasedRegister ? bStats.totalRow.Rev00Rows : '—'}</td>
+                        <td className="p-2 border border-slate-200">{isRevisionBasedRegister ? bStats.totalRow.FurtherRevRows : '—'}</td>
+                        <td className="p-2 border border-slate-200 font-bold">{isRevisionBasedRegister ? bStats.totalRow.TotalRows : bStats.totalRow.Total}</td>
                         <td className="p-2 border border-slate-200 text-emerald-600 font-semibold">{bStats.totalRow.Approved}</td>
                         <td className="p-2 border border-slate-200 text-rose-600 font-semibold">{bStats.totalRow.RejectedOpen}</td>
                         <td className="p-2 border border-slate-200 text-red-900 font-semibold">{bStats.totalRow.RejectedClosed}</td>
@@ -1630,10 +1647,11 @@ export default function Presentation({
                   })}
                   {(() => {
                     const allStats = baseTypes.map(bt => compileStatsForBaseType(cumulativeData, bt, undefined, data).totalRow);
-                    const totWorkload = allStats.reduce((acc, r) => acc + (r.Rev00 || 0) + (r.FurtherRev || 0), 0);
-                    const totRev00 = allStats.reduce((acc, r) => acc + (r.Rev00 || 0), 0);
-                    const totFurther = allStats.reduce((acc, r) => acc + (r.FurtherRev || 0), 0);
-                    const totUnique = allStats.reduce((acc, r) => acc + (r.Total || 0), 0);
+                    const totUniqueRev00 = allStats.reduce((acc, r) => acc + (r.UniqueRev00 || 0), 0);
+                    const totUniqueFurther = allStats.reduce((acc, r) => acc + (r.UniqueFurtherRev || 0), 0);
+                    const totRev00Rows = allStats.reduce((acc, r) => acc + (r.Rev00Rows || 0), 0);
+                    const totFurtherRows = allStats.reduce((acc, r) => acc + (r.FurtherRevRows || 0), 0);
+                    const totRows = allStats.reduce((acc, r) => acc + (r.TotalRows || 0), 0);
                     const totApproved = allStats.reduce((acc, r) => acc + (r.Approved || 0), 0);
                     const totRejOpen = allStats.reduce((acc, r) => acc + (r.RejectedOpen || 0), 0);
                     const totRejClosed = allStats.reduce((acc, r) => acc + (r.RejectedClosed || 0), 0);
@@ -1643,10 +1661,11 @@ export default function Presentation({
                     return (
                       <tr className="bg-[#ddebf7] h-9 font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
                         <td className="p-2 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'TOTAL'}</td>
-                        <td className="p-2 border border-slate-300">{totWorkload}</td>
-                        <td className="p-2 border border-slate-300">{totRev00}</td>
-                        <td className="p-2 border border-slate-300">{totFurther}</td>
-                        <td className="p-2 border border-slate-300">{totUnique}</td>
+                        <td className="p-2 border border-slate-300">{totUniqueRev00}</td>
+                        <td className="p-2 border border-slate-300">{totUniqueFurther}</td>
+                        <td className="p-2 border border-slate-300">{totRev00Rows}</td>
+                        <td className="p-2 border border-slate-300">{totFurtherRows}</td>
+                        <td className="p-2 border border-slate-300">{totRows}</td>
                         <td className="p-2 border border-slate-300 text-emerald-700">{totApproved}</td>
                         <td className="p-2 border border-slate-300 text-rose-700">{totRejOpen}</td>
                         <td className="p-2 border border-slate-300 text-red-950">{totRejClosed}</td>
@@ -1727,9 +1746,11 @@ export default function Presentation({
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
           { label: "Items", key: "discipline" },
-          { label: "Total Rev.00", key: "Rev00" },
-          { label: "Total Further Rev.", key: "FurtherRev" },
-          { label: "Total", key: "Total" },
+          { label: "Unique Rev.00", key: "UniqueRev00" },
+          { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+          { label: "Rev.00 Rows", key: "Rev00Rows" },
+          { label: "Further Rev. Rows", key: "FurtherRevRows" },
+          { label: "Total Rows", key: "TotalRows" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
@@ -1811,9 +1832,11 @@ export default function Presentation({
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
           { label: "Items", key: "discipline" },
-          { label: "Total Rev.00", key: "Rev00" },
-          { label: "Total Further Rev.", key: "FurtherRev" },
-          { label: "Total", key: "Total" },
+          { label: "Unique Rev.00", key: "UniqueRev00" },
+          { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+          { label: "Rev.00 Rows", key: "Rev00Rows" },
+          { label: "Further Rev. Rows", key: "FurtherRevRows" },
+          { label: "Total Rows", key: "TotalRows" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },

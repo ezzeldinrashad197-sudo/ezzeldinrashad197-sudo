@@ -184,16 +184,22 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
                     <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200">
                       {language === 'ar' ? 'السجل الهندسي (Register)' : 'Register'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
-                      {language === 'ar' ? 'إجمالي أحداث التقديم' : 'Total Workload Rows'}
+                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-900 border-r border-slate-200">
+                      {language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-blue-800 border-r border-slate-200">
-                      {language === 'ar' ? 'التقديم الأول (Rev 00)' : 'Rev 00'}
+                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-900 border-r border-slate-200">
+                      {language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-amber-800 border-r border-slate-200">
-                      {language === 'ar' ? 'مراجعات لاحقة (Further Rev)' : 'Further Revisions'}
+                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-700 border-r border-slate-200">
+                      {language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-indigo-800">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-700 border-r border-slate-200">
+                      {language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}
+                    </th>
+                    <th className="px-3 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                      {language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}
+                    </th>
+                    <th className="px-3 py-3.5 text-center font-extrabold text-indigo-800">
                       {language === 'ar' ? 'معدل إعادة العمل' : 'Rework Ratio'}
                     </th>
                   </tr>
@@ -211,34 +217,40 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
                         <td className="px-4 py-3 border-r border-slate-100 font-bold text-[#203864]">
                           {row.documentType}
                         </td>
-                        <td className="px-4 py-3 border-r border-slate-100 text-center font-mono">
+                        <td className="px-3 py-3 border-r border-slate-100 text-center font-mono font-bold text-blue-900">
+                          {row.stats.totalSubmittalsRev0 ?? '—'}
+                        </td>
+                        <td className="px-3 py-3 border-r border-slate-100 text-center font-mono font-bold text-amber-900">
+                          {row.stats.totalSubmittalsFurtherRev ?? '—'}
+                        </td>
+                        <td className="px-3 py-3 border-r border-slate-100 text-center font-mono">
                           <button
                             type="button"
-                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', `${row.documentType} — Workload Rows`, `${row.documentType} — صفوف التقديم`)}
+                            onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Rev 00 Rows`, `${row.documentType} — صفوف تقديم أول`)}
+                            className="font-semibold text-blue-700 hover:underline cursor-pointer"
+                          >
+                            {row.stats.totalSheetsRev0}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 border-r border-slate-100 text-center font-mono">
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'furtherRev', `${row.documentType} — Further Rev Rows`, `${row.documentType} — صفوف مراجعات لاحقة`)}
+                            className="font-semibold text-amber-700 hover:underline cursor-pointer"
+                          >
+                            {row.stats.totalSheetsFurtherRev}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 border-r border-slate-100 text-center font-mono">
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', `${row.documentType} — Total Rows`, `${row.documentType} — إجمالي الصفوف`)}
                             className="font-bold text-slate-800 hover:underline cursor-pointer"
                           >
                             {row.stats.totalSubmittedSheets}
                           </button>
                         </td>
-                        <td className="px-4 py-3 border-r border-slate-100 text-center font-mono">
-                          <button
-                            type="button"
-                            onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Rev 00`, `${row.documentType} — تقديم أول`)}
-                            className="font-semibold text-blue-900 hover:underline cursor-pointer"
-                          >
-                            {row.stats.totalSheetsRev0}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 border-r border-slate-100 text-center font-mono">
-                          <button
-                            type="button"
-                            onClick={() => openDrillDown(row.documentType, 'furtherRev', `${row.documentType} — Further Rev`, `${row.documentType} — مراجعات لاحقة`)}
-                            className="font-semibold text-amber-900 hover:underline cursor-pointer"
-                          >
-                            {row.stats.totalSheetsFurtherRev}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-center font-mono font-bold text-indigo-900">
+                        <td className="px-3 py-3 text-center font-mono font-bold text-indigo-900">
                           {regRework}%
                         </td>
                       </tr>
@@ -250,16 +262,22 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
                     <td className="px-4 py-3.5 border-r border-slate-200 uppercase tracking-wider">
                       {language === 'ar' ? 'الإجمالي الكلي (GRAND TOTAL)' : 'GRAND TOTAL'}
                     </td>
-                    <td className="px-4 py-3.5 border-r border-slate-200 text-center font-mono font-extrabold text-[#203864]">
-                      {globalStats.totalSubmittedSheets}
+                    <td className="px-3 py-3.5 border-r border-slate-200 text-center font-mono text-blue-900 font-extrabold">
+                      {globalStats.totalSubmittalsRev0 ?? byDocType.reduce((acc, r) => acc + (r.stats.totalSubmittalsRev0 || 0), 0)}
                     </td>
-                    <td className="px-4 py-3.5 border-r border-slate-200 text-center font-mono text-blue-900 font-extrabold">
+                    <td className="px-3 py-3.5 border-r border-slate-200 text-center font-mono text-amber-900 font-extrabold">
+                      {globalStats.totalSubmittalsFurtherRev ?? byDocType.reduce((acc, r) => acc + (r.stats.totalSubmittalsFurtherRev || 0), 0)}
+                    </td>
+                    <td className="px-3 py-3.5 border-r border-slate-200 text-center font-mono text-blue-700 font-extrabold">
                       {globalStats.totalSheetsRev0}
                     </td>
-                    <td className="px-4 py-3.5 border-r border-slate-200 text-center font-mono text-amber-900 font-extrabold">
+                    <td className="px-3 py-3.5 border-r border-slate-200 text-center font-mono text-amber-700 font-extrabold">
                       {globalStats.totalSheetsFurtherRev}
                     </td>
-                    <td className="px-4 py-3.5 text-center font-mono text-indigo-900 font-extrabold">
+                    <td className="px-3 py-3.5 border-r border-slate-200 text-center font-mono font-extrabold text-[#203864]">
+                      {globalStats.totalSubmittedSheets}
+                    </td>
+                    <td className="px-3 py-3.5 text-center font-mono text-indigo-900 font-extrabold">
                       {reworkRatio}%
                     </td>
                   </tr>
