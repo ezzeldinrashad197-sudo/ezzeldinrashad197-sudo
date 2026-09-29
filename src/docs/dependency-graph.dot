@@ -52,6 +52,7 @@ digraph DependencyGraph {
     "src/utils/calculationVerificationEngine.ts" [fillcolor=white];
     "src/utils/loadTestingSuite.ts" [fillcolor=white];
     "src/utils/multiFileParser.ts" [fillcolor=white];
+    "src/utils/parentRegisterResolver.ts" [fillcolor=white];
     "src/utils/parser.ts" [fillcolor=white];
     "src/utils/securityRegressionSuite.ts" [fillcolor=white];
     "src/utils/universalRegisterSchema.ts" [fillcolor=white];
@@ -328,6 +329,7 @@ digraph DependencyGraph {
   "src/utils/calculations.ts" -> "src/analytics/statusResolver.ts";
   "src/utils/classificationEngine.ts" -> "src/utils/workflowMapping.ts";
   "src/utils/classificationEngine.ts" -> "src/types.ts";
+  "src/utils/classificationEngine.ts" -> "src/utils/parentRegisterResolver.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/types.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/utils/statusMatrixEngine.ts";
   "src/utils/enterpriseAnalyticsEngine.ts" -> "src/analytics/revisionResolver.ts";
@@ -345,6 +347,7 @@ digraph DependencyGraph {
   "src/utils/parser.ts" -> "src/analytics/revisionResolver.ts";
   "src/utils/parser.ts" -> "src/utils/classificationEngine.ts";
   "src/utils/parser.ts" -> "src/utils/workflowMapping.ts";
+  "src/utils/parser.ts" -> "src/utils/parentRegisterResolver.ts";
   "src/utils/rfiAnalytics.ts" -> "src/types.ts";
   "src/utils/rfiAnalytics.ts" -> "src/analytics/revisionResolver.ts";
   "src/utils/rfiAnalytics.ts" -> "src/utils/statusMatrixEngine.ts";

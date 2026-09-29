@@ -5,6 +5,7 @@ import {
   calculateProjectPerformanceHealth, 
   processRevisionEngine, 
   getBusinessEntityKey, 
+  getSubmissionIdentityKey,
   getStatusCodeCategory, 
   getRevisionWeight, 
   resolveRowDiscipline,
@@ -91,6 +92,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     return base.filter(r => !r.submissionDate || r.submissionDate <= maxDateStr);
   }, [rawDataset, data, isMonthly, filteredData]);
 
+  const [breakdownDimension, setBreakdownDimension] = useState<'register' | 'discipline' | 'both'>('register');
+
   const rowToRegisterIdentity = (d: SubmittalRow): string => {
     return (
       d.registerIdentity ||
@@ -102,19 +105,27 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   };
 
   const rowToLabel = (d: SubmittalRow) => {
-    return rowToRegisterIdentity(d);
+    const reg = rowToRegisterIdentity(d);
+    if (breakdownDimension === 'discipline') {
+      const disc = resolveRowDiscipline(d, reg) || 'GEN';
+      return disc.toUpperCase();
+    }
+    if (breakdownDimension === 'both') {
+      const disc = resolveRowDiscipline(d, reg) || 'GEN';
+      return `${reg}-${disc.toUpperCase()}`;
+    }
+    return reg;
   };
 
   const byDocType = useMemo(() => {
-     const docTypes = Array.from(new Set(filteredData.map(d => rowToLabel(d))));
+     const docTypes = Array.from(new Set(
+       filteredData
+         .filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
+         .map(d => rowToLabel(d))
+     ));
      return docTypes
-         .filter(typeLabel => {
-            const sample = filteredData.find(d => rowToLabel(d) === typeLabel);
-            const docType = sample?.documentType || 'DOC';
-            return !docType.startsWith('NCR-') && docType !== 'NCR';
-         }) // Exclude NCRs from generic table based on actual documentType
          .map(typeLabel => {
-             const matchingRows = filteredData.filter(d => rowToLabel(d) === typeLabel);
+             const matchingRows = filteredData.filter(d => rowToLabel(d) === typeLabel && !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
              const stats = calculateStats(matchingRows, contextDataset);
              const criticalCount = matchingRows.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).length;
              return {
@@ -123,7 +134,17 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                  criticalCount
              };
          })
+         .filter(item => item.stats.totalSubmittedSheets > 0)
          .sort((a,b) => {
+             if (breakdownDimension === 'discipline') {
+               const discOrder = ['STR', 'STRUCTURAL', 'CIVIL', 'ARC', 'ARCH', 'ARCHITECTURAL', 'MEC', 'MECH', 'MECHANICAL', 'ELE', 'ELEC', 'ELECTRICAL', 'INFRA', 'INF', 'LAND', 'LND', 'SUR', 'SURV', 'SURVEY', 'HSE', 'MEP', 'IRR', 'GEN', 'GENERAL'];
+               const idxA = discOrder.indexOf(a.documentType.toUpperCase());
+               const idxB = discOrder.indexOf(b.documentType.toUpperCase());
+               if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+               if (idxA !== -1) return -1;
+               if (idxB !== -1) return 1;
+               return a.documentType.localeCompare(b.documentType);
+             }
              const getSortKey = (typeStr: string) => {
                  const parts = typeStr.split('-');
                  const base = parts[0] ? parts[0].trim().toUpperCase() : '';
@@ -162,7 +183,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              
              return keyA.disc.localeCompare(keyB.disc);
          });
-  }, [filteredData, contextDataset]);
+  }, [filteredData, contextDataset, breakdownDimension]);
 
   const globalCriticalCount = useMemo(() => {
     return filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR' && (d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL'))).length;
@@ -586,6 +607,28 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       }
       case 'totalWorkload': {
         rows.forEach(r => extracted.push(mapToDrillDownItem(r, false)));
+        break;
+      }
+      case 'uniqueRev00': {
+        const seen = new Set<string>();
+        rows.filter(r => isRevision0(r.rev, r.isRev0)).forEach(r => {
+          const key = getSubmissionIdentityKey(r);
+          if (!seen.has(key)) {
+            seen.add(key);
+            extracted.push(mapToDrillDownItem(r, false));
+          }
+        });
+        break;
+      }
+      case 'uniqueFurtherRev': {
+        const seen = new Set<string>();
+        rows.filter(r => isFurtherRevision(r.rev, r.isRev0)).forEach(r => {
+          const key = getSubmissionIdentityKey(r);
+          if (!seen.has(key)) {
+            seen.add(key);
+            extracted.push(mapToDrillDownItem(r, false));
+          }
+        });
         break;
       }
       case 'rev00': {
@@ -1331,37 +1374,90 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                    {/* Tier 1 Group Headers */}
-                    <tr className="bg-slate-100 border-b border-slate-200">
-                      <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200`}>
-                        {language === 'ar' ? 'نوع المعاملة / السجل' : 'Log Type (Register)'}
-                      </th>
-                      <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
-                        {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
-                      </th>
-                      <th colSpan={7} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
-                        {language === 'ar' ? 'أ — عبء العمل وسجلات التقديم (HISTORICAL WORKLOAD / ROW GRAIN)' : 'A — HISTORICAL WORKLOAD / ROW GRAIN'}
-                      </th>
-                      <th colSpan={8} className="px-4 py-2 border-b border-r border-blue-200 bg-blue-50/90 text-[#203864] font-extrabold text-xs text-center uppercase tracking-wider">
-                        {language === 'ar' ? 'ب — الحالة الحالية للبند الفريد (CURRENT STATE / UNIQUE ITEM GRAIN)' : 'B — CURRENT STATE / UNIQUE ITEM GRAIN'}
-                      </th>
-                      <th colSpan={3} className="px-4 py-2 border-b border-rose-200 bg-rose-50/80 text-rose-900 font-extrabold text-xs text-center uppercase tracking-wider">
-                        {language === 'ar' ? 'مستوى الخدمة والمتأخرات (SLA Performance - Derived)' : 'SLA PERFORMANCE (DERIVED)'}
-                      </th>
-                    </tr>
-                    {/* Tier 2 Sub-Headers */}
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      {/* Historical Workload / Row Grain Subheaders */}
-                      <th className={`${thClass} bg-slate-200/70 font-black text-slate-900`}>{language === 'ar' ? 'إجمالي الصفحات' : 'Total Workload Rows'}</th>
-                      <th className={thClass}>{language === 'ar' ? 'مراجعة 00' : 'Rev 00'}</th>
-                      <th className={thClass}>{language === 'ar' ? 'مراجعات لاحقة' : 'Further Rev'}</th>
-                      <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
-                      <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
-                      <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
-                      <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
+             {/* Dimension Switcher: Register / Discipline / Matrix */}
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border-b border-slate-200">
+               <div className="flex items-center gap-2">
+                 <span className="text-xs font-bold text-[#203864]">
+                   {language === 'ar' ? 'عرض المؤشرات حسب:' : 'Group Indicators By:'}
+                 </span>
+                 <span className="text-[11px] text-slate-500 font-normal">
+                   {language === 'ar' ? '(فصل تام للمؤشرات دون دمج السجلات أو التخصصات)' : '(Strictly separated without cross-merging)'}
+                 </span>
+               </div>
+               <div className="flex items-center p-1 bg-white rounded-lg border border-slate-200 text-xs font-bold shadow-2xs">
+                 <button
+                   type="button"
+                   onClick={() => setBreakdownDimension('register')}
+                   className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                     breakdownDimension === 'register'
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'السجل الهندسي (Register)' : 'By Register'}
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setBreakdownDimension('discipline')}
+                   className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                     breakdownDimension === 'discipline'
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'التخصص الفني (Discipline)' : 'By Discipline'}
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setBreakdownDimension('both')}
+                   className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                     breakdownDimension === 'both'
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'السجل والتخصص (Register & Discipline)' : 'Register & Discipline'}
+                 </button>
+               </div>
+             </div>
+
+             <div className="overflow-x-auto">
+                 <table className="w-full text-left border-collapse">
+                     <thead>
+                     {/* Tier 1 Group Headers */}
+                     <tr className="bg-slate-100 border-b border-slate-200">
+                       <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200`}>
+                         {breakdownDimension === 'register' 
+                           ? (language === 'ar' ? 'نوع المعاملة / السجل' : 'Log Type (Register)')
+                           : breakdownDimension === 'discipline'
+                             ? (language === 'ar' ? 'التخصص الفني' : 'Discipline')
+                             : (language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline')}
+                       </th>
+                       <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
+                         {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
+                       </th>
+                       <th colSpan={9} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
+                         {language === 'ar' ? 'أ — عبء العمل وسجلات التقديم (HISTORICAL WORKLOAD / ROW & SUBMISSION GRAIN)' : 'A — HISTORICAL WORKLOAD / ROW & SUBMISSION GRAIN'}
+                       </th>
+                       <th colSpan={8} className="px-4 py-2 border-b border-r border-blue-200 bg-blue-50/90 text-[#203864] font-extrabold text-xs text-center uppercase tracking-wider">
+                         {language === 'ar' ? 'ب — الحالة الحالية للبند الفريد (CURRENT STATE / UNIQUE ITEM GRAIN)' : 'B — CURRENT STATE / UNIQUE ITEM GRAIN'}
+                       </th>
+                       <th colSpan={3} className="px-4 py-2 border-b border-rose-200 bg-rose-50/80 text-rose-900 font-extrabold text-xs text-center uppercase tracking-wider">
+                         {language === 'ar' ? 'مستوى الخدمة والمتأخرات (SLA Performance - Derived)' : 'SLA PERFORMANCE (DERIVED)'}
+                       </th>
+                     </tr>
+                     {/* Tier 2 Sub-Headers */}
+                     <tr className="bg-slate-50 border-b border-slate-200">
+                       {/* Historical Workload / Row & Submission Grain Subheaders */}
+                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950`}>{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950`}>{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                       <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                       <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}</th>
+                       <th className={`${thClass} bg-slate-300/80 font-black text-slate-950`}>{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                       <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
+                       <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
+                       <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
+                       <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
                       
                       {/* Current State / Unique Item Grain Subheaders */}
                       <th className={`${thClass} bg-blue-50/70 font-black text-[#203864]`}>{language === 'ar' ? 'البنود الفريدة' : 'Total Unique Items'}</th>
@@ -1415,25 +1511,39 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                           )}
                         </td>
 
-                        {/* Section A: Historical Workload / Row Grain */}
-                        <td className={`${tdClass} bg-slate-100/60 font-bold text-slate-900`}>
+                        {/* Section A: 5 Explicit Indicators */}
+                        {/* 1. Unique Rev.00 Submittals */}
+                        <td className={`${tdClass} bg-blue-50/40 font-bold text-blue-950`}>
                           <button
                             type="button"
-                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', `${row.documentType} — Total Workload`, `${row.documentType} — إجمالي الصفحات المقدمة`)}
+                            onClick={() => openDrillDown(row.documentType, 'uniqueRev00', `${row.documentType} — Unique Rev.00 Submittals`, `${row.documentType} — تقديمات فريدة Rev.00`)}
                             className="hover:underline hover:text-blue-800 font-bold cursor-pointer transition-colors"
-                            title={language === 'ar' ? 'انقر لفحص أرقام المعاملات' : 'Click to inspect submittal numbers'}
+                            title={language === 'ar' ? 'انقر لفحص التقديمات الفريدة Rev.00' : 'Click to inspect unique Rev.00 submittals'}
                           >
-                            {row.stats.totalSubmittedSheets}
+                            {row.stats.totalSubmittalsRev0 ?? 0}
                           </button>
                         </td>
 
+                        {/* 2. Unique Further Revision Submittals */}
+                        <td className={`${tdClass} bg-blue-50/40 font-bold text-blue-950`}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'uniqueFurtherRev', `${row.documentType} — Unique Further Rev. Submittals`, `${row.documentType} — تقديمات فريدة لاحقة`)}
+                            className="hover:underline hover:text-blue-800 font-bold cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص التقديمات الفريدة اللاحقة' : 'Click to inspect unique further revision submittals'}
+                          >
+                            {row.stats.totalSubmittalsFurtherRev ?? 0}
+                          </button>
+                        </td>
+
+                        {/* 3. Rev.00 Rows */}
                         <td className={tdClass}>
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Revision 00`, `${row.documentType} — مراجعة 00`)}
-                              className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
-                              title={language === 'ar' ? 'انقر لفحص معاملات مراجعة 00' : 'Click to inspect Rev 00 submittals'}
+                              onClick={() => openDrillDown(row.documentType, 'rev00', `${row.documentType} — Rev 00 Rows`, `${row.documentType} — صفوف مراجعة 00`)}
+                              className="hover:underline hover:text-blue-800 cursor-pointer transition-colors font-semibold"
+                              title={language === 'ar' ? 'انقر لفحص صفوف مراجعة 00' : 'Click to inspect Rev 00 rows'}
                             >
                               {row.stats.totalSheetsRev0}
                             </button>
@@ -1450,14 +1560,27 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                           </div>
                         </td>
 
+                        {/* 4. Further Rev. Rows */}
                         <td className={tdClass}>
                           <button
                             type="button"
-                            onClick={() => openDrillDown(row.documentType, 'furtherRev', `${row.documentType} — Further Revisions`, `${row.documentType} — مراجعات لاحقة`)}
-                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors"
-                            title={language === 'ar' ? 'انقر لفحص المراجعات اللاحقة' : 'Click to inspect Further Revisions'}
+                            onClick={() => openDrillDown(row.documentType, 'furtherRev', `${row.documentType} — Further Rev Rows`, `${row.documentType} — صفوف مراجعات لاحقة`)}
+                            className="hover:underline hover:text-blue-800 cursor-pointer transition-colors font-semibold"
+                            title={language === 'ar' ? 'انقر لفحص صفوف المراجعات اللاحقة' : 'Click to inspect Further Rev rows'}
                           >
                             {row.stats.totalSheetsFurtherRev}
+                          </button>
+                        </td>
+
+                        {/* 5. Total Rows */}
+                        <td className={`${tdClass} bg-slate-100/80 font-black text-slate-900`}>
+                          <button
+                            type="button"
+                            onClick={() => openDrillDown(row.documentType, 'totalWorkload', `${row.documentType} — Total Rows`, `${row.documentType} — إجمالي الصفوف`)}
+                            className="hover:underline hover:text-blue-800 font-bold cursor-pointer transition-colors"
+                            title={language === 'ar' ? 'انقر لفحص إجمالي الصفوف' : 'Click to inspect total rows'}
+                          >
+                            {row.stats.totalSubmittedSheets}
                           </button>
                         </td>
                         
@@ -1676,21 +1799,35 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         )}
                       </td>
                       
-                      {/* Historical Workload Totals */}
-                      <td className="px-4 py-3.5 text-xs text-center font-black bg-slate-300/70 text-[#203864]">
+                      {/* Section A Totals: 5 Explicit Indicators */}
+                      {/* 1. Unique Rev.00 */}
+                      <td className="px-4 py-3.5 text-xs text-center font-black bg-blue-100/70 text-blue-950">
                         <button
                           type="button"
-                          onClick={() => openDrillDown('ALL', 'totalWorkload', 'All Submitted Sheets (Workload)', 'إجمالي كافة الصفحات المقدمة')}
+                          onClick={() => openDrillDown('ALL', 'uniqueRev00', 'All Unique Rev.00 Submittals', 'إجمالي تقديمات مراجعة 00 الفريدة')}
                           className="hover:underline hover:text-blue-900 font-black cursor-pointer"
                         >
-                          {globalStats.totalSubmittedSheets}
+                          {globalStats.totalSubmittalsRev0 ?? 0}
                         </button>
                       </td>
+
+                      {/* 2. Unique Further Rev. */}
+                      <td className="px-4 py-3.5 text-xs text-center font-black bg-blue-100/70 text-blue-950">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'uniqueFurtherRev', 'All Unique Further Rev. Submittals', 'إجمالي تقديمات المراجعات اللاحقة الفريدة')}
+                          className="hover:underline hover:text-blue-900 font-black cursor-pointer"
+                        >
+                          {globalStats.totalSubmittalsFurtherRev ?? 0}
+                        </button>
+                      </td>
+
+                      {/* 3. Rev.00 Rows */}
                       <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => openDrillDown('ALL', 'rev00', 'All Revision 00 Submittals', 'إجمالي معاملات مراجعة 00')}
+                            onClick={() => openDrillDown('ALL', 'rev00', 'All Rev 00 Rows', 'إجمالي صفوف مراجعة 00')}
                             className="hover:underline cursor-pointer font-bold"
                           >
                             {globalStats.totalSheetsRev0}
@@ -1707,13 +1844,26 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                           )}
                         </div>
                       </td>
+
+                      {/* 4. Further Rev Rows */}
                       <td className="px-4 py-3.5 text-xs text-center font-bold text-slate-700">
                         <button
                           type="button"
-                          onClick={() => openDrillDown('ALL', 'furtherRev', 'All Further Revisions', 'إجمالي المراجعات اللاحقة')}
-                          className="hover:underline cursor-pointer"
+                          onClick={() => openDrillDown('ALL', 'furtherRev', 'All Further Rev Rows', 'إجمالي صفوف المراجعات اللاحقة')}
+                          className="hover:underline cursor-pointer font-semibold"
                         >
                           {globalStats.totalSheetsFurtherRev}
+                        </button>
+                      </td>
+
+                      {/* 5. Total Rows */}
+                      <td className="px-4 py-3.5 text-xs text-center font-black bg-slate-300/70 text-[#203864]">
+                        <button
+                          type="button"
+                          onClick={() => openDrillDown('ALL', 'totalWorkload', 'All Total Rows', 'إجمالي كافة الصفوف')}
+                          className="hover:underline hover:text-blue-900 font-black cursor-pointer"
+                        >
+                          {globalStats.totalSubmittedSheets}
                         </button>
                       </td>
                       

@@ -1210,7 +1210,7 @@ export const parseExcelWorkbook = (
         disciplineSourceSheet: sheetName,
         disciplineCode: sheetDiscInfo.code,
 
-        logType: parentRegister.identity,
+        logType: authoritativeSourceName || parentRegister.identity,
         sourceFile: cleanFileBase,
         rawSourceIdentity: `${fileName}::${sheetName}`,
         contextDiscipline: rowContextDiscipline,
@@ -1218,11 +1218,11 @@ export const parseExcelWorkbook = (
 
         disciplineEvidenceSource,
         isDisciplineLocked: isRegisterDisciplineLocked,
-        hasAuthoritativeSourceIdentity: true,
-        sourceRegisterIdentity: parentRegister.identity,
+        hasAuthoritativeSourceIdentity: Boolean(authoritativeSourceName),
+        sourceRegisterIdentity: authoritativeSourceName || parentRegister.identity,
         workflowFamily: parentRegister.workflowFamily,
 
-        documentType: parentRegister.identity,
+        documentType: authoritativeSourceName || parentRegister.identity,
         trade: resolvedDiscipline,
         discipline: resolvedDiscipline,
         workflowStage: "",

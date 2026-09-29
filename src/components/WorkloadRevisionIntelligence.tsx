@@ -218,10 +218,26 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
                           {row.documentType}
                         </td>
                         <td className="px-3 py-3 border-r border-slate-100 text-center font-mono font-bold text-blue-900">
-                          {row.stats.totalSubmittalsRev0 ?? '—'}
+                          {row.stats.totalSubmittalsRev0 !== undefined && row.stats.totalSubmittalsRev0 !== null ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'uniqueRev00', `${row.documentType} — Unique Rev.00 Submittals`, `${row.documentType} — تقديمات فريدة Rev.00`)}
+                              className="font-bold text-blue-900 hover:underline cursor-pointer"
+                            >
+                              {row.stats.totalSubmittalsRev0}
+                            </button>
+                          ) : '—'}
                         </td>
                         <td className="px-3 py-3 border-r border-slate-100 text-center font-mono font-bold text-amber-900">
-                          {row.stats.totalSubmittalsFurtherRev ?? '—'}
+                          {row.stats.totalSubmittalsFurtherRev !== undefined && row.stats.totalSubmittalsFurtherRev !== null ? (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown(row.documentType, 'uniqueFurtherRev', `${row.documentType} — Unique Further Rev. Submittals`, `${row.documentType} — تقديمات فريدة لاحقة`)}
+                              className="font-bold text-amber-900 hover:underline cursor-pointer"
+                            >
+                              {row.stats.totalSubmittalsFurtherRev}
+                            </button>
+                          ) : '—'}
                         </td>
                         <td className="px-3 py-3 border-r border-slate-100 text-center font-mono">
                           <button

@@ -479,6 +479,12 @@ export default function Presentation({
           
           return {
             discipline: disc,
+            TotalSubmittals: sub.totalSubs,
+            UniqueRev00: sub.rev0,
+            UniqueFurtherRev: sub.revHigh,
+            Rev00Rows: sub.rev0,
+            FurtherRevRows: sub.revHigh,
+            TotalRows: sub.totalSubs,
             Rev00: sub.rev0,
             FurtherRev: sub.revHigh,
             Approved: sub.approved,
@@ -491,15 +497,22 @@ export default function Presentation({
           };
         } else {
           const sub = ncrResult.cumulative.find(c => normDisc(c.discipline) === targetNorm) || { totalUnique: 0, open: 0, closed: 0, underReview: 0, approved: 0, rejected: 0, rev0: 0, revHigh: 0 };
+          const ncrTotal = (sub.rev0 || 0) + (sub.revHigh || 0);
           return {
             discipline: disc,
+            TotalSubmittals: ncrTotal,
+            UniqueRev00: sub.rev0 || 0,
+            UniqueFurtherRev: sub.revHigh || 0,
+            Rev00Rows: sub.rev0 || 0,
+            FurtherRevRows: sub.revHigh || 0,
+            TotalRows: ncrTotal,
             Rev00: sub.rev0 || 0,
             FurtherRev: sub.revHigh || 0,
             Approved: sub.approved,
             RejectedOpen: sub.rejected,
             RejectedClosed: 0,
             Pending: sub.underReview,
-            Total: (sub.rev0 || 0) + (sub.revHigh || 0),
+            Total: ncrTotal,
             Closed: sub.closed,
             Open: sub.open
           };
@@ -508,6 +521,12 @@ export default function Presentation({
 
       const totalRow = {
         discipline: "TOTAL",
+        TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+        UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
+        UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+        Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+        FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+        TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
         Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
         FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
         Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),

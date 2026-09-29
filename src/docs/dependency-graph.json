@@ -313,6 +313,10 @@
       "layer": 2
     },
     {
+      "id": "src/utils/parentRegisterResolver.ts",
+      "layer": 3
+    },
+    {
       "id": "src/utils/parser.ts",
       "layer": 3
     },
@@ -1231,6 +1235,10 @@
       "target": "src/types.ts"
     },
     {
+      "source": "src/utils/classificationEngine.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
+    },
+    {
       "source": "src/utils/enterpriseAnalyticsEngine.ts",
       "target": "src/types.ts"
     },
@@ -1297,6 +1305,10 @@
     {
       "source": "src/utils/parser.ts",
       "target": "src/utils/workflowMapping.ts"
+    },
+    {
+      "source": "src/utils/parser.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
     },
     {
       "source": "src/utils/rfiAnalytics.ts",

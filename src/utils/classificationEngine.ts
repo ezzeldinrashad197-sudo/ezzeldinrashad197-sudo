@@ -158,30 +158,41 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
   const upperSheet = cleanSheet.toUpperCase();
   const isGenericSheet = !cleanSheet || /^(Sheet\s*\d*|Feuil\s*\d*|Tabelle\s*\d*|ورقة\s*\d*|Table\s*\d*|Page\s*\d*|Worksheet\s*\d*|Data\s*\d*|Export\s*\d*)$/i.test(cleanSheet);
 
-  // 1. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN), it CANNOT be a parent register!
-  if (isDisciplineSheet(cleanSheet)) {
-    // Resolve parent register from workbook/filename context
-    const resolved = resolveParentRegister({ fileName });
-    if (resolved && resolved.identity !== 'UNCLASSIFIED') {
-      return resolved.identity;
-    }
-    return null; // Must not promote discipline to register!
-  }
-
-  // 2. Check compound sheet names like WIR-STR, DOC-GEN
+  // 1. Compound sheet names like WIR-STR, DOC-GEN, SDW-INFRA are authoritative compound registers
   const parts = upperSheet.split(/[-_ ]+/);
   if (parts.length > 1 && KNOWN_PARENT_REGISTERS[parts[0]]) {
-    return KNOWN_PARENT_REGISTERS[parts[0]].identity;
+    return cleanSheet;
   }
 
-  // 3. If sheet name matches a known parent register directly (and is not a discipline)
+  // 2. If sheet name matches a known parent register directly
   if (KNOWN_PARENT_REGISTERS[upperSheet] && !isDisciplineSheet(upperSheet)) {
     return KNOWN_PARENT_REGISTERS[upperSheet].identity;
   }
 
-  // 4. Check filename context
+  // 3. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN)
+  if (isDisciplineSheet(cleanSheet)) {
+    // Resolve parent register from workbook/filename context if available
+    const resolved = resolveParentRegister({ fileName });
+    if (resolved && resolved.identity !== 'UNCLASSIFIED') {
+      return resolved.identity;
+    }
+    // If workbook filename is generic (e.g. Project_Registers.xlsx), the sheet name itself is the authoritative register
+    const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
+    const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*|Project_Registers?)$/i.test(fileBase);
+    if (isGenericFile) {
+      return cleanSheet;
+    }
+    return null;
+  }
+
+  // 4. Non-generic sheet names (e.g. COMMISSIONING, GEN) are authoritative registers
+  if (!isGenericSheet) {
+    return cleanSheet;
+  }
+
+  // 5. Check filename context when sheet is generic
   const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
-  const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*)$/i.test(fileBase);
+  const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*|Project_Registers?)$/i.test(fileBase);
   
   if (!isGenericFile) {
     const fileResolved = resolveParentRegister({ fileName });
@@ -191,10 +202,6 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     if (isKnownRegisterName(fileBase)) {
       return fileBase;
     }
-  }
-
-  if (!isGenericSheet && !isDisciplineSheet(cleanSheet)) {
-    return cleanSheet;
   }
 
   return null;

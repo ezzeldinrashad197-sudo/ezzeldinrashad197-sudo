@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T13:11:46.697Z",
+  "generatedAt": "2026-09-29T07:49:45.959Z",
   "overallStatus": "APPROVED",
   "steps": [
     {
@@ -52,7 +52,7 @@
           {
             "docNo": "DOC-ST-001",
             "category": "PENDING",
-            "delayDays": 72,
+            "delayDays": 79,
             "isOverdue": true
           },
           {
@@ -64,7 +64,7 @@
           {
             "docNo": "DOC-ME-003",
             "category": "REJECTED_CLOSED",
-            "delayDays": 79,
+            "delayDays": 86,
             "isOverdue": true
           },
           {
@@ -88,6 +88,12 @@
           "totalSheetsFurtherRev": 1,
           "totalDrawingsRev0": 4,
           "totalDrawingsFurtherRev": 1,
+          "totalUniqueSubmittals": 4,
+          "uniqueSubmittals": 4,
+          "totalSubmittalsRev0": 4,
+          "rev0Submittals": 4,
+          "totalSubmittalsFurtherRev": 1,
+          "furtherRevSubmittals": 1,
           "rowApproved": 2,
           "rowApprovedClosed": 3,
           "rowRejectedOpen": 1,

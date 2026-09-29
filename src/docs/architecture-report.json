@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-22T13:13:18.546Z",
-    "totalFilesScanned": 84,
-    "architecturalViolations": 0,
-    "complianceScore": 100,
+    "generatedAt": "2026-09-29T07:49:49.576Z",
+    "totalFilesScanned": 85,
+    "architecturalViolations": 1,
+    "complianceScore": 95,
     "circularDependenciesCount": 0,
     "parserDescription": "TypeScript Compiler AST Parser with strict node visitor symbol-resolution"
   },
@@ -319,6 +319,10 @@
     {
       "id": "src/utils/ncrAnalytics.ts",
       "layer": 2
+    },
+    {
+      "id": "src/utils/parentRegisterResolver.ts",
+      "layer": 3
     },
     {
       "id": "src/utils/parser.ts",
@@ -1239,6 +1243,10 @@
       "target": "src/types.ts"
     },
     {
+      "source": "src/utils/classificationEngine.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
+    },
+    {
       "source": "src/utils/enterpriseAnalyticsEngine.ts",
       "target": "src/types.ts"
     },
@@ -1305,6 +1313,10 @@
     {
       "source": "src/utils/parser.ts",
       "target": "src/utils/workflowMapping.ts"
+    },
+    {
+      "source": "src/utils/parser.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
     },
     {
       "source": "src/utils/rfiAnalytics.ts",
@@ -1558,315 +1570,329 @@
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 223,
+      "line": 218,
       "context": "resolveRowRegisterFamily(d)",
       "destination": "src/utils/calculations.ts::resolveRowRegisterFamily",
       "functionName": "resolveRowRegisterFamily"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 310,
+      "line": 305,
       "context": "resolveRegisterFamilyFromKey(bt, sampleRow)",
       "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
       "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 368,
+      "line": 363,
       "context": "calculateStats(monthlyData, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 398,
+      "line": 393,
       "context": "calculateStats(cumulativeData, data)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 454,
+      "line": 449,
       "context": "resolveRowRegister(d)",
       "destination": "src/utils/calculations.ts::resolveRowRegister",
       "functionName": "resolveRowRegister"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 456,
+      "line": 451,
       "context": "resolveRegisterFamilyFromKey(bt, sampleRow)",
       "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
       "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 460,
+      "line": 455,
       "context": "processNCRData(sourceData, monthlyStart)",
       "destination": "src/utils/calculations.ts::processNCRData",
       "functionName": "processNCRData"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 538,
+      "line": 552,
       "context": "resolveRowDiscipline(d, family)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 558,
+      "line": 572,
       "context": "resolveRowDiscipline(d, family)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 562,
+      "line": 576,
       "context": "calculateNCRStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateNCRStats",
       "functionName": "calculateNCRStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 562,
+      "line": 576,
       "context": "calculateSORStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateSORStats",
       "functionName": "calculateSORStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 562,
+      "line": 576,
       "context": "calculateLTRStats(dData, false)",
       "destination": "src/utils/calculations.ts::calculateLTRStats",
       "functionName": "calculateLTRStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 562,
+      "line": 576,
       "context": "calculateStats(dData, fullDataset || dataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 584,
+      "line": 606,
       "context": "getClosedOpenByDocType(family, s)",
       "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
       "functionName": "getClosedOpenByDocType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 585,
+      "line": 607,
       "context": "getClosedOpenByDocType(family, s)",
       "destination": "src/utils/calculations.ts::getClosedOpenByDocType",
       "functionName": "getClosedOpenByDocType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 612,
+      "line": 639,
       "context": "resolveRowRegister(d)",
       "destination": "src/utils/calculations.ts::resolveRowRegister",
       "functionName": "resolveRowRegister"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 624,
+      "line": 651,
       "context": "resolveRegisterFamilyFromKey(a)",
       "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
       "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 625,
+      "line": 652,
       "context": "resolveRegisterFamilyFromKey(b)",
       "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
       "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 650,
+      "line": 677,
       "context": "getColLabel(c.label, language)",
       "destination": "src/utils/calculations.ts::getColLabel",
       "functionName": "getColLabel"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 659,
+      "line": 686,
       "context": "getDiscName(s.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 669,
+      "line": 696,
       "context": "getDiscName(statsData.totalRow.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 683,
+      "line": 710,
       "context": "getChartTitle(titleStr, language)",
       "destination": "src/utils/calculations.ts::getChartTitle",
       "functionName": "getChartTitle"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 687,
+      "line": 714,
       "context": "getDiscName(d, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 773,
+      "line": 800,
       "context": "getDiscName(s.discipline, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 783,
+      "line": 810,
       "context": "getPieLabelTranslator(String(name), language)",
       "destination": "src/utils/calculations.ts::getPieLabelTranslator",
       "functionName": "getPieLabelTranslator"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 791,
+      "line": 818,
       "context": "getPieLabelTranslator(p.name, language)",
       "destination": "src/utils/calculations.ts::getPieLabelTranslator",
       "functionName": "getPieLabelTranslator"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 806,
+      "line": 833,
       "context": "isEntityOverdue(d)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 827,
+      "line": 854,
       "context": "isEntityOverdue(a)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 828,
+      "line": 855,
       "context": "isEntityOverdue(b)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1098,
+      "line": 1125,
       "context": "getMonthlySummary(overallMonthlyStats, language)",
       "destination": "src/utils/calculations.ts::getMonthlySummary",
       "functionName": "getMonthlySummary"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1261,
+      "line": 1221,
+      "context": "resolveRowRegister(d)",
+      "destination": "src/utils/calculations.ts::resolveRowRegister",
+      "functionName": "resolveRowRegister"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1285,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1264,
+      "line": 1286,
       "context": "getRegisterTitle(bt, language)",
       "destination": "src/utils/calculations.ts::getRegisterTitle",
       "functionName": "getRegisterTitle"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1282,
+      "line": 1306,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1370,
+      "line": 1396,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1408,
+      "line": 1434,
       "context": "getMonthlyRecommendations(overallMonthlyStats, language)",
       "destination": "src/utils/calculations.ts::getMonthlyRecommendations",
       "functionName": "getMonthlyRecommendations"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1461,
+      "line": 1487,
       "context": "getCumulativeSummary(overallCumulativeStats, language)",
       "destination": "src/utils/calculations.ts::getCumulativeSummary",
       "functionName": "getCumulativeSummary"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1624,
+      "line": 1583,
+      "context": "resolveRowRegister(d)",
+      "destination": "src/utils/calculations.ts::resolveRowRegister",
+      "functionName": "resolveRowRegister"
+    },
+    {
+      "callerFile": "src/Presentation.tsx",
+      "line": 1647,
       "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1627,
+      "line": 1648,
       "context": "getRegisterTitle(bt, language)",
       "destination": "src/utils/calculations.ts::getRegisterTitle",
       "functionName": "getRegisterTitle"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1645,
+      "line": 1668,
       "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1717,
+      "line": 1742,
       "context": "compileStatsForBaseType(monthlyData, bt, startDate, monthlyReferenceData)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1718,
+      "line": 1743,
       "context": "compileStatsForBaseType(cumulativeData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1722,
+      "line": 1747,
       "context": "resolveRegisterFamilyFromKey(bt)",
       "destination": "src/utils/calculations.ts::resolveRegisterFamilyFromKey",
       "functionName": "resolveRegisterFamilyFromKey"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1723,
+      "line": 1748,
       "context": "getRegisterTitle(bt, language)",
       "destination": "src/utils/calculations.ts::getRegisterTitle",
       "functionName": "getRegisterTitle"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 1967,
+      "line": 1996,
       "context": "getDiscName(row.trade, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
     },
     {
       "callerFile": "src/Presentation.tsx",
-      "line": 2026,
+      "line": 2055,
       "context": "getDiscName(row.trade, language)",
       "destination": "src/utils/calculations.ts::getDiscName",
       "functionName": "getDiscName"
@@ -1922,210 +1948,210 @@
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 110,
+      "line": 118,
       "context": "calculateStats(matchingRows, contextDataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 164,
+      "line": 172,
       "context": "calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), contextDataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 169,
+      "line": 177,
       "context": "runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'))",
       "destination": "src/utils/calculations.ts::runComprehensiveSequenceAudit",
       "functionName": "runComprehensiveSequenceAudit"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 174,
+      "line": 182,
       "context": "calculateProjectPerformanceHealth(globalStats, language)",
       "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
       "functionName": "calculateProjectPerformanceHealth"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 266,
+      "line": 285,
       "context": "calculateStats(firstHalf, contextDataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 267,
+      "line": 286,
       "context": "calculateStats(secondHalf, contextDataset)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 279,
+      "line": 298,
       "context": "isEntityOverdue(d)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 342,
+      "line": 361,
       "context": "processRevisionEngine(baseForRevisions)",
       "destination": "src/utils/calculations.ts::processRevisionEngine",
       "functionName": "processRevisionEngine"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 343,
+      "line": 362,
       "context": "getBusinessEntityKey(r)",
       "destination": "src/utils/calculations.ts::getBusinessEntityKey",
       "functionName": "getBusinessEntityKey"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 351,
+      "line": 370,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 352,
+      "line": 371,
       "context": "isEntityOverdue(group.latest)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 426,
+      "line": 445,
       "context": "processRevisionEngine(baseForRevisions)",
       "destination": "src/utils/calculations.ts::processRevisionEngine",
       "functionName": "processRevisionEngine"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 427,
+      "line": 446,
       "context": "getBusinessEntityKey(r)",
       "destination": "src/utils/calculations.ts::getBusinessEntityKey",
       "functionName": "getBusinessEntityKey"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 433,
+      "line": 452,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 440,
+      "line": 459,
       "context": "resolveRowDiscipline(r)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 460,
+      "line": 479,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 472,
+      "line": 491,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 484,
+      "line": 503,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 496,
+      "line": 515,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 508,
+      "line": 527,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 520,
+      "line": 539,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 552,
+      "line": 571,
       "context": "getStatusCodeCategory(group.latest)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 554,
+      "line": 573,
       "context": "isEntityOverdue(group.latest)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 573,
+      "line": 592,
       "context": "isRevision0(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 577,
+      "line": 596,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 582,
+      "line": 601,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 588,
+      "line": 607,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 592,
+      "line": 611,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 604,
+      "line": 623,
       "context": "resolveRowDiscipline({ documentType: m.docType } as any)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
     },
     {
       "callerFile": "src/ReportTable.tsx",
-      "line": 625,
+      "line": 644,
       "context": "resolveRowDiscipline({ documentType: docTypeFilter } as any)",
       "destination": "src/utils/calculations.ts::resolveRowDiscipline",
       "functionName": "resolveRowDiscipline"
@@ -2572,6 +2598,48 @@
       "functionName": "calculateCanonicalKPIs"
     },
     {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 953,
+      "context": "calculateCanonicalKPIs(sdwTestRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 996,
+      "context": "calculateCanonicalKPIs(multiDwgRows)",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 1003,
+      "context": "getSubmissionIdentityKey({ registerIdentity: 'DOC', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 1004,
+      "context": "getSubmissionIdentityKey({ registerIdentity: 'MAR', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 1005,
+      "context": "getSubmissionIdentityKey({ registerIdentity: 'WIR', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 1006,
+      "context": "getSubmissionIdentityKey({ registerIdentity: 'SDW', discipline: 'Structural', disciplineCode: 'STR', submissionRef: 'SUB-001' } as any)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
       "callerFile": "src/analytics/analyticsCore.ts",
       "line": 42,
       "context": "getNormalizedStatus(row, projectId, settings)",
@@ -2643,525 +2711,546 @@
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 553,
-      "context": "parseDateTimestamp(asOfDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 557,
-      "context": "parseDateTimestamp(row.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 569,
-      "context": "getDocumentIdentityKey(row)",
-      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
-      "functionName": "getDocumentIdentityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 605,
-      "context": "getRevisionWeight(extractRevisionRaw(r))",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 605,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 616,
-      "context": "getRevisionWeight(extractRevisionRaw(r))",
-      "destination": "src/utils/calculations.ts::getRevisionWeight",
-      "functionName": "getRevisionWeight"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 616,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 625,
-      "context": "extractRevisionRaw(a)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 625,
-      "context": "extractRevisionRaw(b)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 631,
-      "context": "parseDateTimestamp(a.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 632,
-      "context": "parseDateTimestamp(b.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 648,
-      "context": "getStatusCodeCategory(r)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 663,
-      "context": "getStatusCodeCategory(r)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 667,
-      "context": "classifySubmission(sheetClassifications)",
-      "destination": "src/utils/calculations.ts::classifySubmission",
-      "functionName": "classifySubmission"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 698,
-      "context": "getStatusCodeCategory(latest)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 709,
-      "context": "parseDateTimestamp(latest.dueDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 719,
-      "context": "parseDateTimestamp(latest.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 760,
-      "context": "parseDateTimestamp(asOfDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 787,
-      "context": "getBusinessEntityKey(r)",
-      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
-      "functionName": "getBusinessEntityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 790,
-      "context": "getDocumentIdentityKey(r)",
-      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
-      "functionName": "getDocumentIdentityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 792,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 833,
-      "context": "parseDateTimestamp(r.submissionDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 868,
-      "context": "isValidRevision(rev)",
-      "destination": "src/utils/calculations.ts::isValidRevision",
-      "functionName": "isValidRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 972,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 973,
-      "context": "isRevision0(rawRev, r.isRev0)",
-      "destination": "src/utils/calculations.ts::isRevision0",
-      "functionName": "isRevision0"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 974,
-      "context": "isFurtherRevision(rawRev, r.isRev0)",
-      "destination": "src/utils/calculations.ts::isFurtherRevision",
-      "functionName": "isFurtherRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 983,
-      "context": "getStatusCodeCategory(r)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1032,
-      "context": "processRevisionEngine(\n      baseForRevisions,\n      asOfDate\n    )",
-      "destination": "src/utils/calculations.ts::processRevisionEngine",
-      "functionName": "processRevisionEngine"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1044,
-      "context": "getDocumentIdentityKey(r)",
-      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
-      "functionName": "getDocumentIdentityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1085,
-      "context": "getStatusCodeCategory(latest)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1126,
-      "context": "isEntityOverdue(\n            latest,\n            cutoffTime\n          )",
-      "destination": "src/utils/calculations.ts::isEntityOverdue",
-      "functionName": "isEntityOverdue"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1150,
-      "context": "parseDateTimestamp(\n            latest.submissionDate\n          )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1155,
-      "context": "parseDateTimestamp(\n            latest.responseDate\n          )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1437,
-      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
-      "destination": "src/utils/calculations.ts::auditRegisterSequence",
-      "functionName": "auditRegisterSequence"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1456,
-      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
-      "destination": "src/utils/calculations.ts::auditRegisterSequence",
-      "functionName": "auditRegisterSequence"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1472,
-      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
-      "destination": "src/utils/calculations.ts::auditRegisterSequence",
-      "functionName": "auditRegisterSequence"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1488,
-      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
-      "destination": "src/utils/calculations.ts::auditRegisterSequence",
-      "functionName": "auditRegisterSequence"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1504,
-      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
-      "destination": "src/utils/calculations.ts::auditRegisterSequence",
-      "functionName": "auditRegisterSequence"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1524,
-      "context": "calculateCanonicalKPIs(\n    data,\n    fullDataset\n  )",
-      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
-      "functionName": "calculateCanonicalKPIs"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1547,
-      "context": "processRevisionEngine(\n      baseRows,\n      cutoffDate\n    )",
-      "destination": "src/utils/calculations.ts::processRevisionEngine",
-      "functionName": "processRevisionEngine"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1555,
-      "context": "parseDateTimestamp(cutoffDate)",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1563,
-      "context": "parseDateTimestamp(\n          row.submissionDate\n        )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1573,
-      "context": "getBusinessEntityKey(row)",
-      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
-      "functionName": "getBusinessEntityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1576,
-      "context": "getDocumentIdentityKey(row)",
-      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
-      "functionName": "getDocumentIdentityKey"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1588,
-      "context": "extractRevisionRaw(row)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1589,
-      "context": "isRevision0(rawRev, row.isRev0)",
-      "destination": "src/utils/calculations.ts::isRevision0",
-      "functionName": "isRevision0"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1601,
-      "context": "getStatusCodeCategory(row)",
-      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
-      "functionName": "getStatusCodeCategory"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1667,
-      "context": "calculateCanonicalKPIs(\n      canonicalRecords.map(\n        r => r.originalRow\n      ),\n      fullCumulativeRows\n    )",
-      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
-      "functionName": "calculateCanonicalKPIs"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1690,
-      "context": "calculateCanonicalKPIs(\n      canonicalRecords.map(\n        r => r.originalRow\n      )\n    )",
-      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
-      "functionName": "calculateCanonicalKPIs"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1738,
-      "context": "processRevisionEngine(rows)",
-      "destination": "src/utils/calculations.ts::processRevisionEngine",
-      "functionName": "processRevisionEngine"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1746,
-      "context": "isValidRevision(extractRevisionRaw(r))",
-      "destination": "src/utils/calculations.ts::isValidRevision",
-      "functionName": "isValidRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1746,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1751,
-      "context": "isValidRevision(extractRevisionRaw(r))",
-      "destination": "src/utils/calculations.ts::isValidRevision",
-      "functionName": "isValidRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1751,
-      "context": "extractRevisionRaw(r)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1758,
-      "context": "parseDateTimestamp(\n                a.submissionDate\n              )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1763,
-      "context": "parseDateTimestamp(\n                b.submissionDate\n              )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1772,
-      "context": "extractRevisionRaw(a)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1773,
-      "context": "extractRevisionRaw(b)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1790,
-      "context": "getDrawingNumber(\n          latestOverall\n        )",
-      "destination": "src/utils/calculations.ts::getDrawingNumber",
-      "functionName": "getDrawingNumber"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1815,
-      "context": "parseDateTimestamp(\n                  a.submissionDate\n                )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1820,
-      "context": "parseDateTimestamp(\n                  b.submissionDate\n                )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1829,
-      "context": "extractRevisionRaw(a)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1830,
-      "context": "extractRevisionRaw(b)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1840,
-      "context": "extractRevisionRaw(latestValid)",
-      "destination": "src/utils/calculations.ts::extractRevisionRaw",
-      "functionName": "extractRevisionRaw"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1842,
-      "context": "isRevision0(latestRevStr, latestValid.isRev0)",
-      "destination": "src/utils/calculations.ts::isRevision0",
-      "functionName": "isRevision0"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1843,
-      "context": "isFurtherRevision(latestRevStr, latestValid.isRev0)",
-      "destination": "src/utils/calculations.ts::isFurtherRevision",
-      "functionName": "isFurtherRevision"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1894,
-      "context": "getSubmissionReference(\n            latestOverall\n          )",
-      "destination": "src/utils/calculations.ts::getSubmissionReference",
-      "functionName": "getSubmissionReference"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1945,
-      "context": "buildCanonicalDataset(\n      rows,\n      rows\n    )",
-      "destination": "src/utils/calculations.ts::buildCanonicalDataset",
-      "functionName": "buildCanonicalDataset"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1982,
-      "context": "parseDateTimestamp(\n                a.submissionDate\n              )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 1987,
-      "context": "parseDateTimestamp(\n                b.submissionDate\n              )",
-      "destination": "src/utils/calculations.ts::parseDateTimestamp",
-      "functionName": "parseDateTimestamp"
-    },
-    {
-      "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2510,
+      "line": 564,
       "context": "resolveCanonicalTrade(row)",
       "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
       "functionName": "resolveCanonicalTrade"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2525,
+      "line": 585,
+      "context": "getSubmissionReference(row)",
+      "destination": "src/utils/calculations.ts::getSubmissionReference",
+      "functionName": "getSubmissionReference"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 642,
+      "context": "parseDateTimestamp(asOfDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 646,
+      "context": "parseDateTimestamp(row.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 658,
+      "context": "getDocumentIdentityKey(row)",
+      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+      "functionName": "getDocumentIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 694,
+      "context": "getRevisionWeight(extractRevisionRaw(r))",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 694,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 705,
+      "context": "getRevisionWeight(extractRevisionRaw(r))",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 705,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 714,
+      "context": "extractRevisionRaw(a)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 714,
+      "context": "extractRevisionRaw(b)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 720,
+      "context": "parseDateTimestamp(a.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 721,
+      "context": "parseDateTimestamp(b.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 737,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 752,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 756,
+      "context": "classifySubmission(sheetClassifications)",
+      "destination": "src/utils/calculations.ts::classifySubmission",
+      "functionName": "classifySubmission"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 787,
+      "context": "getStatusCodeCategory(latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 798,
+      "context": "parseDateTimestamp(latest.dueDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 808,
+      "context": "parseDateTimestamp(latest.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 849,
+      "context": "parseDateTimestamp(asOfDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 876,
+      "context": "getBusinessEntityKey(r)",
+      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
+      "functionName": "getBusinessEntityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 879,
+      "context": "getDocumentIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+      "functionName": "getDocumentIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 881,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 922,
+      "context": "parseDateTimestamp(r.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 957,
+      "context": "isValidRevision(rev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1070,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1071,
+      "context": "isRevision0(rawRev, r.isRev0)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1072,
+      "context": "isFurtherRevision(rawRev, r.isRev0)",
+      "destination": "src/utils/calculations.ts::isFurtherRevision",
+      "functionName": "isFurtherRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1081,
+      "context": "getSubmissionIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1092,
+      "context": "getStatusCodeCategory(r)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1149,
+      "context": "processRevisionEngine(\n      baseForRevisions,\n      asOfDate\n    )",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1161,
+      "context": "getDocumentIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+      "functionName": "getDocumentIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1202,
+      "context": "getStatusCodeCategory(latest)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1243,
+      "context": "isEntityOverdue(\n            latest,\n            cutoffTime\n          )",
+      "destination": "src/utils/calculations.ts::isEntityOverdue",
+      "functionName": "isEntityOverdue"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1267,
+      "context": "parseDateTimestamp(\n            latest.submissionDate\n          )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1272,
+      "context": "parseDateTimestamp(\n            latest.responseDate\n          )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1562,
+      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1581,
+      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1597,
+      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1613,
+      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1629,
+      "context": "auditRegisterSequence(\n            primaryDocType,\n            validRows\n          )",
+      "destination": "src/utils/calculations.ts::auditRegisterSequence",
+      "functionName": "auditRegisterSequence"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1649,
+      "context": "calculateCanonicalKPIs(\n    data,\n    fullDataset\n  )",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1672,
+      "context": "processRevisionEngine(\n      baseRows,\n      cutoffDate\n    )",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1680,
+      "context": "parseDateTimestamp(cutoffDate)",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1688,
+      "context": "parseDateTimestamp(\n          row.submissionDate\n        )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1698,
+      "context": "getBusinessEntityKey(row)",
+      "destination": "src/utils/calculations.ts::getBusinessEntityKey",
+      "functionName": "getBusinessEntityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1701,
+      "context": "getDocumentIdentityKey(row)",
+      "destination": "src/utils/calculations.ts::getDocumentIdentityKey",
+      "functionName": "getDocumentIdentityKey"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1713,
+      "context": "extractRevisionRaw(row)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1714,
+      "context": "isRevision0(rawRev, row.isRev0)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1726,
+      "context": "getStatusCodeCategory(row)",
+      "destination": "src/utils/calculations.ts::getStatusCodeCategory",
+      "functionName": "getStatusCodeCategory"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1792,
+      "context": "calculateCanonicalKPIs(\n      canonicalRecords.map(\n        r => r.originalRow\n      ),\n      fullCumulativeRows\n    )",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1815,
+      "context": "calculateCanonicalKPIs(\n      canonicalRecords.map(\n        r => r.originalRow\n      )\n    )",
+      "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
+      "functionName": "calculateCanonicalKPIs"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1863,
+      "context": "processRevisionEngine(rows)",
+      "destination": "src/utils/calculations.ts::processRevisionEngine",
+      "functionName": "processRevisionEngine"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1871,
+      "context": "isValidRevision(extractRevisionRaw(r))",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1871,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1876,
+      "context": "isValidRevision(extractRevisionRaw(r))",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1876,
+      "context": "extractRevisionRaw(r)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1883,
+      "context": "parseDateTimestamp(\n                a.submissionDate\n              )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1888,
+      "context": "parseDateTimestamp(\n                b.submissionDate\n              )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1897,
+      "context": "extractRevisionRaw(a)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1898,
+      "context": "extractRevisionRaw(b)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1915,
+      "context": "getDrawingNumber(\n          latestOverall\n        )",
+      "destination": "src/utils/calculations.ts::getDrawingNumber",
+      "functionName": "getDrawingNumber"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1940,
+      "context": "parseDateTimestamp(\n                  a.submissionDate\n                )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1945,
+      "context": "parseDateTimestamp(\n                  b.submissionDate\n                )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1954,
+      "context": "extractRevisionRaw(a)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1955,
+      "context": "extractRevisionRaw(b)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1965,
+      "context": "extractRevisionRaw(latestValid)",
+      "destination": "src/utils/calculations.ts::extractRevisionRaw",
+      "functionName": "extractRevisionRaw"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1967,
+      "context": "isRevision0(latestRevStr, latestValid.isRev0)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 1968,
+      "context": "isFurtherRevision(latestRevStr, latestValid.isRev0)",
+      "destination": "src/utils/calculations.ts::isFurtherRevision",
+      "functionName": "isFurtherRevision"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2019,
+      "context": "getSubmissionReference(\n            latestOverall\n          )",
+      "destination": "src/utils/calculations.ts::getSubmissionReference",
+      "functionName": "getSubmissionReference"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2070,
+      "context": "buildCanonicalDataset(\n      rows,\n      rows\n    )",
+      "destination": "src/utils/calculations.ts::buildCanonicalDataset",
+      "functionName": "buildCanonicalDataset"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2107,
+      "context": "parseDateTimestamp(\n                a.submissionDate\n              )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2112,
+      "context": "parseDateTimestamp(\n                b.submissionDate\n              )",
+      "destination": "src/utils/calculations.ts::parseDateTimestamp",
+      "functionName": "parseDateTimestamp"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2635,
+      "context": "resolveCanonicalTrade(row)",
+      "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
+      "functionName": "resolveCanonicalTrade"
+    },
+    {
+      "callerFile": "src/analytics/calculationFoundation.ts",
+      "line": 2650,
       "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2578,
+      "line": 2703,
       "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2631,
+      "line": 2756,
       "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2714,
+      "line": 2839,
       "context": "getPerformanceValidationRows(\n      rows\n    )",
       "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
       "functionName": "getPerformanceValidationRows"
@@ -3182,266 +3271,266 @@
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 58,
+      "line": 60,
       "context": "defineStructusightSlideMaster(pres, projectInfo, options)",
       "destination": "src/utils/calculations.ts::defineStructusightSlideMaster",
       "functionName": "defineStructusightSlideMaster"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 71,
+      "line": 73,
       "context": "calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en')",
       "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
       "functionName": "calculateExecutiveDashboardData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 72,
+      "line": 74,
       "context": "calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en')",
       "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
       "functionName": "calculateExecutiveDashboardData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 242,
+      "line": 244,
       "context": "renderLuxeLogoBox(pres, coverSlide, 7.5, 0.8, 2.1, 1.2, projectInfo, logoUrl)",
       "destination": "src/utils/calculations.ts::renderLuxeLogoBox",
       "functionName": "renderLuxeLogoBox"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 264,
+      "line": 266,
       "context": "renderLuxeLogoBox(pres, idxSlide, 8.2, 0.4, 1.4, 0.6, projectInfo, logoUrl)",
       "destination": "src/utils/calculations.ts::renderLuxeLogoBox",
       "functionName": "renderLuxeLogoBox"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 395,
+      "line": 397,
       "context": "addDividerSlide(pres, isArabic ? \"بيانات المشروع والشركاء وفريق العمل\" : \"Team Members & Project Details\", isArabic ? \"01 معلومات المشروع\" : \"01 PROJECT INFORMATION\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 397,
+      "line": 399,
       "context": "addHeaderAndFooter(pres, infoSlide, isArabic ? \"معلومات المشروع العامة\" : \"PROJECT INFORMATION\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 427,
+      "line": 429,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات الشهرية\" : \"Monthly Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء الشهري\" : \"02 MONTHLY PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 433,
+      "line": 435,
       "context": "addExecutiveOverviewSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 434,
+      "line": 436,
       "context": "addChartsAndBottlenecksSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 436,
+      "line": 438,
       "context": "addRegisterBreakdownSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 438,
+      "line": 440,
       "context": "addRecommendationsSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 440,
+      "line": 442,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات التراكمية\" : \"Cumulative Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء التراكمي\" : \"02 CUMULATIVE PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 446,
+      "line": 448,
       "context": "addExecutiveOverviewSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 447,
+      "line": 449,
       "context": "addChartsAndBottlenecksSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 449,
+      "line": 451,
       "context": "addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 451,
+      "line": 453,
       "context": "addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 454,
+      "line": 456,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات الشهرية\" : \"Monthly Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء الشهري\" : \"02 MONTHLY PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 460,
+      "line": 462,
       "context": "addExecutiveOverviewSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 461,
+      "line": 463,
       "context": "addChartsAndBottlenecksSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 463,
+      "line": 465,
       "context": "addRegisterBreakdownSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 465,
+      "line": 467,
       "context": "addRecommendationsSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 467,
+      "line": 469,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات التراكمية\" : \"Cumulative Executive Dashboard & KPIs\",\n                isArabic ? \"03 الأداء التراكمي\" : \"03 CUMULATIVE PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 473,
+      "line": 475,
       "context": "addExecutiveOverviewSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 474,
+      "line": 476,
       "context": "addChartsAndBottlenecksSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 476,
+      "line": 478,
       "context": "addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 478,
+      "line": 480,
       "context": "addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 488,
+      "line": 490,
       "context": "compileStatsForBaseType(monthlyWorkingData, bt, options?.monthlyStart || 'ACTIVE_PERIOD', data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 489,
+      "line": 491,
       "context": "compileStatsForBaseType(cumulativeWorkingData, bt, undefined, data)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 499,
+      "line": 501,
       "context": "addDividerSlide(pres, sectionSubtitle, sectionTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 579,
+      "line": 581,
       "context": "addHeaderAndFooter(pres, slideA, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 593,
+      "line": 595,
       "context": "buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 603,
+      "line": 605,
       "context": "buildTableData(firstChunk, null, cols, options?.fontFace)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 615,
+      "line": 617,
       "context": "addHeaderAndFooter(pres, slideACont, contTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 617,
+      "line": 619,
       "context": "buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 657,
+      "line": 659,
       "context": "addHeaderAndFooter(pres, slideB, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 781,
+      "line": 778,
       "context": "isEntityOverdue(a)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 782,
+      "line": 779,
       "context": "isEntityOverdue(b)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
@@ -3449,55 +3538,62 @@
     {
       "callerFile": "src/analytics/exportEngine.ts",
       "line": 793,
-      "context": "addDividerSlide(pres, isArabic ? \"الوثائق التي تتطلب إعادة تقديم (إجراء المقاول)\" : \"Items Requiring Resubmission (Contractor Action)\", `${String(sectionNumRejected).padStart(2, '0')} REJECTED ITEMS`, projectInfo, logoUrl, options)",
+      "context": "addDividerSlide(\n            pres,\n            isArabic ? \"الملف التحليلي وسجلات التدقيق التاريخية الشاملة\" : \"Detailed Analytics Dossier & Complete Historical Registers\",\n            isArabic ? \"القسم الثاني: الملف التحليلي التفصيلي\" : \"PART II: DETAILED ANALYTICS DOSSIER\",\n            projectInfo,\n            logoUrl,\n            options\n        )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 797,
-      "context": "addHeaderAndFooter(pres, slide, \"REJECTED ITEMS\", projectInfo, logoUrl, options)",
+      "line": 803,
+      "context": "addDividerSlide(\n            pres,\n            isArabic ? \"سجلات ووقائع الرفض التاريخية (إجراء المقاول)\" : \"Historical Rejection Events & Rows (Contractor Action)\",\n            `${String(sectionNumRejected).padStart(2, '0')} HISTORICAL REJECTION EVENTS / ROWS`,\n            projectInfo,\n            logoUrl,\n            options\n        )",
+      "destination": "src/utils/calculations.ts::addDividerSlide",
+      "functionName": "addDividerSlide"
+    },
+    {
+      "callerFile": "src/analytics/exportEngine.ts",
+      "line": 814,
+      "context": "addHeaderAndFooter(pres, slide, \"HISTORICAL REJECTION EVENTS / ROWS\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 806,
+      "line": 823,
       "context": "addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 874,
+      "line": 891,
       "context": "isEntityOverdue(d)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 889,
+      "line": 909,
       "context": "addDividerSlide(pres, isArabic ? \"الوثائق تحت المراجعة المتأخرة (إجراء الاستشاري)\" : \"Items Requiring Response (Consultant Action)\", `${String(sectionNumPending).padStart(2, '0')} PENDING ITEMS`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 893,
+      "line": 913,
       "context": "addHeaderAndFooter(pres, slide, \"PENDING ITEMS\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 902,
+      "line": 922,
       "context": "addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 959,
+      "line": 979,
       "context": "addDividerSlide(pres, isArabic ? \"فريق مراقبة وجودة الوثائق\" : \"Document Control Team\", isArabic ? \"شكراً لكم\" : \"Thanks\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
@@ -3595,28 +3691,28 @@
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 717,
+      "line": 745,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 900,
+      "line": 953,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1140,
+      "line": 1193,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1183,
+      "line": 1236,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
@@ -5296,217 +5392,273 @@
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 41,
+      "line": 50,
+      "context": "getSubmissionIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/utils/calculations.ts",
+      "line": 58,
       "context": "compareRevisionsCanonical(a.rev, b.rev)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 142,
+      "line": 67,
+      "context": "getSubmissionIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/utils/calculations.ts",
+      "line": 83,
+      "context": "compareRevisionsCanonical(a.rev, b.rev)",
+      "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
+      "functionName": "compareRevisionsCanonical"
+    },
+    {
+      "callerFile": "src/utils/calculations.ts",
+      "line": 185,
       "context": "compareRevisionsCanonical(b, a)",
       "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
       "functionName": "compareRevisionsCanonical"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 148,
+      "line": 191,
       "context": "resolveCanonicalTrade(r)",
       "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
       "functionName": "resolveCanonicalTrade"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 185,
+      "line": 229,
       "context": "getRevisionWeight(revUpper)",
       "destination": "src/utils/calculations.ts::getRevisionWeight",
       "functionName": "getRevisionWeight"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 186,
+      "line": 230,
       "context": "isRevision0(revUpper, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 189,
+      "line": 233,
       "context": "getStatusCodeCategory(r)",
       "destination": "src/utils/calculations.ts::getStatusCodeCategory",
       "functionName": "getStatusCodeCategory"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 201,
+      "line": 245,
       "context": "getDelayDays(submissionDate, responseDate, dueDate)",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 203,
+      "line": 247,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 203,
+      "line": 247,
       "context": "parseDateTimestamp(dueDate)",
       "destination": "src/utils/calculations.ts::parseDateTimestamp",
       "functionName": "parseDateTimestamp"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 203,
+      "line": 247,
       "context": "checkIfOverdueDynamically(submissionDate, responseDate, 14)",
       "destination": "src/utils/calculations.ts::checkIfOverdueDynamically",
       "functionName": "checkIfOverdueDynamically"
     },
     {
       "callerFile": "src/utils/calculations.ts",
-      "line": 353,
+      "line": 281,
+      "context": "getSubmissionIdentityKey(r)",
+      "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
+      "functionName": "getSubmissionIdentityKey"
+    },
+    {
+      "callerFile": "src/utils/calculations.ts",
+      "line": 406,
       "context": "getDelayDays(submission, response, '')",
       "destination": "src/utils/calculations.ts::getDelayDays",
       "functionName": "getDelayDays"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 166,
+      "line": 168,
+      "context": "isDisciplineSheet(upperSheet)",
+      "destination": "src/utils/calculations.ts::isDisciplineSheet",
+      "functionName": "isDisciplineSheet"
+    },
+    {
+      "callerFile": "src/utils/classificationEngine.ts",
+      "line": 173,
+      "context": "isDisciplineSheet(cleanSheet)",
+      "destination": "src/utils/calculations.ts::isDisciplineSheet",
+      "functionName": "isDisciplineSheet"
+    },
+    {
+      "callerFile": "src/utils/classificationEngine.ts",
+      "line": 175,
+      "context": "resolveParentRegister({ fileName })",
+      "destination": "src/utils/calculations.ts::resolveParentRegister",
+      "functionName": "resolveParentRegister"
+    },
+    {
+      "callerFile": "src/utils/classificationEngine.ts",
+      "line": 198,
+      "context": "resolveParentRegister({ fileName })",
+      "destination": "src/utils/calculations.ts::resolveParentRegister",
+      "functionName": "resolveParentRegister"
+    },
+    {
+      "callerFile": "src/utils/classificationEngine.ts",
+      "line": 202,
       "context": "isKnownRegisterName(fileBase)",
       "destination": "src/utils/calculations.ts::isKnownRegisterName",
       "functionName": "isKnownRegisterName"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 204,
+      "line": 241,
       "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
       "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
       "functionName": "getAuthoritativeSourceRegisterName"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 219,
+      "line": 256,
       "context": "detectDisciplineFromText(authName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 241,
+      "line": 278,
       "context": "detectDisciplineFromText(fileName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 242,
+      "line": 279,
       "context": "detectDisciplineFromText(sheetName)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 246,
+      "line": 283,
       "context": "detectDisciplineFromText(String(h || ''))",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 254,
+      "line": 291,
       "context": "detectDisciplineFromText(String(cell || ''))",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 370,
+      "line": 407,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 384,
+      "line": 421,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 468,
+      "line": 505,
       "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
       "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
       "functionName": "getAuthoritativeSourceRegisterName"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 470,
+      "line": 507,
       "context": "buildCompositeIdentity('DOC', fileName, sheetName, headers, sampleRows, authName)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 557,
+      "line": 594,
       "context": "buildCompositeIdentity(lockedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 582,
+      "line": 619,
       "context": "getSmartImportProfiles()",
       "destination": "src/utils/calculations.ts::getSmartImportProfiles",
       "functionName": "getSmartImportProfiles"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 587,
+      "line": 624,
       "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 597,
+      "line": 634,
       "context": "getLearningRules(projectId)",
       "destination": "src/utils/calculations.ts::getLearningRules",
       "functionName": "getLearningRules"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 602,
+      "line": 639,
       "context": "buildCompositeIdentity(matchedFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 819,
+      "line": 856,
       "context": "buildCompositeIdentity(bestFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 831,
+      "line": 868,
       "context": "buildCompositeIdentity(fallbackFamily, fileName, sheetName, headers, sampleRows)",
       "destination": "src/utils/calculations.ts::buildCompositeIdentity",
       "functionName": "buildCompositeIdentity"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 849,
+      "line": 886,
       "context": "getLearningRules(projectId)",
       "destination": "src/utils/calculations.ts::getLearningRules",
       "functionName": "getLearningRules"
     },
     {
       "callerFile": "src/utils/classificationEngine.ts",
-      "line": 855,
+      "line": 892,
       "context": "detectDisciplineFromText(clean)",
       "destination": "src/utils/calculations.ts::detectDisciplineFromText",
       "functionName": "detectDisciplineFromText"
@@ -5877,7 +6029,7 @@
     },
     {
       "callerFile": "src/utils/multiFileParser.ts",
-      "line": 26,
+      "line": 32,
       "context": "parseExcelFile(file)",
       "destination": "src/utils/calculations.ts::parseExcelFile",
       "functionName": "parseExcelFile"
@@ -5918,64 +6070,85 @@
       "functionName": "getMonthStr"
     },
     {
+      "callerFile": "src/utils/parentRegisterResolver.ts",
+      "line": 267,
+      "context": "isDisciplineSheet(upperSheet)",
+      "destination": "src/utils/calculations.ts::isDisciplineSheet",
+      "functionName": "isDisciplineSheet"
+    },
+    {
       "callerFile": "src/utils/parser.ts",
-      "line": 231,
+      "line": 205,
+      "context": "resolveParentRegister({\n    fileName,\n    sheetNames: wb.SheetNames,\n    sampleDocRefs: sampleWorkbookRefs\n  })",
+      "destination": "src/utils/calculations.ts::resolveParentRegister",
+      "functionName": "resolveParentRegister"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 261,
       "context": "getAuthoritativeSourceRegisterName(fileName, sheetName)",
       "destination": "src/utils/calculations.ts::getAuthoritativeSourceRegisterName",
       "functionName": "getAuthoritativeSourceRegisterName"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 233,
+      "line": 263,
       "context": "classifyRegisterSheet({\n      fileName,\n      sheetName,\n      headers: headers.map((h) => String(h || \"\")),\n      sampleRows: rows.slice(0, 20) as any[][],\n      projectId: activeProjectId,\n      authoritativeName: authoritativeSourceName || undefined,\n    })",
       "destination": "src/utils/calculations.ts::classifyRegisterSheet",
       "functionName": "classifyRegisterSheet"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 592,
+      "line": 622,
       "context": "formatDate(\n        r[finalColDateSent],\n      )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 596,
+      "line": 626,
       "context": "formatDate(\n        colResponseDate >= 0\n          ? r[colResponseDate]\n          : \"\",\n      )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1112,
+      "line": 1142,
       "context": "normalizeDiscipline(\n          disciplineVal,\n          activeProjectId,\n        )",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1214,
+      "line": 1197,
+      "context": "normalizeDisciplineName(sheetName)",
+      "destination": "src/utils/calculations.ts::normalizeDisciplineName",
+      "functionName": "normalizeDisciplineName"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 1198,
+      "context": "isDisciplineSheet(sheetName)",
+      "destination": "src/utils/calculations.ts::isDisciplineSheet",
+      "functionName": "isDisciplineSheet"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 1230,
       "context": "isRevision0(\n          colRev >= 0\n            ? (typeof r[colRev] === \"number\" ? r[colRev] : String(r[colRev] ?? \"\"))\n            : \"\"\n        )",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1275,
+      "line": 1288,
       "context": "formatDate(\n            colDueDate >= 0\n              ? r[colDueDate]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1324,
-      "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
-      "destination": "src/utils/calculations.ts::formatDate",
-      "functionName": "formatDate"
-    },
-    {
-      "callerFile": "src/utils/parser.ts",
-      "line": 1344,
+      "line": 1337,
       "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
       "destination": "src/utils/calculations.ts::formatDate",
       "functionName": "formatDate"
@@ -5989,28 +6162,35 @@
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1448,
+      "line": 1370,
+      "context": "formatDate(\n            colNcrSentDateCorrectiveAction >= 0\n              ? r[colNcrSentDateCorrectiveAction]\n              : \"\",\n          )",
+      "destination": "src/utils/calculations.ts::formatDate",
+      "functionName": "formatDate"
+    },
+    {
+      "callerFile": "src/utils/parser.ts",
+      "line": 1461,
       "context": "mapDocumentToWorkflow(\n        assignedType,\n      )",
       "destination": "src/utils/calculations.ts::mapDocumentToWorkflow",
       "functionName": "mapDocumentToWorkflow"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1581,
+      "line": 1594,
       "context": "normalizeData(parsed)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1594,
+      "line": 1607,
       "context": "parseExcelWorkbook(\n    wb,\n    fileName,\n  )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
     },
     {
       "callerFile": "src/utils/parser.ts",
-      "line": 1619,
+      "line": 1632,
       "context": "parseExcelWorkbook(\n              wb,\n              file.name,\n            )",
       "destination": "src/utils/calculations.ts::parseExcelWorkbook",
       "functionName": "parseExcelWorkbook"
@@ -7322,6 +7502,22 @@
       },
       {
         "file": "src/utils/calculations.ts",
+        "exportName": "getDocumentIdentityKey",
+        "type": "Constant/Enum/Class",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
+        "exportName": "getSubmissionIdentityKey",
+        "type": "Constant/Enum/Class",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getSubmissionIdentityKey' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
         "exportName": "calculateCanonicalKPIs",
         "type": "Constant/Enum/Class",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -7414,6 +7610,22 @@
         "type": "Component",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'NcrClassificationResult' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
+        "exportName": "getUniqueSubmittals",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getUniqueSubmittals' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/calculations.ts",
+        "exportName": "getUniqueSubmittalCount",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getUniqueSubmittalCount' detected in any active source modules.",
         "referencedBy": []
       },
       {
@@ -7617,6 +7829,30 @@
         "referencedBy": []
       },
       {
+        "file": "src/utils/parentRegisterResolver.ts",
+        "exportName": "RegisterMetadata",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'RegisterMetadata' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/parentRegisterResolver.ts",
+        "exportName": "DISCIPLINE_SHEET_NAMES",
+        "type": "Component",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'DISCIPLINE_SHEET_NAMES' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/parentRegisterResolver.ts",
+        "exportName": "getCanonicalRegisterTitle",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'getCanonicalRegisterTitle' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
         "file": "src/utils/parser.ts",
         "exportName": "formatDate",
         "type": "Function",
@@ -7795,13 +8031,13 @@
     ]
   },
   "staticReachability": {
-    "totalLines": 392,
+    "totalLines": 445,
     "coveredLines": 196,
-    "totalStatements": 30,
+    "totalStatements": 34,
     "coveredStatements": 15,
-    "totalBranches": 29,
+    "totalBranches": 31,
     "coveredBranches": 6,
-    "totalFunctions": 19,
+    "totalFunctions": 25,
     "coveredFunctions": 10
   }
 }

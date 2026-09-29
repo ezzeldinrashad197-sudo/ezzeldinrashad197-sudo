@@ -1178,6 +1178,22 @@
     },
     {
       "file": "src/utils/calculations.ts",
+      "exportName": "getDocumentIdentityKey",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "getSubmissionIdentityKey",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getSubmissionIdentityKey' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
       "exportName": "calculateCanonicalKPIs",
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -1270,6 +1286,22 @@
       "type": "Component",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'NcrClassificationResult' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "getUniqueSubmittals",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getUniqueSubmittals' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "getUniqueSubmittalCount",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getUniqueSubmittalCount' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -1470,6 +1502,30 @@
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'calculateNCRStats' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/parentRegisterResolver.ts",
+      "exportName": "RegisterMetadata",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'RegisterMetadata' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/parentRegisterResolver.ts",
+      "exportName": "DISCIPLINE_SHEET_NAMES",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'DISCIPLINE_SHEET_NAMES' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/parentRegisterResolver.ts",
+      "exportName": "getCanonicalRegisterTitle",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getCanonicalRegisterTitle' detected in any active source modules.",
       "referencedBy": []
     },
     {
