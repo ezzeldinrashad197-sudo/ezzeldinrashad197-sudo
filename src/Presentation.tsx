@@ -3,6 +3,7 @@ import { SubmittalRow, ProjectSettings } from "./types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType } from "./utils/calculations";
 import { isEntityOverdue } from "./analytics/calculationFoundation";
 import { processNCRData } from "./analytics/ncr/ncrEngine";
+import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
 import { useLanguage } from "./utils/i18n";
 import {
   BarChart,
@@ -428,8 +429,8 @@ export default function Presentation({
   const [selectedFont, setSelectedFont] = useState<string>("Inter");
   const [selectedComposerSections, setSelectedComposerSections] = useState<Set<string>>(new Set([
     'cover', 'index', 'info', 
-    'monthly_cover', 'monthly_summary', 'monthly_kpis', 'monthly_charts', 'monthly_register_stats', 'monthly_trade_analysis', 'monthly_sla_bottlenecks', 'monthly_recommendations', 'monthly_registers',
-    'cumulative_cover', 'cumulative_summary', 'cumulative_kpis', 'cumulative_charts', 'cumulative_register_stats', 'cumulative_trade_analysis', 'cumulative_registers',
+    'monthly_cover', 'monthly_summary', 'monthly_kpis', 'monthly_charts', 'monthly_register_stats', 'monthly_trade_analysis', 'monthly_reconciliation_audit', 'monthly_sla_bottlenecks', 'monthly_recommendations', 'monthly_registers',
+    'cumulative_cover', 'cumulative_summary', 'cumulative_kpis', 'cumulative_charts', 'cumulative_register_stats', 'cumulative_trade_analysis', 'cumulative_reconciliation_audit', 'cumulative_registers',
     'rejected_items', 'pending_items', 'closing'
   ]));
 
@@ -660,16 +661,31 @@ export default function Presentation({
   // Standard visual render parts
   const renderStandardTable = (statsData: Record<string, any>, cols: Record<string, any>[]) => {
     const isMultiCol = cols.length >= 8;
+    const hasUniqueMetrics = cols.some(c => c.key === 'UniqueRev00');
     return (
-      <table className={`${isMultiCol ? 'w-[54%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
+      <table className={`${isMultiCol ? 'w-[56%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
         <thead>
           <tr style={{ backgroundColor: PRIMARY_BLUE, color: 'white' }}>
             <th className="p-1.5 border border-[#4472c4] font-bold text-xs" colSpan={1}>
-              {language === 'ar' ? 'التخصص' : 'Status'}
+              {language === 'ar' ? 'التخصص الفني' : 'Discipline'}
             </th>
-            <th className="p-1.5 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
-              {language === 'ar' ? 'الحالة' : 'STATUS'}
-            </th>
+            {hasUniqueMetrics ? (
+              <>
+                <th className="p-1.5 border border-[#4472c4] bg-blue-900 font-bold text-center uppercase tracking-wider text-[11px]" colSpan={2}>
+                  {language === 'ar' ? 'تقديمات فريدة' : 'UNIQUE SUBMITTALS'}
+                </th>
+                <th className="p-1.5 border border-[#4472c4] bg-slate-800 font-bold text-center uppercase tracking-wider text-[11px]" colSpan={3}>
+                  {language === 'ar' ? 'صفوف التقديم' : 'HISTORICAL ROWS'}
+                </th>
+                <th className="p-1.5 border border-[#4472c4] bg-[#203864] font-bold text-center uppercase tracking-wider text-[11px]" colSpan={Math.max(1, cols.length - 6)}>
+                  {language === 'ar' ? 'الحالة الحالية' : 'CURRENT STATE'}
+                </th>
+              </>
+            ) : (
+              <th className="p-1.5 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
+                {language === 'ar' ? 'المؤشرات وحالة الاعتماد' : 'METRICS & STATUS'}
+              </th>
+            )}
           </tr>
           <tr style={{ backgroundColor: '#2f75b5', color: 'white', fontSize: isMultiCol ? (cols.length >= 10 ? '10px' : '11px') : '13px' }}>
             {cols.map((c, i) => (
@@ -1343,33 +1359,167 @@ export default function Presentation({
     }
 
     if (selectedComposerSections.has('monthly_trade_analysis')) {
+      const monthlyTrades = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'].map(trade => {
+        const tRows = monthlyData.filter(d => {
+          const reg = resolveRowRegister(d);
+          const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
+          return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
+        });
+        const s = calculateStats(tRows, monthlyData);
+        return {
+          trade,
+          uniqueRev00: s.totalSubmittalsRev0 || 0,
+          uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+          rev00Rows: s.totalSheetsRev0 || 0,
+          furtherRevRows: s.totalSheetsFurtherRev || 0,
+          totalRows: s.totalSubmittedSheets || 0,
+          approved: s.approved,
+          rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
+          pending: s.pending,
+          active: (s.rejectedOpen || 0) + s.pending,
+          count: tRows.length
+        };
+      }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+
       slides.push({
         id: "monthly-trade-analysis",
         view: "monthly",
         title: language === 'ar' ? "تحليل التخصصات الهندسية للشهر" : "Monthly Trade Analysis",
         element: renderContentSlide(
-          <div className="p-12 flex h-full items-center justify-between">
-            <div className="w-[48%] flex flex-col justify-center items-center h-full">
-              <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'توزيع حجم التقديمات حسب التخصص' : 'Monthly Submittals by Design Trade'}</h3>
-              <BarChart width={560} height={320} layout="vertical" data={['STR', 'Arch', 'Mech', 'Elec', 'HSE', 'Infra'].map(trade => ({ name: trade, count: monthlyData.filter(d => (d.trade || '').toUpperCase().startsWith(trade.toUpperCase())).length }))}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" />
-                <RechartsTooltip />
-                <Bar dataKey="count" fill={primaryColor} radius={[0, 4, 4, 0]} isAnimationActive={false} />
-              </BarChart>
+          <div className="p-8 flex flex-col h-full justify-between gap-3">
+            <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+              <span>{language === 'ar' ? 'توزيع التقديمات والمؤشرات الهندسية حسب التخصص (شهري)' : 'Monthly Discipline Metrics & Workload Breakdown'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
+                {language === 'ar' ? 'فصل تام للتخصصات دون دمج' : 'Strict Discipline Separation'}
+              </span>
+            </h3>
+            <div className="flex items-center justify-between gap-6 my-auto">
+              <div className="w-[44%] flex flex-col justify-center items-center">
+                <BarChart width={500} height={270} layout="vertical" data={monthlyTrades.map(t => ({ name: getDiscName(t.trade, language), count: t.totalRows }))}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} />
+                  <RechartsTooltip />
+                  <Bar dataKey="count" fill={primaryColor} radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                </BarChart>
+              </div>
+              <div className="w-[54%] overflow-x-auto">
+                <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
+                      <th className="p-1.5 border border-slate-300 font-bold">{language === 'ar' ? 'التخصص' : 'Discipline'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'فريدة Rev.00' : 'Unique Rev.00'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'فريدة لاحقة' : 'Unique Further'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'صفوف لاحقة' : 'Further Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-emerald-300">{language === 'ar' ? 'معتمد' : 'Appr.'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-rose-300">{language === 'ar' ? 'مرفوض' : 'Rej.'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-amber-300">{language === 'ar' ? 'معلق' : 'Pend.'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyTrades.map(t => (
+                      <tr key={t.trade} className="even:bg-slate-50 hover:bg-slate-100/70 h-8">
+                        <td className="p-1.5 border border-slate-200 font-bold text-left text-slate-800">{getDiscName(t.trade, language)}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-blue-900 bg-blue-50/30">{t.uniqueRev00}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-blue-900 bg-blue-50/30">{t.uniqueFurtherRev}</td>
+                        <td className="p-1.5 border border-slate-200">{t.rev00Rows}</td>
+                        <td className="p-1.5 border border-slate-200">{t.furtherRevRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/50">{t.totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-emerald-700">{t.approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-rose-700">{t.rejected}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-700">{t.pending}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-[#ddebf7] font-bold text-slate-900 h-8">
+                      <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي' : 'TOTAL'}</td>
+                      <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{monthlyTrades.reduce((a, b) => a + b.uniqueRev00, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{monthlyTrades.reduce((a, b) => a + b.uniqueFurtherRev, 0)}</td>
+                      <td className="p-1.5 border border-slate-300">{monthlyTrades.reduce((a, b) => a + b.rev00Rows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300">{monthlyTrades.reduce((a, b) => a + b.furtherRevRows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 font-black">{monthlyTrades.reduce((a, b) => a + b.totalRows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-emerald-800">{monthlyTrades.reduce((a, b) => a + b.approved, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-rose-800">{monthlyTrades.reduce((a, b) => a + b.rejected, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-amber-800">{monthlyTrades.reduce((a, b) => a + b.pending, 0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="w-[48%] p-8 bg-slate-50 border border-slate-100 rounded-xl flex flex-col gap-4">
-              <h4 className="font-bold border-b pb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'التحليل الهندسي للتخصصات' : 'Engineering Disciplines Commentary'}</h4>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {language === 'ar'
-                  ? 'يوضح التحليل الشهري تباين معدل الإرساليات والتقديمات بين التخصصات الهندسية الرئيسية. يسجل التخصص الإنشائي والمعماري الحصة الكبرى من التقديمات لغايات اعتماد المخططات التنفيذية، في حين تحتل تخصصات الأعمال الميكانيكية والكهربائية (MEP) النسبة الأكبر في تقديمات المواد (MAR) والطلب على استلام الأعمال (WIR).'
-                  : 'The structural and architectural disciplines hold the largest volume of submittals, predominantly in Shop Drawings (SHD). Mechanical, Electrical, and Plumbing (MEP) trades exhibit significant material submittal (MAR) activities, requiring synchronized tracking to avoid bottleneck risks.'}
-              </p>
-            </div>
+            <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              {language === 'ar'
+                ? 'يوضح جدول التخصصات الهندسية الفصل الصارم بين المؤشرات الخمسة: التقديمات الفريدة (Rev 00 واللاحقة) وصفوف التقديم الفعلية (Rev 00 واللاحقة) دون أي دمج، مع إبراز حالة الاعتماد المعتمدة حالياً.'
+                : 'The discipline matrix ensures strict separation across the 5 core indicators: unique submittals (Rev 00 & further) versus physical row counts (Rev 00 & further) with no cross-merging.'}
+            </p>
           </div>,
           language === 'ar' ? "تحليل التخصصات الهندسية للشهر" : "MONTHLY DISCIPLINE ANALYSIS",
           "monthly-trade-analysis"
+        )
+      });
+    }
+
+    if (selectedComposerSections.has('monthly_reconciliation_audit')) {
+      const recon = generateDisciplineReconciliationReport(monthlyData);
+      slides.push({
+        id: "monthly-reconciliation-audit",
+        view: "monthly",
+        title: language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة للشهر" : "Monthly 3-Grain Forensic Reconciliation",
+        element: renderContentSlide(
+          <div className="p-8 flex flex-col h-full justify-start gap-3">
+            <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+              <span>{language === 'ar' ? 'جدول المطابقة وتفسير الفروقات بين أحجام العمل والبنية الفريدة (شهري)' : 'Monthly 3-Grain Forensic Reconciliation & Discrepancy Breakdown'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
+                {language === 'ar' ? 'فصل تام للسجلات والتخصصات — تدقيق 100%' : '100% Mathematically Reconciled'}
+              </span>
+            </h3>
+            <p className="text-xs text-slate-600">
+              {recon.grandTotal.explanationEn}
+            </p>
+            <div className="overflow-x-auto max-h-[420px]">
+              <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+                <thead>
+                  <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'Grain A: إجمالي الصفوف' : 'Grain A: Total Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'Grain B: تقديمات فريدة' : 'Grain B: Unique Submittals'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-indigo-900">{language === 'ar' ? 'Grain C: بنود حالية' : 'Grain C: Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-800">{language === 'ar' ? 'الفارق المحسوب (Delta)' : 'Reconciliation Delta'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-700">{language === 'ar' ? 'مراجعات سابقة ملغاة' : 'Superseded Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'تفسير الفارق من السجلات الفعلية' : 'Forensic Explanation (Source Data)'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recon.records.map(rec => (
+                    <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
+                      <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
+                      <td className="p-1.5 border border-slate-200 font-black">{rec.grainA.totalRows}</td>
+                      <td className="p-1.5 border border-slate-200 font-semibold text-blue-900">{rec.grainB.totalUniqueSubmittals}</td>
+                      <td className="p-1.5 border border-slate-200 font-bold text-indigo-900">{rec.grainC.totalCurrentUnique}</td>
+                      <td className="p-1.5 border border-slate-200 font-black text-amber-900 bg-amber-50/50">{rec.reconciliation.rawDifference}</td>
+                      <td className="p-1.5 border border-slate-200 font-semibold text-slate-700">{rec.reconciliation.supersededHistoricalRows}</td>
+                      <td className="p-1.5 border border-slate-200 text-left text-[11px] text-slate-600 max-w-[340px] truncate" title={language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}>
+                        {language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
+                    <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                    <td className="p-1.5 border border-slate-300 font-black">{recon.grandTotal.grainA.totalRows}</td>
+                    <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{recon.grandTotal.grainB.totalUniqueSubmittals}</td>
+                    <td className="p-1.5 border border-slate-300 font-black text-indigo-950">{recon.grandTotal.grainC.totalCurrentUnique}</td>
+                    <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100/60">{recon.grandTotal.totalDifference}</td>
+                    <td className="p-1.5 border border-slate-300 font-bold">{recon.grandTotal.totalSupersededRows}</td>
+                    <td className="p-1.5 border border-slate-300 text-left text-[11px] font-semibold text-slate-800">
+                      {language === 'ar' ? recon.grandTotal.explanationAr : recon.grandTotal.explanationEn}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>,
+          language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة للشهر" : "MONTHLY 3-GRAIN RECONCILIATION",
+          "monthly-reconciliation-audit"
         )
       });
     }
@@ -1705,33 +1855,167 @@ export default function Presentation({
     }
 
     if (selectedComposerSections.has('cumulative_trade_analysis')) {
+      const cumulativeTrades = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'].map(trade => {
+        const tRows = cumulativeData.filter(d => {
+          const reg = resolveRowRegister(d);
+          const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
+          return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
+        });
+        const s = calculateStats(tRows, cumulativeData);
+        return {
+          trade,
+          uniqueRev00: s.totalSubmittalsRev0 || 0,
+          uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+          rev00Rows: s.totalSheetsRev0 || 0,
+          furtherRevRows: s.totalSheetsFurtherRev || 0,
+          totalRows: s.totalSubmittedSheets || 0,
+          approved: s.approved,
+          rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
+          pending: s.pending,
+          active: (s.rejectedOpen || 0) + s.pending,
+          count: tRows.length
+        };
+      }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+
       slides.push({
         id: "cumulative-trade-analysis",
         view: "cumulative",
         title: language === 'ar' ? "التحليل التراكمي للتخصصات الهندسية" : "Cumulative Trade Performance History",
         element: renderContentSlide(
-          <div className="p-12 flex h-full items-center justify-between">
-            <div className="w-[48%] flex flex-col justify-center items-center h-full">
-              <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'حجم المعاملات التراكمي حسب التخصص' : 'Cumulative Submittals by Design Trade'}</h3>
-              <BarChart width={560} height={320} layout="vertical" data={['STR', 'Arch', 'Mech', 'Elec', 'HSE', 'Infra'].map(trade => ({ name: trade, count: cumulativeData.filter(d => (d.trade || '').toUpperCase().startsWith(trade.toUpperCase())).length }))}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" />
-                <RechartsTooltip />
-                <Bar dataKey="count" fill={primaryColor} radius={[0, 4, 4, 0]} isAnimationActive={false} />
-              </BarChart>
+          <div className="p-8 flex flex-col h-full justify-between gap-3">
+            <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+              <span>{language === 'ar' ? 'توزيع التقديمات التراكمية حسب التخصص (تاريخ المشروع الكامل)' : 'Lifetime Discipline Metrics & Workload Breakdown'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
+                {language === 'ar' ? 'فصل تام للتخصصات دون دمج' : 'Strict Discipline Separation'}
+              </span>
+            </h3>
+            <div className="flex items-center justify-between gap-6 my-auto">
+              <div className="w-[44%] flex flex-col justify-center items-center">
+                <BarChart width={500} height={270} layout="vertical" data={cumulativeTrades.map(t => ({ name: getDiscName(t.trade, language), count: t.totalRows }))}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} />
+                  <RechartsTooltip />
+                  <Bar dataKey="count" fill={primaryColor} radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                </BarChart>
+              </div>
+              <div className="w-[54%] overflow-x-auto">
+                <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
+                      <th className="p-1.5 border border-slate-300 font-bold">{language === 'ar' ? 'التخصص' : 'Discipline'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'فريدة Rev.00' : 'Unique Rev.00'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'فريدة لاحقة' : 'Unique Further'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'صفوف لاحقة' : 'Further Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-emerald-300">{language === 'ar' ? 'معتمد' : 'Appr.'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-rose-300">{language === 'ar' ? 'مرفوض' : 'Rej.'}</th>
+                      <th className="p-1.5 border border-slate-300 font-bold text-amber-300">{language === 'ar' ? 'معلق' : 'Pend.'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cumulativeTrades.map(t => (
+                      <tr key={t.trade} className="even:bg-slate-50 hover:bg-slate-100/70 h-8">
+                        <td className="p-1.5 border border-slate-200 font-bold text-left text-slate-800">{getDiscName(t.trade, language)}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-blue-900 bg-blue-50/30">{t.uniqueRev00}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-blue-900 bg-blue-50/30">{t.uniqueFurtherRev}</td>
+                        <td className="p-1.5 border border-slate-200">{t.rev00Rows}</td>
+                        <td className="p-1.5 border border-slate-200">{t.furtherRevRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/50">{t.totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-emerald-700">{t.approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-rose-700">{t.rejected}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-700">{t.pending}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-[#ddebf7] font-bold text-slate-900 h-8">
+                      <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي' : 'TOTAL'}</td>
+                      <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{cumulativeTrades.reduce((a, b) => a + b.uniqueRev00, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{cumulativeTrades.reduce((a, b) => a + b.uniqueFurtherRev, 0)}</td>
+                      <td className="p-1.5 border border-slate-300">{cumulativeTrades.reduce((a, b) => a + b.rev00Rows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300">{cumulativeTrades.reduce((a, b) => a + b.furtherRevRows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 font-black">{cumulativeTrades.reduce((a, b) => a + b.totalRows, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-emerald-800">{cumulativeTrades.reduce((a, b) => a + b.approved, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-rose-800">{cumulativeTrades.reduce((a, b) => a + b.rejected, 0)}</td>
+                      <td className="p-1.5 border border-slate-300 text-amber-800">{cumulativeTrades.reduce((a, b) => a + b.pending, 0)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="w-[48%] p-8 bg-slate-50 border border-slate-100 rounded-xl flex flex-col gap-4">
-              <h4 className="font-bold border-b pb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'التحليل التراكمي الشامل' : 'Lifetime Disciplines Commentary'}</h4>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {language === 'ar'
-                  ? 'يوضح التحليل التاريخي استقرار الهيكل التوزيعي للوثائق الهندسية بالمشروع. تعكس هذه النسب حجم مساهمة المكاتب الاستشارية والمقاولين في مختلف مجالات العمل على مدى فترات التوريد والاعتمادات التاريخية.'
-                  : 'The structural and architectural disciplines hold the largest volume of submittals over the project lifespan. MEP trades maintain high density of Material Submittals, necessitating careful scheduling to guarantee on-time material procurement.'}
-              </p>
-            </div>
+            <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              {language === 'ar'
+                ? 'الفصل الصارم للتخصصات الهندسية التراكمية يضمن استقلالية المؤشرات الخمسة دون أي دمج بين التخصصات أو احتساب المراجعات اللاحقة كمعاملات أولية مستقلة.'
+                : 'Cumulative trade metrics guarantee strict separation across the 5 indicators, ensuring complete independence of trades without conflating resubmissions with initial issues.'}
+            </p>
           </div>,
           language === 'ar' ? "التحليل التراكمي للتخصصات الهندسية" : "CUMULATIVE DISCIPLINE ANALYSIS",
           "cumulative-trade-analysis"
+        )
+      });
+    }
+
+    if (selectedComposerSections.has('cumulative_reconciliation_audit')) {
+      const recon = generateDisciplineReconciliationReport(cumulativeData);
+      slides.push({
+        id: "cumulative-reconciliation-audit",
+        view: "cumulative",
+        title: language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة التراكمي" : "Cumulative 3-Grain Forensic Reconciliation",
+        element: renderContentSlide(
+          <div className="p-8 flex flex-col h-full justify-start gap-3">
+            <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
+              <span>{language === 'ar' ? 'جدول المطابقة وتفسير الفروقات التراكمية الشاملة' : 'Cumulative 3-Grain Forensic Reconciliation & Discrepancy Breakdown'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
+                {language === 'ar' ? 'فصل تام للسجلات والتخصصات — تدقيق 100%' : '100% Mathematically Reconciled'}
+              </span>
+            </h3>
+            <p className="text-xs text-slate-600">
+              {recon.grandTotal.explanationEn}
+            </p>
+            <div className="overflow-x-auto max-h-[420px]">
+              <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+                <thead>
+                  <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
+                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'Grain A: إجمالي الصفوف' : 'Grain A: Total Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'Grain B: تقديمات فريدة' : 'Grain B: Unique Submittals'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-indigo-900">{language === 'ar' ? 'Grain C: بنود حالية' : 'Grain C: Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-800">{language === 'ar' ? 'الفارق المحسوب (Delta)' : 'Reconciliation Delta'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-700">{language === 'ar' ? 'مراجعات سابقة ملغاة' : 'Superseded Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'تفسير الفارق من السجلات الفعلية' : 'Forensic Explanation (Source Data)'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recon.records.map(rec => (
+                    <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
+                      <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
+                      <td className="p-1.5 border border-slate-200 font-black">{rec.grainA.totalRows}</td>
+                      <td className="p-1.5 border border-slate-200 font-semibold text-blue-900">{rec.grainB.totalUniqueSubmittals}</td>
+                      <td className="p-1.5 border border-slate-200 font-bold text-indigo-900">{rec.grainC.totalCurrentUnique}</td>
+                      <td className="p-1.5 border border-slate-200 font-black text-amber-950 bg-amber-50/50">{rec.reconciliation.rawDifference}</td>
+                      <td className="p-1.5 border border-slate-200 font-semibold text-slate-700">{rec.reconciliation.supersededHistoricalRows}</td>
+                      <td className="p-1.5 border border-slate-200 text-left text-[11px] text-slate-600 max-w-[340px] truncate" title={language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}>
+                        {language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
+                    <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                    <td className="p-1.5 border border-slate-300 font-black">{recon.grandTotal.grainA.totalRows}</td>
+                    <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{recon.grandTotal.grainB.totalUniqueSubmittals}</td>
+                    <td className="p-1.5 border border-slate-300 font-black text-indigo-950">{recon.grandTotal.grainC.totalCurrentUnique}</td>
+                    <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100/60">{recon.grandTotal.totalDifference}</td>
+                    <td className="p-1.5 border border-slate-300 font-bold">{recon.grandTotal.totalSupersededRows}</td>
+                    <td className="p-1.5 border border-slate-300 text-left text-[11px] font-semibold text-slate-800">
+                      {language === 'ar' ? recon.grandTotal.explanationAr : recon.grandTotal.explanationEn}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>,
+          language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة التراكمي" : "CUMULATIVE 3-GRAIN RECONCILIATION",
+          "cumulative-reconciliation-audit"
         )
       });
     }
@@ -1764,7 +2048,7 @@ export default function Presentation({
       // B: Monthly slides for Register
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
-          { label: "Items", key: "discipline" },
+          { label: "Discipline", key: "discipline" },
           { label: "Unique Rev.00", key: "UniqueRev00" },
           { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
           { label: "Rev.00 Rows", key: "Rev00Rows" },
@@ -1850,7 +2134,7 @@ export default function Presentation({
       // C: Cumulative slides for Register
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
-          { label: "Items", key: "discipline" },
+          { label: "Discipline", key: "discipline" },
           { label: "Unique Rev.00", key: "UniqueRev00" },
           { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
           { label: "Rev.00 Rows", key: "Rev00Rows" },

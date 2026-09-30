@@ -39,11 +39,11 @@ export function getPieLabelTranslator(name: string, language: 'ar' | 'en') {
 export function getColLabel(label: string, language: 'ar' | 'en') {
   if (language !== 'ar') return label;
   const lower = label.toUpperCase().trim();
-  if (lower === 'ITEMS' || lower === 'DISCIPLINE') return 'البنود / التخصص';
-  if (lower === 'UNIQUE REV.00' || lower === 'UNIQUE REV 00') return 'فريدة Rev.00';
-  if (lower === 'UNIQUE FURTHER REV.' || lower === 'UNIQUE FURTHER REV') return 'فريدة لاحقة';
-  if (lower === 'REV.00 ROWS' || lower === 'REV 00 ROWS') return 'صفوف Rev.00';
-  if (lower === 'FURTHER REV. ROWS' || lower === 'FURTHER REV ROWS') return 'صفوف لاحقة';
+  if (lower === 'ITEMS' || lower === 'DISCIPLINE') return 'التخصص الفني';
+  if (lower === 'UNIQUE REV.00' || lower === 'UNIQUE REV 00') return 'تقديمات فريدة Rev.00';
+  if (lower === 'UNIQUE FURTHER REV.' || lower === 'UNIQUE FURTHER REV') return 'تقديمات فريدة لاحقة';
+  if (lower === 'REV.00 ROWS' || lower === 'REV 00 ROWS') return 'صفوف مراجعة 00';
+  if (lower === 'FURTHER REV. ROWS' || lower === 'FURTHER REV ROWS') return 'صفوف مراجعات لاحقة';
   if (lower === 'TOTAL ROWS') return 'إجمالي الصفوف';
   if (lower === 'TOTAL SUBMITTALS' || lower === 'WORKLOAD' || lower === 'WORKLOAD SHEETS') return 'حجم العمل (الصفحات)';
   if (lower === 'TOTAL SHEETS REV.00' || lower === 'TOTAL REV.00' || lower === 'TOTAL REV00' || lower === 'REV 00' || lower === 'REV.00') return 'مراجعة 00';

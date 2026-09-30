@@ -144,6 +144,11 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       return {
         discipline: disc,
         TotalSubmittals: totalSubmittals,
+        UniqueRev00: s.totalSubmittalsRev0 || 0,
+        UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+        Rev00Rows: s.totalSheetsRev0 || 0,
+        FurtherRevRows: s.totalSheetsFurtherRev || 0,
+        TotalRows: s.totalSubmittedSheets || 0,
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
         Approved: s.approved,
@@ -160,6 +165,11 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
     const totalRow = {
       discipline: "TOTAL",
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
+      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+      Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+      FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+      TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
       Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
       FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
       Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),

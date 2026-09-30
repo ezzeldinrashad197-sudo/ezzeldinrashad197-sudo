@@ -502,23 +502,26 @@ export const generatePptxReport = async (
         
         // Columns variables
         let cols = [
-           { label: "Items", key: "discipline" },
-           { label: "Total Rev.00", key: "Rev00" },
-           { label: "Total Further Rev.", key: "FurtherRev" },
-           { label: "Total", key: "Total" },
+           { label: "Discipline", key: "discipline" },
+           { label: "Unique Rev.00", key: "UniqueRev00" },
+           { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+           { label: "Rev.00 Rows", key: "Rev00Rows" },
+           { label: "Further Rev. Rows", key: "FurtherRevRows" },
+           { label: "Total Rows", key: "TotalRows" },
            { label: "Approved", key: "Approved" },
-           { label: "Rejected", key: "RejectedOpen" },
+           { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },
         ];
         let pieLabels = ["Approved", "Rejected", "Pending"];
 
         if (bt === 'DOC') {
            cols = [
-              { label: "Items", key: "discipline" },
-              { label: "Workload", key: "TotalSubmittals" },
-              { label: "Rev.00", key: "Rev00" },
-              { label: "Further Rev.", key: "FurtherRev" },
-              { label: "Unique Items", key: "Total" },
+              { label: "Discipline", key: "discipline" },
+              { label: "Unique Rev.00", key: "UniqueRev00" },
+              { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+              { label: "Rev.00 Rows", key: "Rev00Rows" },
+              { label: "Further Rev. Rows", key: "FurtherRevRows" },
+              { label: "Total Rows", key: "TotalRows" },
               { label: "Approved", key: "Approved" },
               { label: "Rej. Open", key: "RejectedOpen" },
               { label: "Rej. Closed", key: "RejectedClosed" },
@@ -528,11 +531,12 @@ export const generatePptxReport = async (
            pieLabels = ["Approved", "Rej. Open", "Rej. Closed", "Pending"];
         } else if (bt === 'SDW' || bt === 'SHD' || bt === 'ABD') {
            cols = [
-              { label: "Items", key: "discipline" },
-              { label: "Total Submittals", key: "TotalSubmittals" },
-              { label: "Total Sheets Rev.00", key: "Rev00" },
-              { label: "Total Sheets Further Rev.", key: "FurtherRev" },
-              { label: "Total", key: "Total" },
+              { label: "Discipline", key: "discipline" },
+              { label: "Unique Rev.00", key: "UniqueRev00" },
+              { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+              { label: "Rev.00 Rows", key: "Rev00Rows" },
+              { label: "Further Rev. Rows", key: "FurtherRevRows" },
+              { label: "Total Rows", key: "TotalRows" },
               { label: "Approved", key: "Approved" },
               { label: "Rejected", key: "Rejected" },
               { label: "Pending", key: "Pending" },

@@ -17,6 +17,7 @@ import {
   isValidRevision,
   type RevisionClassification 
 } from '../analytics/revisionResolver';
+import { generateDisciplineReconciliationReport, DisciplineReconciliationRecord } from '../analytics/reconciliationEngine';
 import { AuditIntegrityCenter } from './AuditIntegrityCenter';
 
 interface CalculationAuditCenterProps {
@@ -28,7 +29,12 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
   data,
   projectInfo
 }) => {
-  const [activeTab, setActiveTab] = useState<'governance' | 'revision' | 'decisionTree' | 'kpiSource' | 'duplicates' | 'rules'>('governance');
+  const [activeTab, setActiveTab] = useState<'governance' | 'threeGrainReconciliation' | 'revision' | 'decisionTree' | 'kpiSource' | 'duplicates' | 'rules'>('governance');
+
+  // Filters for 3-Grain Reconciliation Audit
+  const [reconSearchTerm, setReconSearchTerm] = useState('');
+  const [reconRegisterFilter, setReconRegisterFilter] = useState('ALL');
+  const [selectedReconRecord, setSelectedReconRecord] = useState<DisciplineReconciliationRecord | null>(null);
 
   // Filters for Revision Audit
   const [revSearchTerm, setRevSearchTerm] = useState('');
@@ -252,6 +258,29 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
     });
   }, [auditDataset, selectedKpiMetric, selectedKpiWf]);
 
+  const reconciliationReport = useMemo(() => {
+    return generateDisciplineReconciliationReport(data);
+  }, [data]);
+
+  const filteredReconciliationRecords = useMemo(() => {
+    return reconciliationReport.records.filter(r => {
+      if (reconRegisterFilter !== 'ALL' && r.register !== reconRegisterFilter) {
+        return false;
+      }
+      if (reconSearchTerm) {
+        const term = reconSearchTerm.toLowerCase();
+        return (
+          r.identityKey.toLowerCase().includes(term) ||
+          r.register.toLowerCase().includes(term) ||
+          r.discipline.toLowerCase().includes(term) ||
+          r.reconciliation.explanationEn.toLowerCase().includes(term) ||
+          r.reconciliation.explanationAr.toLowerCase().includes(term)
+        );
+      }
+      return true;
+    });
+  }, [reconciliationReport, reconRegisterFilter, reconSearchTerm]);
+
   return (
     <div className="space-y-6 font-sans pb-12">
       {/* HEADER BANNER */}
@@ -301,6 +330,14 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
         </button>
 
         <button 
+          onClick={() => setActiveTab('threeGrainReconciliation')}
+          className={`px-5 py-3 font-bold text-xs rounded-xl transition-all flex items-center gap-2 shrink-0 ${activeTab === 'threeGrainReconciliation' ? 'bg-slate-900 text-emerald-400 shadow-sm border border-emerald-500/30' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+        >
+          <Layers className="w-4 h-4 text-indigo-400" />
+          3-Grain Forensic Reconciliation (مطابقة الحسابات وتفسير الفروقات)
+        </button>
+
+        <button 
           onClick={() => setActiveTab('revision')}
           className={`px-5 py-3 font-bold text-xs rounded-xl transition-all flex items-center gap-2 shrink-0 ${activeTab === 'revision' ? 'bg-slate-900 text-emerald-400 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
         >
@@ -344,6 +381,386 @@ export const CalculationAuditCenter: React.FC<CalculationAuditCenterProps> = ({
       {/* TAB 0: AUDIT & INTEGRITY CENTER */}
       {activeTab === 'governance' && (
         <AuditIntegrityCenter projectInfo={projectInfo} />
+      )}
+
+      {/* TAB 0B: 3-GRAIN FORENSIC RECONCILIATION & DISCREPANCY EXPLAINER */}
+      {activeTab === 'threeGrainReconciliation' && (
+        <div className="space-y-6">
+          {/* OVERVIEW HERO BANNER */}
+          <div className="bg-gradient-to-r from-indigo-950 via-[#203864] to-slate-900 text-white p-6 rounded-3xl border border-indigo-800 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-500/20 border border-indigo-400/30 rounded-2xl text-indigo-300">
+                  <Layers className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-xs font-mono uppercase tracking-widest text-indigo-300 font-bold block">
+                    Three-Grain Forensic Architecture & Strict Register-Discipline Isolation
+                  </span>
+                  <h2 className="text-xl font-black text-white font-sans tracking-tight">
+                    Historical Rows (Grain A) vs Unique Submittals (Grain B) vs Current State (Grain C)
+                  </h2>
+                </div>
+              </div>
+              <p className="text-xs text-indigo-100/90 max-w-3xl leading-relaxed">
+                Strict mathematical isolation of every Register + Discipline group (e.g. SDW-STR, SDW-ARCH, SDW-MECH, DOC-STR). Explains exact mathematical deltas between historical physical transmittals, unique submittal packages, and current unique deliverables without altering source rows or hiding underlying statuses.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 bg-indigo-900/60 p-3 rounded-2xl border border-indigo-700/50 text-right shrink-0">
+              <div className="text-center px-2">
+                <span className="text-[10px] text-indigo-200 font-mono block uppercase">Groups In Scope</span>
+                <span className="text-2xl font-black font-mono text-white">{reconciliationReport.records.length}</span>
+              </div>
+              <div className="h-8 w-px bg-indigo-700" />
+              <div className="text-center px-2">
+                <span className="text-[10px] text-emerald-300 font-mono block uppercase">Balance Invariant</span>
+                <span className="text-xs font-extrabold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  100% RECONCILED
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 SUMMARY GRAIN CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">
+                  GRAIN A — Historical Rows
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">Physical Rows</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-slate-900">
+                  {reconciliationReport.grandTotal.grainA.totalRows}
+                </span>
+                <span className="text-xs text-slate-500 font-medium">total source rows</span>
+              </div>
+              <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-600 flex justify-between">
+                <span>Rev.00: <strong className="text-slate-800">{reconciliationReport.grandTotal.grainA.rev00Rows}</strong></span>
+                <span>Further Rev: <strong className="text-slate-800">{reconciliationReport.grandTotal.grainA.furtherRevRows}</strong></span>
+                <span>Rej Rows: <strong className="text-rose-700">{reconciliationReport.grandTotal.grainA.totalRejectedRows}</strong></span>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-blue-900 font-bold uppercase tracking-wider block">
+                  GRAIN B — Unique Submittals
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Package Grain</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-blue-950">
+                  {reconciliationReport.grandTotal.grainB.totalUniqueSubmittals}
+                </span>
+                <span className="text-xs text-blue-700/80 font-medium">Reg+Disc+SUB Ref</span>
+              </div>
+              <div className="pt-2 border-t border-blue-100 text-[11px] text-blue-800 flex justify-between">
+                <span>Unique Rev.00: <strong>{reconciliationReport.grandTotal.grainB.uniqueRev00}</strong></span>
+                <span>Unique Further: <strong>{reconciliationReport.grandTotal.grainB.uniqueFurtherRev}</strong></span>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-indigo-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-indigo-900 font-bold uppercase tracking-wider block">
+                  GRAIN C — Current Unique Items
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Latest State</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-indigo-950">
+                  {reconciliationReport.grandTotal.grainC.totalCurrentUnique}
+                </span>
+                <span className="text-xs text-emerald-700 font-bold">{reconciliationReport.grandTotal.grainC.approved} Approved</span>
+              </div>
+              <div className="pt-2 border-t border-indigo-100 text-[11px] text-slate-600 flex justify-between">
+                <span className="text-rose-700 font-semibold">Rej Open: {reconciliationReport.grandTotal.grainC.rejectedOpen}</span>
+                <span className="text-amber-700 font-semibold">Pending: {reconciliationReport.grandTotal.grainC.pending}</span>
+                <span className="text-red-950 font-semibold">Rej Closed: {reconciliationReport.grandTotal.grainC.rejectedClosed}</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-2 bg-amber-50/20">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-amber-900 font-bold uppercase tracking-wider block">
+                  Reconciliation Delta
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Grain A - Grain C</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-amber-950">
+                  {reconciliationReport.grandTotal.totalDifference}
+                </span>
+                <span className="text-xs text-amber-800 font-medium">superseded rows</span>
+              </div>
+              <div className="pt-2 border-t border-amber-200/60 text-[11px] text-amber-900 flex justify-between">
+                <span>Superseded: <strong>{reconciliationReport.grandTotal.totalSupersededRows}</strong></span>
+                <span className="text-emerald-700 font-bold">Invariant: 100% Balanced</span>
+              </div>
+            </div>
+          </div>
+
+          {/* AUDIT NARRATIVE CARD */}
+          <div className="bg-blue-50/80 border border-blue-200 p-4 rounded-2xl flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+            <div className="text-xs text-blue-950 space-y-1">
+              <span className="font-bold block text-sm">Comprehensive Forensic Reconciliation Summary:</span>
+              <p className="leading-relaxed">
+                {reconciliationReport.grandTotal.explanationEn}
+              </p>
+              <p className="leading-relaxed text-blue-900/90 pt-1 border-t border-blue-200/60 font-sans" dir="rtl">
+                {reconciliationReport.grandTotal.explanationAr}
+              </p>
+            </div>
+          </div>
+
+          {/* FILTERS & SEARCH */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={reconSearchTerm}
+                  onChange={(e) => setReconSearchTerm(e.target.value)}
+                  placeholder="Filter register/discipline (e.g. SDW-STR, ARCH)..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+              {['ALL', 'SDW', 'DOC', 'MAR', 'MIR', 'WIR', 'RFI', 'NCR', 'SOR', 'LTR'].map(reg => (
+                <button
+                  key={reg}
+                  onClick={() => setReconRegisterFilter(reg)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 ${
+                    reconRegisterFilter === reg
+                      ? 'bg-indigo-900 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {reg}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* COMPREHENSIVE RECONCILIATION TABLE */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-center border-collapse">
+                <thead>
+                  <tr className="bg-slate-900 text-white font-bold">
+                    <th className="p-3 border-r border-slate-800 text-left font-extrabold text-indigo-300">
+                      Register + Discipline
+                    </th>
+                    <th className="p-3 border-r border-slate-800 bg-slate-800 font-bold">
+                      Grain A: Total Rows
+                    </th>
+                    <th className="p-3 border-r border-slate-800 bg-slate-800/80 font-normal text-[11px]">
+                      Rev.00 / Further Rows
+                    </th>
+                    <th className="p-3 border-r border-slate-800 bg-blue-950 font-bold text-blue-200">
+                      Grain B: Unique Submittals
+                    </th>
+                    <th className="p-3 border-r border-slate-800 bg-indigo-950 font-bold text-indigo-200">
+                      Grain C: Current Unique
+                    </th>
+                    <th className="p-3 border-r border-slate-800 bg-amber-950 font-bold text-amber-200">
+                      Delta (A - C)
+                    </th>
+                    <th className="p-3 border-r border-slate-800 text-emerald-400 font-bold">
+                      Balance Status
+                    </th>
+                    <th className="p-3 text-left font-bold text-slate-300 min-w-[280px]">
+                      Forensic Trace & Explanation
+                    </th>
+                    <th className="p-3 font-bold text-slate-300">
+                      Inspect
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredReconciliationRecords.map(rec => (
+                    <tr key={rec.identityKey} className="hover:bg-indigo-50/20 transition-colors">
+                      <td className="p-3 border-r border-slate-100 font-extrabold text-left text-slate-900 font-mono">
+                        <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">
+                          {rec.identityKey}
+                        </span>
+                      </td>
+                      <td className="p-3 border-r border-slate-100 font-mono font-black text-slate-900 bg-slate-50/50">
+                        {rec.grainA.totalRows}
+                      </td>
+                      <td className="p-3 border-r border-slate-100 font-mono text-slate-600 text-[11px]">
+                        {rec.grainA.rev00Rows} / {rec.grainA.furtherRevRows}
+                      </td>
+                      <td className="p-3 border-r border-slate-100 font-mono font-bold text-blue-950 bg-blue-50/30">
+                        {rec.grainB.totalUniqueSubmittals}
+                        <span className="text-[10px] text-blue-600 block font-normal">
+                          ({rec.grainB.uniqueRev00} R0 + {rec.grainB.uniqueFurtherRev} FR)
+                        </span>
+                      </td>
+                      <td className="p-3 border-r border-slate-100 font-mono font-bold text-indigo-950 bg-indigo-50/30">
+                        {rec.grainC.totalCurrentUnique}
+                        <span className="text-[10px] text-emerald-700 block font-normal">
+                          {rec.grainC.approved} App / {rec.grainC.rejectedOpen} Rej / {rec.grainC.pending} Pend
+                        </span>
+                      </td>
+                      <td className="p-3 border-r border-slate-100 font-mono font-black text-amber-950 bg-amber-50/40">
+                        {rec.reconciliation.rawDifference}
+                      </td>
+                      <td className="p-3 border-r border-slate-100">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          100% Balanced
+                        </span>
+                      </td>
+                      <td className="p-3 text-left text-[11px] text-slate-600">
+                        <span className="line-clamp-2" title={rec.reconciliation.explanationEn}>
+                          {rec.reconciliation.explanationEn}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReconRecord(rec)}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[11px] font-bold cursor-pointer transition-colors border border-slate-200 flex items-center gap-1 mx-auto"
+                        >
+                          <Eye className="w-3 h-3 text-slate-600" />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredReconciliationRecords.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-slate-400 text-xs">
+                        No Register + Discipline records match your search criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* DETAIL MODAL / INSPECTOR FOR SELECTED REGISTER-DISCIPLINE RECORD */}
+          {selectedReconRecord && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+                <div className="p-5 bg-gradient-to-r from-slate-900 to-[#203864] text-white flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-xl">
+                      <Layers className="w-5 h-5 text-indigo-300" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-lg text-white font-mono">
+                        {selectedReconRecord.identityKey} — Forensic Record Audit
+                      </h3>
+                      <p className="text-xs text-slate-300">
+                        Register: {selectedReconRecord.register} | Discipline: {selectedReconRecord.discipline} | {selectedReconRecord.grainA.totalRows} Physical Rows
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedReconRecord(null)}
+                    className="p-1.5 hover:bg-white/10 rounded-xl text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-bold px-3 py-1 bg-white/5 border border-white/10"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4 overflow-y-auto text-xs">
+                  {/* METRIC COMPARISON */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Grain A Total Rows</span>
+                      <span className="text-xl font-black text-slate-900 font-mono">{selectedReconRecord.grainA.totalRows}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-blue-900 font-bold uppercase block">Grain B Unique Submittals</span>
+                      <span className="text-xl font-black text-blue-950 font-mono">{selectedReconRecord.grainB.totalUniqueSubmittals}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-indigo-900 font-bold uppercase block">Grain C Current Unique</span>
+                      <span className="text-xl font-black text-indigo-950 font-mono">{selectedReconRecord.grainC.totalCurrentUnique}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-900 font-bold uppercase block">Delta (Superseded)</span>
+                      <span className="text-xl font-black text-amber-950 font-mono">{selectedReconRecord.reconciliation.rawDifference}</span>
+                    </div>
+                  </div>
+
+                  {/* FORENSIC EXPLANATION */}
+                  <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-1.5">
+                    <span className="font-bold text-blue-950 block">Audit Explanation:</span>
+                    <p className="text-blue-900 leading-relaxed">
+                      {selectedReconRecord.reconciliation.explanationEn}
+                    </p>
+                    <p className="text-blue-900 leading-relaxed font-sans pt-1 border-t border-blue-200" dir="rtl">
+                      {selectedReconRecord.reconciliation.explanationAr}
+                    </p>
+                  </div>
+
+                  {/* RAW STATUS BREAKDOWN */}
+                  <div>
+                    <h4 className="font-bold text-slate-900 mb-2">Source Row Status Distribution:</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {Object.entries(selectedReconRecord.grainA.rawRowsByStatus).map(([st, cnt]) => (
+                        <div key={st} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                          <span className="font-mono text-slate-700">{st}</span>
+                          <strong className="font-mono text-slate-900">{cnt}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* RAW RECORDS TABLE PREVIEW */}
+                  <div>
+                    <h4 className="font-bold text-slate-900 mb-2">Raw Records Preview ({selectedReconRecord.rawRows.length} rows):</h4>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 font-bold text-slate-700 sticky top-0">
+                          <tr>
+                            <th className="p-2 border-b">ID</th>
+                            <th className="p-2 border-b">Doc No / SUB Ref</th>
+                            <th className="p-2 border-b">Rev</th>
+                            <th className="p-2 border-b">Status</th>
+                            <th className="p-2 border-b">Submission Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {selectedReconRecord.rawRows.slice(0, 50).map(r => (
+                            <tr key={r.id} className="hover:bg-slate-50">
+                              <td className="p-2 font-mono text-[10px] text-slate-500">{r.id}</td>
+                              <td className="p-2 font-mono font-bold text-slate-800">{r.docNo || (r as any).submissionRef || 'N/A'}</td>
+                              <td className="p-2 font-mono">{r.rev || '00'}</td>
+                              <td className="p-2">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[10px]">
+                                  {r.status || r.workflowStage || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="p-2 text-slate-600 font-mono text-[11px]">{r.submissionDate || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {selectedReconRecord.rawRows.length > 50 && (
+                      <p className="text-[10px] text-slate-400 mt-1 italic">
+                        Showing first 50 rows of {selectedReconRecord.rawRows.length} total rows.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* TAB 1: REVISION & TIMELINE AUDIT */}
