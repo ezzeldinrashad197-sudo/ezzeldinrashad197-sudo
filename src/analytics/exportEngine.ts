@@ -15,6 +15,7 @@ import {
   addRegisterBreakdownSlide,
   addRecommendationsSlide
 } from "./exportHelpers";
+import { calculateTableLayout } from "./presentationLayoutEngine";
 
 export const generatePptxReport = async (
     data: SubmittalRow[], 
@@ -504,13 +505,14 @@ export const generatePptxReport = async (
         let cols = [
            { label: "Discipline", key: "discipline" },
            { label: "Unique Rev.00", key: "UniqueRev00" },
-           { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+           { label: "Unique Further", key: "UniqueFurtherRev" },
            { label: "Rev.00 Rows", key: "Rev00Rows" },
-           { label: "Further Rev. Rows", key: "FurtherRevRows" },
+           { label: "Further Rev.", key: "FurtherRevRows" },
            { label: "Total Rows", key: "TotalRows" },
            { label: "Approved", key: "Approved" },
            { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },
+           { label: "Superseded", key: "Superseded" },
         ];
         let pieLabels = ["Approved", "Rejected", "Pending"];
 
@@ -518,28 +520,29 @@ export const generatePptxReport = async (
            cols = [
               { label: "Discipline", key: "discipline" },
               { label: "Unique Rev.00", key: "UniqueRev00" },
-              { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+              { label: "Unique Further", key: "UniqueFurtherRev" },
               { label: "Rev.00 Rows", key: "Rev00Rows" },
-              { label: "Further Rev. Rows", key: "FurtherRevRows" },
+              { label: "Further Rev.", key: "FurtherRevRows" },
               { label: "Total Rows", key: "TotalRows" },
               { label: "Approved", key: "Approved" },
               { label: "Rej. Open", key: "RejectedOpen" },
               { label: "Rej. Closed", key: "RejectedClosed" },
-              { label: "Total Rej.", key: "Rejected" },
               { label: "Pending", key: "Pending" },
+              { label: "Superseded", key: "Superseded" },
            ];
            pieLabels = ["Approved", "Rej. Open", "Rej. Closed", "Pending"];
         } else if (bt === 'SDW' || bt === 'SHD' || bt === 'ABD') {
            cols = [
               { label: "Discipline", key: "discipline" },
               { label: "Unique Rev.00", key: "UniqueRev00" },
-              { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
+              { label: "Unique Further", key: "UniqueFurtherRev" },
               { label: "Rev.00 Rows", key: "Rev00Rows" },
-              { label: "Further Rev. Rows", key: "FurtherRevRows" },
+              { label: "Further Rev.", key: "FurtherRevRows" },
               { label: "Total Rows", key: "TotalRows" },
               { label: "Approved", key: "Approved" },
               { label: "Rejected", key: "Rejected" },
               { label: "Pending", key: "Pending" },
+              { label: "Superseded", key: "Superseded" },
            ];
         }
 
@@ -584,23 +587,15 @@ export const generatePptxReport = async (
             let slideA = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
             addHeaderAndFooter(pres, slideA, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options);
             
-            // Add Table
-            const colW = cols.length === 10
-                ? [0.85, 0.44, 0.40, 0.44, 0.44, 0.42, 0.45, 0.45, 0.45, 0.40]
-                : (cols.length === 8
-                    ? [1.0, 0.55, 0.55, 0.55, 0.45, 0.5, 0.5, 0.5]
-                    : (cols.length === 7 
-                        ? [1.3, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55] 
-                        : (cols.length === 6
-                            ? [1.14, 0.70, 0.70, 0.70, 0.70, 0.70]
-                            : [1.6, 1.0, 1.0, 1.0])));
+            // Add Table Layout Engine
+            const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
 
             if (statsData.stats.length <= 10) {
                 const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace);
                 slideA.addTable(tableRows, { 
-                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
-                    colW: colW,
-                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    colW: layout.colWidths,
+                    color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
             } else {
@@ -608,9 +603,9 @@ export const generatePptxReport = async (
                 const firstChunk = statsData.stats.slice(0, 10);
                 const tableRowsA = buildTableData(firstChunk, null, cols, options?.fontFace);
                 slideA.addTable(tableRowsA, { 
-                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
-                    colW: colW,
-                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    colW: layout.colWidths,
+                    color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
 
@@ -622,9 +617,9 @@ export const generatePptxReport = async (
 
                 const tableRowsCont = buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace);
                 slideACont.addTable(tableRowsCont, { 
-                    x: 0.35, y: 1.25, w: cols.length === 10 ? 4.74 : (cols.length === 8 ? 4.8 : 4.6), 
-                    colW: colW,
-                    color: "333333", fontSize: cols.length === 10 ? 6.5 : (cols.length === 8 ? 7.5 : 8.5),
+                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    colW: layout.colWidths,
+                    color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
             }
@@ -636,22 +631,22 @@ export const generatePptxReport = async (
                 {
                     name: chartVal1Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.Rev00) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.Rev00Rows || s.Rev00) || 0)
                 },
                 {
                     name: chartVal2Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.FurtherRev) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.FurtherRevRows || s.FurtherRev) || 0)
                 }
             ];
             
             slideA.addChart(pres.ChartType.bar, barChartData, {
-                x: 5.15, y: 1.25, w: 4.45, h: 3.65,
+                x: 5.95, y: 1.25, w: 3.7, h: 3.65,
                 barDir: "col",
                 barGrouping: "stacked",
                 showLegend: true,
                 legendPos: "b",
-                legendFontSize: 8,
+                legendFontSize: 8.5,
                 catAxisLabelFontSize: 8.5,
                 chartColors: ["2F75B5", "BDD7EE"],
                 valGridLine: { color: "E2E8F0" },

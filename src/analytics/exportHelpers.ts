@@ -2,6 +2,7 @@ import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
 import { processNCRData } from "./ncr/ncrEngine";
+import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
 // Compile statistics logic extracted from exportEngine
 export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
@@ -141,6 +142,10 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
             ? totalWorkload
             : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalWorkload));
 
+      const tRows = s.totalSubmittedSheets || 0;
+      const curUniq = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
+      const superRows = Math.max(0, tRows - curUniq);
+
       return {
         discipline: disc,
         TotalSubmittals: totalSubmittals,
@@ -148,7 +153,9 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
         Rev00Rows: s.totalSheetsRev0 || 0,
         FurtherRevRows: s.totalSheetsFurtherRev || 0,
-        TotalRows: s.totalSubmittedSheets || 0,
+        TotalRows: tRows,
+        Superseded: superRows,
+        CurrentUnique: curUniq,
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
         Approved: s.approved,
@@ -170,6 +177,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
       FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
       TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
+      Superseded: stats.reduce((acc, curr) => acc + Number(curr.Superseded || 0), 0),
+      CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
       Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
       FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
       Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
@@ -432,7 +441,8 @@ export const buildTableData = (stats: any[], totalRow: any, cols: {label: string
     
     const row2: any[] = [];
     cols.forEach(c => {
-        row2.push({ text: c.label, options: { bold: true, fill: "2F75B5", color: "FFFFFF", align: "center", fontFace: fontFace } });
+        const canonicalText = getCanonicalHeader(c.label);
+        row2.push({ text: canonicalText, options: { bold: true, fill: "2F75B5", color: "FFFFFF", align: "center", fontFace: fontFace } });
     });
     rows.push(row2);
     
@@ -1218,9 +1228,9 @@ export const addRegisterBreakdownSlide = (
         }
 
         slide.addTable(tableRows, {
-            x: 0.3, y: 1.0, w: 9.4,
-            colW: [1.3, 0.85, 0.6, 0.65, 0.7, 0.7, 0.7, 0.65, 0.75, 0.65, 0.6, 0.6, 0.6],
-            fontSize: 6.5,
+            x: 0.3, y: 1.05, w: 9.4,
+            colW: [1.25, 0.75, 0.60, 0.65, 0.65, 0.65, 0.65, 0.60, 0.65, 0.65, 0.65, 0.65, 0.60],
+            fontSize: 8.5,
             border: { type: "solid", pt: 0.5, color: "CBD5E1" }
         });
     }
