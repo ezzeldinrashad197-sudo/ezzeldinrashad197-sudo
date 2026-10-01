@@ -431,18 +431,36 @@ export const addDividerSlide = (
 };
 
 // Extracted Table Data cell map builder
-export const buildTableData = (stats: any[], totalRow: any, cols: {label: string, key: string}[], fontFace: string = "Arial") => {
+export const buildTableData = (
+    stats: any[], 
+    totalRow: any, 
+    cols: {label: string, key: string}[], 
+    fontFace: string = "Arial",
+    headerFontSize: number = 8.5,
+    language: 'ar' | 'en' = 'en',
+    bodyFontSize: number = 9.5
+) => {
     const rows: any[] = [];
     
     const row1: any[] = [
-        { text: "STATUS", options: { bold: true, fill: "203864", color: "FFFFFF", align: "center", fontFace: fontFace, colspan: cols.length } }
+        { text: language === 'ar' ? "سجل الحالات وتوزيع المراجعات" : "STATUS & REVISION WORKLOAD", options: { bold: true, fill: "203864", color: "FFFFFF", align: "center", fontFace: fontFace, fontSize: 9.5, colspan: cols.length } }
     ];
     rows.push(row1);
     
     const row2: any[] = [];
     cols.forEach(c => {
-        const canonicalText = getCanonicalHeader(c.label);
-        row2.push({ text: canonicalText, options: { bold: true, fill: "2F75B5", color: "FFFFFF", align: "center", fontFace: fontFace } });
+        const canonicalText = getCanonicalHeader(c.label, language);
+        row2.push({ 
+            text: canonicalText, 
+            options: { 
+                bold: true, 
+                fill: "2F75B5", 
+                color: "FFFFFF", 
+                align: "center", 
+                fontFace: fontFace,
+                fontSize: headerFontSize
+            } 
+        });
     });
     rows.push(row2);
     
@@ -458,11 +476,12 @@ export const buildTableData = (stats: any[], totalRow: any, cols: {label: string
                 text: textVal, 
                 options: { 
                     fill: rowBg, 
-                    align: "center", 
+                    align: isFirst ? "left" : "center", 
                     valign: "middle",
                     color: "333333",
-                    bold: isFirst || col.key === "Total",
-                    fontFace: fontFace
+                    bold: isFirst || col.key === "Total" || col.key === "TotalRows",
+                    fontFace: fontFace,
+                    fontSize: bodyFontSize
                 } 
             });
         });
@@ -471,7 +490,8 @@ export const buildTableData = (stats: any[], totalRow: any, cols: {label: string
     
     if (totalRow) {
         const totalR: any[] = [];
-        cols.forEach((col) => {
+        cols.forEach((col, cIdx) => {
+            const isFirst = cIdx === 0;
             const textVal = String(totalRow[col.key] !== undefined ? totalRow[col.key] : "");
             totalR.push({
                 text: textVal,
@@ -479,9 +499,10 @@ export const buildTableData = (stats: any[], totalRow: any, cols: {label: string
                     fill: "DDEBF7",
                     color: "203864",
                     bold: true,
-                    align: "center",
+                    align: isFirst ? "left" : "center",
                     valign: "middle",
-                    fontFace: fontFace
+                    fontFace: fontFace,
+                    fontSize: bodyFontSize
                 }
             });
         });
@@ -1111,19 +1132,19 @@ export const addRegisterBreakdownSlide = (
         : (isArabic ? "جدول تفصيل السجلات الهندسية (تراكمي)" : "CUMULATIVE PRIMARY DETAIL REGISTER BREAKDOWN");
 
     const headers = [
-        { text: isArabic ? "نوع المعاملة" : "Log Type", options: { bold: true, fill: "203864", color: "FFFFFF", align: "left" } },
-        { text: isArabic ? "الأولوية" : "Priority", options: { bold: true, fill: "203864", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "مراجعة 00" : "Rev 00", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "مراجعات لاحقة" : "Rev >00", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "إجمالي الصفوف" : "Total Rows", options: { bold: true, fill: "1E293B", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "معتمد/مغلق (صفوف)" : "Row App/Closed", options: { bold: true, fill: "065F46", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "مرفوض/مفتوح (صفوف)" : "Row Rej/Open", options: { bold: true, fill: "991B1B", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "معلق (صفوف)" : "Row Pending", options: { bold: true, fill: "92400E", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "إجمالي البنود الفريدة" : "Total Unique", options: { bold: true, fill: "1E3A8A", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "معتمد/مغلق حالي" : "Cur. App/Closed", options: { bold: true, fill: "047857", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "مرفوض مفتوح حالي" : "Cur. Rej Open", options: { bold: true, fill: "BE123C", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "مرفوض مغلق حالي" : "Cur. Rej Closed", options: { bold: true, fill: "881337", color: "FFFFFF", align: "center" } },
-        { text: isArabic ? "معلق حالي" : "Cur. Pending", options: { bold: true, fill: "D97706", color: "FFFFFF", align: "center" } }
+        { text: isArabic ? "نوع المعاملة" : "Log Type", options: { bold: true, fill: "203864", color: "FFFFFF", align: "left", fontSize: 9 } },
+        { text: isArabic ? "الأولوية" : "Priority", options: { bold: true, fill: "203864", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "مراجعة\n00" : "Rev.00\nRows", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "مراجعات\nلاحقة" : "Further\nRev.", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "إجمالي\nالصفوف" : "Total\nRows", options: { bold: true, fill: "1E293B", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "معتمد\nصفوف" : "Row\nApp/Cls", options: { bold: true, fill: "065F46", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "مرفوض\nصفوف" : "Row\nRej/Opn", options: { bold: true, fill: "991B1B", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "معلق\nصفوف" : "Row\nPend.", options: { bold: true, fill: "92400E", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "البنود\nالفريدة" : "Total\nUnique", options: { bold: true, fill: "1E3A8A", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "معتمد\nحالي" : "Cur.\nAppr.", options: { bold: true, fill: "047857", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "مرفوض\nمفتوح" : "Cur. Rej\nOpen", options: { bold: true, fill: "BE123C", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "مرفوض\nمغلق" : "Cur. Rej\nClosed", options: { bold: true, fill: "881337", color: "FFFFFF", align: "center", fontSize: 9 } },
+        { text: isArabic ? "معلق\nحالي" : "Cur.\nPend.", options: { bold: true, fill: "D97706", color: "FFFFFF", align: "center", fontSize: 9 } }
     ];
 
     let sumRev0 = 0;
@@ -1228,9 +1249,9 @@ export const addRegisterBreakdownSlide = (
         }
 
         slide.addTable(tableRows, {
-            x: 0.3, y: 1.05, w: 9.4,
-            colW: [1.25, 0.75, 0.60, 0.65, 0.65, 0.65, 0.65, 0.60, 0.65, 0.65, 0.65, 0.65, 0.60],
-            fontSize: 8.5,
+            x: 0.28, y: 1.10, w: 9.45,
+            colW: [1.35, 0.75, 0.62, 0.68, 0.68, 0.68, 0.68, 0.62, 0.68, 0.68, 0.68, 0.68, 0.62],
+            fontSize: 9.0,
             border: { type: "solid", pt: 0.5, color: "CBD5E1" }
         });
     }
@@ -1316,3 +1337,32 @@ export const addRecommendationsSlide = (
         });
     });
 };
+
+export function getRegisterTitle(bt: string, language: 'ar' | 'en' = 'en'): { name: string; subtitle: string } {
+    const titles: Record<string, { ar: string; en: string; subtitleAr: string; subtitleEn: string }> = {
+        SDW: { ar: 'المخططات التنفيذية (Shop Drawings)', en: 'Shop Drawings Register', subtitleAr: 'سجل اعتمادات ومراجعات مخططات الورشة التنفيذية', subtitleEn: 'Shop Drawing Approval & Engineering Review' },
+        SHD: { ar: 'المخططات التنفيذية (Shop Drawings)', en: 'Shop Drawings Register', subtitleAr: 'سجل اعتمادات ومراجعات مخططات الورشة التنفيذية', subtitleEn: 'Shop Drawing Approval & Engineering Review' },
+        ABD: { ar: 'مخططات كما تم التنفيذ (As-Built Drawings)', en: 'As-Built Drawings Register', subtitleAr: 'سجل اعتمادات المخططات المنفذة على الطبيعة', subtitleEn: 'As-Built Drawings & Record Documentation' },
+        WIR: { ar: 'طلبات فحص الأعمال (Work Inspection Requests)', en: 'Work Inspection Requests (WIR)', subtitleAr: 'سجل استلام وفحص الأعمال بالموقع', subtitleEn: 'Site Works Inspection & Approvals' },
+        MIR: { ar: 'طلبات فحص المواد (Material Inspection Requests)', en: 'Material Inspection Requests (MIR)', subtitleAr: 'سجل فحص واستلام المواد الموردة للموقع', subtitleEn: 'Material Delivery & Site Inspection' },
+        MAR: { ar: 'اعتمادات المواد (Material Approval Requests)', en: 'Material Approval Requests (MAR)', subtitleAr: 'سجل اعتمادات وتوريد المواد والعينات', subtitleEn: 'Material Submittal & Vendor Approval' },
+        RFI: { ar: 'طلبات الاستفسار الفني (Requests for Information)', en: 'Requests for Information (RFI)', subtitleAr: 'سجل الاستفسارات الفنية والتوضيحات الهندسية', subtitleEn: 'Technical Requests & Clarifications' },
+        NCR: { ar: 'تقارير عدم المطابقة (Non-Conformance Reports)', en: 'Non-Conformance Reports (NCR)', subtitleAr: 'سجل تقارير عدم المطابقة والإجراءات التصحيحية', subtitleEn: 'Quality Non-Conformance & Corrective Actions' },
+        SOR: { ar: 'ملاحظات الموقع الميدانية (Site Observation Reports)', en: 'Site Observation Reports (SOR)', subtitleAr: 'سجل ملاحظات السلامة والجودة بالموقع', subtitleEn: 'Site Safety & Quality Observations' },
+        DOC: { ar: 'الوثائق والمستندات الفنية (Technical Submittals)', en: 'Document Submittals (DOC)', subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية', subtitleEn: 'Technical Documents & Transmittals' },
+        QS: { ar: 'حصر الكميات (Quantity Surveying)', en: 'Quantity Survey Submittals (QS)', subtitleAr: 'سجل حصر الكميات والمستخلصات', subtitleEn: 'Quantity Survey & BOQ Submittals' },
+        LTR: { ar: 'المراسلات والخطابات الرسمية (Correspondence)', en: 'Project Correspondence (LTR)', subtitleAr: 'سجل الخطابات والمراسلات المتبادلة', subtitleEn: 'Project Letters & Communications' }
+    };
+
+    if (titles[bt]) {
+        return {
+            name: language === 'ar' ? titles[bt].ar : titles[bt].en,
+            subtitle: language === 'ar' ? titles[bt].subtitleAr : titles[bt].subtitleEn
+        };
+    }
+
+    return {
+        name: bt,
+        subtitle: language === 'ar' ? `سجل هندسي: ${bt}` : `Engineering Register: ${bt}`
+    };
+}

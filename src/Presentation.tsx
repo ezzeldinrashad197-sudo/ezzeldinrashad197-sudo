@@ -1464,61 +1464,125 @@ export default function Presentation({
       slides.push({
         id: "monthly-reconciliation-audit",
         view: "monthly",
-        title: language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة للشهر" : "Monthly 3-Grain Forensic Reconciliation",
+        title: language === 'ar' ? "توزيع حالات العمل ومطابقة السجلات للشهر" : "Monthly Workload & Status Distribution",
         element: renderContentSlide(
           <div className="p-8 flex flex-col h-full justify-start gap-3">
             <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
-              <span>{language === 'ar' ? 'جدول المطابقة وتفسير الفروقات بين أحجام العمل والبنية الفريدة (شهري)' : 'Monthly 3-Grain Forensic Reconciliation & Discrepancy Breakdown'}</span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                {language === 'ar' ? 'فصل تام للسجلات والتخصصات — تدقيق 100%' : '100% Mathematically Reconciled'}
+              <span>{language === 'ar' ? 'توزيع حالات العمل والسجلات الهندسية (شهري)' : 'Monthly Workload & Status Distribution Across Disciplines'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">
+                {language === 'ar' ? 'مطابقة معادلة السجلات 100%' : '100% SSOT Invariant Balanced'}
               </span>
             </h3>
-            <p className="text-xs text-slate-600">
-              {recon.grandTotal.explanationEn}
-            </p>
+
+            {/* Executive Equation Banner */}
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#203864]">
+                  {language === 'ar' ? 'معادلة توازن السجلات:' : 'Register Balance Invariant:'}
+                </span>
+                <span className="font-semibold text-slate-800">
+                  {language === 'ar'
+                    ? `إجمالي الصفوف (${recon.grandTotal.grainA.totalRows}) = البنود الفريدة (${recon.grandTotal.grainC.totalCurrentUnique}) + المراجعات السابقة الملغاة (${recon.grandTotal.totalSupersededRows})`
+                    : `Total Historical Rows (${recon.grandTotal.grainA.totalRows}) = Current Unique Items (${recon.grandTotal.grainC.totalCurrentUnique}) + Superseded Revision Rows (${recon.grandTotal.totalSupersededRows})`}
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 italic">
+                {language === 'ar'
+                  ? 'تمثل الصفوف الملغاة (Superseded) مراجعات تاريخية سابقة لا تؤثر على البنود الفريدة الحالية'
+                  : 'Superseded rows represent historical revision iterations preserved for physical audit trace.'}
+              </span>
+            </div>
+
             <div className="overflow-x-auto max-h-[420px]">
               <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'Grain A: إجمالي الصفوف' : 'Grain A: Total Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'Grain B: تقديمات فريدة' : 'Grain B: Unique Submittals'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-indigo-900">{language === 'ar' ? 'Grain C: بنود حالية' : 'Grain C: Current Unique'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-amber-800">{language === 'ar' ? 'الفارق المحسوب (Delta)' : 'Reconciliation Delta'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-700">{language === 'ar' ? 'مراجعات سابقة ملغاة' : 'Superseded Rev. Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'تفسير الفارق من السجلات الفعلية' : 'Forensic Explanation (Source Data)'}</th>
+                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-rose-800">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-red-900">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-700">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200">
+                      <div className="flex flex-col items-center">
+                        <span>{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
+                        <span className="text-[9px] font-normal text-amber-300">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
+                      </div>
+                    </th>
+                    <th className="p-2 border border-slate-300 font-black bg-slate-800">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-blue-900">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recon.records.map(rec => (
-                    <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
-                      <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
-                      <td className="p-1.5 border border-slate-200 font-black">{rec.grainA.totalRows}</td>
-                      <td className="p-1.5 border border-slate-200 font-semibold text-blue-900">{rec.grainB.totalUniqueSubmittals}</td>
-                      <td className="p-1.5 border border-slate-200 font-bold text-indigo-900">{rec.grainC.totalCurrentUnique}</td>
-                      <td className="p-1.5 border border-slate-200 font-black text-amber-900 bg-amber-50/50">{rec.reconciliation.rawDifference}</td>
-                      <td className="p-1.5 border border-slate-200 font-semibold text-slate-700">{rec.reconciliation.supersededHistoricalRows}</td>
-                      <td className="p-1.5 border border-slate-200 text-left text-[11px] text-slate-600 max-w-[340px] truncate" title={language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}>
-                        {language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
-                    <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
-                    <td className="p-1.5 border border-slate-300 font-black">{recon.grandTotal.grainA.totalRows}</td>
-                    <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{recon.grandTotal.grainB.totalUniqueSubmittals}</td>
-                    <td className="p-1.5 border border-slate-300 font-black text-indigo-950">{recon.grandTotal.grainC.totalCurrentUnique}</td>
-                    <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100/60">{recon.grandTotal.totalDifference}</td>
-                    <td className="p-1.5 border border-slate-300 font-bold">{recon.grandTotal.totalSupersededRows}</td>
-                    <td className="p-1.5 border border-slate-300 text-left text-[11px] font-semibold text-slate-800">
-                      {language === 'ar' ? recon.grandTotal.explanationAr : recon.grandTotal.explanationEn}
-                    </td>
-                  </tr>
+                  {recon.records.map(rec => {
+                    const approved = rec.grainC.approved;
+                    const rejOpen = rec.grainC.rejectedOpen;
+                    const rejClosed = rec.grainC.rejectedClosed;
+                    const pending = rec.grainC.pending;
+                    const superseded = rec.reconciliation.supersededHistoricalRows;
+                    const totalRows = rec.grainA.totalRows;
+                    const currentUnique = rec.grainC.totalCurrentUnique;
+                    const isBalanced = (currentUnique + superseded) === totalRows;
+
+                    return (
+                      <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
+                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800">{approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700">{rejOpen}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900">{rejClosed}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800">{pending}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50">
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs">
+                            {superseded}
+                          </span>
+                        </td>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60">{totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60">{currentUnique}</td>
+                        <td className="p-1.5 border border-slate-200 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
+                            {isBalanced ? '100% OK' : 'Check Delta'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(() => {
+                    const totApp = recon.grandTotal.grainC.approved;
+                    const totRejOpen = recon.grandTotal.grainC.rejectedOpen;
+                    const totRejClosed = recon.grandTotal.grainC.rejectedClosed;
+                    const totPending = recon.grandTotal.grainC.pending;
+                    const totSup = recon.grandTotal.totalSupersededRows;
+                    const totRows = recon.grandTotal.grainA.totalRows;
+                    const totCur = recon.grandTotal.grainC.totalCurrentUnique;
+                    const totBalanced = (totCur + totSup) === totRows;
+
+                    return (
+                      <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
+                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900">{totApp}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-rose-900">{totRejOpen}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-red-950">{totRejClosed}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-900">{totPending}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100">
+                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black">
+                            {totSup}
+                          </span>
+                        </td>
+                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80">{totRows}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100">{totCur}</td>
+                        <td className="p-1.5 border border-slate-300 text-center">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400">
+                            {totBalanced ? '100% Balanced' : 'Check Delta'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
           </div>,
-          language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة للشهر" : "MONTHLY 3-GRAIN RECONCILIATION",
+          language === 'ar' ? "توزيع حالات العمل ومطابقة السجلات للشهر" : "MONTHLY WORKLOAD & STATUS",
           "monthly-reconciliation-audit"
         )
       });
@@ -1960,61 +2024,125 @@ export default function Presentation({
       slides.push({
         id: "cumulative-reconciliation-audit",
         view: "cumulative",
-        title: language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة التراكمي" : "Cumulative 3-Grain Forensic Reconciliation",
+        title: language === 'ar' ? "توزيع حالات العمل ومطابقة السجلات التراكمية" : "Cumulative Workload & Status Distribution",
         element: renderContentSlide(
           <div className="p-8 flex flex-col h-full justify-start gap-3">
             <h3 className="font-bold text-lg border-b pb-2 flex items-center justify-between" style={{ color: primaryColor }}>
-              <span>{language === 'ar' ? 'جدول المطابقة وتفسير الفروقات التراكمية الشاملة' : 'Cumulative 3-Grain Forensic Reconciliation & Discrepancy Breakdown'}</span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                {language === 'ar' ? 'فصل تام للسجلات والتخصصات — تدقيق 100%' : '100% Mathematically Reconciled'}
+              <span>{language === 'ar' ? 'توزيع حالات العمل والسجلات الهندسية (تراكمي)' : 'Cumulative Workload & Status Distribution Across Disciplines'}</span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">
+                {language === 'ar' ? 'مطابقة معادلة السجلات 100%' : '100% SSOT Invariant Balanced'}
               </span>
             </h3>
-            <p className="text-xs text-slate-600">
-              {recon.grandTotal.explanationEn}
-            </p>
+
+            {/* Executive Equation Banner */}
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#203864]">
+                  {language === 'ar' ? 'معادلة توازن السجلات:' : 'Register Balance Invariant:'}
+                </span>
+                <span className="font-semibold text-slate-800">
+                  {language === 'ar'
+                    ? `إجمالي الصفوف (${recon.grandTotal.grainA.totalRows}) = البنود الفريدة (${recon.grandTotal.grainC.totalCurrentUnique}) + المراجعات السابقة الملغاة (${recon.grandTotal.totalSupersededRows})`
+                    : `Total Historical Rows (${recon.grandTotal.grainA.totalRows}) = Current Unique Items (${recon.grandTotal.grainC.totalCurrentUnique}) + Superseded Revision Rows (${recon.grandTotal.totalSupersededRows})`}
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 italic">
+                {language === 'ar'
+                  ? 'تمثل الصفوف الملغاة (Superseded) مراجعات تاريخية سابقة لا تؤثر على البنود الفريدة الحالية'
+                  : 'Superseded rows represent historical revision iterations preserved for physical audit trace.'}
+              </span>
+            </div>
+
             <div className="overflow-x-auto max-h-[420px]">
               <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-800">{language === 'ar' ? 'Grain A: إجمالي الصفوف' : 'Grain A: Total Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-blue-900">{language === 'ar' ? 'Grain B: تقديمات فريدة' : 'Grain B: Unique Submittals'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-indigo-900">{language === 'ar' ? 'Grain C: بنود حالية' : 'Grain C: Current Unique'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-amber-800">{language === 'ar' ? 'الفارق المحسوب (Delta)' : 'Reconciliation Delta'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-700">{language === 'ar' ? 'مراجعات سابقة ملغاة' : 'Superseded Rev. Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'تفسير الفارق من السجلات الفعلية' : 'Forensic Explanation (Source Data)'}</th>
+                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-rose-800">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-red-900">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-700">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200">
+                      <div className="flex flex-col items-center">
+                        <span>{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
+                        <span className="text-[9px] font-normal text-amber-300">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
+                      </div>
+                    </th>
+                    <th className="p-2 border border-slate-300 font-black bg-slate-800">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-blue-900">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recon.records.map(rec => (
-                    <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
-                      <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
-                      <td className="p-1.5 border border-slate-200 font-black">{rec.grainA.totalRows}</td>
-                      <td className="p-1.5 border border-slate-200 font-semibold text-blue-900">{rec.grainB.totalUniqueSubmittals}</td>
-                      <td className="p-1.5 border border-slate-200 font-bold text-indigo-900">{rec.grainC.totalCurrentUnique}</td>
-                      <td className="p-1.5 border border-slate-200 font-black text-amber-950 bg-amber-50/50">{rec.reconciliation.rawDifference}</td>
-                      <td className="p-1.5 border border-slate-200 font-semibold text-slate-700">{rec.reconciliation.supersededHistoricalRows}</td>
-                      <td className="p-1.5 border border-slate-200 text-left text-[11px] text-slate-600 max-w-[340px] truncate" title={language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}>
-                        {language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
-                    <td className="p-1.5 border border-slate-300 font-bold uppercase">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
-                    <td className="p-1.5 border border-slate-300 font-black">{recon.grandTotal.grainA.totalRows}</td>
-                    <td className="p-1.5 border border-slate-300 font-bold text-blue-950">{recon.grandTotal.grainB.totalUniqueSubmittals}</td>
-                    <td className="p-1.5 border border-slate-300 font-black text-indigo-950">{recon.grandTotal.grainC.totalCurrentUnique}</td>
-                    <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100/60">{recon.grandTotal.totalDifference}</td>
-                    <td className="p-1.5 border border-slate-300 font-bold">{recon.grandTotal.totalSupersededRows}</td>
-                    <td className="p-1.5 border border-slate-300 text-left text-[11px] font-semibold text-slate-800">
-                      {language === 'ar' ? recon.grandTotal.explanationAr : recon.grandTotal.explanationEn}
-                    </td>
-                  </tr>
+                  {recon.records.map(rec => {
+                    const approved = rec.grainC.approved;
+                    const rejOpen = rec.grainC.rejectedOpen;
+                    const rejClosed = rec.grainC.rejectedClosed;
+                    const pending = rec.grainC.pending;
+                    const superseded = rec.reconciliation.supersededHistoricalRows;
+                    const totalRows = rec.grainA.totalRows;
+                    const currentUnique = rec.grainC.totalCurrentUnique;
+                    const isBalanced = (currentUnique + superseded) === totalRows;
+
+                    return (
+                      <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
+                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800">{approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700">{rejOpen}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900">{rejClosed}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800">{pending}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50">
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs">
+                            {superseded}
+                          </span>
+                        </td>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60">{totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60">{currentUnique}</td>
+                        <td className="p-1.5 border border-slate-200 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
+                            {isBalanced ? '100% OK' : 'Check Delta'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(() => {
+                    const totApp = recon.grandTotal.grainC.approved;
+                    const totRejOpen = recon.grandTotal.grainC.rejectedOpen;
+                    const totRejClosed = recon.grandTotal.grainC.rejectedClosed;
+                    const totPending = recon.grandTotal.grainC.pending;
+                    const totSup = recon.grandTotal.totalSupersededRows;
+                    const totRows = recon.grandTotal.grainA.totalRows;
+                    const totCur = recon.grandTotal.grainC.totalCurrentUnique;
+                    const totBalanced = (totCur + totSup) === totRows;
+
+                    return (
+                      <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
+                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900">{totApp}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-rose-900">{totRejOpen}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-red-950">{totRejClosed}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-900">{totPending}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100">
+                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black">
+                            {totSup}
+                          </span>
+                        </td>
+                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80">{totRows}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100">{totCur}</td>
+                        <td className="p-1.5 border border-slate-300 text-center">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400">
+                            {totBalanced ? '100% Balanced' : 'Check Delta'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
           </div>,
-          language === 'ar' ? "مطابقة وتدقيق الأبعاد الثلاثة التراكمي" : "CUMULATIVE 3-GRAIN RECONCILIATION",
+          language === 'ar' ? "توزيع حالات العمل ومطابقة السجلات التراكمية" : "CUMULATIVE WORKLOAD & STATUS",
           "cumulative-reconciliation-audit"
         )
       });

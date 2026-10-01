@@ -143,16 +143,18 @@ export interface PresentationViewModel {
 export function buildPresentationViewModel(
   data: SubmittalRow[],
   projectInfo: ProjectSettings | null,
-  mode: 'monthly' | 'cumulative' | 'presentation' = 'presentation',
+  modeOrOptions: 'monthly' | 'cumulative' | 'presentation' | any = 'presentation',
   options?: any
 ): PresentationViewModel {
-  const isArabic = !!options?.arabicEnabled;
-  const fontFace = options?.fontFace || "Arial";
-  const primaryColor = options?.primaryColor ? options.primaryColor.replace('#', '') : "203864";
-  const accentColor = options?.accentColor ? options.accentColor.replace('#', '') : "EAB308";
+  const mode: 'monthly' | 'cumulative' | 'presentation' = (typeof modeOrOptions === 'string' && (modeOrOptions === 'monthly' || modeOrOptions === 'cumulative')) ? modeOrOptions : 'presentation';
+  const opts = typeof modeOrOptions === 'object' && modeOrOptions !== null ? modeOrOptions : (options || {});
+  const isArabic = !!opts?.arabicEnabled;
+  const fontFace = opts?.fontFace || "Arial";
+  const primaryColor = opts?.primaryColor ? opts.primaryColor.replace('#', '') : "203864";
+  const accentColor = opts?.accentColor ? opts.accentColor.replace('#', '') : "EAB308";
 
   // Date Filters
-  const monthlyStart = options?.monthlyStart;
+  const monthlyStart = opts?.monthlyStart;
   const isMonthlyRow = (r: SubmittalRow) => !monthlyStart || !r.submissionDate || r.submissionDate >= monthlyStart;
   const monthlyData = data.filter(isMonthlyRow);
   const cumulativeData = data;
@@ -160,7 +162,7 @@ export function buildPresentationViewModel(
   const activeDataset = mode === 'monthly' ? monthlyData : cumulativeData;
 
   // 1. Executive Dashboard Data
-  const dashData = calculateExecutiveDashboardData(activeDataset, data, isArabic, mode === 'monthly', monthlyStart);
+  const dashData = calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en');
   const globalStats = dashData.globalStats;
 
   const totalHistoricalRows = globalStats.totalSubmittedSheets || activeDataset.length;
@@ -502,7 +504,10 @@ export function buildPresentationViewModel(
       totalRow: detailTotalRow
     },
     registers,
-    recommendations: dashData.priorityRecommendations || [],
+    recommendations: (dashData.priorityRecommendations || []).map((rec: any) => ({
+      ...rec,
+      priority: (rec.priority === 'HIGH' || rec.priority === 'LOW' ? rec.priority : 'MEDIUM') as 'HIGH' | 'MEDIUM' | 'LOW'
+    })),
     rawDataset: activeDataset
   };
 }

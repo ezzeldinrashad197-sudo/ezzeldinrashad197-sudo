@@ -591,7 +591,7 @@ export const generatePptxReport = async (
             const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
 
             if (statsData.stats.length <= 10) {
-                const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace);
+                const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideA.addTable(tableRows, { 
                     x: 0.35, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,
@@ -601,7 +601,7 @@ export const generatePptxReport = async (
             } else {
                 // Paginate long discipline list: Slide A shows first 10 rows
                 const firstChunk = statsData.stats.slice(0, 10);
-                const tableRowsA = buildTableData(firstChunk, null, cols, options?.fontFace);
+                const tableRowsA = buildTableData(firstChunk, null, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideA.addTable(tableRowsA, { 
                     x: 0.35, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,
@@ -615,7 +615,7 @@ export const generatePptxReport = async (
                 const contTitle = `${longName} (${bt}) ${periodHeaderTag} (Continued)`;
                 addHeaderAndFooter(pres, slideACont, contTitle, projectInfo, logoUrl, options);
 
-                const tableRowsCont = buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace);
+                const tableRowsCont = buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideACont.addTable(tableRowsCont, { 
                     x: 0.35, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,

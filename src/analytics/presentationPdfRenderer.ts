@@ -15,6 +15,9 @@ export async function renderPresentationPdf(
   options?: {
     pageSize?: 'a4' | 'a3' | '16x9';
     orientation?: 'landscape' | 'portrait';
+    selectedSections?: string[];
+    slideRangeStart?: number;
+    slideRangeEnd?: number;
   }
 ): Promise<{ pdf: jsPDF; totalPages: number }> {
   const isArabic = viewModel.metadata.isArabic;
@@ -522,6 +525,32 @@ export async function renderPresentationPdf(
     recY += 28;
   });
 
-  const totalPages = pdf.internal.getNumberOfPages();
+  const getPagesCount = () => typeof (pdf as any).getNumberOfPages === 'function'
+    ? (pdf as any).getNumberOfPages()
+    : (pdf.internal as any).getNumberOfPages();
+
+  let totalPages = getPagesCount();
+
+  // Apply slideRangeStart / slideRangeEnd if specified
+  if (options?.slideRangeStart !== undefined && options?.slideRangeEnd !== undefined && totalPages > 1) {
+    const start = Math.max(1, Math.min(options.slideRangeStart, totalPages));
+    const end = Math.max(start, Math.min(options.slideRangeEnd, totalPages));
+    for (let p = totalPages; p > end; p--) {
+      try {
+        pdf.deletePage(p);
+      } catch (e) {
+        console.warn('Could not delete page', p, e);
+      }
+    }
+    for (let p = start - 1; p >= 1; p--) {
+      try {
+        pdf.deletePage(p);
+      } catch (e) {
+        console.warn('Could not delete page', p, e);
+      }
+    }
+    totalPages = getPagesCount();
+  }
+
   return { pdf, totalPages };
 }

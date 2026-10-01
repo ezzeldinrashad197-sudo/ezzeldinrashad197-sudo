@@ -4,6 +4,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import pptxgen from "pptxgenjs";
 import { generatePptxReport } from '../analytics/exportEngine';
+import { buildPresentationViewModel } from '../analytics/presentationViewModel';
+import { renderPresentationPdf } from '../analytics/presentationPdfRenderer';
 import { ProjectSettings, SubmittalRow } from '../types';
 import { useLanguage } from '../utils/i18n';
 
@@ -337,237 +339,27 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
             const filename = `StructuSight-${activeTab}-${new Date().toISOString().split('T')[0]}.pdf`;
 
             if (activeTab === 'presentation') {
-                const slides = Array.from(exportElement.querySelectorAll('.presentation-slide'));
-                console.log(`[Export Diagnostics] Rendered slide count: ${slides.length}`);
-                if (slides.length === 0) throw new Error("No presentation slides found.");
-                
-                // Filter slides based on selected sections and slide ranges
-                let filteredSlides = [...slides];
                 const isArabic = !!options?.arabicEnabled;
-
-                if (options?.selectedSections) {
-                    filteredSlides = filteredSlides.filter((slideEl: any) => {
-                        const sec = slideEl.getAttribute('data-section') || '';
-                        if (!sec) {
-                            const txt = (slideEl.textContent || '').toUpperCase();
-                            if (txt.includes('DOCUMENT CONTROL') && txt.includes('INDEX')) return options.selectedSections.includes('cover');
-                            if (txt.includes('DOCUMENT CONTROL') || txt.includes('MONTHLY REPORT') || txt.includes('PERFORMANCE REPORT')) return options.selectedSections.includes('cover');
-                            if (txt.includes('TEAM MEMBERS') || txt.includes('PROJECT INFORMATION')) return options.selectedSections.includes('info');
-                            if (txt.includes('REJECTED ITEMS')) return options.selectedSections.includes('rejected');
-                            if (txt.includes('PENDING ITEMS')) return options.selectedSections.includes('pending');
-                            if (txt.includes('THANK YOU') || txt.includes('THANKS')) return options.selectedSections.includes('thanks');
-                            if (txt.includes('METRICS') || txt.includes('DASHBOARD')) return options.selectedSections.includes('metrics');
-                            if (txt.includes('LOG') || txt.includes('REGISTER') || txt.includes('MASTER DATA')) return options.selectedSections.includes('logs');
-                            return true;
-                        }
-                        return options.selectedSections.includes(sec);
-                    });
-                }
-
-                if (options?.slideRangeStart !== undefined || options?.slideRangeEnd !== undefined) {
-                    const startIdx = Math.max(1, options.slideRangeStart || 1) - 1;
-                    const endIdx = Math.min(filteredSlides.length, options.slideRangeEnd || filteredSlides.length);
-                    if (startIdx < endIdx) {
-                        filteredSlides = filteredSlides.slice(startIdx, endIdx);
-                    }
-                }
-
-                console.log(`[Export Diagnostics] Sliced/Filtered slide count: ${filteredSlides.length}`);
-                if (filteredSlides.length === 0) throw new Error("No presentation slides remaining after Smart Export filters.");
-
-                const charts = Array.from(exportElement.querySelectorAll('.recharts-wrapper'));
-                console.log(`[Export Diagnostics] Charts detected: ${charts.length}`);
-                const invalidCharts = charts.filter(c => {
-                    const svg = c.querySelector('svg');
-                    if (!svg) return true;
-                    const rect = svg.getBoundingClientRect();
-                    return rect.width === 0 || rect.height === 0;
-                });
-                
-                if (invalidCharts.length > 0) {
-                     console.warn(`[Export Warnings] ${invalidCharts.length} chart(s) appear to has 0 height/width or are missing SVGs. Exporting using layout repair protocols.`);
-                }
-                
-                const pdf = new jsPDF({
-                    unit: 'mm',
-                    format: 'a3',
-                    orientation: 'landscape'
+                const viewModel = buildPresentationViewModel(data, activeProject, 'presentation', {
+                    ...options,
+                    arabicEnabled: isArabic,
+                    startDate,
+                    endDate,
+                    primaryColor: options?.primaryColor || (activeProject as any)?.primaryColor || '#203864',
+                    accentColor: options?.accentColor || (activeProject as any)?.accentColor || '#D4AF37'
                 });
 
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const { pdf, totalPages } = await renderPresentationPdf(viewModel, {
+                    pageSize: options?.pageSize?.toLowerCase() || '16x9',
+                    orientation: options?.orientation?.toLowerCase() || 'landscape',
+                    selectedSections: options?.selectedSections,
+                    slideRangeStart: options?.slideRangeStart,
+                    slideRangeEnd: options?.slideRangeEnd
+                });
 
-                let capturedCount = 0;
-                let failedCount = 0;
-
-                // --- EXPORT VALIDATION LAYER INITIALIZATION ---
-                const totalRenderedCharts = exportElement.querySelectorAll('.recharts-wrapper').length;
-                const totalRenderedSVGs = exportElement.querySelectorAll('.recharts-wrapper svg').length;
-                let totalCapturedCharts = 0;
-                let totalCapturedSVGs = 0;
-
-                // Pre-validate that all rendered chart wrappers have of an SVG (warn only to prevent layout-based mismatch failures for empty/compound charts)
-                if (totalRenderedCharts !== totalRenderedSVGs) {
-                    console.warn("[Export Validation Warn] Rendered charts & SVG mismatch:", totalRenderedCharts, "vs", totalRenderedSVGs);
-                }
-
-                // Add outlines/bookmarks dynamically for high-fidelity interactive navigation
-                const safeAddOutline = (pdfInstance: any, parentNode: any, nodeTitle: string, targetPage: number) => {
-                    try {
-                        if (pdfInstance.outline && typeof pdfInstance.outline.add === 'function') {
-                            return pdfInstance.outline.add(parentNode, nodeTitle, { pageNumber: targetPage });
-                        }
-                    } catch (err) {
-                        console.warn("Failed to add PDF bookmark:", err);
-                    }
-                    return null;
-                };
-
-                let rootOutline: any = null;
-                try {
-                    rootOutline = safeAddOutline(pdf, null, isArabic ? "تقرير تحليلات StructuSight" : "StructuSight Intelligence Report", 1);
-                } catch (oe) {
-                    console.warn(oe);
-                }
-
-                for (let i = 0; i < filteredSlides.length; i++) {
-                    const slide = filteredSlides[i] as HTMLElement;
-                    try {
-                        const canvas = await html2canvas(slide, {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true,
-                            backgroundColor: '#ffffff',
-                            logging: false,
-                            windowWidth: 1550,
-                            onclone: (clonedDoc: Document) => {
-                                const style = clonedDoc.createElement('style');
-                                style.innerHTML = `
-                                    * {
-                                        transition-property: none !important;
-                                        animation: none !important;
-                                        transition: none !important;
-                                    }
-                                `;
-                                clonedDoc.head.appendChild(style);
-                                
-                                clonedDoc.body.querySelectorAll('.recharts-portal, .recharts-tooltip-wrapper, .recharts-legend-wrapper, .recharts-default-tooltip').forEach(p => {
-                                    p.remove();
-                                });
-
-                                const clonedSlidesList = Array.from(clonedDoc.querySelectorAll('.presentation-slide'));
-                                const clonedSlide = clonedSlidesList[i] as HTMLElement;
-                                if (clonedSlide) {
-                                    prepareChartsForCapture(clonedSlide, slide);
-                                    
-                                    const origChartsCount = slide.querySelectorAll('.recharts-wrapper').length;
-                                    const clonedChartsCount = clonedSlide.querySelectorAll('.recharts-wrapper').length;
-                                    const origSvgsCount = slide.querySelectorAll('.recharts-wrapper svg').length;
-                                    const clonedSvgsCount = clonedSlide.querySelectorAll('.recharts-wrapper svg').length;
-                                    
-                                    if (origChartsCount !== clonedChartsCount || origSvgsCount !== clonedSvgsCount) {
-                                        console.warn("[Export Validation Warn] Cloned charts mismatch:", origChartsCount, "vs", clonedChartsCount, "SVGs:", origSvgsCount, "vs", clonedSvgsCount);
-                                    }
-                                    
-                                    totalCapturedCharts += clonedChartsCount;
-                                    totalCapturedSVGs += clonedSvgsCount;
-                                }
-                            }
-                        });
-                        
-                        if (canvas.width === 0 || canvas.height === 0) {
-                             throw new Error("Canvas generated with zero dimensions");
-                        }
-                        
-                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        
-                        const imgWidth = pdfWidth;
-                        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-                        const yOffset = (pdfHeight - imgHeight) / 2;
-
-                        pdf.addImage(imgData, 'JPEG', 0, yOffset, imgWidth, imgHeight);
-
-                        // Safe bookmark generation for the current slide
-                        if (rootOutline) {
-                            try {
-                                const sec = slide.getAttribute('data-section') || '';
-                                let titleText = `Page ${i + 1}`;
-                                const txt = (slide.textContent || '').toUpperCase();
-                                
-                                if (sec === 'cover' || (txt.includes('DOCUMENT CONTROL') && !txt.includes('INDEX'))) {
-                                    titleText = isArabic ? "صفحة الغلاف" : "Cover Page";
-                                } else if (sec === 'cover' || txt.includes('INDEX')) {
-                                    titleText = isArabic ? "الفهرس" : "Table of Contents";
-                                } else if (sec === 'info' || txt.includes('PROJECT INFORMATION')) {
-                                    titleText = isArabic ? "بيانات المشروع" : "Project Information";
-                                } else if (sec === 'rejected' || txt.includes('REJECTED ITEMS')) {
-                                    titleText = isArabic ? "المرفوضات المتأخرة" : "Rejected Items";
-                                } else if (sec === 'pending' || txt.includes('PENDING ITEMS')) {
-                                    titleText = isArabic ? "المعلقات المتأخرة" : "Pending Items";
-                                } else if (sec === 'thanks' || txt.includes('THANK YOU') || txt.includes('THANKS')) {
-                                    titleText = isArabic ? "خاتمة" : "Closure / Thank You";
-                                } else if (sec === 'metrics' || txt.includes('METRICS') || txt.includes('DASHBOARD')) {
-                                    const headerText = slide.querySelector('h3')?.textContent || '';
-                                    titleText = headerText ? `${isArabic ? "مؤشرات" : "Metrics"}: ${headerText}` : (isArabic ? "مؤشرات الأداء" : "Performance Metrics");
-                                } else if (sec === 'logs' || txt.includes('LOG') || txt.includes('REGISTER') || txt.includes('MASTER DATA')) {
-                                    const headerText = slide.querySelector('h3')?.textContent || '';
-                                    titleText = headerText ? `${isArabic ? "سجلات" : "Register"}: ${headerText}` : (isArabic ? "سجلات الوثائق" : "Submittal Registers");
-                                }
-                                
-                                safeAddOutline(pdf, rootOutline, titleText, i + 1);
-                            } catch (bmErr) {
-                                console.warn("Failed creating bookmark for slide index:", i, bmErr);
-                            }
-                        }
-
-                        capturedCount++;
-                    } catch (e) {
-                         failedCount++;
-                         console.error(`[Export Diagnostics] Failed to capture slide ${i+1}:`, e);
-                         
-                         if (e instanceof Error && e.message === "PDF Export Validation Failed") {
-                             throw e;
-                         }
-
-                         pdf.setFillColor(30, 56, 100);
-                         pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
-                         
-                         pdf.setTextColor(255, 255, 255);
-                         pdf.setFontSize(24);
-                         const slideTitle = slide.querySelector('h1, h2, h3, .slide-title')?.textContent || `Slide ${i + 1}`;
-                         pdf.text(slideTitle.toUpperCase().trim(), pdfWidth / 2, 50, { align: 'center' });
-                         
-                         pdf.setFontSize(14);
-                         pdf.setTextColor(234, 179, 8);
-                         pdf.text("DIGITAL PREVIEW PLACEMENT RECORD", pdfWidth / 2, 70, { align: 'center' });
-                         
-                         pdf.setTextColor(203, 213, 225);
-                         pdf.setFontSize(12);
-                         pdf.text("This visual slice could not be dynamically encoded to a vector canvas preview.", pdfWidth / 2, 100, { align: 'center' });
-                         pdf.text("However, all underlying tabular registers, timelines, and metrics remain intact", pdfWidth / 2, 110, { align: 'center' });
-                         pdf.text("and accessible in the live dashboards.", pdfWidth / 2, 120, { align: 'center' });
-                         
-                         pdf.setFontSize(10);
-                         pdf.setTextColor(148, 163, 184);
-                         pdf.text(`[Trace: ERR_SLD_IMG_${i+1}] • Generated cleanly by export fallback routines`, pdfWidth / 2, 160, { align: 'center' });
-                         
-                         capturedCount++;
-                    }
-                    if (i < filteredSlides.length - 1) {
-                        pdf.addPage();
-                    }
-                }
-                
-                if (totalRenderedCharts !== totalCapturedCharts || totalRenderedSVGs !== totalCapturedSVGs) {
-                    console.warn("[Export Validation Warn] Presentation final count mismatch. Charts:", totalRenderedCharts, "captured:", totalCapturedCharts, "; SVGs:", totalRenderedSVGs, "captured:", totalCapturedSVGs);
-                }
-
-                console.log(`[Export Diagnostics] Captured slide count: ${capturedCount}, Failed slide count: ${failedCount}`);
-                
-                drawPdfHeaderFooter(pdf, activeProject, activeTab, startDate, endDate, options);
                 pdf.save(filename);
                 const exportDuration = Date.now() - startTime;
-                console.log(`[Export Diagnostics] PDF Export successful! Duration: ${exportDuration}ms`);
+                console.log(`[Export Diagnostics] Native Vector Presentation PDF Export successful (${totalPages} pages)! Duration: ${exportDuration}ms`);
 
             } else {
                 // Standard html2pdf for other reports

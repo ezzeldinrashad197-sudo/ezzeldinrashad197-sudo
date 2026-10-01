@@ -41,57 +41,58 @@ export interface TableLayoutResult {
 
 /**
  * Returns canonical concise headers that prevent ugly line-breaking on small columns
+ * Uses clean two-line whole words to prevent intra-word character splitting.
  */
 export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en'): string {
   const norm = rawLabel.trim().toUpperCase();
 
   if (language === 'ar') {
     if (norm === 'DISCIPLINE' || norm === 'ITEMS') return 'التخصص';
-    if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'فريدة R00';
-    if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'فريدة لاحقة';
-    if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'صفوف R00';
-    if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'صفوف لاحقة';
-    if (norm === 'TOTAL ROWS') return 'إجمالي الصفوف';
+    if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'فريدة\nR00';
+    if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'فريدة\nلاحقة';
+    if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'صفوف\nR00';
+    if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'صفوف\nلاحقة';
+    if (norm === 'TOTAL ROWS') return 'إجمالي\nالصفوف';
     if (norm === 'APPROVED') return 'معتمد';
     if (norm === 'REJECTED') return 'مرفوض';
-    if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'مرفوض مفتوح';
-    if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'مرفوض مغلق';
+    if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'مرفوض\nمفتوح';
+    if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'مرفوض\nمغلق';
     if (norm === 'PENDING') return 'معلق';
-    if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'ملغاة تاريخياً';
-    if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'البنود الفريدة';
-    if (norm === 'ROW APP/CLOSED') return 'معتمد صفوف';
-    if (norm === 'ROW REJ/OPEN') return 'مرفوض صفوف';
-    if (norm === 'ROW PENDING') return 'معلق صفوف';
-    if (norm === 'CUR. APP/CLOSED') return 'معتمد حالي';
-    if (norm === 'CUR. REJ OPEN') return 'مرفوض مفتوح';
-    if (norm === 'CUR. REJ CLOSED') return 'مرفوض مغلق';
-    if (norm === 'CUR. PENDING') return 'معلق حالي';
+    if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'ملغاة\nسابقاً';
+    if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'البنود\nالفريدة';
+    if (norm === 'ROW APP/CLOSED') return 'معتمد\nصفوف';
+    if (norm === 'ROW REJ/OPEN') return 'مرفوض\nصفوف';
+    if (norm === 'ROW PENDING') return 'معلق\nصفوف';
+    if (norm === 'CUR. APP/CLOSED') return 'معتمد\nحالي';
+    if (norm === 'CUR. REJ OPEN') return 'مرفوض\nمفتوح';
+    if (norm === 'CUR. REJ CLOSED') return 'مرفوض\nمغلق';
+    if (norm === 'CUR. PENDING') return 'معلق\nحالي';
     if (norm === 'PRIORITY') return 'الأولوية';
-    if (norm === 'LOG TYPE') return 'نوع المعاملة';
+    if (norm === 'LOG TYPE') return 'نوع السجل';
     return rawLabel;
   }
 
-  // English Canonical Short Headers
+  // English Canonical Short Headers with clean two-line whole words
   if (norm === 'DISCIPLINE' || norm === 'ITEMS') return 'Discipline';
-  if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'Unique Rev.00';
-  if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'Unique Further';
-  if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'Rev.00 Rows';
-  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'Further Rev.';
-  if (norm === 'TOTAL ROWS') return 'Total Rows';
+  if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'Unique\nRev.00';
+  if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'Unique\nFurther';
+  if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'Rev.00\nRows';
+  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'Further\nRev.';
+  if (norm === 'TOTAL ROWS') return 'Total\nRows';
   if (norm === 'APPROVED') return 'Approved';
   if (norm === 'REJECTED') return 'Rejected';
-  if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'Rej. Open';
-  if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'Rej. Closed';
+  if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'Rej.\nOpen';
+  if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'Rej.\nClosed';
   if (norm === 'PENDING') return 'Pending';
   if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'Superseded';
-  if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Total Unique';
-  if (norm === 'ROW APP/CLOSED') return 'Row Appr.';
-  if (norm === 'ROW REJ/OPEN') return 'Row Rej.';
-  if (norm === 'ROW PENDING') return 'Row Pend.';
-  if (norm === 'CUR. APP/CLOSED') return 'Cur. Appr.';
-  if (norm === 'CUR. REJ OPEN') return 'Cur. Rej Open';
-  if (norm === 'CUR. REJ CLOSED') return 'Cur. Rej Closed';
-  if (norm === 'CUR. PENDING') return 'Cur. Pend.';
+  if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Total\nUnique';
+  if (norm === 'ROW APP/CLOSED') return 'Row\nApp/Cls';
+  if (norm === 'ROW REJ/OPEN') return 'Row\nRej/Opn';
+  if (norm === 'ROW PENDING') return 'Row\nPend.';
+  if (norm === 'CUR. APP/CLOSED') return 'Cur.\nAppr.';
+  if (norm === 'CUR. REJ OPEN') return 'Cur. Rej\nOpen';
+  if (norm === 'CUR. REJ CLOSED') return 'Cur. Rej\nClosed';
+  if (norm === 'CUR. PENDING') return 'Cur.\nPend.';
   if (norm === 'PRIORITY') return 'Priority';
   if (norm === 'LOG TYPE') return 'Log Type';
 
@@ -104,7 +105,7 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
  */
 export function calculateTableLayout(
   cols: { key: string; label: string }[],
-  maxTableWidth: number = 5.5,
+  maxTableWidth: number = 5.7,
   isFullWidthSlide: boolean = false,
   language: 'ar' | 'en' = 'en'
 ): TableLayoutResult {
@@ -112,76 +113,34 @@ export function calculateTableLayout(
 
   // Full-width slide (e.g. 13-column detail table)
   if (isFullWidthSlide || colCount >= 11) {
-    const totalW = maxTableWidth > 8 ? maxTableWidth : 9.4;
+    const totalW = maxTableWidth > 8 ? maxTableWidth : 9.45;
     
     // Proportional column weights based on content types
     const weights: Record<string, number> = {
-      discipline: 1.5,
-      documentType: 1.4,
+      discipline: 1.35,
+      documentType: 1.30,
       priority: 0.85,
-      Rev00Rows: 0.75,
-      FurtherRevRows: 0.8,
-      TotalRows: 0.8,
-      UniqueRev00: 0.8,
-      UniqueFurtherRev: 0.85,
-      Approved: 0.8,
-      RejectedOpen: 0.8,
-      RejectedClosed: 0.8,
-      Rejected: 0.8,
-      Pending: 0.75,
-      Superseded: 0.85,
-      Total: 0.8
-    };
-
-    let totalWeight = 0;
-    const colWeights = cols.map(c => {
-      const w = weights[c.key] || 0.8;
-      totalWeight += w;
-      return w;
-    });
-
-    const colWidths = colWeights.map(w => Number(((w / totalWeight) * totalW).toFixed(2)));
-    // Adjust rounding difference
-    const diff = Number((totalW - colWidths.reduce((a, b) => a + b, 0)).toFixed(2));
-    if (colWidths.length > 0) colWidths[0] += diff;
-
-    return {
-      tableWidth: totalW,
-      colWidths,
-      headerFontSize: 8.5,
-      bodyFontSize: 9.0,
-      headerRowHeight: 0.42,
-      bodyRowHeight: 0.32,
-      columns: cols.map((c, i) => ({
-        key: c.key,
-        label: getCanonicalHeader(c.label, language),
-        width: colWidths[i],
-        align: i === 0 ? 'left' : 'center'
-      }))
-    };
-  }
-
-  // 8 to 10 Column Tables (e.g. Slide A: Register Status Table alongside Bar Chart)
-  if (colCount >= 8) {
-    const totalW = Math.max(maxTableWidth, 5.45);
-    
-    // Semantic weights tailored for 8-10 columns
-    const weights: Record<string, number> = {
-      discipline: 1.15,
-      UniqueRev00: 0.82,
-      UniqueFurtherRev: 0.90,
-      Rev00Rows: 0.82,
-      FurtherRevRows: 0.85,
-      TotalRows: 0.80,
+      rev00Rows: 0.60,
+      Rev00Rows: 0.60,
+      furtherRevRows: 0.70,
+      FurtherRevRows: 0.70,
+      totalRows: 0.70,
+      TotalRows: 0.70,
+      rowAppClosed: 0.72,
+      rowRejOpen: 0.70,
+      rowPending: 0.68,
+      totalUnique: 0.72,
+      TotalUnique: 0.72,
+      approved: 0.72,
       Approved: 0.72,
-      Rejected: 0.72,
-      RejectedOpen: 0.72,
-      RejectedClosed: 0.72,
-      Pending: 0.72,
-      Superseded: 0.78,
-      Total: 0.80,
-      Closed: 0.75,
-      Open: 0.75
+      rejectedOpen: 0.65,
+      RejectedOpen: 0.65,
+      rejectedClosed: 0.65,
+      RejectedClosed: 0.65,
+      pending: 0.65,
+      Pending: 0.65,
+      superseded: 0.70,
+      Superseded: 0.70
     };
 
     let totalWeight = 0;
@@ -198,9 +157,61 @@ export function calculateTableLayout(
     return {
       tableWidth: totalW,
       colWidths,
+      headerFontSize: 9.0,
+      bodyFontSize: 9.0,
+      headerRowHeight: 0.44,
+      bodyRowHeight: 0.38,
+      columns: cols.map((c, i) => ({
+        key: c.key,
+        label: getCanonicalHeader(c.label, language),
+        width: colWidths[i],
+        align: i === 0 ? 'left' : 'center'
+      }))
+    };
+  }
+
+  // 8 to 10 Column Tables (e.g. Slide A: Register Status Table alongside Bar Chart)
+  if (colCount >= 8) {
+    const totalW = Math.max(maxTableWidth, 5.7);
+    
+    // Semantic weights tailored for 8-10 columns:
+    // Yields exact desired widths: Discipline: ~0.76", Unique Rev.00: ~0.62", Unique Further: ~0.78",
+    // Rev.00 Rows: ~0.70", Further Rev. Rows: ~0.82", Total Rows: ~0.62", Approved: ~0.62", Rejected: ~0.62", Pending: ~0.62"
+    const weights: Record<string, number> = {
+      discipline: 1.22,
+      UniqueRev00: 0.88,
+      UniqueFurtherRev: 1.05,
+      Rev00Rows: 0.94,
+      FurtherRevRows: 1.05,
+      TotalRows: 0.88,
+      Approved: 0.84,
+      Rejected: 0.84,
+      RejectedOpen: 0.84,
+      RejectedClosed: 0.84,
+      Pending: 0.84,
+      Superseded: 0.92,
+      Total: 0.88,
+      Closed: 0.84,
+      Open: 0.84
+    };
+
+    let totalWeight = 0;
+    const colWeights = cols.map(c => {
+      const w = weights[c.key] || 0.85;
+      totalWeight += w;
+      return w;
+    });
+
+    const colWidths = colWeights.map(w => Number(((w / totalWeight) * totalW).toFixed(2)));
+    const diff = Number((totalW - colWidths.reduce((a, b) => a + b, 0)).toFixed(2));
+    if (colWidths.length > 0) colWidths[0] += diff;
+
+    return {
+      tableWidth: totalW,
+      colWidths,
       headerFontSize: 8.5,
       bodyFontSize: 9.5,
-      headerRowHeight: 0.40,
+      headerRowHeight: 0.44,
       bodyRowHeight: 0.34,
       columns: cols.map((c, i) => ({
         key: c.key,
@@ -212,9 +223,9 @@ export function calculateTableLayout(
   }
 
   // 4 to 7 Column Tables
-  const totalW = Math.max(maxTableWidth, 5.0);
+  const totalW = Math.max(maxTableWidth, 5.2);
   const baseW = Number((totalW / colCount).toFixed(2));
-  const colWidths = cols.map((c, i) => i === 0 ? Number((baseW * 1.4).toFixed(2)) : baseW);
+  const colWidths = cols.map((c, i) => i === 0 ? Number((baseW * 1.35).toFixed(2)) : baseW);
   const sumW = colWidths.reduce((a, b) => a + b, 0);
   const scale = totalW / sumW;
   const scaledWidths = colWidths.map(w => Number((w * scale).toFixed(2)));
@@ -224,7 +235,7 @@ export function calculateTableLayout(
     colWidths: scaledWidths,
     headerFontSize: 9.0,
     bodyFontSize: 10.0,
-    headerRowHeight: 0.38,
+    headerRowHeight: 0.40,
     bodyRowHeight: 0.35,
     columns: cols.map((c, i) => ({
       key: c.key,

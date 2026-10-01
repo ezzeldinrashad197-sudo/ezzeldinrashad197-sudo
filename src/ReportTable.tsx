@@ -501,6 +501,19 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     };
 
     switch (metricKey) {
+      case 'superseded': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group || group.all.length <= 1) return;
+          const latestId = group.latest?.id;
+          const supersededRows = group.all.filter(r => r.id !== latestId);
+          const revs = group.all.map(x => x.rev || '00');
+          supersededRows.forEach(r => {
+            extracted.push(mapToDrillDownItem(r, false, revs));
+          });
+        });
+        break;
+      }
       case 'currentRejectedClosed': {
         targetEntityKeys.forEach(key => {
           const group = revisionMap.get(key);
@@ -1381,214 +1394,36 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                  </span>
                </div>
 
-          {/* 3-Grain Forensic Reconciliation & Discrepancy Explainer Card */}
-          <div className="bg-white rounded-xl shadow-xs border border-indigo-200 overflow-hidden mb-3">
-            <div className="p-4 bg-gradient-to-r from-indigo-900 via-[#203864] to-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-300/30 flex items-center justify-center shrink-0">
-                  <History className="w-4 h-4 text-indigo-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-black tracking-wide">
-                      {language === 'ar'
-                        ? 'المطابقة الهندسية ثلاثية الأبعاد وتفسير الفروقات التاريخية (3-Grain Forensic Reconciliation)'
-                        : '3-Grain Forensic Reconciliation & Discrepancy Explainer'}
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                      {language === 'ar' ? 'مطابقة 100%' : '100% Reconciled'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-indigo-200/90 font-normal mt-0.5">
-                    {language === 'ar'
-                      ? 'فصل تام للسجلات والتخصصات: تفسير الفارق الحقيقي بين إجمالي الصفوف التاريخية (Grain A) والتقديمات الفريدة (Grain B) والحالة الحالية (Grain C) دون دمج أو إخفاء أي أرقام.'
-                      : 'Strict Register + Discipline Isolation: Explaining the mathematical relationship between Historical Rows (Grain A), Unique Submittals (Grain B), and Current State (Grain C).'}
-                  </p>
-                </div>
+          {/* Executive Invariant & Grain Mathematical SSOT Summary Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-[#203864] to-indigo-950 text-white p-3.5 rounded-xl shadow-xs border border-indigo-200/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
               </div>
-              <button
-                type="button"
-                onClick={() => setShowReconciliationExplainer(!showReconciliationExplainer)}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/20 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                {showReconciliationExplainer ? (
-                  <>
-                    <span>{language === 'ar' ? 'إخفاء جدول المطابقة' : 'Hide Reconciliation Table'}</span>
-                    <ChevronUp className="w-3.5 h-3.5" />
-                  </>
-                ) : (
-                  <>
-                    <span>{language === 'ar' ? 'عرض جدول المطابقة وتفاصيل الفروقات' : 'Show Detailed Reconciliation'}</span>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* 4 Summary Grain Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-y md:divide-y-0 divide-slate-100 bg-slate-50/60 border-b border-indigo-100 text-xs">
-              <div className="p-3.5">
-                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'ar' ? 'Grain A — إجمالي الصفوف التاريخية' : 'Grain A — Total Historical Rows'}
-                </span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-black text-slate-900 font-mono">
-                    {reconciliationReport.grandTotal.grainA.totalRows}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black tracking-wide text-white">
+                    {language === 'ar' ? 'توازن مؤشرات المشروع المعتمدة (SSOT Invariant)' : 'Executive Submittal Balance & Audit Invariant'}
                   </span>
-                  <span className="text-[11px] text-slate-400">
-                    {language === 'ar'
-                      ? `(${reconciliationReport.grandTotal.grainA.rev00Rows} مراجعة 00 + ${reconciliationReport.grandTotal.grainA.furtherRevRows} لاحقة)`
-                      : `(${reconciliationReport.grandTotal.grainA.rev00Rows} Rev00 + ${reconciliationReport.grandTotal.grainA.furtherRevRows} Further)`}
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    100% Balanced
                   </span>
                 </div>
-              </div>
-
-              <div className="p-3.5">
-                <span className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider">
-                  {language === 'ar' ? 'Grain B — إجمالي التقديمات الفريدة' : 'Grain B — Unique Submittals'}
-                </span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-black text-blue-950 font-mono">
-                    {reconciliationReport.grandTotal.grainB.totalUniqueSubmittals}
-                  </span>
-                  <span className="text-[11px] text-blue-700/80">
-                    {language === 'ar'
-                      ? `(${reconciliationReport.grandTotal.grainB.uniqueRev00} فريدة Rev00 + ${reconciliationReport.grandTotal.grainB.uniqueFurtherRev} لاحقة)`
-                      : `(${reconciliationReport.grandTotal.grainB.uniqueRev00} Rev00 + ${reconciliationReport.grandTotal.grainB.uniqueFurtherRev} Further)`}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3.5">
-                <span className="block text-[10px] font-bold text-indigo-900 uppercase tracking-wider">
-                  {language === 'ar' ? 'Grain C — البنود الفريدة الحالية' : 'Grain C — Current Unique Items'}
-                </span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-black text-indigo-950 font-mono">
-                    {reconciliationReport.grandTotal.grainC.totalCurrentUnique}
-                  </span>
-                  <span className="text-[11px] text-emerald-700 font-semibold">
-                    {reconciliationReport.grandTotal.grainC.approved} {language === 'ar' ? 'معتمد' : 'Approved'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-amber-50/50">
-                <span className="block text-[10px] font-bold text-amber-900 uppercase tracking-wider">
-                  {language === 'ar' ? 'فارق المطابقة (Delta) = مراجعات سابقة ملغاة' : 'Reconciliation Delta = Superseded Rows'}
-                </span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-black text-amber-950 font-mono">
-                    {reconciliationReport.grandTotal.totalDifference}
-                  </span>
-                  <span className="text-[11px] text-amber-800 font-bold">
-                    {language === 'ar' ? 'مراجعة تاريخية سابقة تم تطويرها' : 'Superseded Revision Rows'}
-                  </span>
-                </div>
+                <p className="text-[11px] text-slate-300 font-normal mt-0.5">
+                  {language === 'ar'
+                    ? `إجمالي الصفوف التاريخية (${globalStats.totalSubmittedSheets}) = البنود الفريدة الحالية (${globalStats.totalUniqueDrawings}) + المراجعات السابقة الملغاة (${Math.max(0, (globalStats.totalSubmittedSheets || 0) - (globalStats.totalUniqueDrawings || 0))})`
+                    : `Total Historical Rows (${globalStats.totalSubmittedSheets}) = Current Unique Items (${globalStats.totalUniqueDrawings}) + Superseded Revision Rows (${Math.max(0, (globalStats.totalSubmittedSheets || 0) - (globalStats.totalUniqueDrawings || 0))})`}
+                </p>
               </div>
             </div>
-
-            {/* Detailed Per-Discipline Reconciliation Table */}
-            {showReconciliationExplainer && (
-              <div className="p-4 space-y-3">
-                <div className="text-xs text-slate-700 leading-relaxed bg-blue-50/60 p-3 rounded-lg border border-blue-100">
-                  <span className="font-bold text-[#203864]">
-                    {language === 'ar' ? 'تفسير التدقيق الشامل للأرقام والفروقات:' : 'Comprehensive Audit Breakdown & Reconciliation:'}
-                  </span>{' '}
-                  {language === 'ar' ? reconciliationReport.grandTotal.explanationAr : reconciliationReport.grandTotal.explanationEn}
-                </div>
-
-                <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                  <table className="w-full text-xs text-center border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100 border-b border-slate-200 font-bold text-slate-700">
-                        <th className="p-2 border-r border-slate-200 text-left font-extrabold text-[#203864]">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
-                        <th className="p-2 border-r border-slate-200 bg-slate-200/80 font-black">{language === 'ar' ? 'Grain A: إجمالي الصفوف' : 'Grain A: Total Rows'}</th>
-                        <th className="p-2 border-r border-slate-200 bg-blue-50/80 text-blue-950 font-black">{language === 'ar' ? 'Grain B: تقديمات فريدة' : 'Grain B: Unique Submittals'}</th>
-                        <th className="p-2 border-r border-slate-200 bg-indigo-50/80 text-indigo-950 font-black">{language === 'ar' ? 'Grain C: بنود حالية' : 'Grain C: Current Unique'}</th>
-                        <th className="p-2 border-r border-slate-200 bg-amber-100/60 text-amber-950 font-black">{language === 'ar' ? 'فارق المطابقة (Delta)' : 'Reconciliation Delta'}</th>
-                        <th className="p-2 border-r border-slate-200 text-slate-700">{language === 'ar' ? 'مراجعات سابقة ملغاة' : 'Superseded Rows'}</th>
-                        <th className="p-2 border-r border-slate-200 text-emerald-800 font-bold">{language === 'ar' ? 'حالة التوازن' : 'Balance Invariant'}</th>
-                        <th className="p-2 text-left font-bold text-slate-600">{language === 'ar' ? 'التفسير والتحليل الدقيق من السجلات الفعلية' : 'Forensic Explanation (Raw Source)'}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {reconciliationReport.records.map(rec => (
-                        <tr key={rec.identityKey} className="hover:bg-blue-50/30 transition-colors">
-                          <td className="p-2 border-r border-slate-200 font-extrabold text-left text-[#203864]">
-                            {rec.identityKey}
-                          </td>
-                          <td className="p-2 border-r border-slate-200 font-mono font-bold bg-slate-50/50">
-                            {rec.grainA.totalRows}
-                          </td>
-                          <td className="p-2 border-r border-slate-200 font-mono font-bold text-blue-900 bg-blue-50/20">
-                            {rec.grainB.totalUniqueSubmittals}
-                          </td>
-                          <td className="p-2 border-r border-slate-200 font-mono font-bold text-indigo-950 bg-indigo-50/20">
-                            {rec.grainC.totalCurrentUnique}
-                          </td>
-                          <td className="p-2 border-r border-slate-200 font-mono font-black text-amber-950 bg-amber-50/50">
-                            {rec.reconciliation.rawDifference}
-                          </td>
-                          <td className="p-2 border-r border-slate-200 font-mono text-slate-700">
-                            {rec.reconciliation.supersededHistoricalRows}
-                          </td>
-                          <td className="p-2 border-r border-slate-200">
-                            <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              {language === 'ar' ? 'مطابق 100%' : '100% Balanced'}
-                            </span>
-                          </td>
-                          <td className="p-2 text-left text-[11px] text-slate-600">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="line-clamp-2" title={language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}>
-                                {language === 'ar' ? rec.reconciliation.explanationAr : rec.reconciliation.explanationEn}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => openDrillDown(rec.identityKey, 'totalWorkload', `${rec.identityKey} — Raw Records`, `${rec.identityKey} — كافة السجلات الفعلية`)}
-                                className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold shrink-0 cursor-pointer border border-slate-200"
-                                title={language === 'ar' ? 'فحص السجلات الأولية' : 'Inspect Raw Records'}
-                              >
-                                {language === 'ar' ? 'فحص' : 'Inspect'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {/* Grand Total Row */}
-                      <tr className="bg-slate-200/90 font-black text-slate-900 border-t-2 border-slate-300">
-                        <td className="p-2.5 border-r border-slate-300 text-left font-black uppercase text-slate-900">
-                          {language === 'ar' ? 'الإجمالي الشامل (GRAND TOTAL)' : 'GRAND TOTAL'}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300 font-mono font-black">
-                          {reconciliationReport.grandTotal.grainA.totalRows}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300 font-mono font-black text-blue-950">
-                          {reconciliationReport.grandTotal.grainB.totalUniqueSubmittals}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300 font-mono font-black text-indigo-950">
-                          {reconciliationReport.grandTotal.grainC.totalCurrentUnique}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300 font-mono font-black text-amber-950 bg-amber-100/80">
-                          {reconciliationReport.grandTotal.totalDifference}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300 font-mono font-bold">
-                          {reconciliationReport.grandTotal.totalSupersededRows}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-300">
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-black rounded bg-emerald-200 text-emerald-900 border border-emerald-300">
-                            {language === 'ar' ? 'مطابق 100%' : '100% Balanced'}
-                          </span>
-                        </td>
-                        <td className="p-2.5 text-left text-[11px] font-semibold text-slate-800">
-                          {language === 'ar' ? reconciliationReport.grandTotal.explanationAr : reconciliationReport.grandTotal.explanationEn}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2.5 py-1 rounded bg-white/10 text-slate-200 text-[11px] font-medium border border-white/10">
+                {language === 'ar' ? `المعتمد: ${globalStats.approved} (${globalStats.approvalRate.toFixed(1)}%)` : `Approved: ${globalStats.approved} (${globalStats.approvalRate.toFixed(1)}%)`}
+              </span>
+              <span className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 text-[11px] font-medium border border-amber-400/30">
+                {language === 'ar' ? `ملغاة تاريخياً: ${Math.max(0, (globalStats.totalSubmittedSheets || 0) - (globalStats.totalUniqueDrawings || 0))}` : `Superseded: ${Math.max(0, (globalStats.totalSubmittedSheets || 0) - (globalStats.totalUniqueDrawings || 0))}`}
+              </span>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1654,7 +1489,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                        <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
                          {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
                        </th>
-                       <th colSpan={9} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
+                       <th colSpan={10} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
                          {language === 'ar' ? 'أ — عبء العمل وسجلات التقديم (HISTORICAL WORKLOAD / ROW & SUBMISSION GRAIN)' : 'A — HISTORICAL WORKLOAD / ROW & SUBMISSION GRAIN'}
                        </th>
                        <th colSpan={8} className="px-4 py-2 border-b border-r border-blue-200 bg-blue-50/90 text-[#203864] font-extrabold text-xs text-center uppercase tracking-wider">
@@ -1672,6 +1507,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                        <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
                        <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}</th>
                        <th className={`${thClass} bg-slate-300/80 font-black text-slate-950`}>{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                       <th className={`${thClass} bg-amber-100/70 text-amber-950 font-black`}>{language === 'ar' ? 'مراجعات سابقة ملغاة (Superseded)' : 'Superseded Rows'}</th>
                        <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
                        <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
                        <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
@@ -1800,6 +1636,23 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                           >
                             {row.stats.totalSubmittedSheets}
                           </button>
+                        </td>
+
+                        {/* Superseded Rows */}
+                        <td className={`${tdClass} bg-amber-50/40 text-amber-950 font-bold`}>
+                          {(() => {
+                            const supCount = row.stats.supersededRows ?? Math.max(0, (row.stats.totalSubmittedSheets || 0) - (row.stats.totalUniqueDrawings || 0));
+                            return supCount > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => openDrillDown(row.documentType, 'superseded', `${row.documentType} — Superseded Rows`, `${row.documentType} — مراجعات سابقة ملغاة`)}
+                                className="inline-block px-2 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px] border border-amber-200 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                                title={language === 'ar' ? `مراجعات سابقة تطورت لمراجعات أحدث (${row.stats.totalSubmittedSheets} صفوف - ${row.stats.totalUniqueDrawings} بنود فريدة = ${supCount})` : `Historical rows superseded by later revisions (${row.stats.totalSubmittedSheets} rows - ${row.stats.totalUniqueDrawings} unique = ${supCount})`}
+                              >
+                                {supCount}
+                              </button>
+                            ) : <span className="text-slate-400 font-normal">0</span>;
+                          })()}
                         </td>
                         
                         {/* Total Rejected Rows */}
@@ -2083,6 +1936,23 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                         >
                           {globalStats.totalSubmittedSheets}
                         </button>
+                      </td>
+
+                      {/* Superseded Rows Grand Total */}
+                      <td className="px-4 py-3.5 text-xs text-center font-black bg-amber-100/80 text-amber-950">
+                        {(() => {
+                          const totalSup = globalStats.supersededRows ?? Math.max(0, (globalStats.totalSubmittedSheets || 0) - (globalStats.totalUniqueDrawings || 0));
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => openDrillDown('ALL', 'superseded', 'All Superseded Revision Rows', 'إجمالي المراجعات السابقة الملغاة')}
+                              className="hover:underline hover:text-amber-900 font-black cursor-pointer"
+                              title={language === 'ar' ? `إجمالي المراجعات السابقة الملغاة (${globalStats.totalSubmittedSheets} - ${globalStats.totalUniqueDrawings} = ${totalSup})` : `Total Superseded Rows (${globalStats.totalSubmittedSheets} - ${globalStats.totalUniqueDrawings} = ${totalSup})`}
+                            >
+                              {totalSup}
+                            </button>
+                          );
+                        })()}
                       </td>
                       
                       {/* Total Rejected Rows */}

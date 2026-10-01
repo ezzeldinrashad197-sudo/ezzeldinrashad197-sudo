@@ -218,6 +218,7 @@ export interface KPIStats {
   delayRate: number;
   
   // 5. Mathematical Reconciliation Verification
+  supersededRows?: number;      // Historical rows superseded by subsequent revisions (Total Rows - Total Unique)
   isWorkloadReconciled?: boolean;
   isCurrentStateReconciled?: boolean;
   reconciliationPassed?: boolean;

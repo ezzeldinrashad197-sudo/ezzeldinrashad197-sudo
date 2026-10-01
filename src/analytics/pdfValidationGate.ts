@@ -31,7 +31,9 @@ export function validatePresentationPdf(
   viewModel?: PresentationViewModel
 ): PDFValidationResult {
   const errors: string[] = [];
-  const totalPages = pdf.internal.getNumberOfPages();
+  const totalPages = typeof (pdf as any).getNumberOfPages === 'function' 
+    ? (pdf as any).getNumberOfPages() 
+    : (pdf.internal as any).getNumberOfPages();
 
   if (totalPages <= 0) {
     errors.push('PDF generation failed: 0 pages generated.');
