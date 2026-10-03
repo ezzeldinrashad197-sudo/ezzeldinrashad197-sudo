@@ -1387,8 +1387,6 @@ export function calculateCanonicalKPIs(
     totalSheetsRev0 +
       totalSheetsFurtherRev;
 
-  const supersededRows = Math.max(0, totalSubmittedSheets - totalUniqueDrawings);
-
   const isCurrentStateReconciled =
     totalUniqueDrawings ===
     totalEligible;
@@ -1544,8 +1542,6 @@ export function calculateCanonicalKPIs(
     delayRate,
 
     // 4. Mathematical Invariants
-    supersededRows,
-
     isWorkloadReconciled,
 
     isCurrentStateReconciled,
