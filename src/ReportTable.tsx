@@ -5,6 +5,7 @@ import {
   calculateProjectPerformanceHealth, 
   processRevisionEngine, 
   getBusinessEntityKey, 
+  getDocumentIdentityKey,
   getSubmissionIdentityKey,
   getStatusCodeCategory, 
   getRevisionWeight, 
@@ -386,9 +387,9 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       };
     }
     const rows = filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
-    const baseForRevisions = rawDataset && rawDataset.length > 0 ? rawDataset : data;
+    const baseForRevisions = contextDataset && contextDataset.length > 0 ? contextDataset : rows;
     const revisionMap = processRevisionEngine(baseForRevisions);
-    const targetEntityKeys = new Set(rows.map(r => getBusinessEntityKey(r)));
+    const targetEntityKeys = new Set(rows.map(r => getDocumentIdentityKey(r)));
 
     let overdueRejectedOpen = 0;
     let overduePending = 0;
@@ -468,20 +469,24 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   ) => {
     const rows = docTypeFilter === 'ALL'
       ? filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
-      : filteredData.filter(d => rowToLabel(d) === docTypeFilter);
+      : filteredData.filter(d => rowToLabel(d) === docTypeFilter && !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
 
-    const baseForRevisions = rawDataset && rawDataset.length > 0 ? rawDataset : data;
+    const baseForRevisions = contextDataset && contextDataset.length > 0 ? contextDataset : rows;
     const revisionMap = processRevisionEngine(baseForRevisions);
-    const targetEntityKeys = new Set(rows.map(r => getBusinessEntityKey(r)));
+    const localRevisionMap = processRevisionEngine(rows);
+    const targetEntityKeys = new Set(rows.map(r => getDocumentIdentityKey(r)));
 
     const extracted: DrillDownItem[] = [];
 
     const mapToDrillDownItem = (r: SubmittalRow, isLatest: boolean, allRevs: string[] = []): DrillDownItem => {
       const responsible = getResponsibleParty(r);
       const cat = getStatusCodeCategory(r);
+      const baseDocNo = r.docNo || r.submissionRef || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || 'N/A';
+      const dwg = (r.drawingNo || r.sheetNo || '').trim();
+      const displayDocNo = dwg && !baseDocNo.includes(dwg) ? `${baseDocNo} [DWG: ${dwg}]` : baseDocNo;
       return {
-        id: r.id || `${r.docNo}-${r.rev}`,
-        docNo: r.docNo || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || 'N/A',
+        id: r.id || `${baseDocNo}-${dwg}-${r.rev}`,
+        docNo: displayDocNo,
         rev: r.rev || '00',
         subject: (r as any).description || (r as any).subject || (r as any).drawingTitle || (r as any).title || r.remarks || '-',
         trade: r.trade || 'General',
@@ -503,10 +508,12 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     switch (metricKey) {
       case 'superseded': {
         targetEntityKeys.forEach(key => {
-          const group = revisionMap.get(key);
+          const group = localRevisionMap.get(key);
           if (!group || group.all.length <= 1) return;
-          const latestId = group.latest?.id;
-          const supersededRows = group.all.filter(r => r.id !== latestId);
+          const latestIdx = group.all.indexOf(group.latest);
+          const supersededRows = latestIdx !== -1
+            ? group.all.filter((_, idx) => idx !== latestIdx)
+            : group.all.slice(0, -1);
           const revs = group.all.map(x => x.rev || '00');
           supersededRows.forEach(r => {
             extracted.push(mapToDrillDownItem(r, false, revs));
@@ -616,6 +623,30 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
               const revs = group.all.map(x => x.rev || '00');
               extracted.push(mapToDrillDownItem(group.latest, true, revs));
             }
+          }
+        });
+        break;
+      }
+      case 'overdueRejectedOpen': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if (cat === 'REJECTED_OPEN' && isEntityOverdue(group.latest)) {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
+          }
+        });
+        break;
+      }
+      case 'overduePending': {
+        targetEntityKeys.forEach(key => {
+          const group = revisionMap.get(key);
+          if (!group) return;
+          const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+          if ((cat === 'PENDING' || cat === 'UNCLASSIFIED') && isEntityOverdue(group.latest)) {
+            const revs = group.all.map(x => x.rev || '00');
+            extracted.push(mapToDrillDownItem(group.latest, true, revs));
           }
         });
         break;

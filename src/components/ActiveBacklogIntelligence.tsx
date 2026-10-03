@@ -112,7 +112,7 @@ export const ActiveBacklogIntelligence: React.FC<ActiveBacklogIntelligenceProps>
                   {activeOverdueCounts.rejectedOpen > 0 ? (
                     <button
                       type="button"
-                      onClick={() => openDrillDown('ALL', 'overdue', 'Overdue Rejected Open Items', 'المعاملات المرفوضة المفتوحة المتأخرة')}
+                      onClick={() => openDrillDown('ALL', 'overdueRejectedOpen', 'Overdue Rejected Open Items', 'المعاملات المرفوضة المفتوحة المتأخرة')}
                       className="inline-block px-2.5 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-extrabold cursor-pointer transition-colors shadow-xs"
                     >
                       {activeOverdueCounts.rejectedOpen}
@@ -162,7 +162,7 @@ export const ActiveBacklogIntelligence: React.FC<ActiveBacklogIntelligenceProps>
                   {activeOverdueCounts.pending > 0 ? (
                     <button
                       type="button"
-                      onClick={() => openDrillDown('ALL', 'overdue', 'Overdue Pending Items', 'المعاملات المعلقة المتأخرة')}
+                      onClick={() => openDrillDown('ALL', 'overduePending', 'Overdue Pending Items', 'المعاملات المعلقة المتأخرة')}
                       className="inline-block px-2.5 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-extrabold cursor-pointer transition-colors shadow-xs"
                     >
                       {activeOverdueCounts.pending}
