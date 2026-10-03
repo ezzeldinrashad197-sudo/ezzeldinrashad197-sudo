@@ -77,6 +77,11 @@ digraph DependencyGraph {
     "src/analytics/kpiEngine.ts" [fillcolor=lightgreen];
     "src/analytics/models.ts" [fillcolor=lightgreen];
     "src/analytics/ncr/ncrEngine.ts" [fillcolor=lightgreen];
+    "src/analytics/pdfValidationGate.ts" [fillcolor=lightgreen];
+    "src/analytics/presentationLayoutEngine.ts" [fillcolor=lightgreen];
+    "src/analytics/presentationPdfRenderer.ts" [fillcolor=lightgreen];
+    "src/analytics/presentationViewModel.ts" [fillcolor=lightgreen];
+    "src/analytics/reconciliationEngine.ts" [fillcolor=lightgreen];
     "src/analytics/recordTransformer.ts" [fillcolor=lightgreen];
     "src/analytics/revisionEngine.ts" [fillcolor=lightgreen];
     "src/analytics/sor/sorEngine.ts" [fillcolor=lightgreen];
@@ -164,6 +169,7 @@ digraph DependencyGraph {
   "src/Presentation.tsx" -> "src/utils/calculations.ts";
   "src/Presentation.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/Presentation.tsx" -> "src/analytics/ncr/ncrEngine.ts";
+  "src/Presentation.tsx" -> "src/analytics/reconciliationEngine.ts";
   "src/Presentation.tsx" -> "src/utils/i18n.tsx";
   "src/Presentation.tsx" -> "src/components/presentation/PresHelpers.tsx";
   "src/ProjectConfigModal.tsx" -> "src/types.ts";
@@ -175,6 +181,7 @@ digraph DependencyGraph {
   "src/ReportTable.tsx" -> "src/utils/calculations.ts";
   "src/ReportTable.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/ReportTable.tsx" -> "src/analytics/revisionResolver.ts";
+  "src/ReportTable.tsx" -> "src/analytics/reconciliationEngine.ts";
   "src/ReportTable.tsx" -> "src/utils/i18n.tsx";
   "src/ReportTable.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/ReportTable.tsx" -> "src/components/ActiveBacklogIntelligence.tsx";
@@ -207,9 +214,11 @@ digraph DependencyGraph {
   "src/analytics/exportEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportEngine.ts" -> "src/analytics/calculationFoundation.ts";
   "src/analytics/exportEngine.ts" -> "src/analytics/exportHelpers.ts";
+  "src/analytics/exportEngine.ts" -> "src/analytics/presentationLayoutEngine.ts";
   "src/analytics/exportHelpers.ts" -> "src/types.ts";
   "src/analytics/exportHelpers.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportHelpers.ts" -> "src/analytics/ncr/ncrEngine.ts";
+  "src/analytics/exportHelpers.ts" -> "src/analytics/presentationLayoutEngine.ts";
   "src/analytics/exportTelemetryTestSuite.ts" -> "src/analytics/exportHelpers.ts";
   "src/analytics/exportTelemetryTestSuite.ts" -> "src/types.ts";
   "src/analytics/governance/canonicalEngineAdapter.ts" -> "src/types.ts";
@@ -235,6 +244,17 @@ digraph DependencyGraph {
   "src/analytics/ncr/ncrEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/ncr/ncrEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/ncr/ncrEngine.ts" -> "src/analytics/governance/auditFramework.ts";
+  "src/analytics/pdfValidationGate.ts" -> "src/analytics/presentationViewModel.ts";
+  "src/analytics/presentationPdfRenderer.ts" -> "src/analytics/presentationViewModel.ts";
+  "src/analytics/presentationPdfRenderer.ts" -> "src/analytics/presentationLayoutEngine.ts";
+  "src/analytics/presentationViewModel.ts" -> "src/types.ts";
+  "src/analytics/presentationViewModel.ts" -> "src/utils/calculations.ts";
+  "src/analytics/presentationViewModel.ts" -> "src/analytics/exportHelpers.ts";
+  "src/analytics/presentationViewModel.ts" -> "src/analytics/presentationLayoutEngine.ts";
+  "src/analytics/reconciliationEngine.ts" -> "src/types.ts";
+  "src/analytics/reconciliationEngine.ts" -> "src/analytics/calculationFoundation.ts";
+  "src/analytics/reconciliationEngine.ts" -> "src/analytics/statusResolver.ts";
+  "src/analytics/reconciliationEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/recordTransformer.ts" -> "src/types.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/models.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/statusResolver.ts";
@@ -258,6 +278,7 @@ digraph DependencyGraph {
   "src/components/CalculationAuditCenter.tsx" -> "src/types.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/utils/calculations.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/analytics/revisionResolver.ts";
+  "src/components/CalculationAuditCenter.tsx" -> "src/analytics/reconciliationEngine.ts";
   "src/components/CalculationAuditCenter.tsx" -> "src/components/AuditIntegrityCenter.tsx";
   "src/components/CommercialValidationGateCenter.tsx" -> "src/utils/universalRegisterSchema.ts";
   "src/components/DataValidationEngine.tsx" -> "src/types.ts";
@@ -307,6 +328,8 @@ digraph DependencyGraph {
   "src/db/index.ts" -> "src/db/schema.ts";
   "src/firebase.ts" -> "firebase-applet-config.json";
   "src/hooks/useExport.ts" -> "src/analytics/exportEngine.ts";
+  "src/hooks/useExport.ts" -> "src/analytics/presentationViewModel.ts";
+  "src/hooks/useExport.ts" -> "src/analytics/presentationPdfRenderer.ts";
   "src/hooks/useExport.ts" -> "src/types.ts";
   "src/hooks/useExport.ts" -> "src/utils/i18n.tsx";
   "src/hooks/useFilters.ts" -> "src/types.ts";

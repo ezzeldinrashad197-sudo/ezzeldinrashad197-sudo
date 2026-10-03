@@ -133,6 +133,26 @@
       "layer": 2
     },
     {
+      "id": "src/analytics/pdfValidationGate.ts",
+      "layer": 2
+    },
+    {
+      "id": "src/analytics/presentationLayoutEngine.ts",
+      "layer": 2
+    },
+    {
+      "id": "src/analytics/presentationPdfRenderer.ts",
+      "layer": 2
+    },
+    {
+      "id": "src/analytics/presentationViewModel.ts",
+      "layer": 2
+    },
+    {
+      "id": "src/analytics/reconciliationEngine.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/recordTransformer.ts",
       "layer": 2
     },
@@ -576,6 +596,10 @@
     },
     {
       "source": "src/Presentation.tsx",
+      "target": "src/analytics/reconciliationEngine.ts"
+    },
+    {
+      "source": "src/Presentation.tsx",
       "target": "src/utils/i18n.tsx"
     },
     {
@@ -617,6 +641,10 @@
     {
       "source": "src/ReportTable.tsx",
       "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/ReportTable.tsx",
+      "target": "src/analytics/reconciliationEngine.ts"
     },
     {
       "source": "src/ReportTable.tsx",
@@ -747,6 +775,10 @@
       "target": "src/analytics/exportHelpers.ts"
     },
     {
+      "source": "src/analytics/exportEngine.ts",
+      "target": "src/analytics/presentationLayoutEngine.ts"
+    },
+    {
       "source": "src/analytics/exportHelpers.ts",
       "target": "src/types.ts"
     },
@@ -757,6 +789,10 @@
     {
       "source": "src/analytics/exportHelpers.ts",
       "target": "src/analytics/ncr/ncrEngine.ts"
+    },
+    {
+      "source": "src/analytics/exportHelpers.ts",
+      "target": "src/analytics/presentationLayoutEngine.ts"
     },
     {
       "source": "src/analytics/exportTelemetryTestSuite.ts",
@@ -859,6 +895,50 @@
       "target": "src/analytics/governance/auditFramework.ts"
     },
     {
+      "source": "src/analytics/pdfValidationGate.ts",
+      "target": "src/analytics/presentationViewModel.ts"
+    },
+    {
+      "source": "src/analytics/presentationPdfRenderer.ts",
+      "target": "src/analytics/presentationViewModel.ts"
+    },
+    {
+      "source": "src/analytics/presentationPdfRenderer.ts",
+      "target": "src/analytics/presentationLayoutEngine.ts"
+    },
+    {
+      "source": "src/analytics/presentationViewModel.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/presentationViewModel.ts",
+      "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/presentationViewModel.ts",
+      "target": "src/analytics/exportHelpers.ts"
+    },
+    {
+      "source": "src/analytics/presentationViewModel.ts",
+      "target": "src/analytics/presentationLayoutEngine.ts"
+    },
+    {
+      "source": "src/analytics/reconciliationEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/reconciliationEngine.ts",
+      "target": "src/analytics/calculationFoundation.ts"
+    },
+    {
+      "source": "src/analytics/reconciliationEngine.ts",
+      "target": "src/analytics/statusResolver.ts"
+    },
+    {
+      "source": "src/analytics/reconciliationEngine.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
       "source": "src/analytics/recordTransformer.ts",
       "target": "src/types.ts"
     },
@@ -949,6 +1029,10 @@
     {
       "source": "src/components/CalculationAuditCenter.tsx",
       "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/components/CalculationAuditCenter.tsx",
+      "target": "src/analytics/reconciliationEngine.ts"
     },
     {
       "source": "src/components/CalculationAuditCenter.tsx",
@@ -1145,6 +1229,14 @@
     {
       "source": "src/hooks/useExport.ts",
       "target": "src/analytics/exportEngine.ts"
+    },
+    {
+      "source": "src/hooks/useExport.ts",
+      "target": "src/analytics/presentationViewModel.ts"
+    },
+    {
+      "source": "src/hooks/useExport.ts",
+      "target": "src/analytics/presentationPdfRenderer.ts"
     },
     {
       "source": "src/hooks/useExport.ts",

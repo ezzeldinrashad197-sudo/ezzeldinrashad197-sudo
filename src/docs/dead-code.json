@@ -737,6 +737,62 @@
       "referencedBy": []
     },
     {
+      "file": "src/analytics/pdfValidationGate.ts",
+      "exportName": "PDFValidationResult",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'PDFValidationResult' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/pdfValidationGate.ts",
+      "exportName": "validatePresentationPdf",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'validatePresentationPdf' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/presentationLayoutEngine.ts",
+      "exportName": "TableColumnDef",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'TableColumnDef' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/reconciliationEngine.ts",
+      "exportName": "ComprehensiveReconciliationReport",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ComprehensiveReconciliationReport' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/reconciliationEngine.ts",
+      "exportName": "getRowRegister",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getRowRegister' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/reconciliationEngine.ts",
+      "exportName": "getRowSubmittalRef",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getRowSubmittalRef' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/reconciliationEngine.ts",
+      "exportName": "getRowDeliverableKey",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'getRowDeliverableKey' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/recordTransformer.ts",
       "exportName": "transformRecords",
       "type": "Function",
@@ -1174,22 +1230,6 @@
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'evaluatePerformanceLayer' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/calculations.ts",
-      "exportName": "getDocumentIdentityKey",
-      "type": "Constant/Enum/Class",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'getDocumentIdentityKey' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/calculations.ts",
-      "exportName": "getSubmissionIdentityKey",
-      "type": "Constant/Enum/Class",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'getSubmissionIdentityKey' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -1697,6 +1737,7 @@
     "src/analytics/governance/canonicalEngineAdapter.ts",
     "src/analytics/governance/configurationRepository.ts",
     "src/analytics/kpiEngine.ts",
+    "src/analytics/pdfValidationGate.ts",
     "src/analytics/recordTransformer.ts",
     "src/db/index.ts",
     "src/db/schema.ts",
