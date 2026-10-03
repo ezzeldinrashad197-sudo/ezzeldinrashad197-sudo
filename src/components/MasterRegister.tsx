@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { SubmittalRow, ProjectSettings } from '../types';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { SubmittalRow, ProjectSettings, KPIStats } from '../types';
 import { calculateStats, getStatusCodeCategory } from '../utils/calculations';
-import { exportPerformanceValidationCsv, getPerformanceValidationRows } from '../analytics/calculationFoundation';
+import { exportPerformanceValidationCsv } from '../analytics/calculationFoundation';
 import { isValidRevision } from '../analytics/revisionResolver';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -15,6 +15,7 @@ import {
 interface Props {
   data: SubmittalRow[];
   projectInfo: ProjectSettings | null;
+  precomputedStats?: KPIStats;
 }
 
 const CONSTANTS = {
@@ -25,40 +26,88 @@ const CONSTANTS = {
     PURPLE: '#8B5CF6'
 };
 
-export default function MasterRegister({ data, projectInfo }: Props) {
-    const stats = useMemo(() => calculateStats(data), [data]);
+const VIRTUAL_ROW_HEIGHT = 45;
+const VIRTUAL_VIEWPORT_HEIGHT = 600;
+const VIRTUAL_OVERSCAN = 10;
+
+export default function MasterRegister({ data, projectInfo, precomputedStats }: Props) {
+    const prevDataRef = useRef<SubmittalRow[]>(data);
+    const stableData = useMemo(() => {
+        const prev = prevDataRef.current;
+        if (prev === data) return prev;
+        if (prev.length === data.length) {
+            let same = true;
+            for (let i = 0; i < data.length; i++) {
+                if (prev[i] !== data[i]) {
+                    same = false;
+                    break;
+                }
+            }
+            if (same) return prev;
+        }
+        prevDataRef.current = data;
+        return data;
+    }, [data]);
+
+    const stats = useMemo(() => precomputedStats ?? calculateStats(stableData), [stableData, precomputedStats]);
     
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'kpi' | 'grid'>('kpi');
     const [filterDiscipline, setFilterDiscipline] = useState('All');
-    const [showPerfModal, setShowPerfModal] = useState(false);
+    const [scrollTop, setScrollTop] = useState(0);
+    const gridScrollRef = useRef<HTMLDivElement | null>(null);
 
-    const perfRows = useMemo(() => getPerformanceValidationRows(data), [data]);
-
-    const filteredPerfRows = useMemo(() => {
-        if (!searchTerm) return perfRows;
-        const s = searchTerm.toLowerCase();
-        return perfRows.filter(r => r.businessEntityKey.toLowerCase().includes(s) || r.latestStatus.toLowerCase().includes(s));
-    }, [perfRows, searchTerm]);
-
-    // Advanced derived metrics
-    const openRecords = useMemo(() => data.filter(d => getStatusCodeCategory(d.status) === 'PENDING').length, [data]);
-    const closedRecords = data.length - openRecords;
+    // Advanced derived metrics (zero intermediate array allocation)
+    const openRecords = useMemo(() => {
+        let count = 0;
+        for (let i = 0; i < stableData.length; i++) {
+            if (getStatusCodeCategory(stableData[i].status) === 'PENDING') count++;
+        }
+        return count;
+    }, [stableData]);
+    const closedRecords = stableData.length - openRecords;
 
     const filteredData = useMemo(() => {
-        return data.filter(d => {
+        if (filterDiscipline === 'All' && !searchTerm) return stableData;
+        const s = searchTerm ? searchTerm.toLowerCase() : '';
+        return stableData.filter(d => {
             if (filterDiscipline !== 'All' && d.discipline !== filterDiscipline) return false;
-            if (searchTerm) {
-                const s = searchTerm.toLowerCase();
+            if (s) {
                 return (d.docNo || '').toLowerCase().includes(s) || 
                        (d.subject || '').toLowerCase().includes(s) || 
                        (d.status || '').toLowerCase().includes(s);
             }
             return true;
         });
-    }, [data, searchTerm, filterDiscipline]);
+    }, [stableData, searchTerm, filterDiscipline]);
 
-    const disciplines = Array.from(new Set(data.map(d => d.discipline).filter(Boolean)));
+    const disciplines = useMemo(() => {
+        const set = new Set<string>();
+        for (let i = 0; i < stableData.length; i++) {
+            const disc = stableData[i].discipline;
+            if (disc) set.add(disc);
+        }
+        return Array.from(set);
+    }, [stableData]);
+
+    // Reset virtual scroll position when filter criteria change
+    useEffect(() => {
+        setScrollTop(0);
+        if (gridScrollRef.current) {
+            gridScrollRef.current.scrollTop = 0;
+        }
+    }, [searchTerm, filterDiscipline, stableData]);
+
+    const totalRows = filteredData.length;
+    const startIndex = Math.max(0, Math.floor(scrollTop / VIRTUAL_ROW_HEIGHT) - VIRTUAL_OVERSCAN);
+    const visibleCount = Math.ceil(VIRTUAL_VIEWPORT_HEIGHT / VIRTUAL_ROW_HEIGHT) + 2 * VIRTUAL_OVERSCAN;
+    const endIndex = Math.min(totalRows, startIndex + visibleCount);
+    const visibleRows = useMemo(
+        () => filteredData.slice(startIndex, endIndex),
+        [filteredData, startIndex, endIndex]
+    );
+    const topSpacerHeight = startIndex * VIRTUAL_ROW_HEIGHT;
+    const bottomSpacerHeight = Math.max(0, (totalRows - endIndex) * VIRTUAL_ROW_HEIGHT);
 
     return (
         <div className="p-6 max-w-[1600px] mx-auto space-y-6">
@@ -99,16 +148,18 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredData.slice(0, 10).map((row, i) => (
-                                            <tr key={i} className="hover:bg-slate-50">
+                                        {filteredData.slice(0, 10).map((row, i) => {
+                                            const statusCat = getStatusCodeCategory(row.status);
+                                            return (
+                                            <tr key={row.id || i} className="hover:bg-slate-50">
                                                 <td className="px-4 py-3 font-mono font-medium">{row.docNo || row.ncrRef || row.sorRef || row.normalizedRef || row.id}</td>
                                                 <td className="px-4 py-3"><span className="px-2 py-0.5 bg-slate-100 rounded text-xs font-bold text-slate-600 border border-slate-200">{row.documentType || row.logType}</span></td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded-sm ${getStatusCodeCategory(row.status) === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : getStatusCodeCategory(row.status) === 'REJECTED_OPEN' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-amber-100 text-amber-800 border-amber-200'}`}>{row.status}</span>
+                                                    <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded-sm ${statusCat === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : statusCat === 'REJECTED_OPEN' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-amber-100 text-amber-800 border-amber-200'}`}>{row.status}</span>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-500">{row.responseDate || row.submissionDate || '-'}</td>
                                             </tr>
-                                        ))}
+                                        )})}
                                     </tbody>
                                 </table>
                             </div>
@@ -155,6 +206,9 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                                  <option value="All">All Disciplines</option>
                                  {disciplines.map(d => <option key={d} value={d}>{d}</option>)}
                              </select>
+                             <span className="text-xs font-medium text-slate-500">
+                                 Showing {totalRows === 0 ? 0 : startIndex + 1}–{endIndex} of {totalRows} records
+                             </span>
                          </div>
                          <div className="flex items-center gap-2">
                              <button 
@@ -206,7 +260,11 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                              </button>
                          </div>
                      </div>
-                     <div className="overflow-auto flex-1">
+                     <div
+                        ref={gridScrollRef}
+                        onScroll={e => setScrollTop(e.currentTarget.scrollTop)}
+                        className="overflow-auto flex-1 max-h-[600px]"
+                     >
                         <table className="w-full text-sm text-left whitespace-nowrap">
                             <thead className="text-[10px] uppercase tracking-widest text-slate-500 bg-white sticky top-0 border-b border-slate-200 shadow-sm z-10">
                                 <tr>
@@ -219,13 +277,20 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredData.map((row, i) => {
+                                {topSpacerHeight > 0 && (
+                                    <tr aria-hidden="true" style={{ height: `${topSpacerHeight}px` }}>
+                                        <td colSpan={6} className="p-0 border-0" />
+                                    </tr>
+                                )}
+                                {visibleRows.map((row, idx) => {
+                                    const rowIndex = startIndex + idx;
                                     const isMissingDocNo = !row.docNo && !row.ncrRef && !row.sorRef && !row.normalizedRef && !row.id;
                                     const isMissingRev = !isValidRevision(row.rev);
                                     const isMissingDate = !row.submissionDate;
                                     const isMissingStatus = !row.status;
+                                    const statusCat = isMissingStatus ? 'UNCLASSIFIED' : getStatusCodeCategory(row.status);
                                     return (
-                                    <tr key={i} className="hover:bg-slate-50">
+                                    <tr key={row.id || rowIndex} className="hover:bg-slate-50">
                                         <td className={`px-6 py-3 font-mono font-medium text-slate-900 ${isMissingDocNo ? 'bg-red-100 border-l border-red-500' : ''}`}>
                                             {row.docNo || row.ncrRef || row.sorRef || row.normalizedRef || row.id || <span className="text-red-500 font-bold uppercase text-[10px]">MISSING</span>}
                                         </td>
@@ -239,11 +304,16 @@ export default function MasterRegister({ data, projectInfo }: Props) {
                                         </td>
                                         <td className={`px-6 py-3 ${isMissingStatus ? 'bg-red-100' : ''}`}>
                                             {isMissingStatus ? <span className="text-red-500 font-bold uppercase text-[10px]">MISSING</span> : (
-                                                <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded-sm ${getStatusCodeCategory(row.status) === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : getStatusCodeCategory(row.status) === 'REJECTED_OPEN' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>{row.status}</span>
+                                                <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded-sm ${statusCat === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : statusCat === 'REJECTED_OPEN' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>{row.status}</span>
                                             )}
                                         </td>
                                     </tr>
                                 )})}
+                                {bottomSpacerHeight > 0 && (
+                                    <tr aria-hidden="true" style={{ height: `${bottomSpacerHeight}px` }}>
+                                        <td colSpan={6} className="p-0 border-0" />
+                                    </tr>
+                                )}
                                 {filteredData.length === 0 && (
                                     <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">No records match the current filters.</td></tr>
                                 )}
