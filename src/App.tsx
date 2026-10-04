@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileSpreadsheet, FileUp, LayoutDashboard, CalendarDays, Clock, Database, CheckCircle2, AlertCircle, Printer, Presentation as PresentationIcon, Filter, Settings, Bot, ChevronLeft, ChevronRight, BarChart, Loader2, FileText, CheckSquare, ShieldAlert, ShieldCheck, Network, Hexagon, LogOut, Globe, Cpu, Layers } from 'lucide-react';
 import { SubmittalRow, ProjectSettings } from './types';
 import MasterRegister from './components/MasterRegister';
@@ -255,16 +255,41 @@ export default function App() {
   // Custom Hooks
   const { parseMessage, isError, isLoading, fileInputRef, handleFileUpload, setParseMessage, setIsError } = useUpload(setData, setActiveTab as any, setStartDate, setEndDate);
   const { filters, pendingFilters, setPendingFilters, applyFilters, resetFilters, isDirty, uniqueOpts, matchesFilters, filterMonthly, filterCumulative } = useFilters(data, startDate, endDate);
-  
+
+  const isExcludedFromGeneralStats = (row: SubmittalRow) => {
+    const docT = row.documentType ? row.documentType.toUpperCase() : '';
+    const logT = row.logType ? row.logType.toUpperCase() : '';
+    return docT.includes('RFI') || logT.includes('RFI') || docT.includes('NCR') || logT.includes('NCR') || docT.includes('SOR') || logT.includes('SOR') || docT.includes('LTR') || logT.includes('LETTERS') || logT.includes('LTR');
+  };
+
+  const generalData = useMemo(() => data.filter(d => !isExcludedFromGeneralStats(d)), [data]);
+  const filteredData = useMemo(() => data.filter(matchesFilters), [data, matchesFilters]);
+  const cumulativeFilteredData = useMemo(() => data.filter(filterCumulative), [data, filterCumulative]);
+  const isAllGeneralCumulative = useMemo(
+    () => generalData.length > 0 && generalData.every(filterCumulative),
+    [generalData, filterCumulative]
+  );
+
+  const generalStatsCacheRef = React.useRef<{ data: SubmittalRow[]; stats: ReturnType<typeof calculateStats> } | null>(null);
+  const getGeneralStats = React.useCallback(() => {
+    if (generalData.length === 0) return null;
+    if (generalStatsCacheRef.current && generalStatsCacheRef.current.data === generalData) {
+      return generalStatsCacheRef.current.stats;
+    }
+    const stats = calculateStats(generalData);
+    generalStatsCacheRef.current = { data: generalData, stats };
+    return stats;
+  }, [generalData]);
+
   useEffect(() => {
-    if (data.length > 0 && activeProjectId) {
+    if (generalData.length > 0 && activeProjectId) {
        const timer = setTimeout(() => {
-                 // ARCHITECTURE FIX (F-01/F-07, 2026-08-25): reads approvalRate/overdue directly from
+         // ARCHITECTURE FIX (F-01/F-07, 2026-08-25): reads approvalRate/overdue directly from
          // the SSOT's calculateStats() output instead of re-deriving them locally, and gets
          // health score from the same calculateProjectPerformanceHealth() used elsewhere in
          // the app, instead of a different local formula.
-         const generalData = data.filter(d => !isExcludedFromGeneralStats(d));
-         const stats = calculateStats(generalData);
+         const stats = getGeneralStats();
+         if (!stats) return;
          const totalDocs = stats.totalSubmittedSheets;
          const approvalRate = stats.approvalRate;
          const overdue = stats.overdue;
@@ -280,7 +305,7 @@ export default function App() {
        }, 1000);
        return () => clearTimeout(timer);
     }
-   }, [data, activeProjectId, language]);
+   }, [generalData, getGeneralStats, activeProjectId, language]);
 
   const { isExporting, setIsExporting, handleDownloadPPTX, handleDownloadPDF } = useExport({
       data,
@@ -300,12 +325,6 @@ export default function App() {
   const triggerExportFlow = (type: 'pdf' | 'pptx') => {
     setPendingExportType(type);
     setShowExportModal(true);
-  };
-
-  const isExcludedFromGeneralStats = (row: SubmittalRow) => {
-    const docT = row.documentType ? row.documentType.toUpperCase() : '';
-    const logT = row.logType ? row.logType.toUpperCase() : '';
-    return docT.includes('RFI') || logT.includes('RFI') || docT.includes('NCR') || logT.includes('NCR') || docT.includes('SOR') || logT.includes('SOR') || docT.includes('LTR') || logT.includes('LETTERS') || logT.includes('LTR');
   };
 
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => {
@@ -716,30 +735,30 @@ export default function App() {
                 </div>
                 ) : (
                 <div className="transition-all">
-                  {activeTab === 'universal_engine' && <UniversalRegisterEngine data={data.filter(matchesFilters)} />}
+                  {activeTab === 'universal_engine' && <UniversalRegisterEngine data={filteredData} />}
                   {activeTab === 'portfolio' && <PortfolioCenter projects={projects} />}
                   {activeTab === 'monitoring' && <EnterpriseMonitoringDashboard />}
                   {activeTab === 'mapping' && <WorkflowMappingCenter data={data} onDataRefreshNeeded={() => setData(prev => normalizeData(prev))} />}
-                  {activeTab === 'enterprise_dashboard' && data.length > 0 && <EnterpriseDashboard data={data.filter(matchesFilters)} />}
-                  {activeTab === 'master_register' && data.length > 0 && <MasterRegister data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'validation' && <DataValidationEngine data={data.filter(matchesFilters)} />}
-                  {activeTab === 'engineering_dataset' && <EngineeringItemDatasetView data={data.filter(matchesFilters)} />}
-                  {activeTab === 'aging' && <AdvancedAgingAnalysis data={data.filter(filterCumulative)} projectInfo={activeProject} />}
-                  {activeTab === 'sla' && <SLAMonitoring data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'actions' && <ActionTracker data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'trend_forecast' && <TrendAndForecastEngine data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'warehouse' && <HistoricalDataWarehouse data={data.filter(matchesFilters)} projects={projects} />}
-                  {activeTab === 'final_audit' && <FinalAcceptanceAuditView data={data.filter(matchesFilters)} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} />}
-                  {activeTab === 'calc_audit' && <CalculationAuditCenter data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'monthly' && <ReportTable data={data.filter(d => !isExcludedFromGeneralStats(d))} filterFn={filterMonthly} title="Monthly KPI Analytics" projectInfo={activeProject} rawDataset={data} />}
-                  {activeTab === 'cumulative' && <ReportTable data={data.filter(d => !isExcludedFromGeneralStats(d))} filterFn={filterCumulative} title="Cumulative Performance Analytics" projectInfo={activeProject} rawDataset={data} />}
-                  {activeTab === 'delay' && <DelayAnalysis data={data.filter(filterCumulative)} projectInfo={activeProject} />}
-                  {activeTab === 'rfi' && <RFIAnalytics data={data.filter(matchesFilters)} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'presentation' && <Presentation data={data.filter(matchesFilters)} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} />}
-                  {activeTab === 'insights' && <AIInsights data={data.filter(matchesFilters)} projectInfo={activeProject} />}
-                  {activeTab === 'ncr' && <NCRAnalytics data={data.filter(matchesFilters)} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'sor' && <SORAnalytics data={data.filter(matchesFilters)} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'ltr' && <CorrespondenceAnalytics data={data.filter(matchesFilters)} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'enterprise_dashboard' && data.length > 0 && <EnterpriseDashboard data={filteredData} />}
+                  {activeTab === 'master_register' && data.length > 0 && <MasterRegister data={filteredData} projectInfo={activeProject} precomputedStats={filteredData.length === generalData.length && generalData.length === data.length ? (getGeneralStats() ?? undefined) : undefined} />}
+                  {activeTab === 'validation' && <DataValidationEngine data={filteredData} />}
+                  {activeTab === 'engineering_dataset' && <EngineeringItemDatasetView data={filteredData} />}
+                  {activeTab === 'aging' && <AdvancedAgingAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
+                  {activeTab === 'sla' && <SLAMonitoring data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'actions' && <ActionTracker data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'trend_forecast' && <TrendAndForecastEngine data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'warehouse' && <HistoricalDataWarehouse data={filteredData} projects={projects} />}
+                  {activeTab === 'final_audit' && <FinalAcceptanceAuditView data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} />}
+                  {activeTab === 'calc_audit' && <CalculationAuditCenter data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'monthly' && <ReportTable data={generalData} filterFn={filterMonthly} title="Monthly KPI Analytics" projectInfo={activeProject} rawDataset={data} />}
+                  {activeTab === 'cumulative' && <ReportTable data={generalData} filterFn={filterCumulative} title="Cumulative Performance Analytics" projectInfo={activeProject} rawDataset={data} precomputedGlobalStats={isAllGeneralCumulative ? (getGeneralStats() ?? undefined) : undefined} />}
+                  {activeTab === 'delay' && <DelayAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
+                  {activeTab === 'rfi' && <RFIAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'presentation' && <Presentation data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} />}
+                  {activeTab === 'insights' && <AIInsights data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'ncr' && <NCRAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'sor' && <SORAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'ltr' && <CorrespondenceAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
                 </div>
                 )}
 

@@ -181,12 +181,27 @@ export const parseExcelWorkbook = (
 
   // =========================================================================
   // PHASE W — WORKBOOK-LEVEL CANONICAL PARENT REGISTER RESOLUTION
+  // Cache converted worksheet rows once so Phase W and extraction never call
+  // XLSX.utils.sheet_to_json() twice on the same worksheet.
   // =========================================================================
+  const sheetRowsCache = new Map<string, (string | number | boolean | Date | null)[][]>();
+  const getSheetRows = (sName: string): (string | number | boolean | Date | null)[][] => {
+    let cached = sheetRowsCache.get(sName);
+    if (!cached) {
+      const ws = wb.Sheets[sName];
+      cached = ws
+        ? (XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as (string | number | boolean | Date | null)[][])
+        : [];
+      sheetRowsCache.set(sName, cached);
+    }
+    return cached;
+  };
+
   const sampleWorkbookRefs: string[] = [];
   for (const sName of wb.SheetNames) {
     const ws = wb.Sheets[sName];
     if (!ws) continue;
-    const sampleJson = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as any[][];
+    const sampleJson = getSheetRows(sName);
     for (let rIdx = 0; rIdx < Math.min(25, sampleJson.length); rIdx++) {
       const row = sampleJson[rIdx];
       if (Array.isArray(row)) {
@@ -210,11 +225,9 @@ export const parseExcelWorkbook = (
 
   wb.SheetNames.forEach((sheetName) => {
     const ws = wb.Sheets[sheetName];
+    if (!ws) return;
 
-    const rawData = XLSX.utils.sheet_to_json(ws, {
-      header: 1,
-      raw: false,
-    }) as (string | number | boolean | Date | null)[][];
+    const rawData = getSheetRows(sheetName);
 
     let headerRowIdx = -1;
     let logInfoStr = "";
@@ -253,8 +266,8 @@ export const parseExcelWorkbook = (
     const rows = rawData.slice(headerRowIdx + 1);
 
     const activeProjectId =
-      typeof window !== "undefined"
-        ? localStorage.getItem("docuCtrl_activeProjectId") ||
+      typeof window !== "undefined" && window.localStorage
+        ? window.localStorage.getItem("docuCtrl_activeProjectId") ||
           "default_project"
         : "default_project";
 
@@ -616,6 +629,340 @@ export const parseExcelWorkbook = (
       }
     }
 
+    const sheetUpper = sheetName.toUpperCase();
+    const sheetLower = sheetName.toLowerCase();
+    const sheetHasNcr = sheetUpper.includes("NCR");
+    const sheetHasRfi = sheetUpper.includes("RFI");
+
+    /*
+     * Extract a discipline from an arbitrary reference/text value.
+     *
+     * This function is intentionally local to the parser so the
+     * certified calculation engine remains untouched.
+     */
+    const extractDiscipline = (
+      str: string,
+    ): string | null => {
+      const t = str.toUpperCase().trim();
+
+      if (
+        t.includes("STR/SUR") ||
+        t.includes("STR-SUR") ||
+        t.includes("STR_SUR")
+      ) {
+        return "STR/SUR";
+      }
+
+      // Composite register pattern.
+      // Example:
+      // INN-ARC-WIR-SUR-01938 -> SUR
+      // WIR-ARC -> ARCH
+      const compMatch = t.match(
+        /\b(?:WIR|SDW|MAR|RFI|NCR|MIR|SOR|ABD|DOC|QS|LTR)[-_ /](SUR|SURV|SURVEY|STR|STRUCT|STRUCTURAL|CIVIL|CVL|ARC|ARCH|ARCHITECTURAL|MEC|MECH|MECHANICAL|HVAC|ELE|ELEC|ELECTRICAL|MEP|INFRA|INFR|INF|INFRASTRUCTURE|UTILITIES|LND|LAND|LANDSCAPE|IRR|IRRIGATION|HSE|SAFETY|GEN|GENERAL)\b/,
+      );
+
+      if (compMatch) {
+        const token = compMatch[1];
+
+        if (
+          ["SUR", "SURV", "SURVEY"].includes(token)
+        ) {
+          return "SURVEY";
+        }
+
+        if (
+          ["ARC", "ARCH", "ARCHITECTURAL"].includes(token)
+        ) {
+          return "ARCH";
+        }
+
+        if (
+          [
+            "STR",
+            "STRUCT",
+            "STRUCTURAL",
+            "CIVIL",
+            "CVL",
+          ].includes(token)
+        ) {
+          return "STR";
+        }
+
+        if (
+          [
+            "ELE",
+            "ELEC",
+            "ELECTRICAL",
+          ].includes(token)
+        ) {
+          return "ELEC";
+        }
+
+        if (
+          [
+            "MEC",
+            "MECH",
+            "MECHANICAL",
+            "HVAC",
+          ].includes(token)
+        ) {
+          return "MECH";
+        }
+
+        if (["MEP"].includes(token)) {
+          return "MEP";
+        }
+
+        if (
+          [
+            "INFRA",
+            "INFR",
+            "INF",
+            "INFRASTRUCTURE",
+            "UTILITIES",
+          ].includes(token)
+        ) {
+          return "INFRA";
+        }
+
+        if (
+          [
+            "LND",
+            "LAND",
+            "LANDSCAPE",
+          ].includes(token)
+        ) {
+          return "LAND";
+        }
+
+        if (
+          [
+            "IRR",
+            "IRRIGATION",
+          ].includes(token)
+        ) {
+          return "IRR";
+        }
+
+        if (
+          [
+            "HSE",
+            "SAFETY",
+          ].includes(token)
+        ) {
+          return "HSE";
+        }
+
+        if (
+          [
+            "GEN",
+            "GENERAL",
+          ].includes(token)
+        ) {
+          return "GEN";
+        }
+      }
+
+      let words = t
+        .split(/[-_ \/(),&.]+/)
+        .filter(Boolean);
+
+      // Strip contractor-consultant prefix.
+      // Example: INN-ARC or INN-ACE.
+      if (
+        words.length > 2 &&
+        words[0] === "INN" &&
+        (
+          words[1] === "ARC" ||
+          words[1] === "ACE"
+        )
+      ) {
+        words = words.slice(2);
+      }
+
+      // Explicit multi-discipline name.
+      if (
+        words.includes("STR") &&
+        (
+          words.includes("ARC") ||
+          words.includes("ARCH")
+        )
+      ) {
+        return null;
+      }
+
+      if (
+        words.includes("MEP") ||
+        words.includes("M.E.P") ||
+        t.includes("كهروميكانيك") ||
+        t.includes("اليكتروميكانيك") ||
+        t.includes("الكتروميكانيك")
+      ) {
+        return "MEP";
+      }
+
+      if (
+        words.includes("SUR") ||
+        words.includes("SURV") ||
+        words.includes("SURVEY") ||
+        t.includes("SURVEY") ||
+        t.includes("مساحة") ||
+        t.includes("مساحه")
+      ) {
+        return "SURVEY";
+      }
+
+      if (
+        words.includes("ARC") ||
+        words.includes("ARCH") ||
+        words.includes("ARCHITECTURAL") ||
+        t.includes("ARCHITECT") ||
+        t.includes("معماري") ||
+        t.includes("معمارى")
+      ) {
+        return "ARCH";
+      }
+
+      if (
+        words.includes("STR") ||
+        words.includes("STRUCT") ||
+        words.includes("STRUCTURAL") ||
+        words.includes("CIVIL") ||
+        words.includes("CVL") ||
+        t.includes("انشائي") ||
+        t.includes("إنشائي") ||
+        t.includes("انشائى") ||
+        t.includes("إنشائى")
+      ) {
+        return "STR";
+      }
+
+      if (
+        words.includes("MEC") ||
+        words.includes("MECH") ||
+        words.includes("MECHANICAL") ||
+        t.includes("MECHANIC") ||
+        t.includes("ميكانيك") ||
+        t.includes("ميكانيكا")
+      ) {
+        return "MECH";
+      }
+
+      if (
+        words.includes("ELE") ||
+        words.includes("ELEC") ||
+        words.includes("ELECTRICAL") ||
+        t.includes("ELECTRIC") ||
+        t.includes("كهربا") ||
+        t.includes("كهرباء")
+      ) {
+        return "ELEC";
+      }
+
+      if (
+        words.includes("INF") ||
+        words.includes("INFR") ||
+        words.includes("INFRA") ||
+        words.includes("INFRASTRUCTURE") ||
+        t.includes("طرق") ||
+        t.includes("بنية تحتية")
+      ) {
+        return "INFRA";
+      }
+
+      if (
+        words.includes("LND") ||
+        words.includes("LAN") ||
+        words.includes("LAND") ||
+        t.includes("LANDSCAPE") ||
+        t.includes("لاندسكيب") ||
+        t.includes("لاند سكيب")
+      ) {
+        return "LAND";
+      }
+
+      if (
+        words.includes("HSE") ||
+        words.includes("SAFETY") ||
+        words.includes("HEALTH") ||
+        words.includes("ENV") ||
+        words.includes("ENVIRO") ||
+        t.includes("SAFETY") ||
+        t.includes("سلامة") ||
+        t.includes("سلامه") ||
+        t.includes("بيئة") ||
+        t.includes("بيئه")
+      ) {
+        return "HSE";
+      }
+
+      return null;
+    };
+
+    const isLetter =
+      contextualStr.includes("letter") ||
+      contextualStr.includes("ltr") ||
+      sheetLower.includes("letter") ||
+      sheetLower.includes("ltr") ||
+      sheetName.includes("خطابات") ||
+      fileName.includes("خطابات");
+
+    const isNcr =
+      sheetLower.includes("ncr") ||
+      fileName.toLowerCase().includes("ncr") ||
+      sheetName.includes("عدم") ||
+      fileName.includes("عدم") ||
+      (detectedType === "NCR") ||
+      (compIdent?.family === "NCR") ||
+      (!authoritativeSourceName && (
+        contextualStr.includes("ncr") ||
+        contextualStr.includes("hse") ||
+        contextualStr.includes("safety")
+      ));
+
+    const compDisc = compIdent?.discipline;
+
+    const isCompDiscValid =
+      !!compDisc &&
+      compDisc !== "UNCLASSIFIED";
+
+    const isRfiWorksheet =
+      detectedType === "RFI" ||
+      compIdent?.family === "RFI";
+
+    const isMultiDisciplineSource =
+      isRfiWorksheet ||
+      compDisc === "MULTIDISCIPLINE" ||
+      compDisc === "MIXED" ||
+      compDisc === "ALL" ||
+      compDisc === "GEN" ||
+      compDisc === "GENERAL" ||
+      compIdent?.evidenceLevel === "LEVEL_7_UNCLASSIFIED_FALLBACK";
+
+    const isRegisterDisciplineLocked =
+      !isMultiDisciplineSource &&
+      isCompDiscValid &&
+      (
+        compIdent?.isRegisterLocked === true ||
+        compIdent?.evidenceLevel === "LEVEL_1_FILENAME_COMPOSITE" ||
+        compIdent?.evidenceLevel === "LEVEL_2_WORKSHEET_COMPOSITE" ||
+        compIdent?.evidenceLevel === "LEVEL_3_HEADER_TITLE_BLOCK" ||
+        (!!compIdent?.compositeCode && compIdent.compositeCode.includes("-"))
+      );
+
+    const cleanFileBase = fileName.replace(/\.[^/.]+$/, "").trim();
+    const sheetDiscInfo = normalizeDisciplineName(sheetName);
+    const isSheetDisc = isDisciplineSheet(sheetName);
+    const normalizedDisciplineCache = new Map<string, string>();
+    const getCachedNormalizedDiscipline = (val: string): string => {
+      let cached = normalizedDisciplineCache.get(val);
+      if (cached === undefined) {
+        cached = normalizeDiscipline(val, activeProjectId);
+        normalizedDisciplineCache.set(val, cached);
+      }
+      return cached;
+    };
+
     rows.forEach((r, idx: number) => {
       if (!r || !Array.isArray(r) || r.length === 0) return;
 
@@ -633,7 +980,7 @@ export const parseExcelWorkbook = (
         !submissionDate &&
         !responseDate &&
         colNcrRef === -1 &&
-        !sheetName.toUpperCase().includes("NCR")
+        !sheetHasNcr
       ) {
         return;
       }
@@ -660,370 +1007,13 @@ export const parseExcelWorkbook = (
           .trim()
           .toUpperCase();
       } else if (
-        sheetName.toUpperCase().includes("RFI") &&
+        sheetHasRfi &&
         r[3]
       ) {
         rawDiscipline = String(r[3])
           .trim()
           .toUpperCase();
       }
-
-      /*
-       * Extract a discipline from an arbitrary reference/text value.
-       *
-       * This function is intentionally local to the parser so the
-       * certified calculation engine remains untouched.
-       */
-      const extractDiscipline = (
-        str: string,
-      ): string | null => {
-        const t = str.toUpperCase().trim();
-
-        if (
-          t.includes("STR/SUR") ||
-          t.includes("STR-SUR") ||
-          t.includes("STR_SUR")
-        ) {
-          return "STR/SUR";
-        }
-
-        // Composite register pattern.
-        // Example:
-        // INN-ARC-WIR-SUR-01938 -> SUR
-        // WIR-ARC -> ARCH
-        const compMatch = t.match(
-          /\b(?:WIR|SDW|MAR|RFI|NCR|MIR|SOR|ABD|DOC|QS|LTR)[-_ /](SUR|SURV|SURVEY|STR|STRUCT|STRUCTURAL|CIVIL|CVL|ARC|ARCH|ARCHITECTURAL|MEC|MECH|MECHANICAL|HVAC|ELE|ELEC|ELECTRICAL|MEP|INFRA|INFR|INF|INFRASTRUCTURE|UTILITIES|LND|LAND|LANDSCAPE|IRR|IRRIGATION|HSE|SAFETY|GEN|GENERAL)\b/,
-        );
-
-        if (compMatch) {
-          const token = compMatch[1];
-
-          if (
-            ["SUR", "SURV", "SURVEY"].includes(token)
-          ) {
-            return "SURVEY";
-          }
-
-          if (
-            ["ARC", "ARCH", "ARCHITECTURAL"].includes(token)
-          ) {
-            return "ARCH";
-          }
-
-          if (
-            [
-              "STR",
-              "STRUCT",
-              "STRUCTURAL",
-              "CIVIL",
-              "CVL",
-            ].includes(token)
-          ) {
-            return "STR";
-          }
-
-          if (
-            [
-              "ELE",
-              "ELEC",
-              "ELECTRICAL",
-            ].includes(token)
-          ) {
-            return "ELEC";
-          }
-
-          if (
-            [
-              "MEC",
-              "MECH",
-              "MECHANICAL",
-              "HVAC",
-            ].includes(token)
-          ) {
-            return "MECH";
-          }
-
-          if (["MEP"].includes(token)) {
-            return "MEP";
-          }
-
-          if (
-            [
-              "INFRA",
-              "INFR",
-              "INF",
-              "INFRASTRUCTURE",
-              "UTILITIES",
-            ].includes(token)
-          ) {
-            return "INFRA";
-          }
-
-          if (
-            [
-              "LND",
-              "LAND",
-              "LANDSCAPE",
-            ].includes(token)
-          ) {
-            return "LAND";
-          }
-
-          if (
-            [
-              "IRR",
-              "IRRIGATION",
-            ].includes(token)
-          ) {
-            return "IRR";
-          }
-
-          if (
-            [
-              "HSE",
-              "SAFETY",
-            ].includes(token)
-          ) {
-            return "HSE";
-          }
-
-          if (
-            [
-              "GEN",
-              "GENERAL",
-            ].includes(token)
-          ) {
-            return "GEN";
-          }
-        }
-
-        let words = t
-          .split(/[-_ \/(),&.]+/)
-          .filter(Boolean);
-
-        // Strip contractor-consultant prefix.
-        // Example: INN-ARC or INN-ACE.
-        if (
-          words.length > 2 &&
-          words[0] === "INN" &&
-          (
-            words[1] === "ARC" ||
-            words[1] === "ACE"
-          )
-        ) {
-          words = words.slice(2);
-        }
-
-        // Explicit multi-discipline name.
-        if (
-          words.includes("STR") &&
-          (
-            words.includes("ARC") ||
-            words.includes("ARCH")
-          )
-        ) {
-          return null;
-        }
-
-        if (
-          words.includes("MEP") ||
-          words.includes("M.E.P") ||
-          t.includes("كهروميكانيك") ||
-          t.includes("اليكتروميكانيك") ||
-          t.includes("الكتروميكانيك")
-        ) {
-          return "MEP";
-        }
-
-        if (
-          words.includes("SUR") ||
-          words.includes("SURV") ||
-          words.includes("SURVEY") ||
-          t.includes("SURVEY") ||
-          t.includes("مساحة") ||
-          t.includes("مساحه")
-        ) {
-          return "SURVEY";
-        }
-
-        if (
-          words.includes("ARC") ||
-          words.includes("ARCH") ||
-          words.includes("ARCHITECTURAL") ||
-          t.includes("ARCHITECT") ||
-          t.includes("معماري") ||
-          t.includes("معمارى")
-        ) {
-          return "ARCH";
-        }
-
-        if (
-          words.includes("STR") ||
-          words.includes("STRUCT") ||
-          words.includes("STRUCTURAL") ||
-          words.includes("CIVIL") ||
-          words.includes("CVL") ||
-          t.includes("انشائي") ||
-          t.includes("إنشائي") ||
-          t.includes("انشائى") ||
-          t.includes("إنشائى")
-        ) {
-          return "STR";
-        }
-
-        if (
-          words.includes("MEC") ||
-          words.includes("MECH") ||
-          words.includes("MECHANICAL") ||
-          t.includes("MECHANIC") ||
-          t.includes("ميكانيك") ||
-          t.includes("ميكانيكا")
-        ) {
-          return "MECH";
-        }
-
-        if (
-          words.includes("ELE") ||
-          words.includes("ELEC") ||
-          words.includes("ELECTRICAL") ||
-          t.includes("ELECTRIC") ||
-          t.includes("كهربا") ||
-          t.includes("كهرباء")
-        ) {
-          return "ELEC";
-        }
-
-        if (
-          words.includes("INF") ||
-          words.includes("INFR") ||
-          words.includes("INFRA") ||
-          words.includes("INFRASTRUCTURE") ||
-          t.includes("طرق") ||
-          t.includes("بنية تحتية")
-        ) {
-          return "INFRA";
-        }
-
-        if (
-          words.includes("LND") ||
-          words.includes("LAN") ||
-          words.includes("LAND") ||
-          t.includes("LANDSCAPE") ||
-          t.includes("لاندسكيب") ||
-          t.includes("لاند سكيب")
-        ) {
-          return "LAND";
-        }
-
-        if (
-          words.includes("HSE") ||
-          words.includes("SAFETY") ||
-          words.includes("HEALTH") ||
-          words.includes("ENV") ||
-          words.includes("ENVIRO") ||
-          t.includes("SAFETY") ||
-          t.includes("سلامة") ||
-          t.includes("سلامه") ||
-          t.includes("بيئة") ||
-          t.includes("بيئه")
-        ) {
-          return "HSE";
-        }
-
-        return null;
-      };
-
-      const isLetter =
-        contextualStr.includes("letter") ||
-        contextualStr.includes("ltr") ||
-        sheetName.toLowerCase().includes("letter") ||
-        sheetName.toLowerCase().includes("ltr") ||
-        sheetName.includes("خطابات") ||
-        fileName.includes("خطابات");
-
-      const isNcr =
-        sheetName.toLowerCase().includes("ncr") ||
-        fileName.toLowerCase().includes("ncr") ||
-        sheetName.includes("عدم") ||
-        fileName.includes("عدم") ||
-        (detectedType === "NCR") ||
-        (compIdent?.family === "NCR") ||
-        (!authoritativeSourceName && (
-          contextualStr.includes("ncr") ||
-          contextualStr.includes("hse") ||
-          contextualStr.includes("safety")
-        ));
-
-      /*
-       * ============================================================
-       * DISCIPLINE RESOLUTION
-       * ============================================================
-       *
-       * RFI precedence is deliberately different from the generic
-       * worksheet/file precedence:
-       *
-       * RFI:
-       *   1. Explicit row-level discipline
-       *   2. Composite Identity fallback
-       *
-       * Then normalizeDiscipline() is applied once to the resolved
-       * discipline value.
-       *
-       * This prevents a worksheet-level composite discipline from
-       * overriding mixed-discipline RFI rows.
-       *
-       * IMPORTANT:
-       *   Physical Row Grain is preserved.
-       *   Certified Calculation Engine is NOT modified.
-       * ============================================================
-       */
-
-      const compDisc = compIdent?.discipline;
-
-      const isCompDiscValid =
-        !!compDisc &&
-        compDisc !== "UNCLASSIFIED";
-
-      const isRfiWorksheet =
-        detectedType === "RFI" ||
-        compIdent?.family === "RFI";
-
-      const isMultiDisciplineSource =
-        isRfiWorksheet ||
-        compDisc === "MULTIDISCIPLINE" ||
-        compDisc === "MIXED" ||
-        compDisc === "ALL" ||
-        compDisc === "GEN" ||
-        compDisc === "GENERAL" ||
-        compIdent?.evidenceLevel === "LEVEL_7_UNCLASSIFIED_FALLBACK";
-
-      /*
-       * ============================================================
-       * REGISTER-LEVEL DISCIPLINE LOCK (SSOT FORENSIC INVARIANT)
-       * ============================================================
-       * For any single-discipline source file/sheet such as WIR-STR,
-       * WIR-ARCH, WIR-MECH, WIR-ELEC, WIR-INFRA, SDW-STR, etc.,
-       * the composite identity derived from filename/sheet is the
-       * authoritative discipline for EVERY row in that source.
-       *
-       * Row-level discipline is NEVER permitted to override a locked
-       * single-discipline register.
-       *
-       * Row-level discipline may override/inherit ONLY when the source
-       * is explicitly classified as MIXED/MULTI-DISCIPLINE (e.g. RFI
-       * mixed register or explicitly multi-trade sheets).
-       * ============================================================
-       */
-      const isRegisterDisciplineLocked =
-        !isMultiDisciplineSource &&
-        isCompDiscValid &&
-        (
-          compIdent?.isRegisterLocked === true ||
-          compIdent?.evidenceLevel === "LEVEL_1_FILENAME_COMPOSITE" ||
-          compIdent?.evidenceLevel === "LEVEL_2_WORKSHEET_COMPOSITE" ||
-          compIdent?.evidenceLevel === "LEVEL_3_HEADER_TITLE_BLOCK" ||
-          (!!compIdent?.compositeCode && compIdent.compositeCode.includes("-"))
-        );
 
       /*
        * Values that do not constitute explicit row-level discipline
@@ -1139,10 +1129,7 @@ export const parseExcelWorkbook = (
        * before Composite Identity can ever be considered as fallback.
        */
       const finalDisciplineVal =
-        normalizeDiscipline(
-          disciplineVal,
-          activeProjectId,
-        );
+        getCachedNormalizedDiscipline(disciplineVal);
 
       /*
        * RFI Mixed-Discipline Protection:
@@ -1193,9 +1180,6 @@ export const parseExcelWorkbook = (
           ? String(r[colDrawingNo] || "").trim()
           : "";
 
-      const cleanFileBase = fileName.replace(/\.[^/.]+$/, "").trim();
-      const sheetDiscInfo = normalizeDisciplineName(sheetName);
-      const isSheetDisc = isDisciplineSheet(sheetName);
       const resolvedDiscipline = isSheetDisc ? sheetDiscInfo.normalized : (finalDisciplineVal || sheetDiscInfo.normalized);
 
       parsed.push({
@@ -1517,17 +1501,19 @@ export const parseExcelWorkbook = (
     });
   });
 
-  if (typeof window !== "undefined") {
-    localStorage.setItem(
+  if (typeof window !== "undefined" && window.localStorage) {
+    window.localStorage.setItem(
       "docuCtrl_last_upload_trace",
       JSON.stringify(traces),
     );
 
-    window.dispatchEvent(
-      new Event(
-        "docuCtrl_new_trace_loaded",
-      ),
-    );
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(
+        new Event(
+          "docuCtrl_new_trace_loaded",
+        ),
+      );
+    }
   }
 
   // Print trace beautifully to console
@@ -1602,6 +1588,9 @@ export const parseExcelBuffer = (
     type: "buffer",
     cellDates: true,
     dateNF: "yyyy-mm-dd",
+    dense: true,
+    cellHTML: false,
+    cellFormula: false,
   });
 
   return parseExcelWorkbook(
@@ -1610,9 +1599,170 @@ export const parseExcelBuffer = (
   );
 };
 
-export const parseExcelFile = (
+interface WorkerSlot {
+  worker: Worker;
+  busy: boolean;
+}
+
+const workerPool: WorkerSlot[] = [];
+const pendingTasks: Array<{
+  getBuffer: () => Promise<ArrayBuffer>;
+  fileName: string;
+  storageSnapshot: Record<string, string | null>;
+  resolve: (rows: SubmittalRow[]) => void;
+  reject: (err: any) => void;
+}> = [];
+let nextTaskId = 1;
+const inFlightCallbacks = new Map<
+  number,
+  {
+    slot: WorkerSlot;
+    resolve: (rows: SubmittalRow[]) => void;
+    reject: (err: any) => void;
+  }
+>();
+let workerSupported: boolean | null = null;
+
+const getMaxWorkers = (): number => {
+  if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) {
+    return Math.max(1, Math.min(4, navigator.hardwareConcurrency));
+  }
+  return 2;
+};
+
+const getStorageSnapshot = (): Record<string, string | null> => {
+  if (typeof window === "undefined" || !window.localStorage) return {};
+  const keys = [
+    "docuCtrl_activeProjectId",
+    "structusight_custom_aliases",
+    "structusight_smart_import_profiles",
+    "structusight_learning_rules",
+  ];
+  const snap: Record<string, string | null> = {};
+  for (const k of keys) {
+    try {
+      snap[k] = window.localStorage.getItem(k);
+    } catch {
+      snap[k] = null;
+    }
+  }
+  return snap;
+};
+
+const pumpWorkerQueue = () => {
+  while (pendingTasks.length > 0) {
+    let slot = workerPool.find((s) => !s.busy);
+    if (!slot && workerPool.length < getMaxWorkers()) {
+      try {
+        const worker = new Worker(
+          new URL("./excelParser.worker.ts", import.meta.url),
+          { type: "module" },
+        );
+        workerSupported = true;
+        const newSlot: WorkerSlot = { worker, busy: false };
+        worker.onmessage = (evt) => {
+          const { id, ok, rows, lastUploadTrace, error } = evt.data || {};
+          const entry = inFlightCallbacks.get(id);
+          if (!entry) return;
+          inFlightCallbacks.delete(id);
+          entry.slot.busy = false;
+          if (ok) {
+            if (lastUploadTrace && typeof window !== "undefined" && window.localStorage) {
+              try {
+                window.localStorage.setItem("docuCtrl_last_upload_trace", lastUploadTrace);
+                window.dispatchEvent(new Event("docuCtrl_new_trace_loaded"));
+              } catch {
+                // ignore storage quota errors
+              }
+            }
+            entry.resolve(rows);
+          } else {
+            entry.reject(new Error(error || "Worker Excel parse error"));
+          }
+          pumpWorkerQueue();
+        };
+        worker.onerror = (err) => {
+          for (const [id, entry] of inFlightCallbacks.entries()) {
+            if (entry.slot === newSlot) {
+              inFlightCallbacks.delete(id);
+              entry.slot.busy = false;
+              entry.reject(err);
+            }
+          }
+          pumpWorkerQueue();
+        };
+        workerPool.push(newSlot);
+        slot = newSlot;
+      } catch {
+        workerSupported = false;
+        return;
+      }
+    }
+
+    if (!slot) return;
+
+    const task = pendingTasks.shift()!;
+    const assignedSlot = slot;
+    assignedSlot.busy = true;
+    const id = nextTaskId++;
+
+    task
+      .getBuffer()
+      .then((buffer) => {
+        inFlightCallbacks.set(id, {
+          slot: assignedSlot,
+          resolve: task.resolve,
+          reject: task.reject,
+        });
+        assignedSlot.worker.postMessage(
+          {
+            id,
+            buffer,
+            fileName: task.fileName,
+            storageSnapshot: task.storageSnapshot,
+          },
+          [buffer],
+        );
+      })
+      .catch((err) => {
+        assignedSlot.busy = false;
+        task.reject(err);
+        pumpWorkerQueue();
+      });
+  }
+};
+
+export const parseExcelFile = async (
   file: File,
 ): Promise<SubmittalRow[]> => {
+  if (typeof file.arrayBuffer === "function") {
+    if (
+      workerSupported !== false &&
+      typeof window !== "undefined" &&
+      typeof Worker !== "undefined"
+    ) {
+      return await new Promise<SubmittalRow[]>((resolve, reject) => {
+        pendingTasks.push({
+          getBuffer: () => file.arrayBuffer(),
+          fileName: file.name,
+          storageSnapshot: getStorageSnapshot(),
+          resolve,
+          reject,
+        });
+        pumpWorkerQueue();
+        if (workerSupported === false) {
+          pendingTasks.pop();
+          file
+            .arrayBuffer()
+            .then((buf) => resolve(parseExcelBuffer(buf, file.name)))
+            .catch(reject);
+        }
+      });
+    }
+    const buffer = await file.arrayBuffer();
+    return parseExcelBuffer(buffer, file.name);
+  }
+
   return new Promise(
     (resolve, reject) => {
       const reader = new FileReader();
@@ -1626,6 +1776,9 @@ export const parseExcelFile = (
             type: "binary",
             cellDates: true,
             dateNF: "yyyy-mm-dd",
+            dense: true,
+            cellHTML: false,
+            cellFormula: false,
           });
 
           const result =

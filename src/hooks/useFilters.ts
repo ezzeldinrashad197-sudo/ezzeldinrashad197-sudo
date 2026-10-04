@@ -43,14 +43,17 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
   const [backendMetrics, setBackendMetrics] = useState<BackendMetricsResult | null>(null);
   const [isCalculatingBackend, setIsCalculatingBackend] = useState<boolean>(false);
 
-  const calculateBackendMetrics = useCallback(async (activeFilters: FilterState, dataset: SubmittalRow[]) => {
+  const calculateBackendMetrics = useCallback(async (activeFilters: FilterState, dataset: SubmittalRow[], signal?: AbortSignal) => {
     if (!dataset || dataset.length === 0) {
       setBackendMetrics(null);
       return;
     }
-    setIsCalculatingBackend(true);
     try {
       const token = await auth.currentUser?.getIdToken();
+      if (!token || signal?.aborted) {
+        return;
+      }
+      setIsCalculatingBackend(true);
       // Send only the required fields for calculations to keep the payload lightweight
       const lightweightDataset = dataset.map(d => ({
         id: d.id,
@@ -80,93 +83,105 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ filters: activeFilters, dataset: lightweightDataset })
+        body: JSON.stringify({ filters: activeFilters, dataset: lightweightDataset }),
+        signal
       });
-      if (res.ok) {
+      if (res.ok && !signal?.aborted) {
         const json = await res.json();
         if (json.status === 'success' && json.metrics) {
           setBackendMetrics(json.metrics);
         }
       }
-    } catch (err) {
-      console.warn('[Metrics Layer] Backend metrics delegation warning:', err);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.warn('[Metrics Layer] Backend metrics delegation warning:', err);
+      }
     } finally {
-      setIsCalculatingBackend(false);
+      if (!signal?.aborted) {
+        setIsCalculatingBackend(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    calculateBackendMetrics(filters, data);
+    if (!data || data.length === 0) {
+      setBackendMetrics(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      calculateBackendMetrics(filters, data, controller.signal);
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [filters, data, calculateBackendMetrics]);
 
   const uniqueOpts = useMemo(() => {
-     const getUniques = (key: keyof SubmittalRow) => {
-         const s = new Set<string>();
-         data.forEach(d => {
-             const val = d[key];
-             if (val && typeof val === 'string' && val.trim()) s.add(val.trim());
-         });
-         return Array.from(s).sort();
-     };
-     
-     // Canonical Authoritative Register Identities (Phase W SSOT)
-     const getRegisterIdentities = () => {
-         const s = new Set<string>();
-         data.forEach(d => {
-             const reg = (d.registerIdentity || (d as any).sourceRegisterIdentity || '').trim().toUpperCase();
-             if (reg && reg !== 'UNCLASSIFIED') {
-               s.add(reg);
-             }
-         });
-         return Array.from(s).sort();
-     };
+     const registerIdentitySet = new Set<string>();
+     const documentTypeSet = new Set<string>();
+     const disciplineSet = new Set<string>();
+     const contractorSet = new Set<string>();
+     const consultantSet = new Set<string>();
+     const logTypeSet = new Set<string>();
+     const statusSet = new Set<string>();
+     const areaSet = new Set<string>();
+     const tradeSystemSet = new Set<string>();
 
-     // Special logic for documentType (Register Type & Workflow Family)
-     const getRegisterTypes = () => {
-         const s = new Set<string>();
-         data.forEach(d => {
-             if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
-               const wf = d.workflowFamily.toUpperCase().trim();
-               s.add(wf);
-             }
-             let dt = d.documentType || d.logType || "GENERAL";
-             const prefix = dt.split('-')[0].trim().toUpperCase();
-             if (prefix) s.add(prefix);
-         });
-         return Array.from(s).sort();
-     };
+     for (let i = 0; i < data.length; i++) {
+         const d = data[i];
+         const reg = (d.registerIdentity || (d as any).sourceRegisterIdentity || '').trim().toUpperCase();
+         if (reg && reg !== 'UNCLASSIFIED') {
+             registerIdentitySet.add(reg);
+         }
+
+         if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
+             const wf = d.workflowFamily.toUpperCase().trim();
+             if (wf) documentTypeSet.add(wf);
+         }
+         const dt = d.documentType || d.logType || "GENERAL";
+         const prefix = dt.split('-')[0].trim().toUpperCase();
+         if (prefix) documentTypeSet.add(prefix);
+
+         if (d.discipline && typeof d.discipline === 'string' && d.discipline.trim()) disciplineSet.add(d.discipline.trim());
+         if (d.contractor && typeof d.contractor === 'string' && d.contractor.trim()) contractorSet.add(d.contractor.trim());
+         if (d.consultant && typeof d.consultant === 'string' && d.consultant.trim()) consultantSet.add(d.consultant.trim());
+         if (d.logType && typeof d.logType === 'string' && d.logType.trim()) logTypeSet.add(d.logType.trim());
+         if (d.status && typeof d.status === 'string' && d.status.trim()) statusSet.add(d.status.trim());
+         if (d.area && typeof d.area === 'string' && d.area.trim()) areaSet.add(d.area.trim());
+         if (d.tradeSystem && typeof d.tradeSystem === 'string' && d.tradeSystem.trim()) tradeSystemSet.add(d.tradeSystem.trim());
+     }
 
      return {
-         registerIdentity: getRegisterIdentities(),
-         documentType: getRegisterTypes(),
-         discipline: getUniques('discipline'),
-         contractor: getUniques('contractor'),
-         consultant: getUniques('consultant'),
-         logType: getUniques('logType'),
-         status: getUniques('status'),
-         area: getUniques('area'),
-         tradeSystem: getUniques('tradeSystem'),
+         registerIdentity: Array.from(registerIdentitySet).sort(),
+         documentType: Array.from(documentTypeSet).sort(),
+         discipline: Array.from(disciplineSet).sort(),
+         contractor: Array.from(contractorSet).sort(),
+         consultant: Array.from(consultantSet).sort(),
+         logType: Array.from(logTypeSet).sort(),
+         status: Array.from(statusSet).sort(),
+         area: Array.from(areaSet).sort(),
+         tradeSystem: Array.from(tradeSystemSet).sort(),
      };
   }, [data]);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
      setFilters(pendingFilters);
-     calculateBackendMetrics(pendingFilters, data);
-  };
+  }, [pendingFilters]);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
      setFilters(defaultFilters);
      setPendingFilters(defaultFilters);
-     calculateBackendMetrics(defaultFilters, data);
-  };
+  }, []);
 
   const isDirty = useMemo(() => {
      return JSON.stringify(pendingFilters) !== JSON.stringify(filters);
   }, [pendingFilters, filters]);
 
-  const matchesFilters = (row: SubmittalRow) => {
+  const matchesFilters = useCallback((row: SubmittalRow) => {
        const matchOpt = (rowVal: string | undefined | null, filterVal: string) => {
            if (filterVal === 'All') return true;
            if (!rowVal) return false;
@@ -228,19 +243,19 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
        if (!matchOpt(row.area, filters.area)) return false;
        if (!matchOpt(row.tradeSystem, filters.tradeSystem)) return false;
        return true;
-  };
+  }, [filters]);
 
-  const filterMonthly = (row: SubmittalRow) => {
+  const filterMonthly = useCallback((row: SubmittalRow) => {
      if (!row.submissionDate) return false;
      if (!matchesFilters(row)) return false;
      return row.submissionDate >= startDate && row.submissionDate <= endDate;
-  };
+  }, [matchesFilters, startDate, endDate]);
 
-  const filterCumulative = (row: SubmittalRow) => {
+  const filterCumulative = useCallback((row: SubmittalRow) => {
      if (!matchesFilters(row)) return false;
      if (!row.submissionDate) return true;
      return row.submissionDate <= endDate;
-  };
+  }, [matchesFilters, endDate]);
 
   return {
     filters,

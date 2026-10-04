@@ -30,12 +30,14 @@ export function useUpload(
            setIsError(true);
            await logAuditContext("UPLOAD_FAILED", "log_file", { reason: "No matching data" });
        } else {
-           const validSubmissionDates = parsed
-             .map(d => d.submissionDate)
-             .filter(Boolean)
-             .sort();
-           if (validSubmissionDates.length > 0) {
-             const latestDateStr = validSubmissionDates[validSubmissionDates.length - 1];
+           let latestDateStr = '';
+           for (let i = 0; i < parsed.length; i++) {
+             const subDate = parsed[i].submissionDate;
+             if (subDate && subDate > latestDateStr) {
+               latestDateStr = subDate;
+             }
+           }
+           if (latestDateStr) {
              const parts = latestDateStr.split('-').map(Number);
              if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
                const localDate = new Date(parts[0], parts[1] - 1, parts[2] || 1);
