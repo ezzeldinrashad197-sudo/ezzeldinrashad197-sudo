@@ -181,7 +181,6 @@ digraph DependencyGraph {
   "src/ReportTable.tsx" -> "src/utils/calculations.ts";
   "src/ReportTable.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/ReportTable.tsx" -> "src/analytics/revisionResolver.ts";
-  "src/ReportTable.tsx" -> "src/analytics/reconciliationEngine.ts";
   "src/ReportTable.tsx" -> "src/utils/i18n.tsx";
   "src/ReportTable.tsx" -> "src/components/ExecutiveRegisterSummary.tsx";
   "src/ReportTable.tsx" -> "src/components/ActiveBacklogIntelligence.tsx";

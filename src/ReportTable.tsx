@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { SubmittalRow, ProjectSettings, KPIStats } from './types';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { SubmittalRow, ProjectSettings, KPIStats, SequenceAuditResult } from './types';
 import { 
   calculateStats, 
   calculateProjectPerformanceHealth, 
@@ -14,7 +14,6 @@ import {
 } from './utils/calculations';
 import { isEntityOverdue } from './analytics/calculationFoundation';
 import { isRevision0, isFurtherRevision } from './analytics/revisionResolver';
-import { generateDisciplineReconciliationReport } from './analytics/reconciliationEngine';
 import { useLanguage } from './utils/i18n';
 import {
   BarChart,
@@ -71,18 +70,51 @@ interface ReportTableProps {
   title: string;
   projectInfo: ProjectSettings | null;
   rawDataset?: SubmittalRow[];
+  precomputedGlobalStats?: KPIStats & { totalUniqueDrawings: number };
 }
 
-export default function ReportTable({ data, filterFn, title, projectInfo, rawDataset }: ReportTableProps) {
+function useStableRowArray(rows: SubmittalRow[]): SubmittalRow[] {
+  const ref = useRef<SubmittalRow[]>(rows);
+  if (ref.current !== rows) {
+    if (ref.current.length === rows.length) {
+      let same = true;
+      for (let i = 0; i < rows.length; i++) {
+        if (ref.current[i] !== rows[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (!same) {
+        ref.current = rows;
+      }
+    } else {
+      ref.current = rows;
+    }
+  }
+  return ref.current;
+}
+
+export default function ReportTable({ data, filterFn, title, projectInfo, rawDataset, precomputedGlobalStats }: ReportTableProps) {
   const { language, t, isRtl } = useLanguage();
   const isMonthly = title.toLowerCase().includes('monthly');
-  
-  const filteredData = useMemo(() => {
-     return filterFn ? data.filter(filterFn) : data;
-  }, [data, filterFn]);
 
-  const contextDataset = useMemo(() => {
-    const base = rawDataset || data;
+  const stableData = useStableRowArray(data);
+  const stableRawDataset = useStableRowArray(rawDataset || data);
+
+  const rawFilteredData = useMemo(() => {
+    return filterFn ? stableData.filter(filterFn) : stableData;
+  }, [stableData, filterFn]);
+  const filteredData = useStableRowArray(rawFilteredData);
+
+  const nonNcrFilteredData = useMemo(() => {
+    return filteredData.filter(d => {
+      const dt = d.documentType || 'DOC';
+      return !dt.startsWith('NCR-') && dt !== 'NCR';
+    });
+  }, [filteredData]);
+
+  const rawContextDataset = useMemo(() => {
+    const base = rawDataset ? stableRawDataset : stableData;
     if (!isMonthly) return base;
     let maxDateStr = '';
     for (const r of filteredData) {
@@ -92,12 +124,53 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     }
     if (!maxDateStr) return base;
     return base.filter(r => !r.submissionDate || r.submissionDate <= maxDateStr);
-  }, [rawDataset, data, isMonthly, filteredData]);
+  }, [rawDataset, stableRawDataset, stableData, isMonthly, filteredData]);
+  const contextDataset = useStableRowArray(rawContextDataset);
+
+  // Pre-index contextDataset by physical document identity key once in O(N)
+  // so group-level calculateStats calls only process rows belonging to targetDocumentKeys
+  // instead of re-running processRevisionEngine on the entire 15,000-row contextDataset K times.
+  const contextByDocIdentityKey = useMemo(() => {
+    const map = new Map<string, SubmittalRow[]>();
+    for (let i = 0; i < contextDataset.length; i++) {
+      const r = contextDataset[i];
+      const key = getDocumentIdentityKey(r);
+      let list = map.get(key);
+      if (!list) {
+        list = [];
+        map.set(key, list);
+      }
+      list.push(r);
+    }
+    return map;
+  }, [contextDataset]);
+
+  const getScopedContextForRows = useCallback((subsetRows: SubmittalRow[]): SubmittalRow[] => {
+    if (!contextDataset || contextDataset.length === 0) return subsetRows;
+    const targetKeys = new Set<string>();
+    for (let i = 0; i < subsetRows.length; i++) {
+      targetKeys.add(getDocumentIdentityKey(subsetRows[i]));
+    }
+    const scoped: SubmittalRow[] = [];
+    targetKeys.forEach(key => {
+      const bucket = contextByDocIdentityKey.get(key);
+      if (bucket) {
+        for (let j = 0; j < bucket.length; j++) {
+          scoped.push(bucket[j]);
+        }
+      }
+    });
+    return scoped.length > 0 ? scoped : subsetRows;
+  }, [contextDataset, contextByDocIdentityKey]);
+
+  // Single memoized revision map for contextDataset reused across trends, activeOverdueCounts, and openDrillDown
+  const contextRevisionMap = useMemo(() => {
+    return processRevisionEngine(contextDataset);
+  }, [contextDataset]);
 
   const [breakdownDimension, setBreakdownDimension] = useState<'register' | 'discipline' | 'both'>('both');
-  const [showReconciliationExplainer, setShowReconciliationExplainer] = useState<boolean>(true);
 
-  const rowToRegisterIdentity = (d: SubmittalRow): string => {
+  const rowToRegisterIdentity = useCallback((d: SubmittalRow): string => {
     return (
       d.registerIdentity ||
       (d as any).sourceRegisterIdentity ||
@@ -105,9 +178,9 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       (d.documentType ? d.documentType.split('-')[0] : '') ||
       'UNCLASSIFIED'
     ).trim().toUpperCase();
-  };
+  }, []);
 
-  const rowToLabel = (d: SubmittalRow) => {
+  const rowToLabel = useCallback((d: SubmittalRow) => {
     const reg = rowToRegisterIdentity(d);
     if (breakdownDimension === 'discipline') {
       const disc = resolveRowDiscipline(d, reg) || 'GEN';
@@ -118,27 +191,45 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       return `${reg}-${disc.toUpperCase()}`;
     }
     return reg;
-  };
+  }, [breakdownDimension, rowToRegisterIdentity]);
+
+  // Partition nonNcrFilteredData by rowToLabel in a single O(N) pass
+  const rowsByDocTypeLabel = useMemo(() => {
+    const map = new Map<string, SubmittalRow[]>();
+    for (let i = 0; i < nonNcrFilteredData.length; i++) {
+      const d = nonNcrFilteredData[i];
+      const label = rowToLabel(d);
+      let group = map.get(label);
+      if (!group) {
+        group = [];
+        map.set(label, group);
+      }
+      group.push(d);
+    }
+    return map;
+  }, [nonNcrFilteredData, rowToLabel]);
 
   const byDocType = useMemo(() => {
-     const docTypes = Array.from(new Set(
-       filteredData
-         .filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
-         .map(d => rowToLabel(d))
-     ));
-     return docTypes
-         .map(typeLabel => {
-             const matchingRows = filteredData.filter(d => rowToLabel(d) === typeLabel && !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
-             const stats = calculateStats(matchingRows, contextDataset);
-             const criticalCount = matchingRows.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).length;
-             return {
-                 documentType: typeLabel,
-                 stats,
-                 criticalCount
-             };
-         })
-         .filter(item => item.stats.totalSubmittedSheets > 0)
-         .sort((a,b) => {
+     const items: { documentType: string; stats: KPIStats & { totalUniqueDrawings: number }; criticalCount: number }[] = [];
+     rowsByDocTypeLabel.forEach((matchingRows, typeLabel) => {
+         const scopedContext = getScopedContextForRows(matchingRows);
+         const stats = calculateStats(matchingRows, scopedContext);
+         let criticalCount = 0;
+         for (let i = 0; i < matchingRows.length; i++) {
+           const d = matchingRows[i];
+           if (d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')) {
+             criticalCount++;
+           }
+         }
+         if (stats.totalSubmittedSheets > 0) {
+           items.push({
+               documentType: typeLabel,
+               stats,
+               criticalCount
+           });
+         }
+     });
+     return items.sort((a,b) => {
              if (breakdownDimension === 'discipline') {
                const discOrder = ['STR', 'STRUCTURAL', 'CIVIL', 'ARC', 'ARCH', 'ARCHITECTURAL', 'MEC', 'MECH', 'MECHANICAL', 'ELE', 'ELEC', 'ELECTRICAL', 'INFRA', 'INF', 'LAND', 'LND', 'SUR', 'SURV', 'SURVEY', 'HSE', 'MEP', 'IRR', 'GEN', 'GENERAL'];
                const idxA = discOrder.indexOf(a.documentType.toUpperCase());
@@ -186,26 +277,57 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              
              return keyA.disc.localeCompare(keyB.disc);
          });
-  }, [filteredData, contextDataset, breakdownDimension]);
+  }, [rowsByDocTypeLabel, getScopedContextForRows, breakdownDimension]);
 
   const globalCriticalCount = useMemo(() => {
-    return filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR' && (d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL'))).length;
-  }, [filteredData]);
+    let count = 0;
+    for (let i = 0; i < nonNcrFilteredData.length; i++) {
+      const d = nonNcrFilteredData[i];
+      if (d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')) {
+        count++;
+      }
+    }
+    return count;
+  }, [nonNcrFilteredData]);
 
   const globalStats = useMemo(() => {
-       const stats = calculateStats(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'), contextDataset);
-       return stats;
-  }, [filteredData, contextDataset]);
+    if (precomputedGlobalStats) return precomputedGlobalStats;
+    const scopedGlobalContext = getScopedContextForRows(nonNcrFilteredData);
+    return calculateStats(nonNcrFilteredData, scopedGlobalContext);
+  }, [precomputedGlobalStats, nonNcrFilteredData, getScopedContextForRows]);
 
-  const sequenceAuditResult = useMemo(() => {
-    return runComprehensiveSequenceAudit(filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR'));
-  }, [filteredData]);
+  const hasAnyMissingSequences = useMemo(() => {
+    if ((globalStats.missingSequenceCount || 0) > 0) return true;
+    for (let i = 0; i < byDocType.length; i++) {
+      if ((byDocType[i].stats.missingSequenceCount || 0) > 0) return true;
+    }
+    return false;
+  }, [globalStats.missingSequenceCount, byDocType]);
 
-  const reconciliationReport = useMemo(() => {
-    return generateDisciplineReconciliationReport(
-      filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
-    );
-  }, [filteredData]);
+  const sequenceAuditResult = useMemo<SequenceAuditResult>(() => {
+    if (!hasAnyMissingSequences) {
+      return {
+        totalExpectedPopulation: null,
+        totalActualRev0Population: globalStats.totalSheetsRev0 || 0,
+        totalBaselineActualRev0Population: 0,
+        totalMissingCount: 0,
+        totalObservedGapsCount: globalStats.sequenceGapsCount || 0,
+        totalDuplicatesCount: 0,
+        totalFurtherRevWithoutRev0: 0,
+        totalCrossRegisterCount: 0,
+        allCrossRegisterRecords: [],
+        allMissingIds: [],
+        registerAudits: {},
+        baselineStatus: 'BASELINE_NOT_ESTABLISHED',
+        baselineRegistersCount: 0,
+        observationalRegistersCount: byDocType.length,
+        overallStatus: 'OBSERVATION_ONLY',
+        summaryNarrative: '',
+        summaryNarrativeAr: ''
+      };
+    }
+    return runComprehensiveSequenceAudit(nonNcrFilteredData);
+  }, [hasAnyMissingSequences, nonNcrFilteredData, globalStats.totalSheetsRev0, globalStats.sequenceGapsCount, byDocType.length]);
 
   // Executive Summary & Health Check Calculation
   const healthData = useMemo(() => {
@@ -286,41 +408,124 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   }, [globalStats, healthData.score, byDocType]);
 
   // Intelligent dynamic trend and progress indicators
+  // Reuses contextRevisionMap to compute exact current-state approvalRate, totalSubmittedSheets, and overdue
+  // without re-running processRevisionEngine(contextDataset) twice or 10 redundant auditRegisterSequence passes.
   const trends = useMemo(() => {
       if (filteredData.length === 0) {
           return { approvalTrend: 0, submissionsTrend: 0, overdueTrend: 0 };
       }
       
-      const dates = filteredData
-          .map(d => d.submissionDate)
-          .filter(Boolean)
-          .map(dStr => new Date(dStr).getTime())
-          .sort((a, b) => a - b);
-          
-      if (dates.length < 2) {
+      const datedEntries: { row: SubmittalRow; ts: number }[] = [];
+      for (let i = 0; i < filteredData.length; i++) {
+        const d = filteredData[i];
+        if (d.submissionDate) {
+          const ts = new Date(d.submissionDate).getTime();
+          datedEntries.push({ row: d, ts });
+        }
+      }
+      
+      if (datedEntries.length < 2) {
           // Stable fallback placeholders
           return { approvalTrend: 4.8, submissionsTrend: 15, overdueTrend: -5 };
       }
       
+      const dates = datedEntries.map(e => e.ts).sort((a, b) => a - b);
+      
       // Calculate median date to divide current filtered data into two comparative periods (Trend Analysis)
       const medianDate = dates[Math.floor(dates.length / 2)];
       
-      const firstHalf = filteredData.filter(d => d.submissionDate && new Date(d.submissionDate).getTime() < medianDate);
-      const secondHalf = filteredData.filter(d => d.submissionDate && new Date(d.submissionDate).getTime() >= medianDate);
+      const firstHalf: SubmittalRow[] = [];
+      const secondHalf: SubmittalRow[] = [];
+      for (let i = 0; i < datedEntries.length; i++) {
+        const e = datedEntries[i];
+        if (e.ts < medianDate) {
+          firstHalf.push(e.row);
+        } else if (e.ts >= medianDate) {
+          secondHalf.push(e.row);
+        }
+      }
       
       if (firstHalf.length === 0 || secondHalf.length === 0) {
           return { approvalTrend: 3.2, submissionsTrend: 8, overdueTrend: -3 };
       }
+
+      const computePeriodMetrics = (periodRows: SubmittalRow[]) => {
+        const revMap = contextDataset && contextDataset.length > 0
+          ? contextRevisionMap
+          : processRevisionEngine(periodRows);
+        const targetDocumentKeys = new Set<string>();
+        for (let i = 0; i < periodRows.length; i++) {
+          targetDocumentKeys.add(getDocumentIdentityKey(periodRows[i]));
+        }
+
+        let approvedCurrent = 0;
+        let rejectedOpenCurrent = 0;
+        let rejectedClosedCurrent = 0;
+        let finalClosedCurrent = 0;
+        let pendingCurrent = 0;
+        let unclassifiedCurrent = 0;
+        let overdueCurrent = 0;
+
+        targetDocumentKeys.forEach(documentKey => {
+          const groupInfo = revMap.get(documentKey);
+          if (!groupInfo) return;
+          const latest = groupInfo.latest;
+          const cat = groupInfo.resolvedStatus || getStatusCodeCategory(latest);
+          switch (cat) {
+            case 'APPROVED':
+              approvedCurrent++;
+              break;
+            case 'REJECTED_OPEN':
+              rejectedOpenCurrent++;
+              break;
+            case 'REJECTED_CLOSED':
+              rejectedClosedCurrent++;
+              break;
+            case 'FINAL_CLOSED':
+              finalClosedCurrent++;
+              break;
+            case 'PENDING':
+              pendingCurrent++;
+              break;
+            case 'UNCLASSIFIED':
+            default:
+              unclassifiedCurrent++;
+              break;
+          }
+          if (cat === 'PENDING' || cat === 'REJECTED_OPEN') {
+            if (isEntityOverdue(latest, 0)) {
+              overdueCurrent++;
+            }
+          }
+        });
+
+        const totalEligible =
+          approvedCurrent +
+          rejectedOpenCurrent +
+          rejectedClosedCurrent +
+          finalClosedCurrent +
+          pendingCurrent +
+          unclassifiedCurrent;
+        const activeCurrentItems = pendingCurrent + rejectedOpenCurrent;
+        const overdue = Math.min(overdueCurrent, activeCurrentItems);
+        const approvalRate = totalEligible > 0 ? (approvedCurrent / totalEligible) * 100 : 0;
+
+        return {
+          totalSubmittedSheets: periodRows.length,
+          approvalRate,
+          overdue
+        };
+      };
       
-      const statsFirst = calculateStats(firstHalf, contextDataset);
-      const statsSecond = calculateStats(secondHalf, contextDataset);
+      const statsFirst = computePeriodMetrics(firstHalf);
+      const statsSecond = computePeriodMetrics(secondHalf);
       
       return {
           approvalTrend: parseFloat((statsSecond.approvalRate - statsFirst.approvalRate).toFixed(1)),
           submissionsTrend: statsSecond.totalSubmittedSheets - statsFirst.totalSubmittedSheets,
           overdueTrend: statsSecond.overdue - statsFirst.overdue
       };
-  }, [filteredData, contextDataset]);
+  }, [filteredData, contextDataset, contextRevisionMap]);
 
   // Top 5 Oldest Pending Overdue Items
   const topOverdueItems = useMemo(() => {
@@ -375,7 +580,6 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [isAuditMatrixOpen, setIsAuditMatrixOpen] = useState(false);
-  const [workloadTab, setWorkloadTab] = useState<'workload' | 'rejection'>('workload');
 
   // Overdue Active split (Rejected Open vs Pending Review)
   const activeOverdueCounts = useMemo(() => {
@@ -386,9 +590,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         total: globalStats.overdue
       };
     }
-    const rows = filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
-    const baseForRevisions = contextDataset && contextDataset.length > 0 ? contextDataset : rows;
-    const revisionMap = processRevisionEngine(baseForRevisions);
+    const rows = nonNcrFilteredData;
+    const revisionMap = contextDataset && contextDataset.length > 0 ? contextRevisionMap : processRevisionEngine(rows);
     const targetEntityKeys = new Set(rows.map(r => getDocumentIdentityKey(r)));
 
     let overdueRejectedOpen = 0;
@@ -413,7 +616,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       pending: overduePending,
       total: globalStats.overdue
     };
-  }, [filteredData, rawDataset, data, globalStats.overdue, globalStats.overduePending, globalStats.overdueRejectedOpen]);
+  }, [nonNcrFilteredData, contextDataset, contextRevisionMap, globalStats.overdue, globalStats.overduePending, globalStats.overdueRejectedOpen]);
 
   // Register Compliance Health Rating Resolver
   const getRegisterHealth = (stats: KPIStats) => {
@@ -468,12 +671,10 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     metricLabelAr: string
   ) => {
     const rows = docTypeFilter === 'ALL'
-      ? filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR')
-      : filteredData.filter(d => rowToLabel(d) === docTypeFilter && !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
+      ? nonNcrFilteredData
+      : (rowsByDocTypeLabel.get(docTypeFilter) || []);
 
-    const baseForRevisions = contextDataset && contextDataset.length > 0 ? contextDataset : rows;
-    const revisionMap = processRevisionEngine(baseForRevisions);
-    const localRevisionMap = processRevisionEngine(rows);
+    const revisionMap = contextDataset && contextDataset.length > 0 ? contextRevisionMap : processRevisionEngine(rows);
     const targetEntityKeys = new Set(rows.map(r => getDocumentIdentityKey(r)));
 
     const extracted: DrillDownItem[] = [];
@@ -507,6 +708,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
     switch (metricKey) {
       case 'superseded': {
+        const localRevisionMap = processRevisionEngine(rows);
         targetEntityKeys.forEach(key => {
           const group = localRevisionMap.get(key);
           if (!group || group.all.length <= 1) return;

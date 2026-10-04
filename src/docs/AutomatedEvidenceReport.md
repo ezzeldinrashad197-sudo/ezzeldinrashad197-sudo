@@ -1,5 +1,5 @@
 # StructuSight Mathematical & Architecture Evidence Log
-*Generated on 2026-10-03T20:19:47.364Z via StructuSight Custom AST Compliance Engine*
+*Generated on 2026-10-03T21:34:13.988Z via StructuSight Custom AST Compliance Engine*
 
 > [!NOTE]
 > **AUDIT ENGINE DISCLAIMER & VERIFICATION NOTICE**
@@ -12,24 +12,24 @@ To guarantee absolute reproducibility and transparency under independent review,
 
 | Metric | System Signature Value | Description |
 | :--- | :--- | :--- |
-| **Audit Timestamp** | `2026-10-03T20:19:47.364Z` | Universal Coordinated Time (UTC) of verification run |
+| **Audit Timestamp** | `2026-10-03T21:34:13.988Z` | Universal Coordinated Time (UTC) of verification run |
 | **Node.js Engine** | `v22.23.2` | Active Node runtime engine executing verification |
 | **TypeScript Version** | `v5.8.3` | Version of TypeScript Compiler API used for parsing |
 | **System Platform** | `linux (x64)` | Host kernel and architecture fingerprint |
 | **Build Project ID** | `b1fedb55-c17f-4221-b883-f1ee17f1362f` | Unique platform identifier of active workspace |
 | **Report Schema Version** | `1.4.0` | Schema specification version for exported JSON and reporting layers |
 | **Verification Engine** | `2.4.1-Prod` | Release build version of custom AST scanner |
-| **Total Pipeline Wall Time**| `**2.192 seconds**` | Combined execution duration of AST scanning and verification pipeline |
+| **Total Pipeline Wall Time**| `**1.376 seconds**` | Combined execution duration of AST scanning and verification pipeline |
 
 ### ⏱️ VERIFICATION RUNTIME METRIC SPLIT
 
 | Verification Stage | Processed Task | Measured Duration | Percentage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `2.168 seconds` | `98.9%` | COMPLETED ✅ |
-| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.001 seconds` | `0.0%` | COMPLETED ✅ |
-| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.011 seconds` | `0.5%` | COMPLETED ✅ |
-| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.012 seconds` | `0.5%` | COMPLETED ✅ |
-| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**2.192 seconds**` | `100.0%` | **SUCCESS** ✅ |
+| **AST Parsing & Codebase Scan** | Recursive scan of all source directories, reading file ASTs | `1.354 seconds` | `98.4%` | COMPLETED ✅ |
+| **Call Graph Tracing** | AST path exploration, extracting import/export and call edges | `0.001 seconds` | `0.1%` | COMPLETED ✅ |
+| **Rule & Complexity Evaluation** | Execution of circular dependency checks, layer compliance, dead code analysis, Halstead, cyclomatic metrics | `0.010 seconds` | `0.7%` | COMPLETED ✅ |
+| **Artifact & Report Generation** | Compilation and serialization of JSON, DOT, Mermaid, and MD files | `0.011 seconds` | `0.8%` | COMPLETED ✅ |
+| **Total Pipeline Wall Time** | Integrated end-to-end execution of verification sequence | `**1.376 seconds**` | `100.0%` | **SUCCESS** ✅ |
 
 ### 🔒 CRYPTOGRAPHIC REPOSITORY MANIFEST & FILE HASH SNAPSHOTS
 The table below lists the exact SHA-256 cryptographic hashes of the primary compliance-governed source and configuration files at the exact timestamp of this audit run. Any modification of these files post-verification will invalidate these signatures:
@@ -199,7 +199,7 @@ PortfolioCenter.tsx ⟶ [types.ts, firebase.ts]
 Presentation.tsx ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, analytics/ncr/ncrEngine.ts, analytics/reconciliationEngine.ts, utils/i18n.tsx, components/presentation/PresHelpers.tsx]
 ProjectConfigModal.tsx ⟶ [types.ts]
 RFIAnalytics.tsx ⟶ [types.ts, analytics/revisionResolver.ts, analytics/analyticsCore.ts, analytics/calculationFoundation.ts]
-ReportTable.tsx ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, analytics/revisionResolver.ts, analytics/reconciliationEngine.ts, utils/i18n.tsx, components/ExecutiveRegisterSummary.tsx, components/ActiveBacklogIntelligence.tsx, components/WorkloadRevisionIntelligence.tsx]
+ReportTable.tsx ⟶ [types.ts, utils/calculations.ts, analytics/calculationFoundation.ts, analytics/revisionResolver.ts, utils/i18n.tsx, components/ExecutiveRegisterSummary.tsx, components/ActiveBacklogIntelligence.tsx, components/WorkloadRevisionIntelligence.tsx]
 SORAnalytics.tsx ⟶ [types.ts, analytics/sor/sorEngine.ts, components/dashboard/ReusableComponents.tsx, utils/i18n.tsx]
 SettingsCenter.tsx ⟶ [types.ts, ProjectConfigModal.tsx, firebase.ts, utils/i18n.tsx]
 analytics/__tests__/canonicalCalculations.test.ts ⟶ [analytics/calculationFoundation.ts, analytics/revisionResolver.ts, types.ts, utils/calculations.ts]
@@ -391,7 +391,6 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/ReportTable.tsx` | `src/utils/calculations.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/analytics/calculationFoundation.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/analytics/revisionResolver.ts` | Tier `3` | Tier `1` | COMPLIANT ✅ |
-| `src/ReportTable.tsx` | `src/analytics/reconciliationEngine.ts` | Tier `3` | Tier `2` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/utils/i18n.tsx` | Tier `3` | Tier `0` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/components/ExecutiveRegisterSummary.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
 | `src/ReportTable.tsx` | `src/components/ActiveBacklogIntelligence.tsx` | Tier `3` | Tier `3` | COMPLIANT ✅ |
@@ -471,6 +470,7 @@ The architecture segregates the code into four distinct tiers. Higher tiers are 
 | `src/analytics/recordTransformer.ts` | `src/analytics/revisionEngine.ts` | Tier `2` | Tier `2` | COMPLIANT ✅ |
 | `src/analytics/revisionEngine.ts` | `src/analytics/models.ts` | Tier `2` | Tier `2` | COMPLIANT ✅ |
 | `src/analytics/revisionEngine.ts` | `src/analytics/revisionResolver.ts` | Tier `2` | Tier `1` | COMPLIANT ✅ |
+| `src/analytics/sequenceAuditEngine.ts` | `src/types.ts` | Tier `1` | Tier `0` | COMPLIANT ✅ |
 *Showing first 150 compliance checks...*
 
 ---
