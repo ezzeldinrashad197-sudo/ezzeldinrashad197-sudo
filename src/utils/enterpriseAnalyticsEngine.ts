@@ -216,11 +216,14 @@ export const scanDataIntegrity = (rows: SubmittalRow[], statusMap: StatusMapConf
 
   const exactMap = new Map<string, SubmittalRow>();
   const historyMap: Record<string, SubmittalRow[]> = {};
+  const regCounts: Record<string, number> = {};
+  const todayStr = /^\d{4}-\d{2}-\d{2}$/.test(asOfDate || '') ? asOfDate! : new Date().toISOString().substring(0, 10);
 
   // Group by document type
   rows.forEach(r => {
     const docId = (r.docNo || r.id || '').trim();
     const regType = getDocRegisterType(r);
+    regCounts[regType] = (regCounts[regType] || 0) + 1;
     const rh = results[regType] || results['General'];
 
     if (docId) {
@@ -258,7 +261,6 @@ export const scanDataIntegrity = (rows: SubmittalRow[], statusMap: StatusMapConf
     }
 
     // Future Dates check
-    const todayStr = /^\d{4}-\d{2}-\d{2}$/.test(asOfDate || '') ? asOfDate! : new Date().toISOString().substring(0, 10);
     if (r.submissionDate && r.submissionDate > todayStr) {
       rh.majorCount++;
       rh.issues.push({
@@ -347,13 +349,27 @@ export const scanDataIntegrity = (rows: SubmittalRow[], statusMap: StatusMapConf
   // Calculate detailed scorecard dimensions dynamically (Priority 5)
   registers.forEach(reg => {
     const rh = results[reg];
-    const totalReg = rows.filter(r => getDocRegisterType(r) === reg).length || 1;
+    const totalReg = regCounts[reg] || 1;
     
-    const completenessPen = rh.issues.filter(i => i.type === 'Completeness Failure').length * 10;
-    const consistencyPen = rh.issues.filter(i => i.type === 'Revision Gap Sequence').length * 15;
-    const validityPen = rh.issues.filter(i => i.type === 'Date Validation' || i.type === 'Future Date Alert').length * 20;
-    const revIntegrityPen = rh.issues.filter(i => i.type === 'Revision Conflict' || i.type === 'Duplicate Entry').length * 25;
-    const workflowCompliancePen = rh.issues.filter(i => i.type === 'Workflow Non-Compliance').length * 30;
+    let completenessCount = 0;
+    let consistencyCount = 0;
+    let validityCount = 0;
+    let revIntegrityCount = 0;
+    let workflowComplianceCount = 0;
+    for (let i = 0; i < rh.issues.length; i++) {
+      const t = rh.issues[i].type;
+      if (t === 'Completeness Failure') completenessCount++;
+      else if (t === 'Revision Gap Sequence') consistencyCount++;
+      else if (t === 'Date Validation' || t === 'Future Date Alert') validityCount++;
+      else if (t === 'Revision Conflict' || t === 'Duplicate Entry') revIntegrityCount++;
+      else if (t === 'Workflow Non-Compliance') workflowComplianceCount++;
+    }
+
+    const completenessPen = completenessCount * 10;
+    const consistencyPen = consistencyCount * 15;
+    const validityPen = validityCount * 20;
+    const revIntegrityPen = revIntegrityCount * 25;
+    const workflowCompliancePen = workflowComplianceCount * 30;
 
     rh.scorecard = {
       completeness: Math.max(0, Math.min(100, Math.round(100 - (completenessPen / totalReg * 100)))),
@@ -571,6 +587,124 @@ export interface CrossRegisterLink {
   propagationTrack: string;
 }
 
+interface IndexedTarget {
+  tNum: string;
+  tUpper: string;
+  order: number;
+  seenAtRow: number;
+}
+
+interface PrefixBucket {
+  prefix: string;
+  lengths: number[];
+  byUpper: Map<string, IndexedTarget[]>;
+}
+
+interface TargetSubstringIndex {
+  size: number;
+  shortTargets: IndexedTarget[];
+  prefixBuckets: PrefixBucket[];
+}
+
+const buildTargetSubstringIndex = (targetMap: Map<string, SubmittalRow>): TargetSubstringIndex => {
+  if (targetMap.size === 0) {
+    return { size: 0, shortTargets: [], prefixBuckets: [] };
+  }
+  const shortTargets: IndexedTarget[] = [];
+  const prefixMap = new Map<string, { lengthSet: Set<number>; byUpper: Map<string, IndexedTarget[]> }>();
+  let order = 0;
+
+  targetMap.forEach((_, tNum) => {
+    const tUpper = tNum.toUpperCase();
+    const item: IndexedTarget = { tNum, tUpper, order: order++, seenAtRow: -1 };
+    if (tUpper.length < 3) {
+      shortTargets.push(item);
+      return;
+    }
+    const prefix = tUpper.slice(0, 3);
+    let group = prefixMap.get(prefix);
+    if (!group) {
+      group = { lengthSet: new Set<number>(), byUpper: new Map<string, IndexedTarget[]>() };
+      prefixMap.set(prefix, group);
+    }
+    group.lengthSet.add(tUpper.length);
+    let list = group.byUpper.get(tUpper);
+    if (!list) {
+      list = [];
+      group.byUpper.set(tUpper, list);
+    }
+    list.push(item);
+  });
+
+  const prefixBuckets: PrefixBucket[] = [];
+  prefixMap.forEach((group, prefix) => {
+    prefixBuckets.push({
+      prefix,
+      lengths: Array.from(group.lengthSet),
+      byUpper: group.byUpper
+    });
+  });
+
+  return {
+    size: targetMap.size,
+    shortTargets,
+    prefixBuckets
+  };
+};
+
+const findMatchingTargets = (
+  index: TargetSubstringIndex,
+  textContext: string,
+  docNo: string,
+  rowIdx: number
+): IndexedTarget[] => {
+  const matched: IndexedTarget[] = [];
+  if (index.size === 0) return matched;
+
+  const { shortTargets, prefixBuckets } = index;
+  for (let i = 0; i < shortTargets.length; i++) {
+    const item = shortTargets[i];
+    if (item.tNum !== docNo && textContext.includes(item.tUpper)) {
+      item.seenAtRow = rowIdx;
+      matched.push(item);
+    }
+  }
+
+  const textLen = textContext.length;
+  for (let b = 0; b < prefixBuckets.length; b++) {
+    const bucket = prefixBuckets[b];
+    let pos = textContext.indexOf(bucket.prefix);
+    if (pos === -1) continue;
+    const { lengths, byUpper } = bucket;
+    const numLengths = lengths.length;
+    while (pos !== -1) {
+      const remaining = textLen - pos;
+      for (let l = 0; l < numLengths; l++) {
+        const len = lengths[l];
+        if (len <= remaining) {
+          const slice = textContext.slice(pos, pos + len);
+          const items = byUpper.get(slice);
+          if (items) {
+            for (let k = 0; k < items.length; k++) {
+              const item = items[k];
+              if (item.seenAtRow !== rowIdx && item.tNum !== docNo) {
+                item.seenAtRow = rowIdx;
+                matched.push(item);
+              }
+            }
+          }
+        }
+      }
+      pos = textContext.indexOf(bucket.prefix, pos + 1);
+    }
+  }
+
+  if (matched.length > 1) {
+    matched.sort((a, b) => a.order - b.order);
+  }
+  return matched;
+};
+
 export const mapCrossRegisterRelationships = (rows: SubmittalRow[]): CrossRegisterLink[] => {
   const links: CrossRegisterLink[] = [];
   const rfiMap = new Map<string, SubmittalRow>();
@@ -580,69 +714,86 @@ export const mapCrossRegisterRelationships = (rows: SubmittalRow[]): CrossRegist
   const marMap = new Map<string, SubmittalRow>();
   const tecMap = new Map<string, SubmittalRow>();
 
-  rows.forEach(r => {
-    const docNo = (r.docNo || '').trim();
-    if (!docNo) return;
+  const rowRegTypes = new Array<string>(rows.length);
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     const regType = getDocRegisterType(r);
+    rowRegTypes[i] = regType;
+    const docNo = (r.docNo || '').trim();
+    if (!docNo) continue;
     if (regType === 'RFI') rfiMap.set(docNo, r);
     else if (regType === 'NCR') ncrMap.set(docNo, r);
     else if (regType === 'MIR') mirMap.set(docNo, r);
     else if (regType === 'Shop Drawings') sdwMap.set(docNo, r);
     else if (regType === 'Material Submittals') marMap.set(docNo, r);
     else if (regType === 'Technical Submittals') tecMap.set(docNo, r);
-  });
+  }
 
-  rows.forEach(r => {
-    const regType = getDocRegisterType(r);
-    const docNo = r.docNo || '';
-    if (!docNo) return;
-    const textContext = `${r.remarks || ''} ${r.subject || ''} ${r.docNo || ''}`.toUpperCase();
+  const rfiIndex = buildTargetSubstringIndex(rfiMap);
+  const ncrIndex = buildTargetSubstringIndex(ncrMap);
+  const tecIndex = buildTargetSubstringIndex(tecMap);
 
-    // 1. RFI ↔ NCR Linkages
-    rfiMap.forEach((_, tNum) => {
-      if (tNum !== docNo && textContext.includes(tNum.toUpperCase())) {
-        links.push({
-          source: docNo,
-          sourceType: regType,
-          target: tNum,
-          targetType: 'RFI',
-          relationship: 'NCR clarification query',
-          impactScale: 'High',
-          propagationTrack: `Design deviation flagged in NCR ${docNo} triggered RFI ${tNum} reference check.`
-        });
+  if (rfiIndex.size > 0 || ncrIndex.size > 0 || tecIndex.size > 0) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const docNo = r.docNo || '';
+      if (!docNo) continue;
+      const regType = rowRegTypes[i];
+      const textContext = `${r.remarks || ''} ${r.subject || ''} ${r.docNo || ''}`.toUpperCase();
+
+      // 1. RFI ↔ NCR Linkages
+      if (rfiIndex.size > 0) {
+        const matchedRfis = findMatchingTargets(rfiIndex, textContext, docNo, i);
+        for (let m = 0; m < matchedRfis.length; m++) {
+          const tNum = matchedRfis[m].tNum;
+          links.push({
+            source: docNo,
+            sourceType: regType,
+            target: tNum,
+            targetType: 'RFI',
+            relationship: 'NCR clarification query',
+            impactScale: 'High',
+            propagationTrack: `Design deviation flagged in NCR ${docNo} triggered RFI ${tNum} reference check.`
+          });
+        }
       }
-    });
 
-    // 2. NCR ↔ MIR Linkages
-    ncrMap.forEach((_, tNum) => {
-      if (tNum !== docNo && textContext.includes(tNum.toUpperCase())) {
-        links.push({
-          source: docNo,
-          sourceType: regType,
-          target: tNum,
-          targetType: 'NCR',
-          relationship: 'Addresses defective quarantine',
-          impactScale: 'High',
-          propagationTrack: `Material Inspection rejection in ${docNo} propagated into dedicated NCR ${tNum}.`
-        });
+      // 2. NCR ↔ MIR Linkages
+      if (ncrIndex.size > 0) {
+        const matchedNcrs = findMatchingTargets(ncrIndex, textContext, docNo, i);
+        for (let m = 0; m < matchedNcrs.length; m++) {
+          const tNum = matchedNcrs[m].tNum;
+          links.push({
+            source: docNo,
+            sourceType: regType,
+            target: tNum,
+            targetType: 'NCR',
+            relationship: 'Addresses defective quarantine',
+            impactScale: 'High',
+            propagationTrack: `Material Inspection rejection in ${docNo} propagated into dedicated NCR ${tNum}.`
+          });
+        }
       }
-    });
 
-    // 3. Technical Submittal ↔ NCR Linkages
-    tecMap.forEach((_, tNum) => {
-      if (tNum !== docNo && textContext.includes(tNum.toUpperCase())) {
-        links.push({
-          source: docNo,
-          sourceType: regType,
-          target: tNum,
-          targetType: 'Technical Submittals',
-          relationship: 'Material validation check',
-          impactScale: 'Medium',
-          propagationTrack: `Technical Submittal ${tNum} cleared material design limits for compliance with NCR ${docNo}.`
-        });
+      // 3. Technical Submittal ↔ NCR Linkages
+      if (tecIndex.size > 0) {
+        const matchedTecs = findMatchingTargets(tecIndex, textContext, docNo, i);
+        for (let m = 0; m < matchedTecs.length; m++) {
+          const tNum = matchedTecs[m].tNum;
+          links.push({
+            source: docNo,
+            sourceType: regType,
+            target: tNum,
+            targetType: 'Technical Submittals',
+            relationship: 'Material validation check',
+            impactScale: 'Medium',
+            propagationTrack: `Technical Submittal ${tNum} cleared material design limits for compliance with NCR ${docNo}.`
+          });
+        }
       }
-    });
-  });
+    }
+  }
 
   // Adding realistic seed links to demonstrate full features (Cross-Register Intelligence - Priority 8)
   if (links.length < 6) {
