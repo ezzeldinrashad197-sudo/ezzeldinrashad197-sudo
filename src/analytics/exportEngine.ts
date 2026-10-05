@@ -504,47 +504,15 @@ export const generatePptxReport = async (
         // Columns variables
         let cols = [
            { label: "Discipline", key: "discipline" },
-           { label: "Unique Rev.00", key: "UniqueRev00" },
-           { label: "Unique Further", key: "UniqueFurtherRev" },
-           { label: "Rev.00 Rows", key: "Rev00Rows" },
+           { label: "Items", key: "CurrentUnique" },
+           { label: "Total Submittals", key: "TotalRows" },
+           { label: "Rev.00", key: "Rev00Rows" },
            { label: "Further Rev.", key: "FurtherRevRows" },
-           { label: "Total Rows", key: "TotalRows" },
            { label: "Approved", key: "Approved" },
            { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },
-           { label: "Superseded", key: "Superseded" },
         ];
         let pieLabels = ["Approved", "Rejected", "Pending"];
-
-        if (bt === 'DOC') {
-           cols = [
-              { label: "Discipline", key: "discipline" },
-              { label: "Unique Rev.00", key: "UniqueRev00" },
-              { label: "Unique Further", key: "UniqueFurtherRev" },
-              { label: "Rev.00 Rows", key: "Rev00Rows" },
-              { label: "Further Rev.", key: "FurtherRevRows" },
-              { label: "Total Rows", key: "TotalRows" },
-              { label: "Approved", key: "Approved" },
-              { label: "Rej. Open", key: "RejectedOpen" },
-              { label: "Rej. Closed", key: "RejectedClosed" },
-              { label: "Pending", key: "Pending" },
-              { label: "Superseded", key: "Superseded" },
-           ];
-           pieLabels = ["Approved", "Rej. Open", "Rej. Closed", "Pending"];
-        } else if (bt === 'SDW' || bt === 'SHD' || bt === 'ABD') {
-           cols = [
-              { label: "Discipline", key: "discipline" },
-              { label: "Unique Rev.00", key: "UniqueRev00" },
-              { label: "Unique Further", key: "UniqueFurtherRev" },
-              { label: "Rev.00 Rows", key: "Rev00Rows" },
-              { label: "Further Rev.", key: "FurtherRevRows" },
-              { label: "Total Rows", key: "TotalRows" },
-              { label: "Approved", key: "Approved" },
-              { label: "Rejected", key: "Rejected" },
-              { label: "Pending", key: "Pending" },
-              { label: "Superseded", key: "Superseded" },
-           ];
-        }
 
         if (bt === 'RFI') {
            cols = [

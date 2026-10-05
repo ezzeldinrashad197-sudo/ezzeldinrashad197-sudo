@@ -63,6 +63,12 @@ import {
 import { ExecutiveRegisterSummary } from './components/ExecutiveRegisterSummary';
 import { ActiveBacklogIntelligence } from './components/ActiveBacklogIntelligence';
 import { WorkloadRevisionIntelligence } from './components/WorkloadRevisionIntelligence';
+import {
+  buildManagementReportOutput,
+  ManagementDisciplineRow,
+  ManagementKpiColumnKey,
+  ReconciledSourceRecord
+} from './analytics/managementReportOutput';
 
 interface ReportTableProps {
   data: SubmittalRow[];
@@ -592,6 +598,49 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [isForensicTraceOpen, setIsForensicTraceOpen] = useState(false);
   const [copiedForensicTrace, setCopiedForensicTrace] = useState(false);
 
+  // Dedicated Management Report Output Layer State
+  const [reportViewMode, setReportViewMode] = useState<'official' | 'audit'>('official');
+  const [selectedManagementRegister, setSelectedManagementRegister] = useState<string>('ALL');
+  const [showAllRegisterTables, setShowAllRegisterTables] = useState<boolean>(false);
+  const [showReconciliationSummary, setShowReconciliationSummary] = useState<boolean>(false);
+  const [reconciliationModal, setReconciliationModal] = useState<{
+    discipline: string;
+    kpiKey: ManagementKpiColumnKey;
+    kpiLabel: string;
+    registerLabel: string;
+    records: ReconciledSourceRecord[];
+  } | null>(null);
+  const [reconciliationSearch, setReconciliationSearch] = useState<string>('');
+  const [copiedReconciliation, setCopiedReconciliation] = useState<boolean>(false);
+
+  const officialManagementReport = useMemo(() => {
+    return buildManagementReportOutput(nonNcrFilteredData, contextDataset, selectedManagementRegister);
+  }, [nonNcrFilteredData, contextDataset, selectedManagementRegister]);
+
+  const perRegisterManagementReports = useMemo(() => {
+    if (!showAllRegisterTables) return [];
+    return officialManagementReport.availableRegisters.map(reg =>
+      buildManagementReportOutput(nonNcrFilteredData, contextDataset, reg)
+    );
+  }, [showAllRegisterTables, officialManagementReport.availableRegisters, nonNcrFilteredData, contextDataset]);
+
+  const openReconciliationCell = useCallback((
+    row: ManagementDisciplineRow,
+    kpiKey: ManagementKpiColumnKey,
+    kpiLabel: string,
+    registerLabel: string
+  ) => {
+    setReconciliationSearch('');
+    setCopiedReconciliation(false);
+    setReconciliationModal({
+      discipline: row.discipline,
+      kpiKey,
+      kpiLabel,
+      registerLabel,
+      records: row.reconciliation[kpiKey] || []
+    });
+  }, []);
+
   // Read-Only Forensic Source Trace for REJECTED_CLOSED in SDW-ARC and SDW-ELE
   const rejectedClosedForensicTrace = useMemo(() => {
     const allRows = contextDataset && contextDataset.length > 0 ? contextDataset : nonNcrFilteredData;
@@ -711,12 +760,126 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       'SDW-ELE'
     );
 
+    const targetOverdueDocNos = [
+      'INN-ARC-DOC-LND-0082',
+      'INN-ARC-DOC-INF-0214',
+      'INN-ARC-DOC-LND-0083',
+      'INN-ARC-DOC-LND-0084',
+      'INN-ARC-WIR-INF-00321',
+      'INN-ARC-WIR-INF-00322',
+      'INN-ARC-MIR-ARC-00319',
+      'INN-ARC-MIR-LND-00030',
+      'INN-ARC-MIR-ARC-00323'
+    ];
+
+    const nowDateObj = new Date();
+    const nowIsoDate = nowDateObj.toISOString().split('T')[0];
+    const nowTimeMs = nowDateObj.getTime();
+
+    const buildOverdueRecordTrace = (r: SubmittalRow) => {
+      const anyR = r as Record<string, any>;
+      const docNoVal = r.docNo || r.submissionRef || r.drawingNo || r.sheetNo || '-';
+      const subDateStr = r.submissionDate || '';
+      const respDateStr = r.responseDate || '';
+      const rawDueDateStr = r.dueDate || '';
+      const subMs = subDateStr ? new Date(subDateStr).getTime() : NaN;
+      const respMs = respDateStr ? new Date(respDateStr).getTime() : NaN;
+      const dueMs = rawDueDateStr ? new Date(rawDueDateStr).getTime() : NaN;
+      const contractualDaysInSla = 14;
+      const calculatedSlaDueDate = !isNaN(subMs)
+        ? new Date(subMs + contractualDaysInSla * 86400000).toISOString().split('T')[0]
+        : '';
+      const effectiveDueDate = rawDueDateStr || calculatedSlaDueDate || '-';
+
+      const targetMsUsedByGetDelayDays = respDateStr && !isNaN(respMs) ? respMs : nowTimeMs;
+      const targetDateUsedStr = respDateStr && !isNaN(respMs) ? respDateStr : `${nowIsoDate} (Date.now())`;
+      const runtimeDelayDays = r.delayDays ?? (!isNaN(subMs) ? Math.max(0, Math.floor((targetMsUsedByGetDelayDays - subMs) / 86400000)) : 0);
+
+      const effectiveDueMs = !isNaN(dueMs) ? dueMs : (!isNaN(subMs) ? subMs + contractualDaysInSla * 86400000 : NaN);
+      const trueAsOfMinusDueDays = !isNaN(effectiveDueMs) ? Math.floor((nowTimeMs - effectiveDueMs) / 86400000) : null;
+      const trueEndMinusDueDays = !isNaN(effectiveDueMs) ? Math.floor((targetMsUsedByGetDelayDays - effectiveDueMs) / 86400000) : null;
+
+      const docKey = getDocumentIdentityKey(r);
+      const group = revMap.get(docKey);
+      const isWinningLatestRev = group ? group.latest === r : Boolean(r.isLatestRev);
+      const currentEntityStatus = group ? (group.resolvedStatus || getStatusCodeCategory(group.latest)) : getStatusCodeCategory(r);
+      const winningLatestRevStr = group?.latest?.rev || r.rev || '00';
+
+      const exactFormula = respDateStr
+        ? `Math.floor((new Date("${respDateStr}") - new Date("${subDateStr}")) / 86400000) = ${runtimeDelayDays} days [Uses ResponseDate - SubmissionDate; contractual SLA days (14) & DueDate ("${rawDueDateStr || 'none'}") are NOT subtracted in getDelayDays()]`
+        : `Math.floor((Date.now() ["${nowIsoDate}"] - new Date("${subDateStr}")) / 86400000) = ${runtimeDelayDays} days [Uses AsOfDate(Today) - SubmissionDate because ResponseDate is empty; DueDate ("${rawDueDateStr || 'none'}") is ignored in getDelayDays()]`;
+
+      return {
+        documentNo: docNoVal,
+        revision: r.rev || '00',
+        submissionDate: subDateStr || '-',
+        responseDate: respDateStr || 'EMPTY (Missing in Excel)',
+        rawCode: r.code ?? r.status ?? '-',
+        rawStatus: r.recordStatus ?? r.workflowStage ?? anyR.rawStatus ?? '-',
+        rowResolvedCategory: getStatusCodeCategory(r),
+        allowedContractualDaysUsedInGetDelayDays: 0,
+        allowedContractualDaysInIsEntityOverdueFallback: 14,
+        rawDueDateFromExcel: rawDueDateStr || 'EMPTY',
+        calculatedDueDatePlus14: calculatedSlaDueDate || '-',
+        effectiveDueDate,
+        asOfCalculationDateUsed: targetDateUsedStr,
+        exactOverdueDaysReported: runtimeDelayDays,
+        trueAsOfMinusDueDateDays: trueAsOfMinusDueDays,
+        trueTargetMinusDueDateDays: trueEndMinusDueDays,
+        isEntityOverdueFlag: isEntityOverdue(r),
+        isCurrentLatestRevision: isWinningLatestRev,
+        currentEntityWinningRevision: winningLatestRevStr,
+        currentEntityResolvedStatus: currentEntityStatus,
+        reportGrainConfirmation: 'Historical Rejection Event / Row (filtered by workflowStage === "Rejected" on cumulative rows, deduplicated by first-seen docNo, NOT filtered to current latest revision)',
+        exactRuntimeFormula: exactFormula,
+        sourceSheet: r.sourceSheetName || r.disciplineSourceSheet || r.logType || '-'
+      };
+    };
+
+    const overdueTargetTraces = targetOverdueDocNos.map(targetDoc => {
+      const normTarget = targetDoc.trim().toUpperCase();
+      const matching = allRows.filter(r => {
+        const dNo = (r.docNo || '').trim().toUpperCase();
+        const sRef = (r.submissionRef || '').trim().toUpperCase();
+        const dwg = (r.drawingNo || r.sheetNo || '').trim().toUpperCase();
+        return dNo === normTarget || sRef === normTarget || dwg === normTarget || dNo.includes(normTarget) || sRef.includes(normTarget);
+      });
+      return {
+        requestedDocumentNo: targetDoc,
+        foundInLoadedDataset: matching.length > 0,
+        matchingRowCount: matching.length,
+        rows: matching.map(buildOverdueRecordTrace)
+      };
+    });
+
+    // Also capture Top 15 rows from the exact exportEngine presRejectedItems query
+    const seenRejRefs = new Set<string>();
+    const presRejectedItemsSim = allRows
+      .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+      .filter(d => {
+        const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
+        if (seenRejRefs.has(refKey)) return false;
+        seenRejRefs.add(refKey);
+        return true;
+      })
+      .sort((a, b) => {
+        const aOverdue = isEntityOverdue(a) ? 1 : 0;
+        const bOverdue = isEntityOverdue(b) ? 1 : 0;
+        if (bOverdue !== aOverdue) return bOverdue - aOverdue;
+        return (b.delayDays || 0) - (a.delayDays || 0);
+      });
+
     return {
       generatedAt: new Date().toISOString(),
       totalLoadedRows: allRows.length,
       filteredRows: nonNcrFilteredData.length,
       'SDW-ARC': sdwArc,
-      'SDW-ELE': sdwEle
+      'SDW-ELE': sdwEle,
+      overdueForensicTrace: {
+        totalPresRejectedItemsCount: presRejectedItemsSim.length,
+        requested9RecordsTrace: overdueTargetTraces,
+        top15HistoricalRejectionRowsByDelay: presRejectedItemsSim.slice(0, 15).map(buildOverdueRecordTrace)
+      }
     };
   }, [contextDataset, nonNcrFilteredData, contextRevisionMap, rowToRegisterIdentity]);
 
@@ -1336,6 +1499,463 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         </div>
        )}
 
+       {/* REPORT LAYER SWITCHER: OFFICIAL MANAGEMENT REPORT (PRIMARY) vs ANALYTICS / AUDIT ONLY */}
+       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 print:hidden [body.pdf-export_&]:hidden">
+         <div className="flex items-center gap-2.5 flex-wrap">
+           <button
+             type="button"
+             onClick={() => setReportViewMode('official')}
+             className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+               reportViewMode === 'official'
+                 ? 'bg-[#203864] text-white shadow-sm'
+                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <FileSpreadsheet className="w-4 h-4" />
+             <span>
+               {language === 'ar'
+                 ? `التقرير الإداري الرسمي الموحد (${isMonthly ? 'شهري' : 'تراكمي'})`
+                 : `Official Management Report (${isMonthly ? 'Monthly' : 'Cumulative'})`}
+             </span>
+           </button>
+           <button
+             type="button"
+             onClick={() => setReportViewMode('audit')}
+             className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+               reportViewMode === 'audit'
+                 ? 'bg-slate-800 text-white shadow-sm'
+                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <Layers className="w-4 h-4" />
+             <span>
+               {language === 'ar'
+                 ? 'التحليلات والتدقيق التفصيلي فقط (Analytics / Audit Only)'
+                 : 'Analytics & Audit Only (Detailed Diagnostics)'}
+             </span>
+           </button>
+         </div>
+
+         <div className="flex items-center gap-2 flex-wrap">
+           {reportViewMode === 'official' && (
+             <button
+               type="button"
+               onClick={() => setShowReconciliationSummary(!showReconciliationSummary)}
+               className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                 showReconciliationSummary
+                   ? 'bg-emerald-700 text-white border-emerald-800'
+                   : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
+               }`}
+             >
+               <ShieldCheck className="w-3.5 h-3.5" />
+               <span>
+                 {language === 'ar'
+                   ? 'مطابقة الصفوف المصدرية (Read-Only Reconciliation)'
+                   : 'Read-Only Source Reconciliation'}
+               </span>
+             </button>
+           )}
+           <button
+             type="button"
+             onClick={() => setIsForensicTraceOpen(true)}
+             className="px-3 py-1.5 rounded-lg bg-red-900 hover:bg-red-800 text-white text-xs font-bold border border-red-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+           >
+             <FileText className="w-3.5 h-3.5 text-red-200" />
+             <span>
+               {language === 'ar' ? 'فحص جنائي للمصدر (Forensic Trace)' : 'Forensic Source Trace'}
+             </span>
+           </button>
+         </div>
+       </div>
+
+       {/* ===================================================================== */}
+       {/* PRIMARY LAYER: DEDICATED OFFICIAL MANAGEMENT REPORT OUTPUT            */}
+       {/* ===================================================================== */}
+       {reportViewMode === 'official' && (
+         <div id="official-management-report-layer" className="space-y-6">
+           {/* Register Scope Controls (Hidden on Print) */}
+           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 print:hidden [body.pdf-export_&]:hidden">
+             <div>
+               <div className="flex items-center gap-2">
+                 <span className="text-xs font-black uppercase tracking-wider text-[#203864]">
+                   {language === 'ar' ? 'نطاق السجل الهندسي:' : 'Register Scope:'}
+                 </span>
+                 <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
+                   {officialManagementReport.isFullyReconciled
+                     ? (language === 'ar' ? '100% متطابق مع الحساب الأساسي SSOT' : '100% SSOT Reconciled')
+                     : (language === 'ar' ? 'قيد المراجعة' : 'Check Reconciliation')}
+                 </span>
+               </div>
+               <p className="text-xs text-slate-500 mt-0.5">
+                 {language === 'ar'
+                   ? 'انقر على أي رقم في الجدول لعرض الصفوف الحقيقية من ملف Excel التي تُكوّن هذا المؤشر.'
+                   : 'Click any KPI number in the table to inspect the exact raw Excel source rows contributing to that figure.'}
+               </p>
+             </div>
+
+             <div className="flex items-center gap-2 flex-wrap">
+               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 flex-wrap">
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setSelectedManagementRegister('ALL');
+                     setShowAllRegisterTables(false);
+                   }}
+                   className={`px-3 py-1.5 rounded-md text-xs font-extrabold transition-all cursor-pointer ${
+                     selectedManagementRegister === 'ALL' && !showAllRegisterTables
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'إجمالي كافة السجلات (ALL)' : 'ALL REGISTERS'}
+                 </button>
+                 {officialManagementReport.availableRegisters.map(reg => (
+                   <button
+                     key={reg}
+                     type="button"
+                     onClick={() => {
+                       setSelectedManagementRegister(reg);
+                       setShowAllRegisterTables(false);
+                     }}
+                     className={`px-3 py-1.5 rounded-md text-xs font-extrabold transition-all cursor-pointer ${
+                       selectedManagementRegister === reg && !showAllRegisterTables
+                         ? 'bg-[#203864] text-white shadow-xs'
+                         : 'text-slate-600 hover:text-slate-900'
+                     }`}
+                   >
+                     {reg}
+                   </button>
+                 ))}
+               </div>
+
+               {officialManagementReport.availableRegisters.length > 1 && (
+                 <button
+                   type="button"
+                   onClick={() => setShowAllRegisterTables(!showAllRegisterTables)}
+                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                     showAllRegisterTables
+                       ? 'bg-indigo-900 text-white border-indigo-950'
+                       : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                   }`}
+                 >
+                   {language === 'ar'
+                     ? 'عرض جداول السجلات منفصلة'
+                     : 'Show All Registers Separately'}
+                 </button>
+               )}
+             </div>
+           </div>
+
+           {/* Helper to render a single clean Official 8-Column Management KPI Table */}
+           {[
+             {
+               report: officialManagementReport,
+               headingEn:
+                 selectedManagementRegister === 'ALL'
+                   ? `OFFICIAL ${isMonthly ? 'MONTHLY' : 'CUMULATIVE'} MANAGEMENT REPORT — ALL SUBMITTAL REGISTERS`
+                   : `OFFICIAL ${isMonthly ? 'MONTHLY' : 'CUMULATIVE'} MANAGEMENT REPORT — ${selectedManagementRegister} REGISTER`,
+               headingAr:
+                 selectedManagementRegister === 'ALL'
+                   ? `التقرير الإداري الرسمي (${isMonthly ? 'الشهري' : 'التراكمي'}) — إجمالي السجلات الهندسية`
+                   : `التقرير الإداري الرسمي (${isMonthly ? 'الشهري' : 'التراكمي'}) — سجل ${selectedManagementRegister}`
+             },
+             ...perRegisterManagementReports.map(rep => ({
+               report: rep,
+               headingEn: `OFFICIAL ${isMonthly ? 'MONTHLY' : 'CUMULATIVE'} MANAGEMENT REPORT — ${rep.registerFilter} REGISTER`,
+               headingAr: `التقرير الإداري الرسمي (${isMonthly ? 'الشهري' : 'التراكمي'}) — سجل ${rep.registerFilter}`
+             }))
+           ].map((section, secIdx) => {
+             const rep = section.report;
+             const allTableRows = [...rep.rows, rep.grandTotal];
+             return (
+               <div
+                 key={`${rep.registerFilter}-${secIdx}`}
+                 className="bg-white rounded-xl shadow-sm border border-slate-300 overflow-hidden print:break-inside-avoid"
+               >
+                 {/* Official Table Header Banner */}
+                 <div className="bg-[#203864] text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                   <div>
+                     <h3 className="text-base font-extrabold tracking-wide uppercase">
+                       {language === 'ar' ? section.headingAr : section.headingEn}
+                     </h3>
+                     <p className="text-xs text-slate-300 mt-0.5">
+                       {language === 'ar'
+                         ? 'جدول مؤشرات الأداء الرسمية المعتمد للتقارير الشهرية والتراكمية (مشتق مباشرة من محرك الحساب الموحد SSOT)'
+                         : 'Official Management KPI Table for Monthly & Cumulative Reporting (Directly sourced from SSOT Calculation Engine)'}
+                     </p>
+                   </div>
+                   <div className="flex items-center gap-2 text-xs font-mono bg-white/10 px-3 py-1.5 rounded-lg border border-white/15">
+                     <span>Items: {rep.grandTotal.items}</span>
+                     <span>|</span>
+                     <span>Total Submittals: {rep.grandTotal.totalSubmittals}</span>
+                   </div>
+                 </div>
+
+                 {/* Official 8-Column Table */}
+                 <div className="overflow-x-auto">
+                   <table className="w-full border-collapse text-center">
+                     <thead>
+                       <tr className="bg-slate-100 border-b-2 border-slate-300 text-[#203864]">
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider text-left border-r border-slate-200 whitespace-nowrap">
+                           Discipline
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-blue-50/60 whitespace-nowrap">
+                           Items
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-slate-200/70 whitespace-nowrap">
+                           Total Submittals
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 whitespace-nowrap">
+                           Rev.00
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-300 whitespace-nowrap">
+                           Further Rev.
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-emerald-50/70 text-emerald-900 whitespace-nowrap">
+                           Approved
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-rose-50/70 text-rose-900 whitespace-nowrap">
+                           Rejected
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider bg-amber-50/70 text-amber-900 whitespace-nowrap">
+                           Pending
+                         </th>
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-200">
+                       {allTableRows.map(r => {
+                         const isTotal = r.discipline === 'GRAND TOTAL';
+                         const rowClass = isTotal
+                           ? 'bg-[#203864] text-white font-black border-t-2 border-slate-400'
+                           : 'odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/40 text-slate-800 font-semibold';
+
+                         const renderCellButton = (
+                           val: number,
+                           colKey: ManagementKpiColumnKey,
+                           colLabel: string,
+                           extraClass: string = ''
+                         ) => (
+                           <button
+                             type="button"
+                             onClick={() => openReconciliationCell(r, colKey, colLabel, rep.registerFilter)}
+                             className={`px-2.5 py-1 rounded transition-all cursor-pointer font-mono ${
+                               isTotal
+                                 ? 'hover:bg-white/20 text-white font-black underline decoration-white/40'
+                                 : 'hover:bg-blue-100/80 hover:text-blue-900 hover:underline'
+                             } ${extraClass}`}
+                             title={`Click to view exact reconciled source rows for ${r.discipline} — ${colLabel}`}
+                           >
+                             {val}
+                           </button>
+                         );
+
+                         return (
+                           <tr key={r.discipline} className={rowClass}>
+                             <td
+                               className={`px-4 py-3 text-sm text-left border-r ${
+                                 isTotal ? 'border-white/20 font-black text-white' : 'border-slate-200 font-extrabold text-[#203864]'
+                               } whitespace-nowrap`}
+                             >
+                               {r.discipline}
+                             </td>
+                             <td
+                               className={`px-4 py-3 text-sm border-r ${
+                                 isTotal ? 'border-white/20 bg-white/10' : 'border-slate-200 bg-blue-50/30 font-bold text-[#203864]'
+                               }`}
+                             >
+                               {renderCellButton(r.items, 'items', 'Items (Current Unique Document Items)')}
+                             </td>
+                             <td
+                               className={`px-4 py-3 text-sm border-r ${
+                                 isTotal ? 'border-white/20 bg-white/15' : 'border-slate-200 bg-slate-100/80 font-extrabold text-slate-900'
+                               }`}
+                             >
+                               {renderCellButton(r.totalSubmittals, 'totalSubmittals', 'Total Submittals (Rev.00 + Further Rev.)')}
+                             </td>
+                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/20' : 'border-slate-200'}`}>
+                               {renderCellButton(r.rev00, 'rev00', 'Rev.00 (Source Rows)')}
+                             </td>
+                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/30' : 'border-slate-300'}`}>
+                               {renderCellButton(r.furtherRev, 'furtherRev', 'Further Rev. (Source Rows)')}
+                             </td>
+                             <td
+                               className={`px-4 py-3 text-sm border-r ${
+                                 isTotal ? 'border-white/20 text-emerald-300' : 'border-slate-200 bg-emerald-50/30 text-emerald-800 font-bold'
+                               }`}
+                             >
+                               {renderCellButton(r.approved, 'approved', 'Approved (Current State of Unique Items)')}
+                             </td>
+                             <td
+                               className={`px-4 py-3 text-sm border-r ${
+                                 isTotal ? 'border-white/20 text-rose-300' : 'border-slate-200 bg-rose-50/30 text-rose-800 font-bold'
+                               }`}
+                             >
+                               {renderCellButton(r.rejected, 'rejected', 'Rejected (Current State of Unique Items)')}
+                             </td>
+                             <td
+                               className={`px-4 py-3 text-sm ${
+                                 isTotal ? 'text-amber-300' : 'bg-amber-50/30 text-amber-800 font-bold'
+                               }`}
+                             >
+                               {renderCellButton(r.pending, 'pending', 'Pending (Current State of Unique Items)')}
+                             </td>
+                           </tr>
+                         );
+                       })}
+                     </tbody>
+                   </table>
+                 </div>
+
+                 {/* Deterministic KPI Definitions Footer */}
+                 <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-600">
+                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                     <span>
+                       <strong className="text-[#203864]">Items:</strong> Current Unique Document Items
+                     </span>
+                     <span>•</span>
+                     <span>
+                       <strong className="text-[#203864]">Total Submittals:</strong> Rev.00 + Further Rev. ({rep.grandTotal.rev00} + {rep.grandTotal.furtherRev} = {rep.grandTotal.totalSubmittals})
+                     </span>
+                     <span>•</span>
+                     <span>
+                       <strong className="text-[#203864]">Current State Balance:</strong> Approved + Rejected + Pending = Items ({rep.grandTotal.approved} + {rep.grandTotal.rejected} + {rep.grandTotal.pending} = {rep.grandTotal.items})
+                     </span>
+                   </div>
+                   {rep.otherDisciplineRowsCount > 0 && (
+                     <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-semibold">
+                       Note: {rep.otherDisciplineRowsCount} rows in non-standard disciplines (GEN/SURV/HSE) excluded from the 6-discipline table.
+                     </span>
+                   )}
+                 </div>
+               </div>
+             );
+           })}
+
+           {/* Read-Only Source Reconciliation Summary Panel (Expandable) */}
+           {showReconciliationSummary && (
+             <div className="bg-white rounded-xl shadow-sm border-2 border-emerald-300 overflow-hidden print:hidden [body.pdf-export_&]:hidden">
+               <div className="bg-emerald-900 text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                 <div>
+                   <h3 className="text-sm font-black uppercase tracking-wider">
+                     {language === 'ar'
+                       ? 'تقرير المطابقة القرائية للصفوف المصدرية (Read-Only Source Row Reconciliation)'
+                       : 'Read-Only Source-Row Reconciliation across Official Disciplines'}
+                   </h3>
+                   <p className="text-xs text-emerald-200 mt-0.5">
+                     {language === 'ar'
+                       ? 'بيان تفصيلي بعدد السجلات المصدرية الفعلى لكل مؤشر ولكل تخصص مع التحقق الرياضي التام دون أي بيانات افتراضية.'
+                       : 'Exact count of actual runtime Excel records contributing to each KPI per discipline. Zero synthetic or inferred records.'}
+                   </p>
+                 </div>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     const exportPayload = {
+                       generatedAt: new Date().toISOString(),
+                       reportType: isMonthly ? 'MONTHLY' : 'CUMULATIVE',
+                       registerScope: officialManagementReport.registerFilter,
+                       isFullyReconciled: officialManagementReport.isFullyReconciled,
+                       disciplines: [...officialManagementReport.rows, officialManagementReport.grandTotal].map(d => ({
+                         discipline: d.discipline,
+                         kpis: {
+                           items: d.items,
+                           totalSubmittals: d.totalSubmittals,
+                           rev00: d.rev00,
+                           furtherRev: d.furtherRev,
+                           approved: d.approved,
+                           rejected: d.rejected,
+                           pending: d.pending
+                         },
+                         invariants: {
+                           workloadFormula: `${d.rev00} (Rev.00) + ${d.furtherRev} (Further Rev.) = ${d.totalSubmittals} (Total Submittals)`,
+                           currentStateFormula: `${d.approved} (Approved) + ${d.rejected} (Rejected: ${d.rejectedOpen} Open + ${d.rejectedClosed} Closed) + ${d.pending} (Pending) = ${d.items} (Items)`
+                         },
+                         sampleContributingDocumentNumbers: {
+                           items: d.reconciliation.items.slice(0, 25).map(r => ({
+                             docNo: r.documentNo,
+                             subRef: r.subRef,
+                             rev: r.rev,
+                             code: r.rawCode,
+                             resolvedStatus: r.resolvedCategory,
+                             sheet: r.sourceSheet
+                           })),
+                           rejected: d.reconciliation.rejected.map(r => ({
+                             docNo: r.documentNo,
+                             subRef: r.subRef,
+                             rev: r.rev,
+                             code: r.rawCode,
+                             status: r.rawStatus,
+                             resolvedStatus: r.resolvedCategory,
+                             submissionDate: r.submissionDate,
+                             responseDate: r.responseDate,
+                             sheet: r.sourceSheet
+                           }))
+                         }
+                       }))
+                     };
+                     navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
+                     setCopiedReconciliation(true);
+                     setTimeout(() => setCopiedReconciliation(false), 3000);
+                   }}
+                   className="px-3.5 py-2 rounded-lg bg-white text-emerald-950 hover:bg-emerald-50 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shrink-0"
+                 >
+                   {copiedReconciliation ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                   <span>{copiedReconciliation ? 'Copied Reconciliation JSON!' : 'Copy Reconciliation JSON'}</span>
+                 </button>
+               </div>
+
+               <div className="p-5 space-y-4">
+                 <div className="overflow-x-auto">
+                   <table className="w-full text-xs border-collapse border border-slate-200">
+                     <thead>
+                       <tr className="bg-slate-100 text-slate-800 font-bold">
+                         <th className="p-2.5 border border-slate-200 text-left">Discipline</th>
+                         <th className="p-2.5 border border-slate-200">Workload Equation (Rev.00 + Further = Total)</th>
+                         <th className="p-2.5 border border-slate-200">Current State Equation (App + Rej + Pend = Items)</th>
+                         <th className="p-2.5 border border-slate-200">Rejected Breakdown (Open + Closed)</th>
+                         <th className="p-2.5 border border-slate-200">Status</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {[...officialManagementReport.rows, officialManagementReport.grandTotal].map(d => (
+                         <tr key={d.discipline} className={d.discipline === 'GRAND TOTAL' ? 'bg-slate-100 font-black' : 'even:bg-slate-50'}>
+                           <td className="p-2.5 border border-slate-200 font-bold text-[#203864]">{d.discipline}</td>
+                           <td className="p-2.5 border border-slate-200 text-center font-mono">
+                             {d.rev00} + {d.furtherRev} = <strong>{d.totalSubmittals}</strong>
+                           </td>
+                           <td className="p-2.5 border border-slate-200 text-center font-mono">
+                             {d.approved} + {d.rejected} + {d.pending} = <strong>{d.items}</strong>
+                           </td>
+                           <td className="p-2.5 border border-slate-200 text-center font-mono">
+                             {d.rejectedOpen} Open + {d.rejectedClosed} Closed = <strong>{d.rejected}</strong>
+                           </td>
+                           <td className="p-2.5 border border-slate-200 text-center">
+                             {d.isWorkloadReconciled && d.isCurrentStateReconciled ? (
+                               <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                                 RECONCILED
+                               </span>
+                             ) : (
+                               <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px]">
+                                 MISMATCH
+                               </span>
+                             )}
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+             </div>
+           )}
+         </div>
+       )}
+
+       {/* ===================================================================== */}
+       {/* SECONDARY LAYER: ANALYTICS & AUDIT ONLY (DETAILED DIAGNOSTICS)        */}
+       {/* ===================================================================== */}
+       {reportViewMode === 'audit' && (
+       <div className="space-y-6">
        {/* DYNAMIC EXECUTIVE BRIEF SECTION */}
        <div id="executive-summary-alert" className="bg-[#203864] text-white p-5 rounded-xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center gap-4">
             <div className="p-3 bg-white/10 rounded-xl shrink-0">
@@ -2589,6 +3209,184 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                 })}
             </div>
        </div>
+       </div>
+       )}
+
+      {/* READ-ONLY SOURCE-ROW RECONCILIATION MODAL (FOR OFFICIAL MANAGEMENT REPORT CELLS) */}
+      {reconciliationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/70 backdrop-blur-xs animate-fadeIn print:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-4 bg-[#203864] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded bg-white/15 font-mono text-xs font-bold">
+                    {reconciliationModal.registerLabel === 'ALL' ? 'ALL REGISTERS' : reconciliationModal.registerLabel}
+                  </span>
+                  <span>•</span>
+                  <span className="px-2.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 font-extrabold text-xs">
+                    {reconciliationModal.discipline}
+                  </span>
+                  <span>•</span>
+                  <span className="text-sm font-black">{reconciliationModal.kpiLabel}</span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1">
+                  Read-Only Source Reconciliation — Showing {reconciliationModal.records.length} exact source records from the loaded Excel dataset.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const header = [
+                      'Register',
+                      'Discipline',
+                      'Document No',
+                      'SUB Ref',
+                      'Rev',
+                      'Rev Type',
+                      'Raw Code',
+                      'Raw Status',
+                      'Resolved Status',
+                      'Submission Date',
+                      'Response Date',
+                      'Source Sheet'
+                    ].join('\t');
+                    const lines = reconciliationModal.records.map(r =>
+                      [
+                        r.registerIdentity,
+                        r.officialDiscipline,
+                        r.documentNo,
+                        r.subRef,
+                        r.rev,
+                        r.isRev0 ? 'Rev.00' : 'Further Rev.',
+                        r.rawCode,
+                        r.rawStatus,
+                        r.resolvedCategory,
+                        r.submissionDate,
+                        r.responseDate,
+                        r.sourceSheet
+                      ].join('\t')
+                    );
+                    navigator.clipboard.writeText([header, ...lines].join('\n'));
+                    setCopiedReconciliation(true);
+                    setTimeout(() => setCopiedReconciliation(false), 2500);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white text-[#203864] hover:bg-slate-100 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {copiedReconciliation ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedReconciliation ? 'Copied TSV!' : 'Copy Source Rows (TSV)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReconciliationModal(null)}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={reconciliationSearch}
+                  onChange={e => setReconciliationSearch(e.target.value)}
+                  placeholder="Filter by Document No, SUB Ref, Code, Status, or Sheet..."
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#203864]"
+                />
+              </div>
+              <span className="text-xs font-bold text-slate-600 font-mono">
+                Total Contributing Records: {reconciliationModal.records.length}
+              </span>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {reconciliationModal.records.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-sm font-semibold">
+                  No source records in this category.
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                        <th className="p-2.5">#</th>
+                        <th className="p-2.5">Register</th>
+                        <th className="p-2.5">Discipline</th>
+                        <th className="p-2.5">Document No</th>
+                        <th className="p-2.5">SUB Ref</th>
+                        <th className="p-2.5">Rev</th>
+                        <th className="p-2.5">Rev Class</th>
+                        <th className="p-2.5">Raw Code</th>
+                        <th className="p-2.5">Raw Status</th>
+                        <th className="p-2.5">Resolved State</th>
+                        <th className="p-2.5">Submission Date</th>
+                        <th className="p-2.5">Response Date</th>
+                        <th className="p-2.5">Source Sheet</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {reconciliationModal.records
+                        .filter(r => {
+                          if (!reconciliationSearch.trim()) return true;
+                          const q = reconciliationSearch.trim().toLowerCase();
+                          return (
+                            r.documentNo.toLowerCase().includes(q) ||
+                            r.subRef.toLowerCase().includes(q) ||
+                            r.rawCode.toLowerCase().includes(q) ||
+                            r.rawStatus.toLowerCase().includes(q) ||
+                            r.sourceSheet.toLowerCase().includes(q) ||
+                            r.registerIdentity.toLowerCase().includes(q)
+                          );
+                        })
+                        .slice(0, 500)
+                        .map((rec, idx) => (
+                          <tr key={`${rec.id}-${idx}`} className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/40">
+                            <td className="p-2.5 text-slate-400">{idx + 1}</td>
+                            <td className="p-2.5 font-bold text-[#203864]">{rec.registerIdentity}</td>
+                            <td className="p-2.5 font-bold">{rec.officialDiscipline}</td>
+                            <td className="p-2.5 font-bold text-slate-900 select-all">{rec.documentNo}</td>
+                            <td className="p-2.5 select-all">{rec.subRef}</td>
+                            <td className="p-2.5">{rec.rev}</td>
+                            <td className="p-2.5">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  rec.isRev0 ? 'bg-blue-50 text-blue-800' : 'bg-purple-50 text-purple-800'
+                                }`}
+                              >
+                                {rec.isRev0 ? 'Rev.00' : 'Further Rev.'}
+                              </span>
+                            </td>
+                            <td className="p-2.5 font-bold">{rec.rawCode}</td>
+                            <td className="p-2.5">{rec.rawStatus}</td>
+                            <td className="p-2.5">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  rec.resolvedCategory === 'APPROVED' || rec.resolvedCategory === 'FINAL_CLOSED'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : rec.resolvedCategory === 'REJECTED_OPEN' || rec.resolvedCategory === 'REJECTED_CLOSED'
+                                      ? 'bg-rose-100 text-rose-800'
+                                      : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {rec.resolvedCategory}
+                              </span>
+                            </td>
+                            <td className="p-2.5">{rec.submissionDate}</td>
+                            <td className="p-2.5">{rec.responseDate}</td>
+                            <td className="p-2.5 text-slate-500">{rec.sourceSheet}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     
       {/* 8. DRILL-DOWN INSPECTOR MODAL */}
       {drillDownModal && drillDownModal.isOpen && (
@@ -3007,6 +3805,140 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                   </div>
                 );
               })}
+
+              {/* OVERDUE CALCULATION FORENSIC TRACE SECTION (9 TARGET RECORDS + TOP HISTORICAL REJECTION ROWS) */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="px-5 py-3 bg-slate-900 text-white flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2.5 py-0.5 rounded bg-amber-600 text-white font-black text-xs">
+                      OVERDUE CALCULATION FORENSIC TRACE
+                    </span>
+                    <span className="text-xs font-bold text-slate-300">
+                      Historical Rejection Events / Rows by Delay (Total in Loaded Dataset: {rejectedClosedForensicTrace.overdueForensicTrace.totalPresRejectedItemsCount})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-5">
+                  <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-slate-800 space-y-1.5">
+                    <div className="font-black text-amber-950">
+                      Runtime Mathematical Formula Verification (Read-Only SSOT Inspection):
+                    </div>
+                    <div>
+                      <strong>1. Report Population & Grain:</strong> <code className="bg-white px-1.5 py-0.5 rounded border">exportEngine.ts:771-784</code> filters <code className="bg-white px-1 py-0.5 rounded">cumulativeWorkingData</code> by <code className="bg-white px-1 py-0.5 rounded">workflowStage === 'Rejected'</code> (which includes both <code className="bg-white px-1 py-0.5 rounded">REJECTED_OPEN</code> and <code className="bg-white px-1 py-0.5 rounded">REJECTED_CLOSED</code> across all historical revisions) and deduplicates by first-seen <code className="bg-white px-1 py-0.5 rounded">docNo</code>, sorting first by <code className="bg-white px-1 py-0.5 rounded">isEntityOverdue(row)</code> then by <code className="bg-white px-1 py-0.5 rounded">row.delayDays</code> descending.
+                    </div>
+                    <div>
+                      <strong>2. Exact Runtime Delay Formula (<code className="bg-white px-1 py-0.5 rounded">getDelayDays</code> in <code className="bg-white px-1 py-0.5 rounded">src/utils/calculations.ts:298-311</code>):</strong> Parameter <code className="bg-white px-1 py-0.5 rounded">due</code> is passed but <strong>unused</strong> inside <code className="bg-white px-1 py-0.5 rounded">getDelayDays(submission, response, due)</code>. If <code className="bg-white px-1 py-0.5 rounded">responseDate</code> is present, <code className="bg-white px-1 py-0.5 rounded">delayDays = Math.floor((ResponseDate - SubmissionDate) / 86400000)</code>. If <code className="bg-white px-1 py-0.5 rounded">responseDate</code> is empty, <code className="bg-white px-1 py-0.5 rounded">delayDays = Math.floor((Date.now() - SubmissionDate) / 86400000)</code> (0 contractual days subtracted).
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900 uppercase mb-2">
+                      A. Exact Trace for the 9 Requested Target Documents (from Loaded Excel Dataset):
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-[11px] bg-white rounded-lg overflow-hidden border border-slate-200">
+                        <thead>
+                          <tr className="bg-slate-100 font-bold text-slate-700 uppercase">
+                            <th className="px-2.5 py-2 border-b">1. Document No</th>
+                            <th className="px-2.5 py-2 border-b">2. Rev</th>
+                            <th className="px-2.5 py-2 border-b">3. Submission Date</th>
+                            <th className="px-2.5 py-2 border-b">4. Response Date</th>
+                            <th className="px-2.5 py-2 border-b">5. Raw Code</th>
+                            <th className="px-2.5 py-2 border-b">6. Raw Status</th>
+                            <th className="px-2.5 py-2 border-b">7. Allowed Days</th>
+                            <th className="px-2.5 py-2 border-b">8. Due Date (Excel / +14d)</th>
+                            <th className="px-2.5 py-2 border-b">9. As-Of / End Date Used</th>
+                            <th className="px-2.5 py-2 border-b">10. Runtime Delay (vs End-Due)</th>
+                            <th className="px-2.5 py-2 border-b">Latest Rev Status</th>
+                            <th className="px-2.5 py-2 border-b">11. Exact Runtime Formula</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rejectedClosedForensicTrace.overdueForensicTrace.requested9RecordsTrace.map((itemGroup: any) => {
+                            if (!itemGroup.foundInLoadedDataset) {
+                              return (
+                                <tr key={itemGroup.requestedDocumentNo} className="font-mono bg-slate-50 text-slate-500">
+                                  <td className="px-2.5 py-2 border-b font-bold text-slate-800">{itemGroup.requestedDocumentNo}</td>
+                                  <td colSpan={11} className="px-2.5 py-2 border-b">
+                                    SOURCE DATA NOT LOADED IN CURRENT SESSION FOR THIS DOCUMENT NO (Upload Excel workbook to populate)
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            return itemGroup.rows.map((rTrace: any, rIdx: number) => (
+                              <tr key={`${itemGroup.requestedDocumentNo}_${rIdx}`} className="font-mono odd:bg-white even:bg-amber-50/20">
+                                <td className="px-2.5 py-2 border-b font-bold select-all">{rTrace.documentNo}</td>
+                                <td className="px-2.5 py-2 border-b font-bold">{rTrace.revision}</td>
+                                <td className="px-2.5 py-2 border-b select-all">{rTrace.submissionDate}</td>
+                                <td className="px-2.5 py-2 border-b select-all text-red-700 font-bold">{rTrace.responseDate}</td>
+                                <td className="px-2.5 py-2 border-b">{rTrace.rawCode}</td>
+                                <td className="px-2.5 py-2 border-b">{rTrace.rawStatus}</td>
+                                <td className="px-2.5 py-2 border-b">0d (in getDelayDays) / 14d (SLA)</td>
+                                <td className="px-2.5 py-2 border-b">{rTrace.rawDueDateFromExcel} / {rTrace.calculatedDueDatePlus14}</td>
+                                <td className="px-2.5 py-2 border-b">{rTrace.asOfCalculationDateUsed}</td>
+                                <td className="px-2.5 py-2 border-b font-black text-red-700">
+                                  {rTrace.exactOverdueDaysReported}d (End-Due: {rTrace.trueTargetMinusDueDateDays ?? '-'}d)
+                                </td>
+                                <td className="px-2.5 py-2 border-b">
+                                  {rTrace.isCurrentLatestRevision ? 'LATEST' : `SUPERSEDED (Latest: Rev ${rTrace.currentEntityWinningRevision} -> ${rTrace.currentEntityResolvedStatus})`}
+                                </td>
+                                <td className="px-2.5 py-2 border-b text-[10px] select-all">{rTrace.exactRuntimeFormula}</td>
+                              </tr>
+                            ));
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {rejectedClosedForensicTrace.overdueForensicTrace.top15HistoricalRejectionRowsByDelay.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase mb-2">
+                        B. Top 15 Records Currently Producing Highest Delay in "Historical Rejection Events / Rows by Delay":
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-[11px] bg-white rounded-lg overflow-hidden border border-slate-200">
+                          <thead>
+                            <tr className="bg-slate-100 font-bold text-slate-700 uppercase">
+                              <th className="px-2.5 py-2 border-b">#</th>
+                              <th className="px-2.5 py-2 border-b">Document No</th>
+                              <th className="px-2.5 py-2 border-b">Rev</th>
+                              <th className="px-2.5 py-2 border-b">Submission Date</th>
+                              <th className="px-2.5 py-2 border-b">Response Date</th>
+                              <th className="px-2.5 py-2 border-b">Raw Code / Status</th>
+                              <th className="px-2.5 py-2 border-b">Due Date (Excel / +14d)</th>
+                              <th className="px-2.5 py-2 border-b">As-Of / End Date</th>
+                              <th className="px-2.5 py-2 border-b">Runtime Delay</th>
+                              <th className="px-2.5 py-2 border-b">Latest Rev Status</th>
+                              <th className="px-2.5 py-2 border-b">Exact Formula</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rejectedClosedForensicTrace.overdueForensicTrace.top15HistoricalRejectionRowsByDelay.map((rTrace: any, idx: number) => (
+                              <tr key={idx} className="font-mono odd:bg-white even:bg-slate-50">
+                                <td className="px-2.5 py-1.5 border-b">{idx + 1}</td>
+                                <td className="px-2.5 py-1.5 border-b font-bold select-all">{rTrace.documentNo}</td>
+                                <td className="px-2.5 py-1.5 border-b">{rTrace.revision}</td>
+                                <td className="px-2.5 py-1.5 border-b">{rTrace.submissionDate}</td>
+                                <td className="px-2.5 py-1.5 border-b text-red-700 font-bold">{rTrace.responseDate}</td>
+                                <td className="px-2.5 py-1.5 border-b">{rTrace.rawCode} / {rTrace.rawStatus}</td>
+                                <td className="px-2.5 py-1.5 border-b">{rTrace.rawDueDateFromExcel} / {rTrace.calculatedDueDatePlus14}</td>
+                                <td className="px-2.5 py-1.5 border-b">{rTrace.asOfCalculationDateUsed}</td>
+                                <td className="px-2.5 py-1.5 border-b font-black text-red-700">{rTrace.exactOverdueDaysReported}d</td>
+                                <td className="px-2.5 py-1.5 border-b">
+                                  {rTrace.isCurrentLatestRevision ? `LATEST (${rTrace.currentEntityResolvedStatus})` : `SUPERSEDED (Latest: Rev ${rTrace.currentEntityWinningRevision} -> ${rTrace.currentEntityResolvedStatus})`}
+                                </td>
+                                <td className="px-2.5 py-1.5 border-b text-[10px] select-all">{rTrace.exactRuntimeFormula}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -334,33 +334,19 @@ export function buildPresentationViewModel(
     const regTitle = getRegisterTitle(bt, isArabic ? 'ar' : 'en');
     const isRevBased = bt !== 'LTR' && bt !== 'RFI' && bt !== 'NCR' && bt !== 'SOR';
 
-    // Canonical column definitions
+    // Canonical column definitions (Official 8-Column Management KPI Table)
     let cols = [
       { label: "Discipline", key: "discipline" },
-      { label: "Unique Rev.00", key: "UniqueRev00" },
-      { label: "Unique Further", key: "UniqueFurtherRev" },
-      { label: "Rev.00 Rows", key: "Rev00Rows" },
+      { label: "Items", key: "CurrentUnique" },
+      { label: "Total Submittals", key: "TotalRows" },
+      { label: "Rev.00", key: "Rev00Rows" },
       { label: "Further Rev.", key: "FurtherRevRows" },
-      { label: "Total Rows", key: "TotalRows" },
       { label: "Approved", key: "Approved" },
       { label: "Rejected", key: "Rejected" },
       { label: "Pending", key: "Pending" }
     ];
 
-    if (bt === 'DOC') {
-      cols = [
-        { label: "Discipline", key: "discipline" },
-        { label: "Unique Rev.00", key: "UniqueRev00" },
-        { label: "Unique Further", key: "UniqueFurtherRev" },
-        { label: "Rev.00 Rows", key: "Rev00Rows" },
-        { label: "Further Rev.", key: "FurtherRevRows" },
-        { label: "Total Rows", key: "TotalRows" },
-        { label: "Approved", key: "Approved" },
-        { label: "Rej. Open", key: "RejectedOpen" },
-        { label: "Rej. Closed", key: "RejectedClosed" },
-        { label: "Pending", key: "Pending" }
-      ];
-    } else if (bt === 'NCR' || bt === 'SOR') {
+    if (bt === 'NCR' || bt === 'SOR') {
       cols = [
         { label: "Discipline", key: "discipline" },
         { label: "Total Rev.00", key: "Rev00" },

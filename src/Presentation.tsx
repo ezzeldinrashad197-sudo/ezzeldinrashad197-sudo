@@ -585,10 +585,16 @@ export default function Presentation({
             ? totalWorkload
             : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalWorkload));
 
+      const curUniq = s.totalUniqueDrawings !== undefined
+        ? s.totalUniqueDrawings
+        : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
+
       return {
         discipline: disc,
         // Explicitly separate submission-grain KPIs from physical row/sheet workload.
         // Unique counts use Register + Discipline + SUB Ref; row counts preserve every source row.
+        CurrentUnique: curUniq,
+        Items: curUniq,
         TotalSubmittals: totalSubmittals,
         UniqueRev00: s.totalSubmittalsRev0 || 0,
         UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
@@ -611,6 +617,8 @@ export default function Presentation({
 
     const totalRow = {
       discipline: "TOTAL",
+      CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
+      Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
       UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
       UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
@@ -2188,11 +2196,10 @@ export default function Presentation({
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
           { label: "Discipline", key: "discipline" },
-          { label: "Unique Rev.00", key: "UniqueRev00" },
-          { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
-          { label: "Rev.00 Rows", key: "Rev00Rows" },
-          { label: "Further Rev. Rows", key: "FurtherRevRows" },
-          { label: "Total Rows", key: "TotalRows" },
+          { label: "Items", key: "CurrentUnique" },
+          { label: "Total Submittals", key: "TotalRows" },
+          { label: "Rev.00", key: "Rev00" },
+          { label: "Further Rev.", key: "FurtherRev" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
@@ -2274,11 +2281,10 @@ export default function Presentation({
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
           { label: "Discipline", key: "discipline" },
-          { label: "Unique Rev.00", key: "UniqueRev00" },
-          { label: "Unique Further Rev.", key: "UniqueFurtherRev" },
-          { label: "Rev.00 Rows", key: "Rev00Rows" },
-          { label: "Further Rev. Rows", key: "FurtherRevRows" },
-          { label: "Total Rows", key: "TotalRows" },
+          { label: "Items", key: "CurrentUnique" },
+          { label: "Total Submittals", key: "TotalRows" },
+          { label: "Rev.00", key: "Rev00" },
+          { label: "Further Rev.", key: "FurtherRev" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
