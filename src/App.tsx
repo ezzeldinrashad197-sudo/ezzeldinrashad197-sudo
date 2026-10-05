@@ -768,6 +768,20 @@ export default function App() {
                       @page {
                           size: landscape;
                       }
+                      table {
+                          table-layout: auto !important;
+                          width: 100% !important;
+                          word-break: normal !important;
+                          overflow-wrap: normal !important;
+                          word-wrap: normal !important;
+                          hyphens: none !important;
+                      }
+                      th, td, th *, td * {
+                          word-break: normal !important;
+                          overflow-wrap: normal !important;
+                          word-wrap: normal !important;
+                          hyphens: none !important;
+                      }
                     }
                 `}
                 </style>

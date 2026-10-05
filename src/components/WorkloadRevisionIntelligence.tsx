@@ -178,28 +178,28 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
           {/* Workload Breakdown by Register Table */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full table-auto text-left border-collapse break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200">
+                    <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200 whitespace-nowrap min-w-[110px]">
                       {language === 'ar' ? 'السجل الهندسي (Register)' : 'Register'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-900 border-r border-slate-200">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-900 border-r border-slate-200 min-w-[96px]">
                       {language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-900 border-r border-slate-200">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-900 border-r border-slate-200 min-w-[110px]">
                       {language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-700 border-r border-slate-200">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-blue-700 border-r border-slate-200 min-w-[92px]">
                       {language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-700 border-r border-slate-200">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-amber-700 border-r border-slate-200 min-w-[105px]">
                       {language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200 min-w-[92px]">
                       {language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}
                     </th>
-                    <th className="px-3 py-3.5 text-center font-extrabold text-indigo-800">
+                    <th className="px-3 py-3.5 text-center font-extrabold text-indigo-800 min-w-[96px]">
                       {language === 'ar' ? 'معدل إعادة العمل' : 'Rework Ratio'}
                     </th>
                   </tr>
@@ -440,22 +440,22 @@ export const WorkloadRevisionIntelligence: React.FC<WorkloadRevisionIntelligence
           {/* Rejection Tracking per Register */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full table-auto text-left border-collapse break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200">
+                    <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200 whitespace-nowrap min-w-[110px]">
                       {language === 'ar' ? 'السجل الهندسي (Register)' : 'Register'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-rose-900 border-r border-slate-200">
+                    <th className="px-4 py-3.5 text-center font-extrabold text-rose-900 border-r border-slate-200 min-w-[110px]">
                       {language === 'ar' ? 'إجمالي صفوف الرفض' : 'Historical Rejection Rows'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-amber-800 border-r border-slate-200">
+                    <th className="px-4 py-3.5 text-center font-extrabold text-amber-800 border-r border-slate-200 min-w-[105px]">
                       {language === 'ar' ? 'صفوف الرفض المفتوحة' : 'Rejected Open Rows'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-red-900 border-r border-slate-200">
+                    <th className="px-4 py-3.5 text-center font-extrabold text-red-900 border-r border-slate-200 min-w-[105px]">
                       {language === 'ar' ? 'صفوف الرفض المغلقة' : 'Rejected Closed Rows'}
                     </th>
-                    <th className="px-4 py-3.5 text-center font-extrabold text-emerald-800">
+                    <th className="px-4 py-3.5 text-center font-extrabold text-emerald-800 min-w-[105px]">
                       {language === 'ar' ? 'حالات الرفض المسواة' : 'Resolved Rejections'}
                     </th>
                   </tr>

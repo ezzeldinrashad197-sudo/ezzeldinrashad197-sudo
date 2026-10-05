@@ -588,13 +588,14 @@ export const generatePptxReport = async (
             addHeaderAndFooter(pres, slideA, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options);
             
             // Add Table Layout Engine
-            const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
+            const layout = calculateTableLayout(cols, 5.8, false, isArabic ? 'ar' : 'en');
 
             if (statsData.stats.length <= 10) {
                 const tableRows = buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideA.addTable(tableRows, { 
-                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    x: 0.30, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,
+                    margin: [2, 1.5, 2, 1.5],
                     color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -603,8 +604,9 @@ export const generatePptxReport = async (
                 const firstChunk = statsData.stats.slice(0, 10);
                 const tableRowsA = buildTableData(firstChunk, null, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideA.addTable(tableRowsA, { 
-                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    x: 0.30, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,
+                    margin: [2, 1.5, 2, 1.5],
                     color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -617,8 +619,9 @@ export const generatePptxReport = async (
 
                 const tableRowsCont = buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize);
                 slideACont.addTable(tableRowsCont, { 
-                    x: 0.35, y: 1.25, w: layout.tableWidth, 
+                    x: 0.30, y: 1.25, w: layout.tableWidth, 
                     colW: layout.colWidths,
+                    margin: [2, 1.5, 2, 1.5],
                     color: "333333", fontSize: layout.bodyFontSize,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -641,7 +644,7 @@ export const generatePptxReport = async (
             ];
             
             slideA.addChart(pres.ChartType.bar, barChartData, {
-                x: 5.95, y: 1.25, w: 3.7, h: 3.65,
+                x: 6.18, y: 1.25, w: 3.52, h: 3.65,
                 barDir: "col",
                 barGrouping: "stacked",
                 showLegend: true,
@@ -867,6 +870,7 @@ export const generatePptxReport = async (
                 slide.addTable(tableDataRows, {
                     x: 0.5, y: 1.45, w: 9.0,
                     colW: colW,
+                    margin: [2, 2, 2, 2],
                     color: "333333", fontSize: 8.5,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });
@@ -966,6 +970,7 @@ export const generatePptxReport = async (
                 slide.addTable(tableDataRows, {
                     x: 0.5, y: 1.45, w: 9.0,
                     colW: colW,
+                    margin: [2, 2, 2, 2],
                     color: "333333", fontSize: 8.5,
                     border: { type: "solid", pt: 1, color: "CBD5E1" }
                 });

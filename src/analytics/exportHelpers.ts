@@ -1109,6 +1109,7 @@ export const addChartsAndBottlenecksSlide = (
         slide.addTable(tableRows, {
             x: 0.5, y: 3.65, w: 9.0,
             colW: [0.6, 2.6, 1.0, 1.0, 1.0, 1.8, 1.0],
+            margin: [2, 2, 2, 2],
             fontSize: 7.5,
             border: { type: "solid", pt: 0.5, color: "FECDD3" }
         });
@@ -1251,6 +1252,7 @@ export const addRegisterBreakdownSlide = (
         slide.addTable(tableRows, {
             x: 0.28, y: 1.10, w: 9.45,
             colW: [1.35, 0.75, 0.62, 0.68, 0.68, 0.68, 0.68, 0.62, 0.68, 0.68, 0.68, 0.68, 0.62],
+            margin: [2, 2, 2, 2],
             fontSize: 9.0,
             border: { type: "solid", pt: 0.5, color: "CBD5E1" }
         });

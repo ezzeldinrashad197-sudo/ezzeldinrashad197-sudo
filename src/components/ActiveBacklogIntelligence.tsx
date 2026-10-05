@@ -64,22 +64,22 @@ export const ActiveBacklogIntelligence: React.FC<ActiveBacklogIntelligenceProps>
       {/* Operational Backlog Summary Matrix */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full table-auto text-left border-collapse break-normal [overflow-wrap:normal] hyphens-none">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200">
+                <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200 whitespace-nowrap min-w-[140px]">
                   {language === 'ar' ? 'حالة المعاملة التشغيلية' : 'Operational Status'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200 whitespace-nowrap min-w-[84px]">
                   {language === 'ar' ? 'عدد البنود' : 'Items'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200 whitespace-nowrap min-w-[110px]">
                   {language === 'ar' ? 'الحصة من الأعمال النشطة' : 'Share of Active'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-rose-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-rose-800 border-r border-slate-200 whitespace-nowrap min-w-[88px]">
                   {language === 'ar' ? 'المتأخر عن SLA' : 'Overdue'}
                 </th>
-                <th className="px-4 py-3.5 text-left font-extrabold text-slate-700">
+                <th className="px-4 py-3.5 text-left font-extrabold text-slate-700 min-w-[200px]">
                   {language === 'ar' ? 'المسؤولية التشغيلية والإجراء المطلوب' : 'Responsible Party & Action Required'}
                 </th>
               </tr>

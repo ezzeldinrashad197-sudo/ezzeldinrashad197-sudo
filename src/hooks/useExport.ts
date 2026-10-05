@@ -391,13 +391,32 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                         scrollX: 0, 
                         windowWidth: exportWidth,
                         onclone: (doc: Document) => {
-                            // Inject style block to disable translations & animations
+                            // Inject style block to disable translations & animations and prevent mid-word breaks in export tables
                             const style = doc.createElement('style');
                             style.innerHTML = `
                                 * {
                                     transition-property: none !important;
                                     animation: none !important;
                                     transition: none !important;
+                                }
+                                table {
+                                    table-layout: auto !important;
+                                    width: 100% !important;
+                                    word-break: normal !important;
+                                    overflow-wrap: normal !important;
+                                    word-wrap: normal !important;
+                                    hyphens: none !important;
+                                    -webkit-hyphens: none !important;
+                                }
+                                th, td, th *, td * {
+                                    word-break: normal !important;
+                                    overflow-wrap: normal !important;
+                                    word-wrap: normal !important;
+                                    hyphens: none !important;
+                                    -webkit-hyphens: none !important;
+                                }
+                                td {
+                                    white-space: nowrap;
                                 }
                             `;
                             doc.head.appendChild(style);

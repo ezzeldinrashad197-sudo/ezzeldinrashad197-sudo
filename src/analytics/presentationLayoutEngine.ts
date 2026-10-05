@@ -111,17 +111,19 @@ export function calculateTableLayout(
 ): TableLayoutResult {
   const colCount = cols.length;
 
-  // Full-width slide (e.g. 13-column detail table)
+  // Full-width slide (e.g. 13-column detail table or 9-column full-width register summary)
   if (isFullWidthSlide || colCount >= 11) {
-    const totalW = maxTableWidth > 8 ? maxTableWidth : 9.45;
+    const totalW = maxTableWidth > 8 ? maxTableWidth : (isFullWidthSlide ? 9.45 : Math.max(maxTableWidth, 5.8));
     
-    // Proportional column weights based on content types
+    // Proportional column weights prioritizing single-word headers so they never break mid-word
     const weights: Record<string, number> = {
       discipline: 1.35,
+      register: 1.30,
       documentType: 1.30,
       priority: 0.85,
-      rev00Rows: 0.60,
-      Rev00Rows: 0.60,
+      uniqueDocs: 0.78,
+      rev00Rows: 0.62,
+      Rev00Rows: 0.62,
       furtherRevRows: 0.70,
       FurtherRevRows: 0.70,
       totalRows: 0.70,
@@ -131,28 +133,33 @@ export function calculateTableLayout(
       rowPending: 0.68,
       totalUnique: 0.72,
       TotalUnique: 0.72,
-      approved: 0.72,
-      Approved: 0.72,
-      rejectedOpen: 0.65,
-      RejectedOpen: 0.65,
-      rejectedClosed: 0.65,
-      RejectedClosed: 0.65,
-      pending: 0.65,
-      Pending: 0.65,
-      superseded: 0.70,
-      Superseded: 0.70
+      approved: 0.88,
+      Approved: 0.88,
+      rejected: 0.86,
+      Rejected: 0.86,
+      rejectedOpen: 0.72,
+      RejectedOpen: 0.72,
+      rejectedClosed: 0.74,
+      RejectedClosed: 0.74,
+      pending: 0.82,
+      Pending: 0.82,
+      superseded: 1.15,
+      Superseded: 1.15,
+      supersededRows: 1.15,
+      overdue: 0.82,
+      Overdue: 0.82
     };
 
     let totalWeight = 0;
     const colWeights = cols.map(c => {
-      const w = weights[c.key] || 0.75;
+      const w = weights[c.key] || 0.78;
       totalWeight += w;
       return w;
     });
 
     const colWidths = colWeights.map(w => Number(((w / totalWeight) * totalW).toFixed(2)));
     const diff = Number((totalW - colWidths.reduce((a, b) => a + b, 0)).toFixed(2));
-    if (colWidths.length > 0) colWidths[0] += diff;
+    if (colWidths.length > 0) colWidths[0] = Number((colWidths[0] + diff).toFixed(2));
 
     return {
       tableWidth: totalW,
@@ -172,26 +179,34 @@ export function calculateTableLayout(
 
   // 8 to 10 Column Tables (e.g. Slide A: Register Status Table alongside Bar Chart)
   if (colCount >= 8) {
-    const totalW = Math.max(maxTableWidth, 5.7);
+    const totalW = Math.max(maxTableWidth, colCount >= 10 ? 5.8 : 5.7);
     
     // Semantic weights tailored for 8-10 columns:
-    // Yields exact desired widths: Discipline: ~0.76", Unique Rev.00: ~0.62", Unique Further: ~0.78",
-    // Rev.00 Rows: ~0.70", Further Rev. Rows: ~0.82", Total Rows: ~0.62", Approved: ~0.62", Rejected: ~0.62", Pending: ~0.62"
+    // Single-word headers (Discipline, Superseded, Approved, Rejected, Pending) receive higher weights
+    // than two-line split headers (Unique\nRev.00, Further\nRev.) so no word ever breaks mid-word.
     const weights: Record<string, number> = {
-      discipline: 1.22,
-      UniqueRev00: 0.88,
-      UniqueFurtherRev: 1.05,
-      Rev00Rows: 0.94,
-      FurtherRevRows: 1.05,
-      TotalRows: 0.88,
-      Approved: 0.84,
-      Rejected: 0.84,
-      RejectedOpen: 0.84,
-      RejectedClosed: 0.84,
-      Pending: 0.84,
-      Superseded: 0.92,
-      Total: 0.88,
-      Closed: 0.84,
+      discipline: 1.28,
+      register: 1.28,
+      UniqueRev00: 0.78,
+      UniqueFurtherRev: 0.84,
+      Rev00Rows: 0.76,
+      FurtherRevRows: 0.84,
+      TotalRows: 0.74,
+      Approved: 0.98,
+      approved: 0.98,
+      Rejected: 0.96,
+      rejected: 0.96,
+      RejectedOpen: 0.78,
+      rejectedOpen: 0.78,
+      RejectedClosed: 0.80,
+      rejectedClosed: 0.80,
+      Pending: 0.90,
+      pending: 0.90,
+      Superseded: 1.25,
+      superseded: 1.25,
+      supersededRows: 1.25,
+      Total: 0.84,
+      Closed: 0.86,
       Open: 0.84
     };
 
@@ -204,7 +219,7 @@ export function calculateTableLayout(
 
     const colWidths = colWeights.map(w => Number(((w / totalWeight) * totalW).toFixed(2)));
     const diff = Number((totalW - colWidths.reduce((a, b) => a + b, 0)).toFixed(2));
-    if (colWidths.length > 0) colWidths[0] += diff;
+    if (colWidths.length > 0) colWidths[0] = Number((colWidths[0] + diff).toFixed(2));
 
     return {
       tableWidth: totalW,

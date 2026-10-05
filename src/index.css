@@ -52,15 +52,42 @@
   }
 
   /* Force table wrappers to be visible and not truncate width */
-  .overflow-x-auto {
-    overflow-x: visible !important;
+  .overflow-x-auto, .overflow-y-auto, .overflow-auto {
+    overflow: visible !important;
   }
 
-  /* Make tables adapt to paper width instead of cutting off */
-  #export-container table {
+  /* Make tables adapt to paper width and never split words mid-word */
+  table,
+  #export-container table,
+  #presentation-container table,
+  .presentation-slide table {
     width: 100% !important;
     max-width: 100% !important;
     table-layout: auto !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    word-wrap: normal !important;
+    hyphens: none !important;
+    -webkit-hyphens: none !important;
+  }
+
+  th, td, th *, td * {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    word-wrap: normal !important;
+    hyphens: none !important;
+    -webkit-hyphens: none !important;
+  }
+
+  th {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  td {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    white-space: nowrap;
   }
 
   /* Avoid cutting headers or titles */
@@ -82,6 +109,24 @@
   .print\:hidden {
     display: none !important;
   }
+}
+
+/* Global table word-integrity protection across UI and Export */
+table {
+  table-layout: auto;
+  word-break: normal;
+  overflow-wrap: normal;
+  word-wrap: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+
+th, td, th *, td * {
+  word-break: normal;
+  overflow-wrap: normal;
+  word-wrap: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
 }
 
 /* Fallback for JS-based HTML rendering matching the print classes */
@@ -120,10 +165,38 @@ body.pdf-export .overflow-auto {
   max-height: none !important;
 }
 
-body.pdf-export #export-container table {
+body.pdf-export table,
+body.pdf-export #export-container table,
+body.pdf-export #presentation-container table {
   width: 100% !important;
   max-width: 100% !important;
   table-layout: auto !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+body.pdf-export th,
+body.pdf-export td,
+body.pdf-export th *,
+body.pdf-export td * {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+body.pdf-export th,
+body.pdf-export td {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+body.pdf-export td {
+  white-space: nowrap;
 }
 
 body.pdf-export .max-w-\[1400px\] {

@@ -550,6 +550,13 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   interface DrillDownItem {
     id: string;
     docNo: string;
+    drawingNo?: string;
+    subRef?: string;
+    rawCode?: string;
+    rawStatus?: string;
+    sourceSheet?: string;
+    sourceFile?: string;
+    documentIdentityKey?: string;
     rev: string;
     subject: string;
     trade: string;
@@ -564,6 +571,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
     isOverdue: boolean;
     isLatest: boolean;
     allRevisions?: string[];
+    sameDocRows?: SubmittalRow[];
+    rawRecord?: SubmittalRow;
     remarks?: string;
   }
 
@@ -580,6 +589,142 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [isAuditMatrixOpen, setIsAuditMatrixOpen] = useState(false);
+  const [isForensicTraceOpen, setIsForensicTraceOpen] = useState(false);
+  const [copiedForensicTrace, setCopiedForensicTrace] = useState(false);
+
+  // Read-Only Forensic Source Trace for REJECTED_CLOSED in SDW-ARC and SDW-ELE
+  const rejectedClosedForensicTrace = useMemo(() => {
+    const allRows = contextDataset && contextDataset.length > 0 ? contextDataset : nonNcrFilteredData;
+    const revMap = contextRevisionMap;
+
+    const extractRawFields = (r: SubmittalRow) => {
+      const anyR = r as Record<string, any>;
+      const docNoVal = r.drawingNo || r.sheetNo || r.docNo || '-';
+      const subRefVal = r.submissionRef || r.docNo || anyR.submittalRef || '-';
+      const rawCodeVal = r.code ?? r.status ?? '-';
+      const rawStatusVal = r.recordStatus ?? r.workflowStage ?? anyR.rawStatus ?? '-';
+      const sourceSheetVal = r.sourceSheetName || r.disciplineSourceSheet || r.logType || '-';
+      const sourceFileVal = r.sourceFile || r.sourceWorkbookName || r.sourceFileName || '-';
+      return {
+        id: r.id,
+        documentNo: docNoVal,
+        drawingNo: r.drawingNo || '',
+        sheetNo: r.sheetNo || '',
+        docNoField: r.docNo || '',
+        rev: r.rev || '',
+        subRef: subRefVal,
+        rawCode: rawCodeVal,
+        rawStatus: rawStatusVal,
+        workflowStage: r.workflowStage || '',
+        resolvedCategory: getStatusCodeCategory(r),
+        submissionDate: r.submissionDate || '',
+        responseDate: r.responseDate || '',
+        sourceSheet: sourceSheetVal,
+        sourceFile: sourceFileVal,
+        registerIdentity: r.registerIdentity || r.sourceRegisterIdentity || '',
+        discipline: resolveRowDiscipline(r, rowToRegisterIdentity(r)) || r.discipline || r.trade || '',
+        documentIdentityKey: getDocumentIdentityKey(r),
+        submissionIdentityKey: getSubmissionIdentityKey(r),
+        remarks: r.remarks || '',
+        rawRowObject: r
+      };
+    };
+
+    const buildTraceForTarget = (targetPred: (label: string, reg: string, disc: string) => boolean, targetName: string) => {
+      const matchingRows = nonNcrFilteredData.filter(d => {
+        const reg = rowToRegisterIdentity(d);
+        const disc = (resolveRowDiscipline(d, reg) || 'GEN').toUpperCase();
+        const label = `${reg}-${disc}`;
+        return targetPred(label, reg, disc);
+      });
+
+      const targetDocKeys = new Set(matchingRows.map(r => getDocumentIdentityKey(r)));
+      const currentRejectedClosedEntries: any[] = [];
+      const historicalRejectedClosedRows: any[] = [];
+
+      matchingRows.forEach(r => {
+        if (getStatusCodeCategory(r) === 'REJECTED_CLOSED') {
+          historicalRejectedClosedRows.push(extractRawFields(r));
+        }
+      });
+
+      targetDocKeys.forEach(docKey => {
+        const group = revMap.get(docKey);
+        if (!group) return;
+        const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
+        if (cat === 'REJECTED_CLOSED') {
+          const latestFields = extractRawFields(group.latest);
+          const normDocNo = (group.latest.drawingNo || group.latest.sheetNo || group.latest.docNo || '').trim().toUpperCase();
+          const normSubRef = (group.latest.submissionRef || group.latest.docNo || '').trim().toUpperCase();
+
+          // All rows sharing the exact same Document Identity Key in the revision engine
+          const sameIdentityKeyRevisions = group.all.map(extractRawFields);
+
+          // All rows across the entire loaded dataset sharing the same physical Document No (drawingNo/sheetNo/docNo) or SUB Ref
+          const allRowsSharingDocumentNo = allRows
+            .filter(cand => {
+              const candDoc = (cand.drawingNo || cand.sheetNo || cand.docNo || '').trim().toUpperCase();
+              const candDwg = (cand.drawingNo || cand.sheetNo || '').trim().toUpperCase();
+              const targetDwg = (group.latest.drawingNo || group.latest.sheetNo || '').trim().toUpperCase();
+              if (targetDwg && candDwg === targetDwg) return true;
+              if (normDocNo && candDoc === normDocNo) return true;
+              return getDocumentIdentityKey(cand) === docKey;
+            })
+            .map(extractRawFields);
+
+          const allRowsSharingSubRef = allRows
+            .filter(cand => {
+              const candSub = (cand.submissionRef || cand.docNo || '').trim().toUpperCase();
+              return normSubRef && candSub === normSubRef;
+            })
+            .map(extractRawFields);
+
+          currentRejectedClosedEntries.push({
+            targetRegister: targetName,
+            documentIdentityKey: docKey,
+            resolvedStatus: cat,
+            latestWinningRecord: latestFields,
+            revisionsInSameIdentityKey: sameIdentityKeyRevisions,
+            allDatasetRowsSharingDocumentNo: allRowsSharingDocumentNo,
+            allDatasetRowsSharingSubRef: allRowsSharingSubRef
+          });
+        }
+      });
+
+      return {
+        targetRegister: targetName,
+        totalRowsInRegister: matchingRows.length,
+        totalUniqueDocumentsInRegister: targetDocKeys.size,
+        currentRejectedClosedCount: currentRejectedClosedEntries.length,
+        historicalRejectedClosedRowCount: historicalRejectedClosedRows.length,
+        currentRejectedClosedRecords: currentRejectedClosedEntries,
+        historicalRejectedClosedRows
+      };
+    };
+
+    const sdwArc = buildTraceForTarget(
+      (label, reg, disc) => (reg === 'SDW' || reg === 'SHD') && (disc === 'ARC' || disc === 'ARCH' || disc === 'ARCHITECTURAL' || label === 'SDW-ARC' || label === 'SDW-ARCH'),
+      'SDW-ARC'
+    );
+    const sdwEle = buildTraceForTarget(
+      (label, reg, disc) => (reg === 'SDW' || reg === 'SHD') && (disc === 'ELE' || disc === 'ELEC' || disc === 'ELECTRICAL' || label === 'SDW-ELE' || label === 'SDW-ELEC'),
+      'SDW-ELE'
+    );
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalLoadedRows: allRows.length,
+      filteredRows: nonNcrFilteredData.length,
+      'SDW-ARC': sdwArc,
+      'SDW-ELE': sdwEle
+    };
+  }, [contextDataset, nonNcrFilteredData, contextRevisionMap, rowToRegisterIdentity]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__getRejectedClosedForensicTrace = () => rejectedClosedForensicTrace;
+    }
+  }, [rejectedClosedForensicTrace]);
 
   // Overdue Active split (Rejected Open vs Pending Review)
   const activeOverdueCounts = useMemo(() => {
@@ -679,15 +824,24 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
     const extracted: DrillDownItem[] = [];
 
-    const mapToDrillDownItem = (r: SubmittalRow, isLatest: boolean, allRevs: string[] = []): DrillDownItem => {
+    const mapToDrillDownItem = (r: SubmittalRow, isLatest: boolean, allRevs: string[] = [], groupAllRows: SubmittalRow[] = []): DrillDownItem => {
       const responsible = getResponsibleParty(r);
       const cat = getStatusCodeCategory(r);
       const baseDocNo = r.docNo || r.submissionRef || (r as any).ncrRef || (r as any).sorRef || (r as any).rfiRef || r.id || 'N/A';
       const dwg = (r.drawingNo || r.sheetNo || '').trim();
       const displayDocNo = dwg && !baseDocNo.includes(dwg) ? `${baseDocNo} [DWG: ${dwg}]` : baseDocNo;
+      const docKey = getDocumentIdentityKey(r);
+      const groupRows = groupAllRows.length > 0 ? groupAllRows : (revisionMap.get(docKey)?.all || [r]);
       return {
         id: r.id || `${baseDocNo}-${dwg}-${r.rev}`,
         docNo: displayDocNo,
+        drawingNo: dwg || r.docNo || '-',
+        subRef: r.submissionRef || r.docNo || '-',
+        rawCode: r.code ?? r.status ?? '-',
+        rawStatus: r.recordStatus ?? r.workflowStage ?? '-',
+        sourceSheet: r.sourceSheetName || r.disciplineSourceSheet || r.logType || '-',
+        sourceFile: r.sourceFile || r.sourceWorkbookName || r.sourceFileName || '-',
+        documentIdentityKey: docKey,
         rev: r.rev || '00',
         subject: (r as any).description || (r as any).subject || (r as any).drawingTitle || (r as any).title || r.remarks || '-',
         trade: r.trade || 'General',
@@ -702,6 +856,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         isOverdue: Boolean(r.overdue),
         isLatest,
         allRevisions: allRevs,
+        sameDocRows: groupRows,
+        rawRecord: r,
         remarks: r.remarks
       };
     };
@@ -985,19 +1141,47 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
   const handleExportDrillDownCSV = (itemsToExport: DrillDownItem[]) => {
     if (!itemsToExport || itemsToExport.length === 0) return;
-    const headers = ['#', 'Document Number', 'Revision', 'Subject / Description', 'Trade / Discipline', 'Status / Code', 'Action Owner', 'Submission Date', 'Response Date', 'Delay Days'];
-    const rows = itemsToExport.map((it, idx) => [
-      idx + 1,
-      `"${(it.docNo || '').replace(/"/g, '""')}"`,
-      `"${(it.rev || '').replace(/"/g, '""')}"`,
-      `"${(it.subject || '').replace(/"/g, '""')}"`,
-      `"${(`${it.trade || ''} - ${it.discipline || ''}`).replace(/"/g, '""')}"`,
-      `"${(it.status || '').replace(/"/g, '""')}"`,
-      `"${(it.actionOwner || '').replace(/"/g, '""')}"`,
-      `"${(it.submissionDate || '').replace(/"/g, '""')}"`,
-      `"${(it.responseDate || '').replace(/"/g, '""')}"`,
-      it.delayDays ?? 0
-    ]);
+    const headers = [
+      '#',
+      'Document No (DWG No)',
+      'Rev',
+      'SUB Ref',
+      'Raw Code',
+      'Raw Status',
+      'Resolved Category',
+      'Submission Date',
+      'Response Date',
+      'Source Sheet',
+      'Source File',
+      'All Revisions (Same Doc No)',
+      'Subject / Description',
+      'Trade / Discipline',
+      'Action Owner',
+      'Delay Days'
+    ];
+    const rows = itemsToExport.map((it, idx) => {
+      const allRevsSummary = (it.sameDocRows || [])
+        .map(r => `Rev:${r.rev || '00'}[SUB:${r.submissionRef || r.docNo || '-'}|Code:${r.code ?? r.status ?? '-'}|Status:${r.recordStatus ?? r.workflowStage ?? '-'}|SubDate:${r.submissionDate || '-'}|RespDate:${r.responseDate || '-'}|Sheet:${r.sourceSheetName || r.disciplineSourceSheet || r.logType || '-'}]`)
+        .join(' ; ');
+      return [
+        idx + 1,
+        `"${(it.drawingNo || it.docNo || '').replace(/"/g, '""')}"`,
+        `"${(it.rev || '').replace(/"/g, '""')}"`,
+        `"${(it.subRef || '').replace(/"/g, '""')}"`,
+        `"${(it.rawCode || it.status || '').replace(/"/g, '""')}"`,
+        `"${(it.rawStatus || '').replace(/"/g, '""')}"`,
+        `"${(it.statusCategory || '').replace(/"/g, '""')}"`,
+        `"${(it.submissionDate || '').replace(/"/g, '""')}"`,
+        `"${(it.responseDate || '').replace(/"/g, '""')}"`,
+        `"${(it.sourceSheet || '').replace(/"/g, '""')}"`,
+        `"${(it.sourceFile || '').replace(/"/g, '""')}"`,
+        `"${allRevsSummary.replace(/"/g, '""')}"`,
+        `"${(it.subject || '').replace(/"/g, '""')}"`,
+        `"${(`${it.trade || ''} - ${it.discipline || ''}`).replace(/"/g, '""')}"`,
+        `"${(it.actionOwner || '').replace(/"/g, '""')}"`,
+        it.delayDays ?? 0
+      ];
+    });
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1118,8 +1302,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       }));
   }, [byDocType]);
 
-  const thClass = "px-4 py-3.5 border-b border-slate-200 bg-slate-100 text-slate-800 font-bold text-xs text-center uppercase tracking-wider transition-colors";
-  const tdClass = "px-4 py-3 border-b border-slate-100 text-xs text-center font-semibold text-slate-700 transition-colors";
+  const thClass = "px-3 py-3 border-b border-slate-200 bg-slate-100 text-slate-800 font-bold text-xs text-center uppercase tracking-wider transition-colors break-normal [overflow-wrap:normal] hyphens-none min-w-[78px]";
+  const tdClass = "px-3 py-2.5 border-b border-slate-100 text-xs text-center font-semibold text-slate-700 transition-colors whitespace-nowrap break-normal [overflow-wrap:normal] hyphens-none";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 print:space-y-4" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -1670,7 +1854,21 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                    {language === 'ar' ? '(فصل تام للمؤشرات دون دمج السجلات أو التخصصات)' : '(Strictly separated without cross-merging)'}
                  </span>
                </div>
-               <div className="flex items-center p-1 bg-white rounded-lg border border-slate-200 text-xs font-bold shadow-2xs">
+               <div className="flex items-center gap-2 flex-wrap">
+                 <button
+                   type="button"
+                   onClick={() => setIsForensicTraceOpen(true)}
+                   className="px-3 py-1.5 rounded-lg bg-red-900 hover:bg-red-800 text-white text-xs font-extrabold shadow-xs border border-red-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                   title="Read-Only Forensic Trace: Inspect exact raw records for REJECTED_CLOSED in SDW-ARC and SDW-ELE"
+                 >
+                   <FileText className="w-3.5 h-3.5 text-red-200" />
+                   <span>
+                     {language === 'ar'
+                       ? `فحص جنائي للمصدر: SDW-ARC (${rejectedClosedForensicTrace['SDW-ARC'].currentRejectedClosedCount}) | SDW-ELE (${rejectedClosedForensicTrace['SDW-ELE'].currentRejectedClosedCount})`
+                       : `Forensic Trace REJECTED_CLOSED: SDW-ARC (${rejectedClosedForensicTrace['SDW-ARC'].currentRejectedClosedCount}) | SDW-ELE (${rejectedClosedForensicTrace['SDW-ELE'].currentRejectedClosedCount})`}
+                   </span>
+                 </button>
+                 <div className="flex items-center p-1 bg-white rounded-lg border border-slate-200 text-xs font-bold shadow-2xs">
                  <button
                    type="button"
                    onClick={() => setBreakdownDimension('register')}
@@ -1704,22 +1902,23 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                  >
                    {language === 'ar' ? 'السجل والتخصص (Register & Discipline)' : 'Register & Discipline'}
                  </button>
+                 </div>
                </div>
              </div>
 
              <div className="overflow-x-auto">
-                 <table className="w-full text-left border-collapse">
+                 <table className="w-full table-auto text-left border-collapse break-normal [overflow-wrap:normal] hyphens-none">
                      <thead>
                      {/* Tier 1 Group Headers */}
                      <tr className="bg-slate-100 border-b border-slate-200">
-                       <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200`}>
+                       <th rowSpan={2} className={`${thClass} text-left font-extrabold text-[#203864] border-r border-slate-200 whitespace-nowrap min-w-[110px]`}>
                          {breakdownDimension === 'register' 
                            ? (language === 'ar' ? 'نوع المعاملة / السجل' : 'Log Type (Register)')
                            : breakdownDimension === 'discipline'
                              ? (language === 'ar' ? 'التخصص الفني' : 'Discipline')
                              : (language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline')}
                        </th>
-                       <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200`}>
+                       <th rowSpan={2} className={`${thClass} font-bold text-slate-700 border-r border-slate-200 whitespace-nowrap min-w-[80px]`}>
                          {language === 'ar' ? 'سمة الأولوية' : 'Priority'}
                        </th>
                        <th colSpan={10} className="px-4 py-2 border-b border-r border-slate-300 bg-slate-200/90 text-slate-900 font-extrabold text-xs text-center uppercase tracking-wider">
@@ -1735,31 +1934,31 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                      {/* Tier 2 Sub-Headers */}
                      <tr className="bg-slate-50 border-b border-slate-200">
                        {/* Historical Workload / Row & Submission Grain Subheaders */}
-                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950`}>{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
-                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950`}>{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
-                       <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
-                       <th className={`${thClass} bg-slate-200/70 text-slate-900`}>{language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}</th>
-                       <th className={`${thClass} bg-slate-300/80 font-black text-slate-950`}>{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
-                       <th className={`${thClass} bg-amber-100/70 text-amber-950 font-black`}>{language === 'ar' ? 'مراجعات سابقة ملغاة (Superseded)' : 'Superseded Rows'}</th>
-                       <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
-                       <th className={`${thClass} text-rose-700`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
-                       <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
-                       <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
+                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950 min-w-[84px]`}>{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                       <th className={`${thClass} bg-blue-50/70 font-black text-blue-950 min-w-[92px]`}>{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                       <th className={`${thClass} bg-slate-200/70 text-slate-900 min-w-[78px]`}>{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                       <th className={`${thClass} bg-slate-200/70 text-slate-900 min-w-[88px]`}>{language === 'ar' ? 'صفوف لاحقة' : 'Further Rev. Rows'}</th>
+                       <th className={`${thClass} bg-slate-300/80 font-black text-slate-950 min-w-[78px]`}>{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                       <th className={`${thClass} bg-amber-100/70 text-amber-950 font-black min-w-[98px]`}>{language === 'ar' ? 'مراجعات سابقة ملغاة (Superseded)' : 'Superseded Rows'}</th>
+                       <th className={`${thClass} bg-rose-100/50 text-rose-900 font-extrabold min-w-[88px]`}>{language === 'ar' ? 'إجمالي صفوف الرفض' : 'Total Rejected Rows'}</th>
+                       <th className={`${thClass} text-rose-700 min-w-[88px]`}>{language === 'ar' ? 'صفوف رفض مفتوحة' : 'Rejected Open Rows'}</th>
+                       <th className={`${thClass} text-red-900 min-w-[88px]`}>{language === 'ar' ? 'صفوف رفض مغلقة' : 'Rejected Closed Rows'}</th>
+                       <th className={`${thClass} border-r border-slate-300 bg-emerald-50/50 text-emerald-800 min-w-[88px]`}>{language === 'ar' ? 'رفض مسوّى' : 'Resolved Rejections'}</th>
                       
                       {/* Current State / Unique Item Grain Subheaders */}
-                      <th className={`${thClass} bg-blue-50/70 font-black text-[#203864]`}>{language === 'ar' ? 'البنود الفريدة' : 'Total Unique Items'}</th>
-                      <th className={`${thClass} text-emerald-700 font-bold`}>{language === 'ar' ? 'معتمد حالي' : 'Current Approved'}</th>
-                      <th className={`${thClass} text-rose-600`}>{language === 'ar' ? 'مرفوض مفتوح حالي' : 'Current Rejected Open'}</th>
-                      <th className={`${thClass} text-red-900`}>{language === 'ar' ? 'مرفوض مغلق حالي' : 'Current Rejected Closed'}</th>
-                      <th className={`${thClass} bg-rose-50/80 text-rose-900 font-extrabold`}>{language === 'ar' ? 'إجمالي المرفوض الحالي' : 'Current Total Rejected Items'}</th>
-                      <th className={`${thClass} text-amber-700`}>{language === 'ar' ? 'معلق حالي' : 'Pending'}</th>
-                      <th className={`${thClass} bg-amber-50/60 font-bold text-amber-900`}>{language === 'ar' ? 'النشط حالياً' : 'Active Items'}</th>
-                      <th className={`${thClass} border-r border-blue-200 bg-emerald-100/60 text-emerald-900 font-extrabold`}>{language === 'ar' ? 'نسبة الاعتماد %' : 'Approval Rate %'}</th>
+                      <th className={`${thClass} bg-blue-50/70 font-black text-[#203864] min-w-[84px]`}>{language === 'ar' ? 'البنود الفريدة' : 'Total Unique Items'}</th>
+                      <th className={`${thClass} text-emerald-700 font-bold min-w-[88px]`}>{language === 'ar' ? 'معتمد حالي' : 'Current Approved'}</th>
+                      <th className={`${thClass} text-rose-600 min-w-[88px]`}>{language === 'ar' ? 'مرفوض مفتوح حالي' : 'Current Rejected Open'}</th>
+                      <th className={`${thClass} text-red-900 min-w-[88px]`}>{language === 'ar' ? 'مرفوض مغلق حالي' : 'Current Rejected Closed'}</th>
+                      <th className={`${thClass} bg-rose-50/80 text-rose-900 font-extrabold min-w-[92px]`}>{language === 'ar' ? 'إجمالي المرفوض الحالي' : 'Current Total Rejected Items'}</th>
+                      <th className={`${thClass} text-amber-700 whitespace-nowrap min-w-[78px]`}>{language === 'ar' ? 'معلق حالي' : 'Pending'}</th>
+                      <th className={`${thClass} bg-amber-50/60 font-bold text-amber-900 min-w-[78px]`}>{language === 'ar' ? 'النشط حالياً' : 'Active Items'}</th>
+                      <th className={`${thClass} border-r border-blue-200 bg-emerald-100/60 text-emerald-900 font-extrabold min-w-[84px]`}>{language === 'ar' ? 'نسبة الاعتماد %' : 'Approval Rate %'}</th>
                       
                       {/* SLA Performance Subheaders */}
-                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'متأخرات > SLA' : 'Overdue'}</th>
-                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold`}>{language === 'ar' ? 'نسبة التأخير %' : 'Overdue %'}</th>
-                      <th className={`${thClass} text-slate-600`}>{language === 'ar' ? 'متوسط الرد (يوم)' : 'Avg Days'}</th>
+                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold whitespace-nowrap min-w-[78px]`}>{language === 'ar' ? 'متأخرات > SLA' : 'Overdue'}</th>
+                      <th className={`${thClass} bg-rose-50/50 text-rose-800 font-bold whitespace-nowrap min-w-[78px]`}>{language === 'ar' ? 'نسبة التأخير %' : 'Overdue %'}</th>
+                      <th className={`${thClass} text-slate-600 whitespace-nowrap min-w-[74px]`}>{language === 'ar' ? 'متوسط الرد (يوم)' : 'Avg Days'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -2524,41 +2723,41 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                 }
 
                 return (
-                  <div className="rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                  <div className="rounded-xl border border-slate-200 overflow-x-auto shadow-2xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                           <th className="px-3 py-2.5 text-center w-10">#</th>
-                          <th className="px-4 py-2.5">{language === 'ar' ? 'رقم المعاملة / المستند' : 'Document Number'}</th>
-                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'المراجعة' : 'Rev'}</th>
-                          <th className="px-4 py-2.5">{language === 'ar' ? 'الوصف / الموضوع' : 'Subject / Title'}</th>
-                          <th className="px-3 py-2.5">{language === 'ar' ? 'التخصص' : 'Discipline'}</th>
-                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الحالة الكودية' : 'Code Status'}</th>
-                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الجهة المسؤولة' : 'Responsible'}</th>
-                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'تاريخ التقديم' : 'Submit Date'}</th>
+                          <th className="px-3 py-2.5">{language === 'ar' ? 'رقم المخطط / المستند (Document No)' : 'Document No'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'المراجعة (Rev)' : 'Rev'}</th>
+                          <th className="px-3 py-2.5">{language === 'ar' ? 'رقم التقديم (SUB Ref)' : 'SUB Ref'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الكود الخام (Raw Code)' : 'Raw Code'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الحالة الخام (Raw Status)' : 'Raw Status'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'تاريخ التقديم' : 'Submission Date'}</th>
                           <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'تاريخ الرد' : 'Response Date'}</th>
+                          <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الورقة المصدر (Source Sheet)' : 'Source Sheet'}</th>
+                          <th className="px-3 py-2.5">{language === 'ar' ? 'جميع المراجعات لنفس المستند' : 'All Revisions (Same Doc No)'}</th>
                           <th className="px-3 py-2.5 text-center">{language === 'ar' ? 'الإجراء' : 'Action'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs">
                         {filteredItems.map((item, idx) => {
                           const isCopied = copiedDocId === item.docNo;
-                          const isRejected = item.statusCategory === 'REJECTED_OPEN' || item.statusCategory === 'REJECTED_CLOSED';
                           const isApproved = item.statusCategory === 'APPROVED' || item.statusCategory === 'FINAL_CLOSED';
 
                           return (
                             <tr key={item.id + '_' + idx} className="hover:bg-blue-50/30 transition-colors">
                               <td className="px-3 py-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                              <td className="px-4 py-2.5 font-bold text-[#203864]">
+                              <td className="px-3 py-2.5 font-bold text-[#203864]">
                                 <div className="flex items-center gap-2">
                                   <span className="font-mono select-all text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                                    {item.docNo}
+                                    {item.drawingNo || item.docNo}
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() => handleCopySingleDoc(item.docNo)}
+                                    onClick={() => handleCopySingleDoc(item.drawingNo || item.docNo)}
                                     className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                                    title={language === 'ar' ? 'نسخ رقم المعاملة' : 'Copy document number'}
+                                    title={language === 'ar' ? 'نسخ رقم المستند' : 'Copy document number'}
                                   >
                                     {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                                   </button>
@@ -2569,13 +2768,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                                   {item.rev}
                                 </span>
                               </td>
-                              <td className="px-4 py-2.5 text-slate-700 font-medium max-w-xs truncate" title={item.subject}>
-                                {item.subject}
-                              </td>
-                              <td className="px-3 py-2.5 text-slate-600 font-medium whitespace-nowrap">
-                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px]">
-                                  {item.discipline || item.trade}
-                                </span>
+                              <td className="px-3 py-2.5 font-mono text-[11px] text-slate-700 select-all">
+                                {item.subRef || '-'}
                               </td>
                               <td className="px-3 py-2.5 text-center">
                                 <span
@@ -2589,11 +2783,11 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                                       : 'bg-amber-100 text-amber-800 border-amber-200'
                                   }`}
                                 >
-                                  {item.status}
+                                  {item.rawCode || item.status}
                                 </span>
                               </td>
-                              <td className="px-3 py-2.5 text-center text-slate-600 font-semibold text-[11px]">
-                                {item.actionOwner}
+                              <td className="px-3 py-2.5 text-center font-semibold text-slate-700 text-[11px]">
+                                {item.rawStatus || '-'}
                               </td>
                               <td className="px-3 py-2.5 text-center text-slate-500 font-mono text-[11px]">
                                 {item.submissionDate || '-'}
@@ -2601,13 +2795,23 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                               <td className="px-3 py-2.5 text-center text-slate-500 font-mono text-[11px]">
                                 {item.responseDate || '-'}
                               </td>
+                              <td className="px-3 py-2.5 text-center font-mono text-[11px] text-slate-600">
+                                {item.sourceSheet || '-'}
+                              </td>
+                              <td className="px-3 py-2.5 text-[11px] text-slate-700 font-mono">
+                                {(item.sameDocRows || []).map((r, rIdx) => (
+                                  <div key={rIdx} className="py-0.5 border-b border-slate-100 last:border-0">
+                                    Rev:{r.rev || '00'} | SUB:{r.submissionRef || r.docNo || '-'} | Code:{r.code ?? r.status ?? '-'} | Status:{r.recordStatus ?? r.workflowStage ?? '-'} | Sub:{r.submissionDate || '-'} | Resp:{r.responseDate || '-'}
+                                  </div>
+                                ))}
+                              </td>
                               <td className="px-3 py-2.5 text-center">
                                 <button
                                   type="button"
-                                  onClick={() => handleCopySingleDoc(item.docNo)}
+                                  onClick={() => handleCopySingleDoc(JSON.stringify(item.rawRecord || item, null, 2))}
                                   className="px-2 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-50 rounded border border-blue-200 transition-colors cursor-pointer"
                                 >
-                                  {isCopied ? (language === 'ar' ? 'تم النسخ!' : 'Copied!') : (language === 'ar' ? 'نسخ' : 'Copy')}
+                                  {isCopied ? (language === 'ar' ? 'تم النسخ!' : 'Copied!') : (language === 'ar' ? 'نسخ Raw JSON' : 'Copy Raw')}
                                 </button>
                               </td>
                             </tr>
@@ -2632,6 +2836,177 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
               >
                 {language === 'ar' ? 'إغلاق' : 'Close'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. READ-ONLY FORENSIC SOURCE TRACE MODAL (SDW-ARC & SDW-ELE REJECTED_CLOSED) */}
+      {isForensicTraceOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-red-950 to-slate-900 text-white flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm sm:text-base font-black tracking-wide">
+                  READ-ONLY FORENSIC SOURCE TRACE — REJECTED_CLOSED (SDW-ARC & SDW-ELE)
+                </h3>
+                <p className="text-xs text-red-200 mt-0.5">
+                  Direct observation of in-memory runtime records without modifying any calculation, classification, or SSOT logic
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const payload = JSON.stringify(rejectedClosedForensicTrace, null, 2);
+                    navigator.clipboard.writeText(payload);
+                    setCopiedForensicTrace(true);
+                    setTimeout(() => setCopiedForensicTrace(false), 2500);
+                  }}
+                  className="px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {copiedForensicTrace ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedForensicTrace ? 'Copied JSON!' : 'Copy Full Forensic JSON'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const payload = JSON.stringify(rejectedClosedForensicTrace, null, 2);
+                    const blob = new Blob([payload], { type: 'application/json;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `Forensic_Trace_SDW_ARC_ELE_REJECTED_CLOSED_${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded-lg text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export JSON</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsForensicTraceOpen(false)}
+                  className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-6 bg-slate-50">
+              {(['SDW-ARC', 'SDW-ELE'] as const).map((regKey) => {
+                const trace = rejectedClosedForensicTrace[regKey];
+                return (
+                  <div key={regKey} className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                    <div className="px-5 py-3 bg-slate-900 text-white flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-0.5 rounded bg-red-600 text-white font-black text-xs">{regKey}</span>
+                        <span className="text-xs font-bold text-slate-300">
+                          Total Rows: {trace.totalRowsInRegister} | Unique Docs: {trace.totalUniqueDocumentsInRegister} | Current REJECTED_CLOSED: {trace.currentRejectedClosedCount} | Historical REJECTED_CLOSED Rows: {trace.historicalRejectedClosedRowCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-4">
+                      {trace.currentRejectedClosedRecords.length === 0 ? (
+                        <div className="text-xs text-slate-500 font-semibold py-4 text-center border border-dashed border-slate-200 rounded-lg">
+                          No Current REJECTED_CLOSED records found in {regKey} for the currently loaded dataset ({rejectedClosedForensicTrace.totalLoadedRows} total rows).
+                        </div>
+                      ) : (
+                        trace.currentRejectedClosedRecords.map((entry: any, idx: number) => {
+                          const w = entry.latestWinningRecord;
+                          return (
+                            <div key={idx} className="border border-red-200 rounded-xl bg-red-50/20 p-4 space-y-4">
+                              <div className="flex items-center justify-between flex-wrap gap-2 border-b border-red-200 pb-2">
+                                <span className="text-xs font-black text-red-900">
+                                  #{idx + 1} Winning Latest Record Producing Current REJECTED_CLOSED = 1 (Identity Key: <code className="bg-red-100 px-1.5 py-0.5 rounded font-mono">{entry.documentIdentityKey}</code>)
+                                </span>
+                              </div>
+
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-xs bg-white rounded-lg overflow-hidden border border-slate-200">
+                                  <thead>
+                                    <tr className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase">
+                                      <th className="px-3 py-2 border-b">Document No</th>
+                                      <th className="px-3 py-2 border-b">Rev</th>
+                                      <th className="px-3 py-2 border-b">SUB Ref</th>
+                                      <th className="px-3 py-2 border-b">Raw Code</th>
+                                      <th className="px-3 py-2 border-b">Raw Status</th>
+                                      <th className="px-3 py-2 border-b">Submission Date</th>
+                                      <th className="px-3 py-2 border-b">Response Date</th>
+                                      <th className="px-3 py-2 border-b">Source Sheet</th>
+                                      <th className="px-3 py-2 border-b">Source File</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr className="font-mono text-xs bg-red-50/40 font-bold text-slate-900">
+                                      <td className="px-3 py-2 border-b select-all">{w.documentNo}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.rev}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.subRef}</td>
+                                      <td className="px-3 py-2 border-b select-all text-red-800">{w.rawCode}</td>
+                                      <td className="px-3 py-2 border-b select-all text-red-800">{w.rawStatus}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.submissionDate || '-'}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.responseDate || '-'}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.sourceSheet}</td>
+                                      <td className="px-3 py-2 border-b select-all">{w.sourceFile}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              <div>
+                                <h4 className="text-xs font-extrabold text-slate-800 mb-2">
+                                  All Dataset Rows / Revisions Sharing Document No ({w.documentNo}) ({entry.allDatasetRowsSharingDocumentNo.length} rows):
+                                </h4>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-left border-collapse text-xs bg-white rounded-lg overflow-hidden border border-slate-200">
+                                    <thead>
+                                      <tr className="bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
+                                        <th className="px-3 py-1.5 border-b">#</th>
+                                        <th className="px-3 py-1.5 border-b">Document No</th>
+                                        <th className="px-3 py-1.5 border-b">Rev</th>
+                                        <th className="px-3 py-1.5 border-b">SUB Ref</th>
+                                        <th className="px-3 py-1.5 border-b">Raw Code</th>
+                                        <th className="px-3 py-1.5 border-b">Raw Status</th>
+                                        <th className="px-3 py-1.5 border-b">Resolved Category</th>
+                                        <th className="px-3 py-1.5 border-b">Submission Date</th>
+                                        <th className="px-3 py-1.5 border-b">Response Date</th>
+                                        <th className="px-3 py-1.5 border-b">Source Sheet</th>
+                                        <th className="px-3 py-1.5 border-b">Identity Key</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {entry.allDatasetRowsSharingDocumentNo.map((rRow: any, rIdx: number) => (
+                                        <tr key={rIdx} className="font-mono text-[11px] odd:bg-white even:bg-slate-50">
+                                          <td className="px-3 py-1.5 border-b">{rIdx + 1}</td>
+                                          <td className="px-3 py-1.5 border-b select-all font-bold">{rRow.documentNo}</td>
+                                          <td className="px-3 py-1.5 border-b select-all font-bold">{rRow.rev}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.subRef}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.rawCode}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.rawStatus}</td>
+                                          <td className="px-3 py-1.5 border-b select-all font-bold">{rRow.resolvedCategory}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.submissionDate || '-'}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.responseDate || '-'}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.sourceSheet}</td>
+                                          <td className="px-3 py-1.5 border-b select-all">{rRow.documentIdentityKey}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

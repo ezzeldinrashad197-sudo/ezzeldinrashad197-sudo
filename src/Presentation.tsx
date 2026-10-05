@@ -663,55 +663,66 @@ export default function Presentation({
     const isMultiCol = cols.length >= 8;
     const hasUniqueMetrics = cols.some(c => c.key === 'UniqueRev00');
     return (
-      <table className={`${isMultiCol ? 'w-[56%]' : 'w-[48%]'} text-sm text-center border-collapse shrink-0`} style={{ border: '2px solid #203864' }}>
+      <table
+        className={`${isMultiCol ? 'w-[58%]' : 'w-[48%]'} table-auto text-sm text-center border-collapse shrink-0 break-normal [overflow-wrap:normal] hyphens-none`}
+        style={{ border: '2px solid #203864', tableLayout: 'auto', wordBreak: 'normal', overflowWrap: 'normal', hyphens: 'none' }}
+      >
         <thead>
           <tr style={{ backgroundColor: PRIMARY_BLUE, color: 'white' }}>
-            <th className="p-1.5 border border-[#4472c4] font-bold text-xs" colSpan={1}>
+            <th className="p-1.5 border border-[#4472c4] font-bold text-xs whitespace-nowrap min-w-[82px]" colSpan={1}>
               {language === 'ar' ? 'التخصص الفني' : 'Discipline'}
             </th>
             {hasUniqueMetrics ? (
               <>
-                <th className="p-1.5 border border-[#4472c4] bg-blue-900 font-bold text-center uppercase tracking-wider text-[11px]" colSpan={2}>
+                <th className="p-1.5 border border-[#4472c4] bg-blue-900 font-bold text-center uppercase tracking-wider text-[11px] whitespace-nowrap" colSpan={2}>
                   {language === 'ar' ? 'تقديمات فريدة' : 'UNIQUE SUBMITTALS'}
                 </th>
-                <th className="p-1.5 border border-[#4472c4] bg-slate-800 font-bold text-center uppercase tracking-wider text-[11px]" colSpan={3}>
+                <th className="p-1.5 border border-[#4472c4] bg-slate-800 font-bold text-center uppercase tracking-wider text-[11px] whitespace-nowrap" colSpan={3}>
                   {language === 'ar' ? 'صفوف التقديم' : 'HISTORICAL ROWS'}
                 </th>
-                <th className="p-1.5 border border-[#4472c4] bg-[#203864] font-bold text-center uppercase tracking-wider text-[11px]" colSpan={Math.max(1, cols.length - 6)}>
+                <th className="p-1.5 border border-[#4472c4] bg-[#203864] font-bold text-center uppercase tracking-wider text-[11px] whitespace-nowrap" colSpan={Math.max(1, cols.length - 6)}>
                   {language === 'ar' ? 'الحالة الحالية' : 'CURRENT STATE'}
                 </th>
               </>
             ) : (
-              <th className="p-1.5 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs" colSpan={cols.length - 1}>
+              <th className="p-1.5 border border-[#4472c4] font-bold text-center uppercase tracking-wider text-xs whitespace-nowrap" colSpan={cols.length - 1}>
                 {language === 'ar' ? 'المؤشرات وحالة الاعتماد' : 'METRICS & STATUS'}
               </th>
             )}
           </tr>
           <tr style={{ backgroundColor: '#2f75b5', color: 'white', fontSize: isMultiCol ? (cols.length >= 10 ? '10px' : '11px') : '13px' }}>
-            {cols.map((c, i) => (
-              <th key={i} className="p-1.5 border border-[#4472c4] font-bold whitespace-normal">
-                {getColLabel(c.label, language)}
-              </th>
-            ))}
+            {cols.map((c, i) => {
+              const labelText = getColLabel(c.label, language);
+              const isSingleWord = !labelText.trim().includes(' ');
+              return (
+                <th
+                  key={i}
+                  className={`p-1.5 border border-[#4472c4] font-bold break-normal [overflow-wrap:normal] hyphens-none ${isSingleWord ? 'whitespace-nowrap min-w-[66px]' : 'whitespace-normal min-w-[64px]'}`}
+                  style={{ wordBreak: 'normal', overflowWrap: 'normal', hyphens: 'none' }}
+                >
+                  {labelText}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="bg-white text-[#333]">
           {statsData.stats.map((s: Record<string, any>, index: number) => (
             <tr key={`${s.discipline}-${index}`} className="even:bg-[#f2f2f2] h-[34px]">
-              <td className="p-1.5 border border-[#cbd5e1] font-medium text-xs">
+              <td className="p-1.5 border border-[#cbd5e1] font-medium text-xs whitespace-nowrap min-w-[82px]">
                 {getDiscName(s.discipline, language)}
               </td>
               {cols.slice(1).map((c, i) => (
-                <td key={i} className={`p-1.5 border border-[#cbd5e1] text-xs ${c.key === "Total" || c.key === "TotalRows" ? "font-bold" : ""}`}>
+                <td key={i} className={`p-1.5 border border-[#cbd5e1] text-xs whitespace-nowrap ${c.key === "Total" || c.key === "TotalRows" ? "font-bold" : ""}`}>
                   {s[c.key] !== undefined && s[c.key] !== null ? s[c.key] : 0}
                 </td>
               ))}
             </tr>
           ))}
           <tr className="bg-[#ddebf7] h-[40px] font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
-            <td className="p-1.5 border border-[#cbd5e1]">{getDiscName(statsData.totalRow.discipline, language)}</td>
+            <td className="p-1.5 border border-[#cbd5e1] whitespace-nowrap">{getDiscName(statsData.totalRow.discipline, language)}</td>
             {cols.slice(1).map((c, i) => (
-              <td key={i} className="p-1.5 border border-[#cbd5e1]">
+              <td key={i} className="p-1.5 border border-[#cbd5e1] whitespace-nowrap">
                 {statsData.totalRow[c.key] !== undefined && statsData.totalRow[c.key] !== null ? statsData.totalRow[c.key] : 0}
               </td>
             ))}
@@ -722,10 +733,10 @@ export default function Presentation({
   };
 
   const renderStandardBar = (statsData: Record<string, any>, titleStr: string) => (
-    <div className="w-[48%] h-[350px] flex flex-col justify-center items-center">
+    <div className="w-[40%] h-[350px] flex flex-col justify-center items-center">
       <h3 className="text-center font-bold mb-4 text-[#203864] text-lg">{getChartTitle(titleStr, language)}</h3>
-      <div className="w-[620px] h-[280px] flex items-center justify-center">
-        <BarChart width={620} height={280} data={statsData.stats} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+      <div className="w-[540px] h-[280px] flex items-center justify-center">
+        <BarChart width={540} height={280} data={statsData.stats} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="discipline" tickFormatter={(d) => getDiscName(d, language)} tick={{ fontSize: 13, fill: '#333' }} />
           <YAxis tick={{ fontSize: 13, fill: '#333' }} />
@@ -1279,21 +1290,21 @@ export default function Presentation({
           <div className="p-8 flex flex-col h-full justify-start gap-4">
             <h3 className="font-bold text-lg border-b pb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'تفصيل السجلات الهندسية لشهر المراجعة الحالي' : 'Register-Level Metrics for Selected Reporting Month'}</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-center border-collapse border border-slate-200 shadow-sm mt-2">
+              <table className="w-full table-auto text-xs text-center border-collapse border border-slate-200 shadow-sm mt-2 break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل' : 'Register'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي المرفوض' : 'Total Rej.'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معلق' : 'Pending'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'النشط' : 'Active'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'السجل' : 'Register'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[76px]">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[82px]">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[72px]">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[78px]">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[72px]">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[74px]">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[74px]">{language === 'ar' ? 'إجمالي المرفوض' : 'Total Rej.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[72px]">{language === 'ar' ? 'معلق' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[68px]">{language === 'ar' ? 'النشط' : 'Active'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1494,23 +1505,23 @@ export default function Presentation({
             </div>
 
             <div className="overflow-x-auto max-h-[420px]">
-              <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+              <table className="w-full table-auto text-xs text-center border-collapse border border-slate-300 shadow-sm break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-rose-800">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-red-900">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-amber-700">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
-                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200">
-                      <div className="flex flex-col items-center">
-                        <span>{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
-                        <span className="text-[9px] font-normal text-amber-300">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
+                    <th className="p-2 border border-slate-300 font-bold text-left whitespace-nowrap min-w-[140px]">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800 whitespace-nowrap min-w-[82px]">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-rose-800 whitespace-nowrap min-w-[80px]">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-red-900 whitespace-nowrap min-w-[82px]">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-700 whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200 whitespace-nowrap min-w-[96px]">
+                      <div className="flex flex-col items-center whitespace-nowrap">
+                        <span className="whitespace-nowrap">{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
+                        <span className="text-[9px] font-normal text-amber-300 whitespace-nowrap">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
                       </div>
                     </th>
-                    <th className="p-2 border border-slate-300 font-black bg-slate-800">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-black bg-blue-900">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-slate-800 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-blue-900 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-900 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1526,20 +1537,20 @@ export default function Presentation({
 
                     return (
                       <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
-                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800">{approved}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700">{rejOpen}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900">{rejClosed}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800">{pending}</td>
-                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50">
-                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs">
+                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left whitespace-nowrap">{rec.identityKey}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800 whitespace-nowrap">{approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700 whitespace-nowrap">{rejOpen}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900 whitespace-nowrap">{rejClosed}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800 whitespace-nowrap">{pending}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs whitespace-nowrap">
                             {superseded}
                           </span>
                         </td>
-                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60">{totalRows}</td>
-                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60">{currentUnique}</td>
-                        <td className="p-1.5 border border-slate-200 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60 whitespace-nowrap">{totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60 whitespace-nowrap">{currentUnique}</td>
+                        <td className="p-1.5 border border-slate-200 text-center whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
                             {isBalanced ? '100% OK' : 'Check Delta'}
                           </span>
                         </td>
@@ -1558,20 +1569,20 @@ export default function Presentation({
 
                     return (
                       <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
-                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900">{totApp}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-rose-900">{totRejOpen}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-red-950">{totRejClosed}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-amber-900">{totPending}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100">
-                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black">
+                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left whitespace-nowrap">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900 whitespace-nowrap">{totApp}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-rose-900 whitespace-nowrap">{totRejOpen}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-red-950 whitespace-nowrap">{totRejClosed}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-900 whitespace-nowrap">{totPending}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100 whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black whitespace-nowrap">
                             {totSup}
                           </span>
                         </td>
-                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80">{totRows}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100">{totCur}</td>
-                        <td className="p-1.5 border border-slate-300 text-center">
-                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400">
+                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80 whitespace-nowrap">{totRows}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100 whitespace-nowrap">{totCur}</td>
+                        <td className="p-1.5 border border-slate-300 text-center whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400 whitespace-nowrap">
                             {totBalanced ? '100% Balanced' : 'Check Delta'}
                           </span>
                         </td>
@@ -1839,21 +1850,21 @@ export default function Presentation({
           <div className="p-8 flex flex-col h-full justify-start gap-4">
             <h3 className="font-bold text-lg border-b pb-2" style={{ color: primaryColor }}>{language === 'ar' ? 'تفصيل السجلات الهندسية التراكمية للمشروع' : 'Register-Level Metrics for Project Lifetime'}</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-center border-collapse border border-slate-200 shadow-sm mt-2">
+              <table className="w-full table-auto text-xs text-center border-collapse border border-slate-200 shadow-sm mt-2 break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'السجل' : 'Register'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'إجمالي المرفوض' : 'Total Rej.'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'معلق' : 'Pending'}</th>
-                    <th className="p-2 border border-slate-300 font-bold">{language === 'ar' ? 'النشط' : 'Active'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'السجل' : 'Register'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[76px]">{language === 'ar' ? 'تقديمات فريدة Rev.00' : 'Unique Rev.00'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[82px]">{language === 'ar' ? 'تقديمات فريدة لاحقة' : 'Unique Further Rev.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[72px]">{language === 'ar' ? 'صفوف Rev.00' : 'Rev.00 Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[78px]">{language === 'ar' ? 'صفوف الإصدارات اللاحقة' : 'Further Rev. Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold min-w-[72px]">{language === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[74px]">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[74px]">{language === 'ar' ? 'إجمالي المرفوض' : 'Total Rej.'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[72px]">{language === 'ar' ? 'معلق' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-bold whitespace-nowrap min-w-[68px]">{language === 'ar' ? 'النشط' : 'Active'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2054,23 +2065,23 @@ export default function Presentation({
             </div>
 
             <div className="overflow-x-auto max-h-[420px]">
-              <table className="w-full text-xs text-center border-collapse border border-slate-300 shadow-sm">
+              <table className="w-full table-auto text-xs text-center border-collapse border border-slate-300 shadow-sm break-normal [overflow-wrap:normal] hyphens-none">
                 <thead>
                   <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                    <th className="p-2 border border-slate-300 font-bold text-left">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-rose-800">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-red-900">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-amber-700">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
-                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200">
-                      <div className="flex flex-col items-center">
-                        <span>{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
-                        <span className="text-[9px] font-normal text-amber-300">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
+                    <th className="p-2 border border-slate-300 font-bold text-left whitespace-nowrap min-w-[140px]">{language === 'ar' ? 'السجل والتخصص' : 'Register & Discipline'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-emerald-800 whitespace-nowrap min-w-[82px]">{language === 'ar' ? 'معتمد' : 'Approved'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-rose-800 whitespace-nowrap min-w-[80px]">{language === 'ar' ? 'مرفوض مفتوح' : 'Rej. Open'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-red-900 whitespace-nowrap min-w-[82px]">{language === 'ar' ? 'مرفوض مغلق' : 'Rej. Closed'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-amber-700 whitespace-nowrap min-w-[78px]">{language === 'ar' ? 'معلق مراجعة' : 'Pending'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-amber-950/90 text-amber-200 whitespace-nowrap min-w-[96px]">
+                      <div className="flex flex-col items-center whitespace-nowrap">
+                        <span className="whitespace-nowrap">{language === 'ar' ? 'مراجعات ملغاة' : 'Superseded'}</span>
+                        <span className="text-[9px] font-normal text-amber-300 whitespace-nowrap">({language === 'ar' ? 'تاريخي' : 'Historical'})</span>
                       </div>
                     </th>
-                    <th className="p-2 border border-slate-300 font-black bg-slate-800">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
-                    <th className="p-2 border border-slate-300 font-black bg-blue-900">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
-                    <th className="p-2 border border-slate-300 font-bold bg-slate-900">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-slate-800 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'إجمالي الصفوف' : 'Historical Rows'}</th>
+                    <th className="p-2 border border-slate-300 font-black bg-blue-900 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'البنود الفريدة' : 'Current Unique'}</th>
+                    <th className="p-2 border border-slate-300 font-bold bg-slate-900 whitespace-nowrap min-w-[96px]">{language === 'ar' ? 'مطابقة المعادلة' : 'Invariant Check'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2086,20 +2097,20 @@ export default function Presentation({
 
                     return (
                       <tr key={rec.identityKey} className="even:bg-slate-50 hover:bg-slate-100 h-8">
-                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left">{rec.identityKey}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800">{approved}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700">{rejOpen}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900">{rejClosed}</td>
-                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800">{pending}</td>
-                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50">
-                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs">
+                        <td className="p-1.5 border border-slate-200 font-bold text-slate-900 text-left whitespace-nowrap">{rec.identityKey}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-emerald-800 whitespace-nowrap">{approved}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-rose-700 whitespace-nowrap">{rejOpen}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-red-900 whitespace-nowrap">{rejClosed}</td>
+                        <td className="p-1.5 border border-slate-200 font-semibold text-amber-800 whitespace-nowrap">{pending}</td>
+                        <td className="p-1.5 border border-slate-200 font-bold text-amber-900 bg-amber-50 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-xs whitespace-nowrap">
                             {superseded}
                           </span>
                         </td>
-                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60">{totalRows}</td>
-                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60">{currentUnique}</td>
-                        <td className="p-1.5 border border-slate-200 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
+                        <td className="p-1.5 border border-slate-200 font-black text-slate-900 bg-slate-100/60 whitespace-nowrap">{totalRows}</td>
+                        <td className="p-1.5 border border-slate-200 font-black text-blue-950 bg-blue-50/60 whitespace-nowrap">{currentUnique}</td>
+                        <td className="p-1.5 border border-slate-200 text-center whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${isBalanced ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800'}`}>
                             {isBalanced ? '100% OK' : 'Check Delta'}
                           </span>
                         </td>
@@ -2118,20 +2129,20 @@ export default function Presentation({
 
                     return (
                       <tr className="bg-[#ddebf7] font-bold text-slate-900 h-9">
-                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900">{totApp}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-rose-900">{totRejOpen}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-red-950">{totRejClosed}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-amber-900">{totPending}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100">
-                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black">
+                        <td className="p-1.5 border border-slate-300 font-black uppercase text-left whitespace-nowrap">{language === 'ar' ? 'الإجمالي الكلي' : 'GRAND TOTAL'}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-emerald-900 whitespace-nowrap">{totApp}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-rose-900 whitespace-nowrap">{totRejOpen}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-red-950 whitespace-nowrap">{totRejClosed}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-900 whitespace-nowrap">{totPending}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-amber-950 bg-amber-100 whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 text-xs font-black whitespace-nowrap">
                             {totSup}
                           </span>
                         </td>
-                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80">{totRows}</td>
-                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100">{totCur}</td>
-                        <td className="p-1.5 border border-slate-300 text-center">
-                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400">
+                        <td className="p-1.5 border border-slate-300 font-black text-slate-950 bg-slate-200/80 whitespace-nowrap">{totRows}</td>
+                        <td className="p-1.5 border border-slate-300 font-black text-blue-950 bg-blue-100 whitespace-nowrap">{totCur}</td>
+                        <td className="p-1.5 border border-slate-300 text-center whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-200 text-emerald-950 border border-emerald-400 whitespace-nowrap">
                             {totBalanced ? '100% Balanced' : 'Check Delta'}
                           </span>
                         </td>
@@ -2389,24 +2400,24 @@ export default function Presentation({
                   <span>{language === 'ar' ? 'الوثائق المرفوضة (إجراء المقاول - إعادة التقديم)' : 'Rejected Items (Contractor Action - Resubmission Required)'}</span>
                   <span className="text-xs font-semibold bg-red-100 text-[#7a1515] px-2.5 py-0.5 rounded">{language === 'ar' ? `صفحة ${pageIdx + 1} من ${rejectedPages.length}` : `Page ${pageIdx + 1} of ${rejectedPages.length}`}</span>
                 </h3>
-                <table className="w-full text-[11px] text-center border-collapse border border-[#cbd5e1]">
+                <table className="w-full table-auto text-[11px] text-center border-collapse border border-[#cbd5e1] break-normal [overflow-wrap:normal] hyphens-none">
                   <thead>
                     <tr style={{ backgroundColor: '#7a1515', color: 'white' }}>
-                      <th className="p-2 border border-[#cbd5e1] w-12">{language === 'ar' ? 'م' : 'No.'}</th>
-                      <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'نوع المستند / المعاملة' : 'Type of Documents'}</th>
-                      {showRefCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'الرقم المرجعي' : 'Ref / Link'}</th>}
-                      {showTradeCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'التخصص' : 'Trade'}</th>}
-                      {showRemarksCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'الملاحظات' : 'Remarks'}</th>}
+                      <th className="p-2 border border-[#cbd5e1] w-12 whitespace-nowrap">{language === 'ar' ? 'م' : 'No.'}</th>
+                      <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'نوع المستند / المعاملة' : 'Type of Documents'}</th>
+                      {showRefCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'الرقم المرجعي' : 'Ref / Link'}</th>}
+                      {showTradeCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[90px]">{language === 'ar' ? 'التخصص' : 'Trade'}</th>}
+                      {showRemarksCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[120px]">{language === 'ar' ? 'الملاحظات' : 'Remarks'}</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {pageData.map((row, i) => (
                       <tr key={i} className="even:bg-[#fff5f5] hover:bg-red-50/55 h-9 transition-colors">
-                        <td className="border border-[#cbd5e1] px-2 font-mono">{pageIdx * rejectedPageSize + i + 1}</td>
-                        <td className="border border-[#cbd5e1] px-2 font-bold text-[#7a1515]">{row.documentType}</td>
-                        {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px]">{row.docNo || '-'}</td>}
-                        {showTradeCol && <td className="border border-[#cbd5e1] px-2">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Awaiting Resubmission')}</td>}
+                        <td className="border border-[#cbd5e1] px-2 font-mono whitespace-nowrap">{pageIdx * rejectedPageSize + i + 1}</td>
+                        <td className="border border-[#cbd5e1] px-2 font-bold text-[#7a1515] whitespace-nowrap">{row.documentType}</td>
+                        {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px] whitespace-nowrap">{row.docNo || '-'}</td>}
+                        {showTradeCol && <td className="border border-[#cbd5e1] px-2 whitespace-nowrap">{getDiscName(row.trade, language) || '-'}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Awaiting Resubmission')}</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -2448,24 +2459,24 @@ export default function Presentation({
                   <span>{language === 'ar' ? 'الوثائق المعلقة المتأخرة بالرد (إجراء الاستشاري)' : 'Pending Items Overdue (Consultant Action)'}</span>
                   <span className="text-xs font-semibold bg-blue-100 px-2.5 py-0.5 rounded" style={{ color: primaryColor }}>{language === 'ar' ? `صفحة ${pageIdx + 1} من ${pendingPages.length}` : `Page ${pageIdx + 1} of ${pendingPages.length}`}</span>
                 </h3>
-                <table className="w-full text-[11px] text-center border-collapse border border-[#cbd5e1]">
+                <table className="w-full table-auto text-[11px] text-center border-collapse border border-[#cbd5e1] break-normal [overflow-wrap:normal] hyphens-none">
                   <thead>
                     <tr style={{ backgroundColor: primaryColor, color: 'white' }}>
-                      <th className="p-2 border border-[#cbd5e1] w-12">{language === 'ar' ? 'م' : 'No.'}</th>
-                      <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'نوع المستند / المعاملة' : 'Type of Documents'}</th>
-                      {showRefCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'الرقم المرجعي' : 'Ref / Link'}</th>}
-                      {showTradeCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'التخصص' : 'Trade'}</th>}
-                      {showRemarksCol && <th className="p-2 border border-[#cbd5e1]">{language === 'ar' ? 'الملاحظات' : 'Remarks'}</th>}
+                      <th className="p-2 border border-[#cbd5e1] w-12 whitespace-nowrap">{language === 'ar' ? 'م' : 'No.'}</th>
+                      <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'نوع المستند / المعاملة' : 'Type of Documents'}</th>
+                      {showRefCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[110px]">{language === 'ar' ? 'الرقم المرجعي' : 'Ref / Link'}</th>}
+                      {showTradeCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[90px]">{language === 'ar' ? 'التخصص' : 'Trade'}</th>}
+                      {showRemarksCol && <th className="p-2 border border-[#cbd5e1] whitespace-nowrap min-w-[120px]">{language === 'ar' ? 'الملاحظات' : 'Remarks'}</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {pageData.map((row, i) => (
                       <tr key={i} className="even:bg-[#f8fafc] hover:bg-slate-50 h-9 transition-colors">
-                        <td className="border border-[#cbd5e1] px-2 font-mono">{pageIdx * pendingPageSize + i + 1}</td>
-                        <td className="border border-[#cbd5e1] px-2 font-bold text-[#203864]" style={{ color: primaryColor }}>{row.documentType}</td>
-                        {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px]">{row.docNo || '-'}</td>}
-                        {showTradeCol && <td className="border border-[#cbd5e1] px-2">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium">{language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`}</td>}
+                        <td className="border border-[#cbd5e1] px-2 font-mono whitespace-nowrap">{pageIdx * pendingPageSize + i + 1}</td>
+                        <td className="border border-[#cbd5e1] px-2 font-bold text-[#203864] whitespace-nowrap" style={{ color: primaryColor }}>{row.documentType}</td>
+                        {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px] whitespace-nowrap">{row.docNo || '-'}</td>}
+                        {showTradeCol && <td className="border border-[#cbd5e1] px-2 whitespace-nowrap">{getDiscName(row.trade, language) || '-'}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">{language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`}</td>}
                       </tr>
                     ))}
                   </tbody>

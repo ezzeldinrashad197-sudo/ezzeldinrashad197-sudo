@@ -62,28 +62,28 @@ export const ExecutiveRegisterSummary: React.FC<ExecutiveRegisterSummaryProps> =
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full table-auto text-left border-collapse break-normal [overflow-wrap:normal] hyphens-none">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200">
+                <th className="px-4 py-3.5 text-left font-extrabold text-[#203864] border-r border-slate-200 whitespace-nowrap min-w-[110px]">
                   {language === 'ar' ? 'السجل الهندسي (Register)' : 'Register'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200 whitespace-nowrap min-w-[96px]">
                   {language === 'ar' ? 'إجمالي البنود الفريدة' : 'Unique Items'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-emerald-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-emerald-800 border-r border-slate-200 whitespace-nowrap min-w-[92px]">
                   {language === 'ar' ? 'المعتمد (Approved)' : 'Approved'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-amber-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-amber-800 border-r border-slate-200 whitespace-nowrap min-w-[84px]">
                   {language === 'ar' ? 'النشط (Active)' : 'Active'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 border-r border-slate-200 whitespace-nowrap min-w-[96px]">
                   {language === 'ar' ? 'نسبة الاعتماد' : 'Approval Rate'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-rose-800 border-r border-slate-200">
+                <th className="px-4 py-3.5 text-center font-extrabold text-rose-800 border-r border-slate-200 whitespace-nowrap min-w-[88px]">
                   {language === 'ar' ? 'متأخر SLA' : 'Overdue'}
                 </th>
-                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800">
+                <th className="px-4 py-3.5 text-center font-extrabold text-slate-800 whitespace-nowrap min-w-[110px]">
                   {language === 'ar' ? 'حالة الامتثال' : 'Health'}
                 </th>
               </tr>
