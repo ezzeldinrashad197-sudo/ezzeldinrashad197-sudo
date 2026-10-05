@@ -334,13 +334,13 @@ export function buildPresentationViewModel(
     const regTitle = getRegisterTitle(bt, isArabic ? 'ar' : 'en');
     const isRevBased = bt !== 'LTR' && bt !== 'RFI' && bt !== 'NCR' && bt !== 'SOR';
 
-    // Canonical column definitions (Official 8-Column Management KPI Table at Unique Item Grain)
+    // Canonical column definitions (Official Management Table: Status | Unique Items | Rev.00 Rows | Further Rev. Rows | Total Rows | Approved | Rejected | Pending)
     let cols = [
-      { label: "Discipline", key: "discipline" },
-      { label: "Items", key: "CurrentUnique" },
-      { label: "Total Submittals", key: "TotalSubmittals" },
-      { label: "Rev.00", key: "Rev00" },
-      { label: "Further Rev.", key: "FurtherRev" },
+      { label: "Status", key: "discipline" },
+      { label: "Unique Items", key: "CurrentUnique" },
+      { label: "Rev.00 Rows", key: "Rev00Rows" },
+      { label: "Further Rev. Rows", key: "FurtherRevRows" },
+      { label: "Total Rows", key: "TotalRows" },
       { label: "Approved", key: "Approved" },
       { label: "Rejected", key: "Rejected" },
       { label: "Pending", key: "Pending" }
@@ -379,20 +379,20 @@ export function buildPresentationViewModel(
 
     const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
 
-    // Chart Data (Unique Item Grain matching the Official Management KPI Table)
-    const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00";
-    const chartVal2Label = bt === 'LTR' ? "Received" : "Further Rev.";
+    // Chart Data (Raw Excel Row Grain matching Rev.00 Rows and Further Rev. Rows in the table)
+    const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00 Rows";
+    const chartVal2Label = bt === 'LTR' ? "Received" : "Further Rev. Rows";
     
     const mChartData = [
       {
         name: chartVal1Label,
         labels: mStats.stats.map((s: any) => s.discipline),
-        values: mStats.stats.map((s: any) => Number(s.Rev00) || 0)
+        values: mStats.stats.map((s: any) => Number(s.Rev00Rows ?? s.Rev00) || 0)
       },
       {
         name: chartVal2Label,
         labels: mStats.stats.map((s: any) => s.discipline),
-        values: mStats.stats.map((s: any) => Number(s.FurtherRev) || 0)
+        values: mStats.stats.map((s: any) => Number(s.FurtherRevRows ?? s.FurtherRev) || 0)
       }
     ];
 
@@ -400,12 +400,12 @@ export function buildPresentationViewModel(
       {
         name: chartVal1Label,
         labels: cStats.stats.map((s: any) => s.discipline),
-        values: cStats.stats.map((s: any) => Number(s.Rev00) || 0)
+        values: cStats.stats.map((s: any) => Number(s.Rev00Rows ?? s.Rev00) || 0)
       },
       {
         name: chartVal2Label,
         labels: cStats.stats.map((s: any) => s.discipline),
-        values: cStats.stats.map((s: any) => Number(s.FurtherRev) || 0)
+        values: cStats.stats.map((s: any) => Number(s.FurtherRevRows ?? s.FurtherRev) || 0)
       }
     ];
 

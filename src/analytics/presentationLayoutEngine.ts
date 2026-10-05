@@ -47,22 +47,20 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
   const norm = rawLabel.trim().toUpperCase();
 
   if (language === 'ar') {
-    if (norm === 'DISCIPLINE') return 'التخصص';
-    if (norm === 'ITEMS') return 'البنود';
-    if (norm === 'TOTAL SUBMITTALS') return 'إجمالي\nالتقديمات';
+    if (norm === 'DISCIPLINE' || norm === 'STATUS') return 'التخصص';
+    if (norm === 'UNIQUE ITEMS' || norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'البنود\nالفريدة';
     if (norm === 'REV.00' || norm === 'REV 00') return 'Rev.00';
     if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'فريدة\nR00';
     if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'فريدة\nلاحقة';
-    if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'صفوف\nR00';
-    if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'مراجعات\nلاحقة';
-    if (norm === 'TOTAL ROWS') return 'إجمالي\nالتقديمات';
+    if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'صفوف\nRev.00';
+    if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'صفوف\nلاحقة';
+    if (norm === 'TOTAL ROWS') return 'إجمالي\nالصفوف';
     if (norm === 'APPROVED') return 'معتمد';
     if (norm === 'REJECTED') return 'مرفوض';
     if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'مرفوض\nمفتوح';
     if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'مرفوض\nمغلق';
     if (norm === 'PENDING') return 'معلق';
     if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'ملغاة\nسابقاً';
-    if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'البنود';
     if (norm === 'ROW APP/CLOSED') return 'معتمد\nصفوف';
     if (norm === 'ROW REJ/OPEN') return 'مرفوض\nصفوف';
     if (norm === 'ROW PENDING') return 'معلق\nصفوف';
@@ -76,22 +74,21 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
   }
 
   // English Canonical Short Headers with clean two-line whole words
+  if (norm === 'STATUS') return 'Status';
   if (norm === 'DISCIPLINE') return 'Discipline';
-  if (norm === 'ITEMS') return 'Items';
-  if (norm === 'TOTAL SUBMITTALS') return 'Total\nSubmittals';
+  if (norm === 'UNIQUE ITEMS' || norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Unique\nItems';
   if (norm === 'REV.00' || norm === 'REV 00') return 'Rev.00';
   if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'Unique\nRev.00';
   if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'Unique\nFurther';
   if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'Rev.00\nRows';
-  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'Further\nRev.';
-  if (norm === 'TOTAL ROWS') return 'Total\nSubmittals';
+  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'Further\nRev. Rows';
+  if (norm === 'TOTAL ROWS') return 'Total\nRows';
   if (norm === 'APPROVED') return 'Approved';
   if (norm === 'REJECTED') return 'Rejected';
   if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'Rej.\nOpen';
   if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'Rej.\nClosed';
   if (norm === 'PENDING') return 'Pending';
   if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'Superseded';
-  if (norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Items';
   if (norm === 'ROW APP/CLOSED') return 'Row\nApp/Cls';
   if (norm === 'ROW REJ/OPEN') return 'Row\nRej/Opn';
   if (norm === 'ROW PENDING') return 'Row\nPend.';

@@ -1685,31 +1685,31 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                      </p>
                    </div>
                    <div className="flex items-center gap-2 text-xs font-mono bg-white/10 px-3 py-1.5 rounded-lg border border-white/15">
-                     <span>Items: {rep.grandTotal.items}</span>
+                     <span>Unique Items: {rep.grandTotal.uniqueItems}</span>
                      <span>|</span>
-                     <span>Total Submittals: {rep.grandTotal.totalSubmittals}</span>
+                     <span>Total Rows: {rep.grandTotal.totalRows}</span>
                    </div>
                  </div>
 
-                 {/* Official 8-Column Table */}
+                 {/* Official 8-Column Table: Status | Unique Items | Rev.00 Rows | Further Rev. Rows | Total Rows | Approved | Rejected | Pending */}
                  <div className="overflow-x-auto">
                    <table className="w-full border-collapse text-center">
                      <thead>
                        <tr className="bg-slate-100 border-b-2 border-slate-300 text-[#203864]">
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider text-left border-r border-slate-200 whitespace-nowrap">
-                           Discipline
+                           Status
                          </th>
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-blue-50/60 whitespace-nowrap">
-                           Items
-                         </th>
-                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-slate-200/70 whitespace-nowrap">
-                           Total Submittals
+                           Unique Items
                          </th>
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 whitespace-nowrap">
-                           Rev.00
+                           Rev.00 Rows
                          </th>
-                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-300 whitespace-nowrap">
-                           Further Rev.
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 whitespace-nowrap">
+                           Further Rev. Rows
+                         </th>
+                         <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-300 bg-slate-200/70 whitespace-nowrap">
+                           Total Rows
                          </th>
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-emerald-50/70 text-emerald-900 whitespace-nowrap">
                            Approved
@@ -1763,20 +1763,20 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                                  isTotal ? 'border-white/20 bg-white/10' : 'border-slate-200 bg-blue-50/30 font-bold text-[#203864]'
                                }`}
                              >
-                               {renderCellButton(r.items, 'items', 'Items (Unique Document Items)')}
+                               {renderCellButton(r.uniqueItems, 'uniqueItems', 'Unique Items (Unique Document/Submittal Identities)')}
+                             </td>
+                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/20' : 'border-slate-200'}`}>
+                               {renderCellButton(r.rev00Rows, 'rev00Rows', 'Rev.00 Rows (Raw Excel Source Rows Classified as Rev.00)')}
+                             </td>
+                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/20' : 'border-slate-200'}`}>
+                               {renderCellButton(r.furtherRevRows, 'furtherRevRows', 'Further Rev. Rows (Raw Excel Source Rows Classified as Further Revision)')}
                              </td>
                              <td
                                className={`px-4 py-3 text-sm border-r ${
-                                 isTotal ? 'border-white/20 bg-white/15' : 'border-slate-200 bg-slate-100/80 font-extrabold text-slate-900'
+                                 isTotal ? 'border-white/30 bg-white/15' : 'border-slate-300 bg-slate-100/80 font-extrabold text-slate-900'
                                }`}
                              >
-                               {renderCellButton(r.totalSubmittals, 'totalSubmittals', 'Total Submittals (Unique Submittal Items)')}
-                             </td>
-                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/20' : 'border-slate-200'}`}>
-                               {renderCellButton(r.rev00, 'rev00', 'Rev.00 (Unique Items Classified as Rev.00)')}
-                             </td>
-                             <td className={`px-4 py-3 text-sm border-r ${isTotal ? 'border-white/30' : 'border-slate-300'}`}>
-                               {renderCellButton(r.furtherRev, 'furtherRev', 'Further Rev. (Unique Items Classified as Further Revision)')}
+                               {renderCellButton(r.totalRows, 'totalRows', 'Total Rows (Rev.00 Rows + Further Rev. Rows)')}
                              </td>
                              <td
                                className={`px-4 py-3 text-sm border-r ${
@@ -1806,23 +1806,15 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                    </table>
                  </div>
 
-                 {/* Deterministic KPI Definitions Footer (Unique Item Grain vs Raw Excel Row Count) */}
+                 {/* Deterministic Dual-Grain Definitions Footer */}
                  <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-600">
                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                      <span>
-                       <strong className="text-[#203864]">Grain:</strong> 100% Unique Item Grain (A document with Rev.00 + Rev.01 + Rev.02 = 1 Unique Item)
+                       <strong className="text-[#203864]">Unique Item Grain (Status):</strong> Approved ({rep.grandTotal.approved}) + Rejected ({rep.grandTotal.rejected}) + Pending ({rep.grandTotal.pending}) = <strong>{rep.grandTotal.uniqueItems} Unique Items</strong>
                      </span>
                      <span>•</span>
                      <span>
-                       <strong className="text-[#203864]">Total Submittals (Unique):</strong> Rev.00 ({rep.grandTotal.rev00}) + Further Rev. ({rep.grandTotal.furtherRev}) = <strong>{rep.grandTotal.totalSubmittals}</strong>
-                     </span>
-                     <span>•</span>
-                     <span>
-                       <strong className="text-[#203864]">Current State (Unique):</strong> Approved ({rep.grandTotal.approved}) + Rejected ({rep.grandTotal.rejected}) + Pending ({rep.grandTotal.pending}) = <strong>{rep.grandTotal.items}</strong>
-                     </span>
-                     <span>•</span>
-                     <span className="text-slate-500">
-                       <strong>Raw Excel Rows (Audit):</strong> {rep.grandTotal.rawTotalRows} ({rep.grandTotal.supersededTotalRows} superseded revision rows collapsed)
+                       <strong className="text-[#203864]">Raw Excel Row Grain (Revisions):</strong> Rev.00 Rows ({rep.grandTotal.rev00Rows}) + Further Rev. Rows ({rep.grandTotal.furtherRevRows}) = <strong>{rep.grandTotal.totalRows} Total Rows</strong>
                      </span>
                    </div>
                    {rep.otherDisciplineRowsCount > 0 && (
@@ -1835,20 +1827,20 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              );
            })}
 
-           {/* Read-Only Source Reconciliation Summary Panel (Unique Item Grain vs Raw Excel Row Grain) */}
+           {/* Read-Only Source Reconciliation Summary Panel */}
            {showReconciliationSummary && (
              <div className="bg-white rounded-xl shadow-sm border-2 border-emerald-300 overflow-hidden print:hidden [body.pdf-export_&]:hidden">
                <div className="bg-emerald-900 text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                  <div>
                    <h3 className="text-sm font-black uppercase tracking-wider">
                      {language === 'ar'
-                       ? 'تقرير المطابقة القرائية: حبيبات البند الفريد مقابل الصفوف الخام (Read-Only Unique Item vs Raw Excel Row Reconciliation)'
-                       : 'Read-Only Reconciliation: Unique Item Grain vs. Raw Excel Row / Submission Count'}
+                       ? 'تقرير المطابقة القرائية: البنود الفريدة مقابل صفوف المراجعات الخام (Read-Only Dual-Grain Source Reconciliation)'
+                       : 'Read-Only Source Reconciliation: Unique Items (Status Grain) vs. Raw Excel Revision Rows'}
                    </h3>
                    <p className="text-xs text-emerald-200 mt-0.5">
                      {language === 'ar'
-                       ? 'إثبات رياضي مباشر من بيانات Excel الفعلية يوضح كيفية حساب المؤشرات الثمانية على مستوى البند الفريد (Unique Item Grain) وفصلها عن عدد الصفوف الخام.'
-                       : 'Direct proof on actual loaded Excel data showing how each of the 8 KPIs is counted at Unique Item Grain vs. Raw Excel row count (with clickable cell inspection).'}
+                       ? 'إثبات مباشر من بيانات Excel يوضح أن المستند متعدد المراجعات (Rev.00 + Rev.01 + Rev.02) يُحسب 1 في Unique Items ويُسهم بصفوفه الفعلية في Rev.00 Rows و Further Rev. Rows و Total Rows.'
+                       : 'Direct proof on loaded Excel data: a document with Rev.00 + Rev.01 + Rev.02 counts as 1 Unique Item while contributing 1 Rev.00 Row, 2 Further Rev. Rows, and 3 Total Rows.'}
                    </p>
                  </div>
                  <button
@@ -1858,42 +1850,26 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                        generatedAt: new Date().toISOString(),
                        reportType: isMonthly ? 'MONTHLY' : 'CUMULATIVE',
                        registerScope: officialManagementReport.registerFilter,
-                       grainRule: 'UNIQUE_ITEM_GRAIN (A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item)',
+                       officialColumns: ['Status', 'Unique Items', 'Rev.00 Rows', 'Further Rev. Rows', 'Total Rows', 'Approved', 'Rejected', 'Pending'],
                        isFullyReconciled: officialManagementReport.isFullyReconciled,
                        disciplines: [...officialManagementReport.rows, officialManagementReport.grandTotal].map(d => ({
-                         discipline: d.discipline,
-                         officialUniqueItemKpis: {
-                           items: d.items,
-                           totalSubmittals: d.totalSubmittals,
-                           rev00: d.rev00,
-                           furtherRev: d.furtherRev,
-                           approved: d.approved,
-                           rejected: d.rejected,
-                           pending: d.pending
-                         },
-                         auditRawRowCounts: {
-                           rawTotalRows: d.rawTotalRows,
-                           rawRev00Rows: d.rawRev00Rows,
-                           rawFurtherRevRows: d.rawFurtherRevRows,
-                           supersededTotalRows: d.supersededTotalRows,
-                           supersededRev00Rows: d.supersededRev00Rows,
-                           supersededFurtherRevRows: d.supersededFurtherRevRows,
-                           uniqueSubmittalPackagesBySubRef: d.uniqueSubmittalPackages
+                         status: d.discipline,
+                         uniqueItems: d.uniqueItems,
+                         rev00Rows: d.rev00Rows,
+                         furtherRevRows: d.furtherRevRows,
+                         totalRows: d.totalRows,
+                         approved: d.approved,
+                         rejected: d.rejected,
+                         pending: d.pending,
+                         auditBreakdown: {
+                           rejectedOpen: d.rejectedOpen,
+                           rejectedClosed: d.rejectedClosed,
+                           supersededHistoricalRows: d.supersededTotalRows
                          },
                          invariants: {
-                           uniqueSubmittalsEquation: `${d.rev00} (Unique Rev.00) + ${d.furtherRev} (Unique Further Rev.) = ${d.totalSubmittals} (Total Submittals) = ${d.items} (Unique Items)`,
-                           currentStateEquation: `${d.approved} (Approved) + ${d.rejected} (Rejected: ${d.rejectedOpen} Open + ${d.rejectedClosed} Closed) + ${d.pending} (Pending) = ${d.items} (Unique Items)`,
-                           crossGrainEquation: `${d.items} (Unique Items) + ${d.supersededTotalRows} (Superseded Historical Rows) = ${d.rawTotalRows} (Raw Excel Rows)`
-                         },
-                         sampleMultiRevisionCollapsedItems: d.reconciliation.furtherRev.slice(0, 20).map(r => ({
-                           docNo: r.documentNo,
-                           subRef: r.subRef,
-                           winningCurrentRev: r.rev,
-                           totalRevisionsInExcel: r.revisionCountForDocument,
-                           supersededRevisionsCollapsed: r.supersededRevisionsCount,
-                           resolvedStatus: r.resolvedCategory,
-                           allRevisions: r.allRevisionsForDocument?.map(ar => `Rev.${ar.rev} (${ar.rawCode}/${ar.resolvedCategory})`)
-                         }))
+                           rawRowEquation: `${d.rev00Rows} (Rev.00 Rows) + ${d.furtherRevRows} (Further Rev. Rows) = ${d.totalRows} (Total Rows)`,
+                           uniqueItemStatusEquation: `${d.approved} (Approved) + ${d.rejected} (Rejected: ${d.rejectedOpen} Open + ${d.rejectedClosed} Closed) + ${d.pending} (Pending) = ${d.uniqueItems} (Unique Items)`
+                         }
                        }))
                      };
                      navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
@@ -1912,27 +1888,26 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                    <table className="w-full text-xs border-collapse border border-slate-200 text-center">
                      <thead>
                        <tr className="bg-slate-800 text-white font-bold">
-                         <th rowSpan={2} className="p-2.5 border border-slate-600 text-left">Discipline</th>
-                         <th colSpan={7} className="p-2 border border-slate-600 bg-[#203864] text-emerald-200 uppercase tracking-wider">
-                           Official Management Report KPIs (100% Unique Item Grain)
+                         <th rowSpan={2} className="p-2.5 border border-slate-600 text-left">Status</th>
+                         <th className="p-2 border border-slate-600 bg-[#203864] text-blue-200 uppercase tracking-wider">
+                           Unique Item Grain
                          </th>
-                         <th colSpan={4} className="p-2 border border-slate-600 bg-slate-700 text-amber-200 uppercase tracking-wider">
-                           Raw Excel Row / Submission Count (Audit Comparison Only)
+                         <th colSpan={3} className="p-2 border border-slate-600 bg-slate-700 text-amber-200 uppercase tracking-wider">
+                           Raw Excel Row Grain (Revision Rows)
                          </th>
-                         <th rowSpan={2} className="p-2.5 border border-slate-600">Cross-Grain Equation</th>
+                         <th colSpan={3} className="p-2 border border-slate-600 bg-[#203864] text-emerald-200 uppercase tracking-wider">
+                           Unique Item Grain (Current Status)
+                         </th>
+                         <th rowSpan={2} className="p-2.5 border border-slate-600">Dual-Grain Verification</th>
                        </tr>
                        <tr className="bg-slate-100 text-slate-800 font-bold">
-                         <th className="p-2 border border-slate-200 bg-blue-50/70">Items</th>
-                         <th className="p-2 border border-slate-200 bg-blue-50/70">Total Submittals</th>
-                         <th className="p-2 border border-slate-200">Unique Rev.00</th>
-                         <th className="p-2 border border-slate-200">Unique Further Rev.</th>
+                         <th className="p-2 border border-slate-200 bg-blue-50/70">Unique Items</th>
+                         <th className="p-2 border border-slate-200">Rev.00 Rows</th>
+                         <th className="p-2 border border-slate-200">Further Rev. Rows</th>
+                         <th className="p-2 border border-slate-200 bg-slate-200/80">Total Rows</th>
                          <th className="p-2 border border-slate-200 text-emerald-800">Approved</th>
                          <th className="p-2 border border-slate-200 text-rose-800">Rejected (O+C)</th>
                          <th className="p-2 border border-slate-200 text-amber-800">Pending</th>
-                         <th className="p-2 border border-slate-200 bg-slate-200/80">Raw Total Rows</th>
-                         <th className="p-2 border border-slate-200 bg-slate-100">Raw Rev.00 Rows</th>
-                         <th className="p-2 border border-slate-200 bg-slate-100">Raw Further Rows</th>
-                         <th className="p-2 border border-slate-200 bg-amber-50 text-amber-900">Superseded Collapsed</th>
                        </tr>
                      </thead>
                      <tbody>
@@ -1940,23 +1915,23 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                          <tr key={d.discipline} className={d.discipline === 'GRAND TOTAL' ? 'bg-slate-100 font-black border-t-2 border-slate-400' : 'even:bg-slate-50'}>
                            <td className="p-2.5 border border-slate-200 font-bold text-[#203864] text-left">{d.discipline}</td>
                            <td className="p-2 border border-slate-200 font-mono bg-blue-50/30 font-bold">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'items', 'Unique Document Items', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.items}
-                             </button>
-                           </td>
-                           <td className="p-2 border border-slate-200 font-mono bg-blue-50/30 font-bold">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'totalSubmittals', 'Unique Submittal Items (Rev.00 + Further Rev.)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.totalSubmittals}
+                             <button type="button" onClick={() => openReconciliationCell(d, 'uniqueItems', 'Unique Items (Unique Document/Submittal Identities)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
+                               {d.uniqueItems}
                              </button>
                            </td>
                            <td className="p-2 border border-slate-200 font-mono">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'rev00', 'Unique Items at Rev.00', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.rev00}
+                             <button type="button" onClick={() => openReconciliationCell(d, 'rev00Rows', 'Rev.00 Rows (Raw Excel Source Rows)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
+                               {d.rev00Rows}
                              </button>
                            </td>
                            <td className="p-2 border border-slate-200 font-mono">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'furtherRev', 'Unique Items at Further Revision (Rev.01+)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.furtherRev}
+                             <button type="button" onClick={() => openReconciliationCell(d, 'furtherRevRows', 'Further Rev. Rows (Raw Excel Source Rows)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
+                               {d.furtherRevRows}
+                             </button>
+                           </td>
+                           <td className="p-2 border border-slate-200 font-mono bg-slate-100 font-bold">
+                             <button type="button" onClick={() => openReconciliationCell(d, 'totalRows', 'Total Rows (Rev.00 Rows + Further Rev. Rows)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
+                               {d.totalRows}
                              </button>
                            </td>
                            <td className="p-2 border border-slate-200 font-mono text-emerald-700 font-bold">
@@ -1974,30 +1949,9 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                                {d.pending}
                              </button>
                            </td>
-                           {/* Audit Raw Excel Row Counts */}
-                           <td className="p-2 border border-slate-200 font-mono bg-slate-100 text-slate-700">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'rawTotalRows', 'Audit: All Raw Excel Rows', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.rawTotalRows}
-                             </button>
-                           </td>
-                           <td className="p-2 border border-slate-200 font-mono text-slate-600">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'rawRev00Rows', 'Audit: Raw Excel Rev.00 Rows (incl. superseded)', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.rawRev00Rows}
-                             </button>
-                           </td>
-                           <td className="p-2 border border-slate-200 font-mono text-slate-600">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'rawFurtherRevRows', 'Audit: Raw Excel Further Rev. Rows', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.rawFurtherRevRows}
-                             </button>
-                           </td>
-                           <td className="p-2 border border-slate-200 font-mono bg-amber-50/60 text-amber-900 font-bold">
-                             <button type="button" onClick={() => openReconciliationCell(d, 'supersededRows', 'Audit: Superseded Historical Rows Collapsed into Unique Items', officialManagementReport.registerFilter)} className="hover:underline cursor-pointer">
-                               {d.supersededTotalRows}
-                             </button>
-                           </td>
                            <td className="p-2 border border-slate-200 font-mono text-[11px]">
                              <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 border border-emerald-200">
-                               {d.items} Unique + {d.supersededTotalRows} Sup. = {d.rawTotalRows} Raw
+                               Rows: {d.rev00Rows}+{d.furtherRevRows}={d.totalRows} | Unique: {d.approved}+{d.rejected}+{d.pending}={d.uniqueItems}
                              </span>
                            </td>
                          </tr>

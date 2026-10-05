@@ -501,13 +501,13 @@ export const generatePptxReport = async (
         const sectionSubtitle = isArabic ? `سجل ومخططات أداء تقديمات ${longName}` : `Performance Log & Quality Charts for ${longName}`;
         addDividerSlide(pres, sectionSubtitle, sectionTitle, projectInfo, logoUrl, options);
         
-        // Columns variables (Official Management KPIs at Unique Item Grain)
+        // Columns variables (Official Management Table: Status | Unique Items | Rev.00 Rows | Further Rev. Rows | Total Rows | Approved | Rejected | Pending)
         let cols = [
-           { label: "Discipline", key: "discipline" },
-           { label: "Items", key: "CurrentUnique" },
-           { label: "Total Submittals", key: "TotalSubmittals" },
-           { label: "Rev.00", key: "Rev00" },
-           { label: "Further Rev.", key: "FurtherRev" },
+           { label: "Status", key: "discipline" },
+           { label: "Unique Items", key: "CurrentUnique" },
+           { label: "Rev.00 Rows", key: "Rev00Rows" },
+           { label: "Further Rev. Rows", key: "FurtherRevRows" },
+           { label: "Total Rows", key: "TotalRows" },
            { label: "Approved", key: "Approved" },
            { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },
@@ -596,18 +596,18 @@ export const generatePptxReport = async (
             }
             
             // Add Native Stacked Column Chart
-            const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00";
-            const chartVal2Label = bt === 'LTR' ? "Received" : "Further Rev.";
+            const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00 Rows";
+            const chartVal2Label = bt === 'LTR' ? "Received" : "Further Rev. Rows";
             let barChartData = [
                 {
                     name: chartVal1Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.Rev00) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.Rev00Rows ?? s.Rev00) || 0)
                 },
                 {
                     name: chartVal2Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.FurtherRev) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.FurtherRevRows ?? s.FurtherRev) || 0)
                 }
             ];
             

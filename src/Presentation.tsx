@@ -626,13 +626,12 @@ export default function Presentation({
         TotalSubmittals: uniqueItemTotalSubmittals,
         UniqueRev00: uniqueItemRev00,
         UniqueFurtherRev: uniqueItemFurtherRev,
-        // Raw row counts retained strictly for Audit / Raw-Row reference:
+        // Raw row counts (Rev.00 Rows | Further Rev. Rows | Total Rows):
         Rev00Rows: s.totalSheetsRev0 || 0,
         FurtherRevRows: s.totalSheetsFurtherRev || 0,
         TotalRows: s.totalSubmittedSheets || 0,
-        // Official Management KPI keys at Unique Item Grain:
-        Rev00: uniqueItemRev00,
-        FurtherRev: uniqueItemFurtherRev,
+        Rev00: s.totalSheetsRev0 || 0,
+        FurtherRev: s.totalSheetsFurtherRev || 0,
         Approved: s.approved,
         RejectedOpen: s.rejectedOpen,
         RejectedClosed: s.rejectedClosed,
@@ -2224,11 +2223,11 @@ export default function Presentation({
       // B: Monthly slides for Register
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
-          { label: "Discipline", key: "discipline" },
-          { label: "Items", key: "CurrentUnique" },
-          { label: "Total Submittals", key: "TotalSubmittals" },
-          { label: "Rev.00", key: "Rev00" },
-          { label: "Further Rev.", key: "FurtherRev" },
+          { label: "Status", key: "discipline" },
+          { label: "Unique Items", key: "CurrentUnique" },
+          { label: "Rev.00 Rows", key: "Rev00Rows" },
+          { label: "Further Rev. Rows", key: "FurtherRevRows" },
+          { label: "Total Rows", key: "TotalRows" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
@@ -2309,11 +2308,11 @@ export default function Presentation({
       // C: Cumulative slides for Register
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
-          { label: "Discipline", key: "discipline" },
-          { label: "Items", key: "CurrentUnique" },
-          { label: "Total Submittals", key: "TotalSubmittals" },
-          { label: "Rev.00", key: "Rev00" },
-          { label: "Further Rev.", key: "FurtherRev" },
+          { label: "Status", key: "discipline" },
+          { label: "Unique Items", key: "CurrentUnique" },
+          { label: "Rev.00 Rows", key: "Rev00Rows" },
+          { label: "Further Rev. Rows", key: "FurtherRevRows" },
+          { label: "Total Rows", key: "TotalRows" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
