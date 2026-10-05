@@ -67,6 +67,7 @@ import {
   buildManagementReportOutput,
   resolveUniqueSubmittalStats,
   ManagementDisciplineRow,
+  ManagementGroupingMode,
   ManagementKpiColumnKey,
   ReconciledSourceRecord
 } from './analytics/managementReportOutput';
@@ -609,6 +610,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   // Dedicated Management Report Output Layer State
   const [reportViewMode, setReportViewMode] = useState<'official' | 'audit'>('official');
   const [selectedManagementRegister, setSelectedManagementRegister] = useState<string>('ALL');
+  const [managementGroupingMode, setManagementGroupingMode] = useState<ManagementGroupingMode>('register');
   const [showAllRegisterTables, setShowAllRegisterTables] = useState<boolean>(false);
   const [showReconciliationSummary, setShowReconciliationSummary] = useState<boolean>(true);
   const [reconciliationModal, setReconciliationModal] = useState<{
@@ -622,13 +624,18 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [copiedReconciliation, setCopiedReconciliation] = useState<boolean>(false);
 
   const officialManagementReport = useMemo(() => {
-    return buildManagementReportOutput(nonNcrFilteredData, contextDataset, selectedManagementRegister);
-  }, [nonNcrFilteredData, contextDataset, selectedManagementRegister]);
+    return buildManagementReportOutput(
+      nonNcrFilteredData,
+      contextDataset,
+      selectedManagementRegister,
+      managementGroupingMode
+    );
+  }, [nonNcrFilteredData, contextDataset, selectedManagementRegister, managementGroupingMode]);
 
   const perRegisterManagementReports = useMemo(() => {
     if (!showAllRegisterTables) return [];
     return officialManagementReport.availableRegisters.map(reg =>
-      buildManagementReportOutput(nonNcrFilteredData, contextDataset, reg)
+      buildManagementReportOutput(nonNcrFilteredData, contextDataset, reg, 'register')
     );
   }, [showAllRegisterTables, officialManagementReport.availableRegisters, nonNcrFilteredData, contextDataset]);
 
@@ -1602,6 +1609,31 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
              </div>
 
              <div className="flex items-center gap-2 flex-wrap">
+               {/* Breakdown Layer Switcher: Official Submittal Register Scope vs Discipline Breakdown Layer */}
+               <div className="flex items-center gap-1 bg-blue-50/80 p-1 rounded-lg border border-blue-200">
+                 <button
+                   type="button"
+                   onClick={() => setManagementGroupingMode('register')}
+                   className={`px-2.5 py-1.5 rounded-md text-xs font-extrabold transition-all cursor-pointer ${
+                     managementGroupingMode === 'register'
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'حسب السجل الرسمي (By Register)' : 'By Official Register'}
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setManagementGroupingMode('discipline')}
+                   className={`px-2.5 py-1.5 rounded-md text-xs font-extrabold transition-all cursor-pointer ${
+                     managementGroupingMode === 'discipline'
+                       ? 'bg-[#203864] text-white shadow-xs'
+                       : 'text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {language === 'ar' ? 'حسب التخصص (By Discipline)' : 'By Discipline Breakdown'}
+                 </button>
+               </div>
                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 flex-wrap">
                  <button
                    type="button"
@@ -1705,7 +1737,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                      <thead>
                        <tr className="bg-slate-100 border-b-2 border-slate-300 text-[#203864]">
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider text-left border-r border-slate-200 whitespace-nowrap">
-                           Status
+                           {rep.groupingMode === 'register' ? 'Register' : 'Status'}
                          </th>
                          <th className="px-4 py-3.5 text-xs font-black uppercase tracking-wider border-r border-slate-200 bg-blue-50/60 whitespace-nowrap">
                            Total Submittals
@@ -1826,11 +1858,9 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                        <strong className="text-[#203864]">Raw Excel Row Grain (Revision Workload):</strong> Rev.00 ({rep.grandTotal.rev00}) + Further Rev. ({rep.grandTotal.furtherRev}) = <strong>{rep.grandTotal.totalSheets} Total Sheets</strong>
                      </span>
                    </div>
-                   {rep.otherDisciplineRowsCount > 0 && (
-                     <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-semibold">
-                       Note: {rep.otherDisciplineRowsCount} rows in non-standard disciplines (GEN/SURV/HSE) excluded from the 6-discipline table.
-                     </span>
-                   )}
+                   <span className="text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-semibold">
+                     Official Population Reconciled: {rep.availableRegisters.length > 0 ? rep.availableRegisters.join(', ') : 'All Official Registers'}
+                   </span>
                  </div>
                </div>
              );
@@ -1892,7 +1922,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                    <table className="w-full text-xs border-collapse border border-slate-200 text-center">
                      <thead>
                        <tr className="bg-slate-800 text-white font-bold">
-                         <th rowSpan={2} className="p-2.5 border border-slate-600 text-left">Status</th>
+                         <th rowSpan={2} className="p-2.5 border border-slate-600 text-left">{officialManagementReport.groupingMode === 'register' ? 'Register' : 'Status'}</th>
                          <th className="p-2 border border-slate-600 bg-[#203864] text-blue-200 uppercase tracking-wider">
                            Unique Submittal Grain
                          </th>

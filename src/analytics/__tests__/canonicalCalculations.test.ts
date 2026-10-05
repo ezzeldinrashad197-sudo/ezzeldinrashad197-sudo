@@ -10,6 +10,7 @@ import {
 } from '../revisionResolver';
 import { SubmittalRow } from '../../types';
 import { normalizeData } from '../../utils/calculations';
+import { buildManagementReportOutput } from '../managementReportOutput';
 
 export function runCanonicalCalculationTests(): { name: string; passed: boolean; error?: string }[] {
   const testResults: { name: string; passed: boolean; error?: string }[] = [];
@@ -1012,6 +1013,153 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
 
     const uniqueKeys = new Set([keyDoc, keyMar, keyWir, keySdw]);
     if (uniqueKeys.size !== 4) throw new Error(`Expected 4 distinct register submission keys, got ${uniqueKeys.size}`);
+  });
+
+  // Test 20: ALL REGISTERS Official Management Report Population (WIR-SURVEY = 73 + WIR-LANDSCAPE = 87 -> TOTAL = 160)
+  test('ER-020: ALL REGISTERS Official Management Report includes WIR-SURVEY (73) + WIR-LANDSCAPE (87) = 160 Total Submittals / 161 Total Sheets', () => {
+    const wirRows: SubmittalRow[] = [];
+
+    // 1. WIR-SURVEY: 73 unique submittals (68 Rev.00 + 5 Further Rev. = 73 Total Sheets), all 73 Approved
+    for (let i = 1; i <= 68; i++) {
+      wirRows.push({
+        id: `WIR-SUR-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'SURVEY',
+        disciplineCode: 'SUR',
+        submissionRef: `WIR-SUR-SUB-${i}`,
+        docNo: `WIR-SUR-DOC-${i}`,
+        rev: '00',
+        status: 'APPROVED',
+        documentType: 'WIR-SURVEY'
+      } as SubmittalRow);
+    }
+    for (let i = 69; i <= 73; i++) {
+      wirRows.push({
+        id: `WIR-SUR-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'SURVEY',
+        disciplineCode: 'SUR',
+        submissionRef: `WIR-SUR-SUB-${i}`,
+        docNo: `WIR-SUR-DOC-${i}`,
+        rev: '01',
+        status: 'APPROVED',
+        documentType: 'WIR-SURVEY'
+      } as SubmittalRow);
+    }
+
+    // 2. WIR-LANDSCAPE: 87 unique submittals (80 Rev.00 + 8 Further Rev. = 88 Total Sheets), 75 Approved, 8 Rejected, 4 Pending
+    // Submittal 1 has Rev.00 (Rejected) + Rev.01 (Approved) -> 2 sheets (1 Rev.00, 1 Further Rev.), 1 Unique Approved
+    wirRows.push({
+      id: 'WIR-LND-1-R0',
+      registerIdentity: 'WIR',
+      discipline: 'Landscape',
+      disciplineCode: 'LND',
+      submissionRef: 'WIR-LND-SUB-1',
+      docNo: 'WIR-LND-DOC-1',
+      rev: '00',
+      status: 'REJECTED_OPEN',
+      documentType: 'WIR-LANDSCAPE'
+    } as SubmittalRow);
+    wirRows.push({
+      id: 'WIR-LND-1-R1',
+      registerIdentity: 'WIR',
+      discipline: 'Landscape',
+      disciplineCode: 'LND',
+      submissionRef: 'WIR-LND-SUB-1',
+      docNo: 'WIR-LND-DOC-1',
+      rev: '01',
+      status: 'APPROVED',
+      documentType: 'WIR-LANDSCAPE'
+    } as SubmittalRow);
+
+    // Remaining 86 unique submittals (submittals 2..87): 79 at Rev.00, 7 at Rev.01 -> total 80 Rev.00, 8 Further Rev., 88 Total Sheets
+    // Statuses across submittals 2..87: 74 Approved (making 75 total Approved), 8 Rejected, 4 Pending
+    for (let i = 2; i <= 87; i++) {
+      const isFurther = i > 80; // 81..87 = 7 items at Rev.01
+      const status =
+        i <= 75
+          ? 'APPROVED'
+          : i <= 83
+          ? 'REJECTED_OPEN'
+          : 'PENDING';
+      wirRows.push({
+        id: `WIR-LND-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'Landscape',
+        disciplineCode: 'LND',
+        submissionRef: `WIR-LND-SUB-${i}`,
+        docNo: `WIR-LND-DOC-${i}`,
+        rev: isFurther ? '01' : '00',
+        status,
+        documentType: 'WIR-LANDSCAPE'
+      } as SubmittalRow);
+    }
+
+    // Verify Register Scope (ALL REGISTERS default)
+    const regReport = buildManagementReportOutput(wirRows, wirRows, 'ALL', 'register');
+    if (!regReport.isFullyReconciled) {
+      throw new Error('Expected ALL REGISTERS report to be fully reconciled');
+    }
+    if (regReport.otherDisciplineRowsCount !== 0) {
+      throw new Error(`Expected 0 excluded otherDisciplineRowsCount, got ${regReport.otherDisciplineRowsCount}`);
+    }
+    if (regReport.rows.length !== 2) {
+      throw new Error(`Expected 2 official registers (WIR-SURVEY, WIR-LANDSCAPE), got ${regReport.rows.map(r => r.discipline).join(', ')}`);
+    }
+
+    const survRow = regReport.rows.find(r => r.discipline === 'WIR-SURVEY');
+    const landRow = regReport.rows.find(r => r.discipline === 'WIR-LANDSCAPE');
+    if (!survRow) throw new Error('WIR-SURVEY was dropped from ALL REGISTERS report');
+    if (!landRow) throw new Error('WIR-LANDSCAPE missing from ALL REGISTERS report');
+
+    if (
+      survRow.totalSubmittals !== 73 ||
+      survRow.rev00 !== 68 ||
+      survRow.furtherRev !== 5 ||
+      survRow.totalSheets !== 73 ||
+      survRow.approved !== 73 ||
+      survRow.rejected !== 0 ||
+      survRow.pending !== 0
+    ) {
+      throw new Error(`WIR-SURVEY mismatch: ${JSON.stringify(survRow)}`);
+    }
+
+    if (
+      landRow.totalSubmittals !== 87 ||
+      landRow.rev00 !== 80 ||
+      landRow.furtherRev !== 8 ||
+      landRow.totalSheets !== 88 ||
+      landRow.approved !== 75 ||
+      landRow.rejected !== 8 ||
+      landRow.pending !== 4
+    ) {
+      throw new Error(`WIR-LANDSCAPE mismatch: ${JSON.stringify(landRow)}`);
+    }
+
+    const gt = regReport.grandTotal;
+    if (
+      gt.totalSubmittals !== 160 ||
+      gt.rev00 !== 148 ||
+      gt.furtherRev !== 13 ||
+      gt.totalSheets !== 161 ||
+      gt.approved !== 148 ||
+      gt.rejected !== 8 ||
+      gt.pending !== 4
+    ) {
+      throw new Error(`GRAND TOTAL mismatch: ${JSON.stringify(gt)}`);
+    }
+
+    // Also verify Discipline Breakdown Layer preserves the exact same 160 population without dropping SURVEY
+    const discReport = buildManagementReportOutput(wirRows, wirRows, 'ALL', 'discipline');
+    if (
+      discReport.grandTotal.totalSubmittals !== 160 ||
+      discReport.grandTotal.totalSheets !== 161 ||
+      discReport.grandTotal.approved !== 148 ||
+      discReport.grandTotal.rejected !== 8 ||
+      discReport.grandTotal.pending !== 4
+    ) {
+      throw new Error(`Discipline Breakdown Layer dropped rows: ${JSON.stringify(discReport.grandTotal)}`);
+    }
   });
 
   return testResults;

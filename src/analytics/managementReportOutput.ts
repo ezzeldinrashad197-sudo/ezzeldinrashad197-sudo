@@ -2,36 +2,32 @@
  * DEDICATED MANAGEMENT REPORT OUTPUT LAYER
  *
  * Official KPI Table Schema (Dual-Grain):
- * Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending
+ * Register / Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending
  *
- * Required Disciplines:
- * STR, ARCH, MECH, ELEC, INFRA, LAND, GRAND TOTAL
+ * Population & Scope Rules:
+ * 1. POPULATION DEFINITION (ALL REGISTERS):
+ *    - The Management Report operates on the full recognized official submittal register population
+ *      from the loaded source (e.g., WIR-SURVEY, WIR-LANDSCAPE, SDW-STR, MAR-ARCH, DOC-GEN, etc.).
+ *    - Do NOT use the 6-discipline list (STR, ARCH, MECH, ELEC, INFRA, LAND) as a global population filter.
+ *    - Never exclude an official submittal register row merely because its discipline is SURV, GEN, HSE, MEP, or IRR.
  *
- * Explicit & Deterministic Dual-Grain Definitions (Strict Separation of Grains):
+ * 2. TWO SEPARATE SCOPE / BREAKDOWN LAYERS:
+ *    - Register Scope ('register' — default for ALL REGISTERS):
+ *      Groups all recognized official submittal registers present in the source (derived canonically via
+ *      parent register + canonical discipline, matching Executive Intelligence).
+ *    - Discipline Scope ('discipline'):
+ *      Groups the same complete population by canonical discipline (STR, ARCH, MECH, ELEC, INFRA, LAND,
+ *      plus any other active canonical disciplines such as SURVEY, HSE, MEP, IRR, GEN) without dropping rows.
  *
- * 1. UNIQUE SUBMITTAL GRAIN (Total Submittals & Current Status Columns):
- *    - Total Submittals = Unique submitted items/submittals after grouping by canonical Submittal Identity
- *                         (`getSubmissionIdentityKey(row)` = Register + Discipline + SUB Ref).
- *                         This is NEVER the raw Excel row count and NEVER the 4,907 individual drawing-sheet grain.
- *    - Approved         = Unique Submittals currently in Approved / Closed state.
- *    - Rejected         = Unique Submittals currently in active Rejected (Open) state.
- *    - Pending          = Unique Submittals currently in Pending / Under Review state.
- *    - Invariant: Total Submittals = Approved + Rejected + Pending
+ * 3. DUAL-GRAIN KPI DEFINITIONS:
+ *    - UNIQUE SUBMITTAL GRAIN (Total Submittals, Approved, Rejected, Pending):
+ *      Grouped by canonical Submittal Identity (`getSubmissionIdentityKey(row)` = Register + Discipline + SUB Ref).
+ *      Invariant: Total Submittals = Approved + Rejected + Pending
+ *    - RAW EXCEL ROW GRAIN (Rev.00, Further Rev., Total Sheets):
+ *      Counted directly from actual Excel source rows.
+ *      Invariant: Total Sheets = Rev.00 + Further Rev.
  *
- * 2. RAW EXCEL ROW GRAIN (Revision Workload Columns):
- *    - Rev.00       = Total actual Excel source rows classified as Rev.00.
- *    - Further Rev. = Total actual Excel source rows classified as Further Revision.
- *    - Total Sheets = Rev.00 + Further Rev. (total actual Excel source rows).
- *    - Invariant: Total Sheets = Rev.00 + Further Rev.
- *
- * CRITICAL DISTINCTION:
- * A document/submittal with Rev.00 + Rev.01 + Rev.02:
- * - counts as ONE Total Submittal (and ONE in Approved / Rejected / Pending)
- * - contributes ONE Rev.00 row
- * - contributes TWO Further Rev. rows
- * - contributes THREE Total Sheets.
- *
- * Do NOT merge these two grains. Do NOT modify the Calculation SSOT.
+ * Do NOT modify the Calculation SSOT.
  */
 
 import { SubmittalRow } from '../types';
@@ -50,6 +46,32 @@ import {
 } from './revisionResolver';
 import { getStatusCodeCategory, CanonicalStatus } from './statusResolver';
 
+export type ManagementDiscipline = string;
+
+export const OFFICIAL_MANAGEMENT_DISCIPLINES: string[] = [
+  'STR',
+  'ARCH',
+  'MECH',
+  'ELEC',
+  'INFRA',
+  'LAND'
+];
+
+export type ManagementGroupingMode = 'register' | 'discipline';
+
+export type ManagementKpiColumnKey =
+  | 'totalSubmittals'
+  | 'rev00'
+  | 'furtherRev'
+  | 'totalSheets'
+  | 'uniqueItems'
+  | 'rev00Rows'
+  | 'furtherRevRows'
+  | 'totalRows'
+  | 'approved'
+  | 'rejected'
+  | 'pending';
+
 export function isExcludedRow(row: SubmittalRow): boolean {
   if (!row) return true;
   if (row.excludeFromKPI === true || (row as any).isExcluded === true) return true;
@@ -60,7 +82,8 @@ export function resolveRowRegister(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
     const reg = d.registerIdentity.trim().toUpperCase();
-    return reg === 'SHD' ? 'SDW' : reg === 'LETTER' ? 'LTR' : reg;
+    const base = reg.includes('-') ? reg.split('-')[0].trim() : reg;
+    return base === 'SHD' ? 'SDW' : base === 'LETTER' ? 'LTR' : base;
   }
   if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
     const wf = d.workflowFamily.toUpperCase().trim();
@@ -69,7 +92,7 @@ export function resolveRowRegister(d: SubmittalRow): string {
       return wf === 'SHD' ? 'SDW' : wf;
     }
   }
-  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL']);
+  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'SUR', 'SURV', 'SURVEY', 'GEN', 'GENERAL', 'HSE', 'MEP', 'IRR']);
   const srcId = (d.sourceRegisterIdentity || '').toUpperCase().trim();
   if (srcId && !pureDisciplines.has(srcId) && srcId !== 'UNCLASSIFIED') {
     if (srcId.startsWith('DOC') || srcId.includes('TECHNICAL') || srcId.includes('TRANSMITTAL') || srcId.includes('DOCUMENT')) return 'DOC';
@@ -99,32 +122,32 @@ export function resolveRowRegister(d: SubmittalRow): string {
   if (docT.startsWith('QS') || docT.includes('QS') || docNo.startsWith('QS') || lt.includes('QS') || sf.includes('QS')) return 'QS';
   if (docT.startsWith('DOC') || docT.includes('DOCUMENT') || docT.includes('TECHNICAL') || docNo.startsWith('DOC') || lt.includes('DOC') || sf.includes('DOC')) return 'DOC';
   if (docT.startsWith('SDW') || docT.startsWith('SHD') || docT.includes('SHOP') || docT.includes('DRAWING') || docNo.startsWith('SDW') || docNo.startsWith('SHD') || lt.includes('SDW') || sf.includes('SDW')) return 'SDW';
-  return 'UNCLASSIFIED';
+  return 'DOC';
 }
 
-export type ManagementDiscipline = 'STR' | 'ARCH' | 'MECH' | 'ELEC' | 'INFRA' | 'LAND';
+/**
+ * Resolves the canonical Official Submittal Register identity for a row
+ * using the exact same canonical Register + Discipline resolution as Executive Intelligence (`ReportTable.tsx`).
+ * Examples: 'WIR-SURVEY', 'WIR-LANDSCAPE', 'SDW-STR', 'MAR-ARCH', 'DOC-GENERAL'.
+ */
+export function resolveOfficialSubmittalRegister(row: SubmittalRow): string {
+  const rawReg = (
+    row.registerIdentity ||
+    (row as any).sourceRegisterIdentity ||
+    row.workflowFamily ||
+    (row.documentType ? row.documentType.split('-')[0] : '') ||
+    resolveRowRegister(row)
+  ).trim().toUpperCase();
 
-export const OFFICIAL_MANAGEMENT_DISCIPLINES: ManagementDiscipline[] = [
-  'STR',
-  'ARCH',
-  'MECH',
-  'ELEC',
-  'INFRA',
-  'LAND'
-];
+  const baseReg = rawReg.includes('-') ? rawReg.split('-')[0].trim() : rawReg;
+  const resolvedDisc = (resolveRowDiscipline(row, baseReg) || 'GEN').trim().toUpperCase();
 
-export type ManagementKpiColumnKey =
-  | 'totalSubmittals'
-  | 'rev00'
-  | 'furtherRev'
-  | 'totalSheets'
-  | 'uniqueItems'
-  | 'rev00Rows'
-  | 'furtherRevRows'
-  | 'totalRows'
-  | 'approved'
-  | 'rejected'
-  | 'pending';
+  if (rawReg.includes('-') && (!resolvedDisc || resolvedDisc === 'GEN' || resolvedDisc === 'GENERAL')) {
+    return rawReg;
+  }
+
+  return `${baseReg}-${resolvedDisc}`;
+}
 
 /**
  * Exact read-only source record contributing to a Management Report KPI.
@@ -134,8 +157,8 @@ export interface ReconciledSourceRecord {
   id: string;
   rowId: string;
   registerIdentity: string;
-  discipline: ManagementDiscipline;
-  officialDiscipline: ManagementDiscipline;
+  discipline: string;
+  officialDiscipline: string;
   documentNo: string;
   subRef: string;
   drawingNo: string;
@@ -159,7 +182,7 @@ export interface ReconciledSourceRecord {
 }
 
 export interface ManagementReportRow {
-  discipline: ManagementDiscipline | 'GRAND TOTAL';
+  discipline: string;
   /** Unique Submittal Grain: number of unique submitted items (Approved + Rejected + Pending) */
   totalSubmittals: number;
   /** Raw Excel Row Grain: total actual Excel source rows classified as Rev.00 */
@@ -205,20 +228,22 @@ export interface ManagementDisciplineRow extends ManagementReportRow {
 }
 
 export interface ManagementReportValidation {
-  /** Verifies Total Submittals = Approved + Rejected + Pending for every discipline and GRAND TOTAL */
+  /** Verifies Total Submittals = Approved + Rejected + Pending for every row and GRAND TOTAL */
   totalSubmittalsEqualsStatusSum: boolean;
-  /** Verifies Total Sheets = Rev.00 + Further Rev. for every discipline and GRAND TOTAL */
+  /** Verifies Total Sheets = Rev.00 + Further Rev. for every row and GRAND TOTAL */
   totalSheetsEqualsRevisionRowSum: boolean;
   /** Backward-compatible aliases */
   uniqueItemsEqualsStatusSum: boolean;
   totalRowsEqualsRevisionRowSum: boolean;
-  /** Verifies GRAND TOTAL equals the exact sum of the 6 official disciplines across all 7 columns */
+  /** Verifies GRAND TOTAL equals the exact sum of all rows across all 7 KPI columns */
   grandTotalEqualsDisciplineSum: boolean;
 }
 
 export interface ManagementReportOutput {
   registerFilter: string;
+  groupingMode: ManagementGroupingMode;
   availableRegisters: string[];
+  availableParentRegisters: string[];
   rows: ManagementDisciplineRow[];
   grandTotal: ManagementDisciplineRow;
   excludedRowsCount: number;
@@ -412,10 +437,12 @@ export function resolveUniqueSubmittalStats(
 }
 
 /**
- * Deterministic canonical discipline mapper to the 6 official Management Report rows:
- * STR, ARCH, MECH, ELEC, INFRA, LAND
+ * Canonical discipline mapper for the Discipline Breakdown Layer.
+ * Maps the 6 standard disciplines (STR, ARCH, MECH, ELEC, INFRA, LAND) AND
+ * preserves any other recognized canonical discipline (SURVEY, HSE, MEP, IRR, GEN, etc.)
+ * so that NO official register row is ever dropped.
  */
-export function resolveManagementDiscipline(row: SubmittalRow): ManagementDiscipline | null {
+export function resolveManagementDiscipline(row: SubmittalRow): string {
   const reg = resolveRowRegister(row);
   const resolved = (resolveRowDiscipline(row, reg) || '').trim().toUpperCase();
   const candidates = [
@@ -458,7 +485,6 @@ export function resolveManagementDiscipline(row: SubmittalRow): ManagementDiscip
       token === 'FIR' ||
       token === 'FF' ||
       token === 'FIRE' ||
-      token === 'MEP' ||
       token.startsWith('MEC')
     ) {
       return 'MECH';
@@ -498,21 +524,106 @@ export function resolveManagementDiscipline(row: SubmittalRow): ManagementDiscip
     ) {
       return 'LAND';
     }
+    if (
+      token === 'SUR' ||
+      token === 'SURV' ||
+      token === 'SURVEY' ||
+      token === 'SURVEYING' ||
+      token.startsWith('SURV')
+    ) {
+      return 'SURVEY';
+    }
+    if (token === 'HSE' || token === 'SAFETY' || token === 'ENV') {
+      return 'HSE';
+    }
+    if (token === 'MEP' || token === 'M.E.P') {
+      return 'MEP';
+    }
+    if (token === 'GEN' || token === 'GENERAL') {
+      return 'GEN';
+    }
   }
 
-  return null;
+  return resolved || 'GEN';
+}
+
+function sortRegisterKeys(keys: string[]): string[] {
+  const baseOrder = ['ABD', 'SDW', 'SHD', 'MAR', 'QS', 'DOC', 'WIR', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR', 'PQ', 'PRQ', 'TRS'];
+  const discOrder = [
+    'STR', 'STRUCTURAL',
+    'ARC', 'ARCH',
+    'MEC', 'MECH',
+    'ELE', 'ELEC',
+    'INFRA', 'INF',
+    'LAND', 'LND',
+    'SUR', 'SURV', 'SURVEY',
+    'LANDSCAPE',
+    'HSE', 'MEP', 'IRR', 'GEN', 'GENERAL'
+  ];
+
+  const getSortKey = (typeStr: string) => {
+    const parts = typeStr.split('-');
+    const base = parts[0] ? parts[0].trim().toUpperCase() : '';
+    const disc = parts.slice(1).join('-').trim().toUpperCase() || '';
+    return { base, disc };
+  };
+
+  return [...keys].sort((a, b) => {
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+
+    const idxA = baseOrder.indexOf(keyA.base);
+    const idxB = baseOrder.indexOf(keyB.base);
+
+    if (idxA !== -1 && idxB !== -1) {
+      if (idxA !== idxB) return idxA - idxB;
+    } else if (idxA !== -1) {
+      return -1;
+    } else if (idxB !== -1) {
+      return 1;
+    } else {
+      const baseCompare = keyA.base.localeCompare(keyB.base);
+      if (baseCompare !== 0) return baseCompare;
+    }
+
+    const discIdxA = discOrder.indexOf(keyA.disc);
+    const discIdxB = discOrder.indexOf(keyB.disc);
+
+    if (discIdxA !== -1 && discIdxB !== -1) {
+      if (discIdxA !== discIdxB) return discIdxA - discIdxB;
+    } else if (discIdxA !== -1) {
+      return -1;
+    } else if (discIdxB !== -1) {
+      return 1;
+    }
+
+    return keyA.disc.localeCompare(keyB.disc);
+  });
+}
+
+function sortDisciplineKeys(keys: string[]): string[] {
+  const order = ['STR', 'ARCH', 'ELEC', 'MECH', 'LAND', 'INFRA', 'SURVEY', 'MEP', 'HSE', 'GEN'];
+  return [...keys].sort((a, b) => {
+    const idxA = order.indexOf(a);
+    const idxB = order.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 }
 
 function toReconciledRecord(
   r: SubmittalRow,
-  discipline: ManagementDiscipline,
+  bucketLabel: string,
   resolvedCategory: CanonicalStatus,
   isCurrentWinningRevision: boolean,
   revisionCountForItem: number = 1,
   allRevisionsForItem: string[] = []
 ): ReconciledSourceRecord {
   const anyR = r as Record<string, any>;
-  const reg = resolveRowRegister(r);
+  const reg = resolveOfficialSubmittalRegister(r);
+  const disc = resolveManagementDiscipline(r);
   const subRef = r.submissionRef || anyR.submittalRef || r.docNo || '-';
   const docNo = r.docNo || r.submissionRef || r.drawingNo || r.sheetNo || r.id || '-';
   const drawingNo = r.drawingNo || r.sheetNo || '-';
@@ -528,8 +639,8 @@ function toReconciledRecord(
     id: r.id || '-',
     rowId: r.id || '-',
     registerIdentity: reg,
-    discipline,
-    officialDiscipline: discipline,
+    discipline: bucketLabel,
+    officialDiscipline: disc,
     documentNo: docNo,
     subRef,
     drawingNo,
@@ -554,7 +665,7 @@ function toReconciledRecord(
 }
 
 function createEmptyDisciplineRow(
-  discipline: ManagementDiscipline | 'GRAND TOTAL'
+  discipline: string
 ): ManagementDisciplineRow {
   return {
     discipline,
@@ -592,20 +703,25 @@ function createEmptyDisciplineRow(
 
 /**
  * Computes the official 8-column Dual-Grain Management Report KPI table:
- * Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending
+ * Register / Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending
  *
+ * - When `registerFilter === 'ALL'` (default `groupingMode === 'register'`):
+ *   Operates on ALL recognized official submittal registers from the loaded source
+ *   (e.g., WIR-SURVEY, WIR-LANDSCAPE, SDW-STR, etc.). Never drops a register because of the 6-discipline list.
+ * - When `groupingMode === 'discipline'` (or `registerFilter === 'DISCIPLINE'`):
+ *   Groups the same complete population by canonical discipline (STR, ARCH, MECH, ELEC, INFRA, LAND, SURVEY, etc.).
  * - Statuses (`Total Submittals`, `Approved`, `Rejected`, `Pending`) are computed at UNIQUE SUBMITTAL GRAIN
  *   using `getSubmissionIdentityKey(row)`.
  * - Revisions (`Rev.00`, `Further Rev.`, `Total Sheets`) are computed at RAW EXCEL ROW GRAIN.
- *
- * Both Monthly and Cumulative reports call this exact same function; only `periodRows` changes.
  */
 export function buildManagementReportOutput(
   periodRows: SubmittalRow[],
   fullDataset?: SubmittalRow[],
-  registerFilter: string = 'ALL'
+  registerFilter: string = 'ALL',
+  groupingMode?: ManagementGroupingMode
 ): ManagementReportOutput {
-  const registerSet = new Set<string>();
+  const compoundRegisterSet = new Set<string>();
+  const parentRegisterSet = new Set<string>();
   let excludedRowsCount = 0;
 
   const validPeriodRows: SubmittalRow[] = [];
@@ -615,17 +731,21 @@ export function buildManagementReportOutput(
       excludedRowsCount++;
       continue;
     }
-    const reg = resolveRowRegister(r);
-    if (reg && reg !== 'NCR' && reg !== 'SOR' && reg !== 'LTR' && reg !== 'UNCLASSIFIED') {
-      registerSet.add(reg);
+    const parentReg = resolveRowRegister(r);
+    if (parentReg === 'NCR' || parentReg === 'SOR' || parentReg === 'LTR') {
+      continue;
     }
+    const officialReg = resolveOfficialSubmittalRegister(r);
+    compoundRegisterSet.add(officialReg);
+    parentRegisterSet.add(parentReg);
     validPeriodRows.push(r);
   }
 
-  const registerOrder = ['SDW', 'SHD', 'MAR', 'DOC', 'WIR', 'MIR', 'RFI', 'ABD', 'QS', 'PQ', 'PRQ', 'TRS'];
-  const availableRegisters = Array.from(registerSet).sort((a, b) => {
-    const idxA = registerOrder.indexOf(a);
-    const idxB = registerOrder.indexOf(b);
+  const availableRegisters = sortRegisterKeys(Array.from(compoundRegisterSet));
+  const parentOrder = ['SDW', 'SHD', 'MAR', 'DOC', 'WIR', 'MIR', 'RFI', 'ABD', 'QS', 'PQ', 'PRQ', 'TRS'];
+  const availableParentRegisters = Array.from(parentRegisterSet).sort((a, b) => {
+    const idxA = parentOrder.indexOf(a);
+    const idxB = parentOrder.indexOf(b);
     if (idxA !== -1 && idxB !== -1) return idxA - idxB;
     if (idxA !== -1) return -1;
     if (idxB !== -1) return 1;
@@ -633,48 +753,101 @@ export function buildManagementReportOutput(
   });
 
   const normalizedFilter = (registerFilter || 'ALL').trim().toUpperCase();
+
+  // Determine effective grouping mode:
+  // - 'ALL' defaults to 'register' (Official Submittal Registers from the loaded source: e.g. WIR-SURVEY, WIR-LANDSCAPE)
+  // - 'DISCIPLINE' explicitly selects 'discipline' breakdown across all registers
+  // - A parent register (e.g. 'SDW', 'WIR') defaults to 'discipline' breakdown if not explicitly overridden
+  // - A compound register (e.g. 'WIR-SURVEY') defaults to 'register'
+  const effectiveGroupingMode: ManagementGroupingMode =
+    groupingMode ||
+    (normalizedFilter === 'DISCIPLINE'
+      ? 'discipline'
+      : normalizedFilter === 'ALL' || normalizedFilter.includes('-')
+      ? 'register'
+      : 'discipline');
+
   const filteredRows =
-    normalizedFilter === 'ALL'
+    normalizedFilter === 'ALL' || normalizedFilter === 'DISCIPLINE'
       ? validPeriodRows
-      : validPeriodRows.filter(r => resolveRowRegister(r) === normalizedFilter);
+      : normalizedFilter.includes('-')
+      ? validPeriodRows.filter(r => resolveOfficialSubmittalRegister(r) === normalizedFilter)
+      : validPeriodRows.filter(
+          r =>
+            resolveRowRegister(r) === normalizedFilter ||
+            resolveOfficialSubmittalRegister(r) === normalizedFilter
+        );
 
   const baseForRevisions =
     fullDataset && fullDataset.length > 0 ? fullDataset : filteredRows;
   const submittalMap = processUniqueSubmittalEngine(baseForRevisions);
 
-  const disciplineMap = new Map<ManagementDiscipline, ManagementDisciplineRow>();
-  OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(d => {
-    disciplineMap.set(d, createEmptyDisciplineRow(d));
+  // Discover all active buckets in filteredRows without dropping any official register or discipline
+  const activeBucketSet = new Set<string>();
+  for (let i = 0; i < filteredRows.length; i++) {
+    const r = filteredRows[i];
+    const bucket =
+      effectiveGroupingMode === 'register'
+        ? resolveOfficialSubmittalRegister(r)
+        : resolveManagementDiscipline(r);
+    activeBucketSet.add(bucket);
+  }
+
+  let orderedBuckets: string[];
+  if (effectiveGroupingMode === 'register') {
+    orderedBuckets = sortRegisterKeys(Array.from(activeBucketSet));
+  } else {
+    // In discipline breakdown mode:
+    // If all 6 standard disciplines are active (or if no non-standard discipline is active and rows exist),
+    // include standard disciplines in canonical order plus any active additional disciplines (like SURVEY).
+    // If non-standard disciplines (like SURVEY) are present on a specialized register (like WIR),
+    // show the active disciplines present in the source so no empty irrelevant rows clutter the table.
+    const hasNonStandard = Array.from(activeBucketSet).some(
+      d => !OFFICIAL_MANAGEMENT_DISCIPLINES.includes(d)
+    );
+    const allSixPresent = OFFICIAL_MANAGEMENT_DISCIPLINES.every(d => activeBucketSet.has(d));
+    if (allSixPresent || (!hasNonStandard && activeBucketSet.size >= 4)) {
+      OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(d => activeBucketSet.add(d));
+    }
+    orderedBuckets = sortDisciplineKeys(Array.from(activeBucketSet));
+  }
+
+  const bucketMap = new Map<string, ManagementDisciplineRow>();
+  orderedBuckets.forEach(b => {
+    bucketMap.set(b, createEmptyDisciplineRow(b));
   });
 
-  let otherDisciplineRowsCount = 0;
-
-  // Track unique submittal keys seen in the reporting period per discipline
-  const periodSubKeysByDiscipline = new Map<ManagementDiscipline, Set<string>>();
-  OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(d => {
-    periodSubKeysByDiscipline.set(d, new Set<string>());
+  const periodSubKeysByBucket = new Map<string, Set<string>>();
+  orderedBuckets.forEach(b => {
+    periodSubKeysByBucket.set(b, new Set<string>());
   });
 
-  // Track raw row counts per discipline for superseded audit calculation
-  const rawRowStatsByDiscipline = new Map<
-    ManagementDiscipline,
+  const rawRowStatsByBucket = new Map<
+    string,
     { total: number; rev00: number; further: number }
   >();
-  OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(d => {
-    rawRowStatsByDiscipline.set(d, { total: 0, rev00: 0, further: 0 });
+  orderedBuckets.forEach(b => {
+    rawRowStatsByBucket.set(b, { total: 0, rev00: 0, further: 0 });
   });
 
   // 1. RAW EXCEL ROW GRAIN PASS (Rev.00, Further Rev., Total Sheets) + Collect Unique Submittal Keys
   for (let i = 0; i < filteredRows.length; i++) {
     const row = filteredRows[i];
-    const disc = resolveManagementDiscipline(row);
-    if (!disc) {
-      otherDisciplineRowsCount++;
-      continue;
+    const bucket =
+      effectiveGroupingMode === 'register'
+        ? resolveOfficialSubmittalRegister(row)
+        : resolveManagementDiscipline(row);
+
+    let acc = bucketMap.get(bucket);
+    if (!acc) {
+      acc = createEmptyDisciplineRow(bucket);
+      bucketMap.set(bucket, acc);
+      orderedBuckets.push(bucket);
+      periodSubKeysByBucket.set(bucket, new Set<string>());
+      rawRowStatsByBucket.set(bucket, { total: 0, rev00: 0, further: 0 });
     }
 
-    const acc = disciplineMap.get(disc)!;
-    const rawStat = rawRowStatsByDiscipline.get(disc)!;
+    const rawStat = rawRowStatsByBucket.get(bucket)!;
     const subKey = getSubmissionIdentityKey(row);
     const group = submittalMap.get(subKey);
     const isWinning = group ? group.latest === row : Boolean(row.isLatestRev);
@@ -688,7 +861,7 @@ export function buildManagementReportOutput(
     const isRev0 = isRevision0(rawRev, row.isRev0);
     const isFurther = !isRev0 && isFurtherRevision(rawRev, row.isRev0);
 
-    const rec = toReconciledRecord(row, disc, rowCat, isWinning, revCount, allRevs);
+    const rec = toReconciledRecord(row, bucket, rowCat, isWinning, revCount, allRevs);
 
     rawStat.total++;
     if (isRev0) {
@@ -713,14 +886,14 @@ export function buildManagementReportOutput(
       acc.reconciliation.totalRows.push(rec);
     }
 
-    periodSubKeysByDiscipline.get(disc)!.add(subKey);
+    periodSubKeysByBucket.get(bucket)!.add(subKey);
   }
 
   // 2. UNIQUE SUBMITTAL GRAIN PASS (Total Submittals, Approved, Rejected, Pending)
-  OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(disc => {
-    const acc = disciplineMap.get(disc)!;
-    const rawStat = rawRowStatsByDiscipline.get(disc)!;
-    const subKeys = periodSubKeysByDiscipline.get(disc)!;
+  orderedBuckets.forEach(bucket => {
+    const acc = bucketMap.get(bucket)!;
+    const rawStat = rawRowStatsByBucket.get(bucket)!;
+    const subKeys = periodSubKeysByBucket.get(bucket)!;
 
     let uniqueRev00Submittals = 0;
     let uniqueFurtherSubmittals = 0;
@@ -734,7 +907,7 @@ export function buildManagementReportOutput(
       const allRevs = group.all.map(item => extractRevisionRaw(item) || item.rev || '00');
       const rec = toReconciledRecord(
         latest,
-        disc,
+        bucket,
         group.resolvedCategory,
         true,
         revCount,
@@ -780,8 +953,8 @@ export function buildManagementReportOutput(
   const grandTotal = createEmptyDisciplineRow('GRAND TOTAL');
   const rows: ManagementDisciplineRow[] = [];
 
-  OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(disc => {
-    const r = disciplineMap.get(disc)!;
+  orderedBuckets.forEach(bucket => {
+    const r = bucketMap.get(bucket)!;
     rows.push(r);
 
     grandTotal.totalSubmittals += r.totalSubmittals;
@@ -859,11 +1032,13 @@ export function buildManagementReportOutput(
 
   return {
     registerFilter: normalizedFilter,
+    groupingMode: effectiveGroupingMode,
     availableRegisters,
+    availableParentRegisters,
     rows,
     grandTotal,
     excludedRowsCount,
-    otherDisciplineRowsCount,
+    otherDisciplineRowsCount: 0,
     isFullyReconciled,
     validation: {
       totalSubmittalsEqualsStatusSum,
