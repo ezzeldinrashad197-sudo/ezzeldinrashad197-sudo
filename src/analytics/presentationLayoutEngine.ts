@@ -76,12 +76,15 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
   // English Canonical Short Headers with clean two-line whole words
   if (norm === 'STATUS') return 'Status';
   if (norm === 'DISCIPLINE') return 'Discipline';
+  if (norm === 'TOTAL SUBMITTALS') return 'Total\nSubmittals';
+  if (norm === 'TOTAL SHEETS') return 'Total\nSheets';
   if (norm === 'UNIQUE ITEMS' || norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Unique\nItems';
   if (norm === 'REV.00' || norm === 'REV 00') return 'Rev.00';
+  if (norm === 'FURTHER REV.') return 'Further\nRev.';
   if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'Unique\nRev.00';
   if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'Unique\nFurther';
   if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'Rev.00\nRows';
-  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS' || norm === 'FURTHER REV.') return 'Further\nRev. Rows';
+  if (norm === 'FURTHER REV. ROWS' || norm === 'FURTHER REV ROWS') return 'Further\nRev. Rows';
   if (norm === 'TOTAL ROWS') return 'Total\nRows';
   if (norm === 'APPROVED') return 'Approved';
   if (norm === 'REJECTED') return 'Rejected';

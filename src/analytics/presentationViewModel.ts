@@ -334,13 +334,13 @@ export function buildPresentationViewModel(
     const regTitle = getRegisterTitle(bt, isArabic ? 'ar' : 'en');
     const isRevBased = bt !== 'LTR' && bt !== 'RFI' && bt !== 'NCR' && bt !== 'SOR';
 
-    // Canonical column definitions (Official Management Table: Status | Unique Items | Rev.00 Rows | Further Rev. Rows | Total Rows | Approved | Rejected | Pending)
+    // Canonical column definitions (Official Management Table: Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending)
     let cols = [
       { label: "Status", key: "discipline" },
-      { label: "Unique Items", key: "CurrentUnique" },
-      { label: "Rev.00 Rows", key: "Rev00Rows" },
-      { label: "Further Rev. Rows", key: "FurtherRevRows" },
-      { label: "Total Rows", key: "TotalRows" },
+      { label: "Total Submittals", key: "TotalSubmittals" },
+      { label: "Rev.00", key: "Rev00" },
+      { label: "Further Rev.", key: "FurtherRev" },
+      { label: "Total Sheets", key: "TotalSheets" },
       { label: "Approved", key: "Approved" },
       { label: "Rejected", key: "Rejected" },
       { label: "Pending", key: "Pending" }

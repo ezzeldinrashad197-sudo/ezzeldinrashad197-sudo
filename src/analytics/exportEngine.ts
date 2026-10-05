@@ -501,13 +501,13 @@ export const generatePptxReport = async (
         const sectionSubtitle = isArabic ? `سجل ومخططات أداء تقديمات ${longName}` : `Performance Log & Quality Charts for ${longName}`;
         addDividerSlide(pres, sectionSubtitle, sectionTitle, projectInfo, logoUrl, options);
         
-        // Columns variables (Official Management Table: Status | Unique Items | Rev.00 Rows | Further Rev. Rows | Total Rows | Approved | Rejected | Pending)
+        // Columns variables (Official Management Table: Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending)
         let cols = [
            { label: "Status", key: "discipline" },
-           { label: "Unique Items", key: "CurrentUnique" },
-           { label: "Rev.00 Rows", key: "Rev00Rows" },
-           { label: "Further Rev. Rows", key: "FurtherRevRows" },
-           { label: "Total Rows", key: "TotalRows" },
+           { label: "Total Submittals", key: "TotalSubmittals" },
+           { label: "Rev.00", key: "Rev00" },
+           { label: "Further Rev.", key: "FurtherRev" },
+           { label: "Total Sheets", key: "TotalSheets" },
            { label: "Approved", key: "Approved" },
            { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },

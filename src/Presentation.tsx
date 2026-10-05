@@ -4,6 +4,7 @@ import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats
 import { isEntityOverdue } from "./analytics/calculationFoundation";
 import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./analytics/revisionResolver";
 import { processNCRData } from "./analytics/ncr/ncrEngine";
+import { resolveUniqueSubmittalStats } from "./analytics/managementReportOutput";
 import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
 import { useLanguage } from "./utils/i18n";
 import {
@@ -579,59 +580,53 @@ export default function Presentation({
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = family === 'SDW' || family === 'SHD' || family === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
-      const totalSubmittals = s.totalUniqueSubmittals ?? (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length);
       const countForType = isSheetCountType || family === 'RFI'
         ? totalWorkload 
         : (isMonthlyReport 
             ? totalWorkload
             : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalWorkload));
 
+      if (family !== 'NCR' && family !== 'SOR' && family !== 'LTR') {
+        const subStats = resolveUniqueSubmittalStats(dData, fullDataset || dataset);
+        return {
+          discipline: disc,
+          // Official Management KPIs at Unique Submittal Grain (Total Submittals = Approved + Rejected + Pending):
+          TotalSubmittals: subStats.totalSubmittals,
+          CurrentUnique: subStats.totalSubmittals,
+          Items: subStats.totalSubmittals,
+          // Raw Excel Row Grain (Rev.00 | Further Rev. | Total Sheets):
+          Rev00: subStats.rev00,
+          FurtherRev: subStats.furtherRev,
+          TotalSheets: subStats.totalSheets,
+          Rev00Rows: subStats.rev00,
+          FurtherRevRows: subStats.furtherRev,
+          TotalRows: subStats.totalSheets,
+          Approved: subStats.approved,
+          RejectedOpen: subStats.rejectedOpen,
+          RejectedClosed: subStats.rejectedClosed,
+          Rejected: subStats.rejected,
+          Pending: subStats.pending,
+          Total: countForType,
+          Closed: getClosedOpenByDocType(family, s).closed,
+          Open: getClosedOpenByDocType(family, s).open,
+        };
+      }
+
       const curUniq = s.totalUniqueDrawings !== undefined
         ? s.totalUniqueDrawings
         : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
 
-      // Unique Item Grain revision classification:
-      // A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item classified by its resolved latest revision.
-      let uniqueItemRev00 = 0;
-      let uniqueItemFurtherRev = 0;
-      let uniqueItemUnclassifiedRev = 0;
-      if (family !== 'NCR' && family !== 'SOR' && family !== 'LTR') {
-        const targetDocKeys = new Set<string>();
-        dData.forEach(r => targetDocKeys.add(getDocumentIdentityKey(r)));
-        const revMap = processRevisionEngine(fullDataset || dataset);
-        targetDocKeys.forEach(docKey => {
-          const group = revMap.get(docKey);
-          if (!group) return;
-          const latest = group.latest;
-          const rawRev = extractRevisionRaw(latest);
-          if (isRevision0(rawRev, latest.isRev0)) {
-            uniqueItemRev00++;
-          } else if (isFurtherRevision(rawRev, latest.isRev0)) {
-            uniqueItemFurtherRev++;
-          } else {
-            uniqueItemUnclassifiedRev++;
-          }
-        });
-      } else {
-        uniqueItemRev00 = s.totalSheetsRev0 || 0;
-        uniqueItemFurtherRev = s.totalSheetsFurtherRev || 0;
-      }
-      const uniqueItemTotalSubmittals = uniqueItemRev00 + uniqueItemFurtherRev + uniqueItemUnclassifiedRev;
-
       return {
         discipline: disc,
-        // Official Management KPIs at Unique Item Grain:
+        TotalSubmittals: curUniq,
         CurrentUnique: curUniq,
         Items: curUniq,
-        TotalSubmittals: uniqueItemTotalSubmittals,
-        UniqueRev00: uniqueItemRev00,
-        UniqueFurtherRev: uniqueItemFurtherRev,
-        // Raw row counts (Rev.00 Rows | Further Rev. Rows | Total Rows):
+        Rev00: s.totalSheetsRev0 || 0,
+        FurtherRev: s.totalSheetsFurtherRev || 0,
+        TotalSheets: s.totalSubmittedSheets || 0,
         Rev00Rows: s.totalSheetsRev0 || 0,
         FurtherRevRows: s.totalSheetsFurtherRev || 0,
         TotalRows: s.totalSubmittedSheets || 0,
-        Rev00: s.totalSheetsRev0 || 0,
-        FurtherRev: s.totalSheetsFurtherRev || 0,
         Approved: s.approved,
         RejectedOpen: s.rejectedOpen,
         RejectedClosed: s.rejectedClosed,
@@ -648,8 +643,7 @@ export default function Presentation({
       CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
       Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
-      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
-      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+      TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
       Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
       FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
       TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
@@ -2224,10 +2218,10 @@ export default function Presentation({
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
           { label: "Status", key: "discipline" },
-          { label: "Unique Items", key: "CurrentUnique" },
-          { label: "Rev.00 Rows", key: "Rev00Rows" },
-          { label: "Further Rev. Rows", key: "FurtherRevRows" },
-          { label: "Total Rows", key: "TotalRows" },
+          { label: "Total Submittals", key: "TotalSubmittals" },
+          { label: "Rev.00", key: "Rev00" },
+          { label: "Further Rev.", key: "FurtherRev" },
+          { label: "Total Sheets", key: "TotalSheets" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },
@@ -2309,10 +2303,10 @@ export default function Presentation({
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
           { label: "Status", key: "discipline" },
-          { label: "Unique Items", key: "CurrentUnique" },
-          { label: "Rev.00 Rows", key: "Rev00Rows" },
-          { label: "Further Rev. Rows", key: "FurtherRevRows" },
-          { label: "Total Rows", key: "TotalRows" },
+          { label: "Total Submittals", key: "TotalSubmittals" },
+          { label: "Rev.00", key: "Rev00" },
+          { label: "Further Rev.", key: "FurtherRev" },
+          { label: "Total Sheets", key: "TotalSheets" },
           { label: "Approved", key: "Approved" },
           { label: "Rejected", key: "Rejected" },
           { label: "Pending", key: "Pending" },

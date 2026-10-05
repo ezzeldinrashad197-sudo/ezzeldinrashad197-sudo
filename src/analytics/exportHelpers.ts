@@ -1,7 +1,7 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType, processRevisionEngine, getDocumentIdentityKey } from "../utils/calculations";
-import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./revisionResolver";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
+import { resolveUniqueSubmittalStats } from "./managementReportOutput";
 import { processNCRData } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
@@ -147,47 +147,43 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       const curUniq = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
       const superRows = Math.max(0, tRows - curUniq);
 
-      // Unique Item Grain revision classification:
-      // A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item classified by its resolved latest revision.
-      let uniqueItemRev00 = 0;
-      let uniqueItemFurtherRev = 0;
-      let uniqueItemUnclassifiedRev = 0;
       if (bt !== 'NCR' && bt !== 'SOR' && bt !== 'LTR') {
-        const targetDocKeys = new Set<string>();
-        dData.forEach(r => targetDocKeys.add(getDocumentIdentityKey(r)));
-        const revMap = processRevisionEngine(fullDataset || dataset);
-        targetDocKeys.forEach(docKey => {
-          const group = revMap.get(docKey);
-          if (!group) return;
-          const latest = group.latest;
-          const rawRev = extractRevisionRaw(latest);
-          if (isRevision0(rawRev, latest.isRev0)) {
-            uniqueItemRev00++;
-          } else if (isFurtherRevision(rawRev, latest.isRev0)) {
-            uniqueItemFurtherRev++;
-          } else {
-            uniqueItemUnclassifiedRev++;
-          }
-        });
-      } else {
-        uniqueItemRev00 = s.totalSheetsRev0 || 0;
-        uniqueItemFurtherRev = s.totalSheetsFurtherRev || 0;
+        const subStats = resolveUniqueSubmittalStats(dData, fullDataset || dataset);
+        return {
+          discipline: disc,
+          TotalSubmittals: subStats.totalSubmittals,
+          CurrentUnique: subStats.totalSubmittals,
+          UniqueItems: subStats.totalSubmittals,
+          Rev00: subStats.rev00,
+          FurtherRev: subStats.furtherRev,
+          TotalSheets: subStats.totalSheets,
+          Rev00Rows: subStats.rev00,
+          FurtherRevRows: subStats.furtherRev,
+          TotalRows: subStats.totalSheets,
+          Superseded: Math.max(0, subStats.totalSheets - subStats.totalSubmittals),
+          Approved: subStats.approved,
+          RejectedOpen: subStats.rejectedOpen,
+          RejectedClosed: subStats.rejectedClosed,
+          Rejected: subStats.rejected,
+          Pending: subStats.pending,
+          Total: countForType,
+          Closed: getClosedOpenByDocType(bt, s).closed,
+          Open: getClosedOpenByDocType(bt, s).open,
+        };
       }
-      const uniqueItemTotalSubmittals = uniqueItemRev00 + uniqueItemFurtherRev + uniqueItemUnclassifiedRev;
 
       return {
         discipline: disc,
-        TotalSubmittals: uniqueItemTotalSubmittals,
-        UniqueRev00: uniqueItemRev00,
-        UniqueFurtherRev: uniqueItemFurtherRev,
-        Rev00Rows: s.totalSheetsRev0 || 0,
-        FurtherRevRows: s.totalSheetsFurtherRev || 0,
-        TotalRows: tRows,
-        Superseded: superRows,
+        TotalSubmittals: curUniq,
         CurrentUnique: curUniq,
         UniqueItems: curUniq,
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
+        TotalSheets: tRows,
+        Rev00Rows: s.totalSheetsRev0 || 0,
+        FurtherRevRows: s.totalSheetsFurtherRev || 0,
+        TotalRows: tRows,
+        Superseded: superRows,
         Approved: s.approved,
         RejectedOpen: s.rejectedOpen,
         RejectedClosed: s.rejectedClosed,
@@ -202,8 +198,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
     const totalRow = {
       discipline: "TOTAL",
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
-      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
-      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+      TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
       Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
       FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
       TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
@@ -509,7 +504,7 @@ export const buildTableData = (
                     align: isFirst ? "left" : "center", 
                     valign: "middle",
                     color: "333333",
-                    bold: isFirst || col.key === "Total" || col.key === "TotalRows",
+                    bold: isFirst || col.key === "Total" || col.key === "TotalRows" || col.key === "TotalSheets" || col.key === "TotalSubmittals",
                     fontFace: fontFace,
                     fontSize: bodyFontSize
                 } 
