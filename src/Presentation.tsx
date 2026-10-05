@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { SubmittalRow, ProjectSettings } from "./types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType } from "./utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType, processRevisionEngine, getDocumentIdentityKey } from "./utils/calculations";
 import { isEntityOverdue } from "./analytics/calculationFoundation";
+import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./analytics/revisionResolver";
 import { processNCRData } from "./analytics/ncr/ncrEngine";
 import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
 import { useLanguage } from "./utils/i18n";
@@ -589,21 +590,49 @@ export default function Presentation({
         ? s.totalUniqueDrawings
         : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
 
+      // Unique Item Grain revision classification:
+      // A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item classified by its resolved latest revision.
+      let uniqueItemRev00 = 0;
+      let uniqueItemFurtherRev = 0;
+      let uniqueItemUnclassifiedRev = 0;
+      if (family !== 'NCR' && family !== 'SOR' && family !== 'LTR') {
+        const targetDocKeys = new Set<string>();
+        dData.forEach(r => targetDocKeys.add(getDocumentIdentityKey(r)));
+        const revMap = processRevisionEngine(fullDataset || dataset);
+        targetDocKeys.forEach(docKey => {
+          const group = revMap.get(docKey);
+          if (!group) return;
+          const latest = group.latest;
+          const rawRev = extractRevisionRaw(latest);
+          if (isRevision0(rawRev, latest.isRev0)) {
+            uniqueItemRev00++;
+          } else if (isFurtherRevision(rawRev, latest.isRev0)) {
+            uniqueItemFurtherRev++;
+          } else {
+            uniqueItemUnclassifiedRev++;
+          }
+        });
+      } else {
+        uniqueItemRev00 = s.totalSheetsRev0 || 0;
+        uniqueItemFurtherRev = s.totalSheetsFurtherRev || 0;
+      }
+      const uniqueItemTotalSubmittals = uniqueItemRev00 + uniqueItemFurtherRev + uniqueItemUnclassifiedRev;
+
       return {
         discipline: disc,
-        // Explicitly separate submission-grain KPIs from physical row/sheet workload.
-        // Unique counts use Register + Discipline + SUB Ref; row counts preserve every source row.
+        // Official Management KPIs at Unique Item Grain:
         CurrentUnique: curUniq,
         Items: curUniq,
-        TotalSubmittals: totalSubmittals,
-        UniqueRev00: s.totalSubmittalsRev0 || 0,
-        UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+        TotalSubmittals: uniqueItemTotalSubmittals,
+        UniqueRev00: uniqueItemRev00,
+        UniqueFurtherRev: uniqueItemFurtherRev,
+        // Raw row counts retained strictly for Audit / Raw-Row reference:
         Rev00Rows: s.totalSheetsRev0 || 0,
         FurtherRevRows: s.totalSheetsFurtherRev || 0,
         TotalRows: s.totalSubmittedSheets || 0,
-        // Legacy display keys retained for charts/compatibility. These are ROW counts.
-        Rev00: s.totalSheetsRev0 || 0,
-        FurtherRev: s.totalSheetsFurtherRev || 0,
+        // Official Management KPI keys at Unique Item Grain:
+        Rev00: uniqueItemRev00,
+        FurtherRev: uniqueItemFurtherRev,
         Approved: s.approved,
         RejectedOpen: s.rejectedOpen,
         RejectedClosed: s.rejectedClosed,
@@ -2197,7 +2226,7 @@ export default function Presentation({
         let monthlyCols = [
           { label: "Discipline", key: "discipline" },
           { label: "Items", key: "CurrentUnique" },
-          { label: "Total Submittals", key: "TotalRows" },
+          { label: "Total Submittals", key: "TotalSubmittals" },
           { label: "Rev.00", key: "Rev00" },
           { label: "Further Rev.", key: "FurtherRev" },
           { label: "Approved", key: "Approved" },
@@ -2282,7 +2311,7 @@ export default function Presentation({
         let cumulativeCols = [
           { label: "Discipline", key: "discipline" },
           { label: "Items", key: "CurrentUnique" },
-          { label: "Total Submittals", key: "TotalRows" },
+          { label: "Total Submittals", key: "TotalSubmittals" },
           { label: "Rev.00", key: "Rev00" },
           { label: "Further Rev.", key: "FurtherRev" },
           { label: "Approved", key: "Approved" },

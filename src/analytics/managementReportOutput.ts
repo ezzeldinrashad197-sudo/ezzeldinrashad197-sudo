@@ -32,7 +32,11 @@ export type ManagementKpiColumnKey =
   | 'furtherRev'
   | 'approved'
   | 'rejected'
-  | 'pending';
+  | 'pending'
+  | 'rawTotalRows'
+  | 'rawRev00Rows'
+  | 'rawFurtherRevRows'
+  | 'supersededRows';
 
 export interface ReconciledSourceRecord {
   id: string;
@@ -55,6 +59,8 @@ export interface ReconciledSourceRecord {
   sourceSheet: string;
   sourceFile: string;
   isWinningLatestRevision: boolean;
+  revisionCountForDocument: number;
+  supersededRevisionsCount: number;
   allRevisionsForDocument?: Array<{
     rev: string;
     subRef: string;
@@ -64,6 +70,7 @@ export interface ReconciledSourceRecord {
     submissionDate: string;
     responseDate: string;
     sourceSheet: string;
+    isWinningLatest: boolean;
   }>;
   rawRow: SubmittalRow;
 }
@@ -72,18 +79,30 @@ export interface ManagementDisciplineRow {
   discipline: OfficialManagementDiscipline | 'GRAND TOTAL';
   disciplineLabelEn: string;
   disciplineLabelAr: string;
-  items: number;
-  totalSubmittals: number;
-  rev00: number;
-  furtherRev: number;
-  approved: number;
-  rejected: number;
-  pending: number;
-  // Detailed audit breakdown (for Analytics/Audit inspection only, not shown in primary table)
-  rejectedOpen: number;
-  rejectedClosed: number;
-  isWorkloadReconciled: boolean;
+  // PRIMARY OFFICIAL MANAGEMENT KPIs (100% UNIQUE ITEM GRAIN)
+  items: number;            // Unique Document Items
+  totalSubmittals: number;  // Unique Submittal Items (= rev00 + furtherRev at Unique Item Grain)
+  rev00: number;            // Unique Items whose current resolved revision is Rev.00
+  furtherRev: number;       // Unique Items whose current resolved revision is Further Revision (Rev.01+)
+  approved: number;         // Current Unique Items in Approved state
+  rejected: number;         // Current Unique Items in Rejected state (Open + Closed)
+  pending: number;          // Current Unique Items in Pending state
+
+  // AUDIT & RECONCILIATION METRICS (Distinguishing Unique Item Grain from Raw Excel Row Grain)
+  uniqueSubmittalPackages: number; // Unique SUB Ref packages (getSubmissionIdentityKey)
+  unclassifiedRevItems: number;    // Unique Items with blank/unclassified revision
+  rejectedOpen: number;            // Current Unique Items in Rejected Open state
+  rejectedClosed: number;          // Current Unique Items in Rejected Closed state
+  rawTotalRows: number;            // Raw Excel rows in period (Rev.00 + Rev.01 + Rev.02 = 3 rows)
+  rawRev00Rows: number;            // Raw Excel rows classified as Rev.00
+  rawFurtherRevRows: number;       // Raw Excel rows classified as Further Revision
+  supersededTotalRows: number;     // Raw rows collapsed into Unique Items (rawTotalRows - items)
+  supersededRev00Rows: number;     // Historical Rev.00 rows superseded by later revisions (rawRev00Rows - rev00)
+  supersededFurtherRevRows: number;// Historical Further Rev. rows superseded by higher revisions (rawFurtherRevRows - furtherRev)
+
+  isUniqueGrainReconciled: boolean;
   isCurrentStateReconciled: boolean;
+  isCrossGrainReconciled: boolean;
   reconciliation: Record<ManagementKpiColumnKey, ReconciledSourceRecord[]>;
 }
 
@@ -153,7 +172,8 @@ function toReconciledRecord(
   r: SubmittalRow,
   officialDisc: OfficialManagementDiscipline | 'OTHER',
   isWinningLatest: boolean,
-  groupAllRows?: SubmittalRow[]
+  groupAllRows?: SubmittalRow[],
+  winningRowRef?: SubmittalRow
 ): ReconciledSourceRecord {
   const anyR = r as unknown as Record<string, unknown>;
   const rawRev = extractRevisionRaw(r);
@@ -165,6 +185,7 @@ function toReconciledRecord(
   const rawStatusVal = String(r.recordStatus ?? r.workflowStage ?? anyR.rawStatus ?? '-');
   const sourceSheetVal = r.sourceSheetName || r.disciplineSourceSheet || r.logType || '-';
   const sourceFileVal = r.sourceFile || r.sourceWorkbookName || r.sourceFileName || '-';
+  const totalRevs = groupAllRows ? groupAllRows.length : 1;
 
   return {
     id: r.id,
@@ -187,6 +208,8 @@ function toReconciledRecord(
     sourceSheet: sourceSheetVal,
     sourceFile: sourceFileVal,
     isWinningLatestRevision: isWinningLatest,
+    revisionCountForDocument: totalRevs,
+    supersededRevisionsCount: Math.max(0, totalRevs - 1),
     allRevisionsForDocument: groupAllRows
       ? groupAllRows.map(gr => ({
           rev: gr.rev || '00',
@@ -196,7 +219,8 @@ function toReconciledRecord(
           resolvedCategory: getStatusCodeCategory(gr),
           submissionDate: gr.submissionDate || '-',
           responseDate: gr.responseDate || '-',
-          sourceSheet: gr.sourceSheetName || gr.disciplineSourceSheet || gr.logType || '-'
+          sourceSheet: gr.sourceSheetName || gr.disciplineSourceSheet || gr.logType || '-',
+          isWinningLatest: winningRowRef ? gr === winningRowRef : false
         }))
       : undefined,
     rawRow: r
@@ -204,21 +228,27 @@ function toReconciledRecord(
 }
 
 /**
- * Dedicated Management Report Output Layer
+ * Dedicated Management Report Output Layer (UNIQUE ITEM GRAIN)
  *
- * Produces the official 8-column Management KPI Table:
+ * Produces the official 8-column Management KPI Table at UNIQUE ITEM GRAIN:
  *   Discipline | Items | Total Submittals | Rev.00 | Further Rev. | Approved | Rejected | Pending
  * for required disciplines:
  *   STR, ARCH, MECH, ELEC, INFRA, LAND, GRAND TOTAL
  *
- * with full read-only source-row reconciliation for every cell.
+ * Explicit Unique Item Grain Rules:
+ * - A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item.
+ * - Items = Unique Document Items (resolved via canonical Document Identity / processRevisionEngine).
+ * - Rev.00 = Unique Items whose resolved current revision is Rev.00.
+ * - Further Rev. = Unique Items whose resolved current revision is Further Revision (Rev.01+).
+ * - Total Submittals = Unique Submittal Items (Rev.00 + Further Rev. at Unique Item Grain).
+ * - Approved / Rejected / Pending = Current Unique Items in Approved / Rejected / Pending state.
+ * - Raw Excel row counts and Superseded rows are tracked separately for Audit & Reconciliation.
  */
 export function buildManagementReportOutput(
   periodRows: SubmittalRow[],
   fullContextDataset?: SubmittalRow[],
   registerFilter: string = 'ALL'
 ): ManagementReportResult {
-  // Exclude NCR rows from engineering submittal management table (consistent with ReportTable generalData)
   const validPeriodRows = (periodRows || []).filter(d => {
     const dt = (d.documentType || 'DOC').toUpperCase();
     return !dt.startsWith('NCR-') && dt !== 'NCR';
@@ -250,7 +280,6 @@ export function buildManagementReportOutput(
     return true;
   });
 
-  // Index context dataset by Document Identity Key in O(N)
   const contextByDocKey = new Map<string, SubmittalRow[]>();
   for (let i = 0; i < baseContext.length; i++) {
     const r = baseContext[i];
@@ -263,7 +292,6 @@ export function buildManagementReportOutput(
     bucket.push(r);
   }
 
-  // Partition period rows by Official Management Discipline
   const rowsByDisc = new Map<OfficialManagementDiscipline, SubmittalRow[]>();
   OFFICIAL_MANAGEMENT_DISCIPLINES.forEach(d => rowsByDisc.set(d, []));
   const otherRows: SubmittalRow[] = [];
@@ -283,8 +311,10 @@ export function buildManagementReportOutput(
     discRows: SubmittalRow[]
   ): ManagementDisciplineRow => {
     const targetDocKeys = new Set<string>();
+    const uniqueSubKeys = new Set<string>();
     for (let i = 0; i < discRows.length; i++) {
       targetDocKeys.add(getDocumentIdentityKey(discRows[i]));
+      uniqueSubKeys.add(getSubmissionIdentityKey(discRows[i]));
     }
 
     const scopedContextForDisc: SubmittalRow[] = [];
@@ -298,48 +328,45 @@ export function buildManagementReportOutput(
     });
 
     const effectiveContext = scopedContextForDisc.length > 0 ? scopedContextForDisc : discRows;
-    // Call official SSOT calculateStats and processRevisionEngine without modifying them
     const ssotStats = calculateStats(discRows, effectiveContext);
     const revMap = processRevisionEngine(effectiveContext);
 
-    const rev00Records: ReconciledSourceRecord[] = [];
-    const furtherRevRecords: ReconciledSourceRecord[] = [];
-    const totalSubmittalsRecords: ReconciledSourceRecord[] = [];
-
-    for (let i = 0; i < discRows.length; i++) {
-      const r = discRows[i];
-      const docKey = getDocumentIdentityKey(r);
-      const group = revMap.get(docKey);
-      const isLatest = group ? group.latest === r : Boolean(r.isLatestRev);
-      const rec = toReconciledRecord(r, disc, isLatest, group?.all);
-
-      if (rec.isRev0) {
-        rev00Records.push(rec);
-        totalSubmittalsRecords.push(rec);
-      } else if (rec.isFurtherRev) {
-        furtherRevRecords.push(rec);
-        totalSubmittalsRecords.push(rec);
-      }
-    }
-
+    // 1. UNIQUE ITEM GRAIN KPIs (Official Management Report)
     const itemsRecords: ReconciledSourceRecord[] = [];
+    const totalSubmittalsRecords: ReconciledSourceRecord[] = [];
+    const rev00UniqueRecords: ReconciledSourceRecord[] = [];
+    const furtherRevUniqueRecords: ReconciledSourceRecord[] = [];
     const approvedRecords: ReconciledSourceRecord[] = [];
     const rejectedRecords: ReconciledSourceRecord[] = [];
     const pendingRecords: ReconciledSourceRecord[] = [];
 
     let rejectedOpenCount = 0;
     let rejectedClosedCount = 0;
+    let unclassifiedRevItemsCount = 0;
 
     targetDocKeys.forEach(docKey => {
       const group = revMap.get(docKey);
       if (!group) return;
       const latest = group.latest;
       const resolvedCat = group.resolvedStatus || getStatusCodeCategory(latest);
-      const rec = toReconciledRecord(latest, disc, true, group.all);
+      const rec = toReconciledRecord(latest, disc, true, group.all, latest);
       rec.resolvedCategory = resolvedCat;
 
       itemsRecords.push(rec);
 
+      // Unique Item Revision Classification (based on the winning current revision of the Unique Item)
+      if (rec.isRev0) {
+        rev00UniqueRecords.push(rec);
+        totalSubmittalsRecords.push(rec);
+      } else if (rec.isFurtherRev) {
+        furtherRevUniqueRecords.push(rec);
+        totalSubmittalsRecords.push(rec);
+      } else {
+        unclassifiedRevItemsCount++;
+        totalSubmittalsRecords.push(rec);
+      }
+
+      // Unique Item Current Status Classification
       if (resolvedCat === 'APPROVED' || resolvedCat === 'FINAL_CLOSED') {
         approvedRecords.push(rec);
       } else if (resolvedCat === 'REJECTED_OPEN') {
@@ -353,28 +380,60 @@ export function buildManagementReportOutput(
       }
     });
 
-    // Explicit deterministic KPI definitions:
-    // - Items = current Unique Document Items using canonical Document Identity / revision resolution
-    // - Rev.00 = actual source rows classified as Rev.00
-    // - Further Rev. = actual source rows classified as Further Revision
-    // - Total Submittals = Rev.00 + Further Rev.
-    // - Approved / Rejected / Pending = current state of Unique Items
-    const rev00 = rev00Records.length;
-    const furtherRev = furtherRevRecords.length;
-    const totalSubmittals = rev00 + furtherRev;
+    // 2. RAW EXCEL ROW GRAIN & SUPERSEDED ROWS (For Audit & Cross-Grain Reconciliation)
+    const rawTotalRowsRecords: ReconciledSourceRecord[] = [];
+    const rawRev00RowsRecords: ReconciledSourceRecord[] = [];
+    const rawFurtherRevRowsRecords: ReconciledSourceRecord[] = [];
+    const supersededRowsRecords: ReconciledSourceRecord[] = [];
+
+    for (let i = 0; i < discRows.length; i++) {
+      const r = discRows[i];
+      const docKey = getDocumentIdentityKey(r);
+      const group = revMap.get(docKey);
+      const isLatest = group ? group.latest === r : Boolean(r.isLatestRev);
+      const rec = toReconciledRecord(r, disc, isLatest, group?.all, group?.latest);
+
+      rawTotalRowsRecords.push(rec);
+      if (rec.isRev0) {
+        rawRev00RowsRecords.push(rec);
+      } else if (rec.isFurtherRev) {
+        rawFurtherRevRowsRecords.push(rec);
+      }
+      if (!isLatest) {
+        supersededRowsRecords.push(rec);
+      }
+    }
+
+    // Official Unique-Item-Grain KPIs:
     const items = itemsRecords.length;
+    const rev00 = rev00UniqueRecords.length;
+    const furtherRev = furtherRevUniqueRecords.length;
+    const totalSubmittals = rev00 + furtherRev + unclassifiedRevItemsCount;
     const approved = approvedRecords.length;
     const rejected = rejectedRecords.length;
     const pending = pendingRecords.length;
 
-    const isWorkloadReconciled =
-      totalSubmittals === rev00 + furtherRev &&
-      rev00 === ssotStats.totalSheetsRev0 &&
-      furtherRev === ssotStats.totalSheetsFurtherRev;
+    // Audit Raw-Row Metrics:
+    const rawTotalRows = rawTotalRowsRecords.length;
+    const rawRev00Rows = rawRev00RowsRecords.length;
+    const rawFurtherRevRows = rawFurtherRevRowsRecords.length;
+    const supersededTotalRows = Math.max(0, rawTotalRows - items);
+    const supersededRev00Rows = Math.max(0, rawRev00Rows - rev00);
+    const supersededFurtherRevRows = Math.max(0, rawFurtherRevRows - furtherRev);
+
+    const isUniqueGrainReconciled =
+      items === ssotStats.totalUniqueDrawings &&
+      totalSubmittals === rev00 + furtherRev + unclassifiedRevItemsCount &&
+      totalSubmittals === items;
 
     const isCurrentStateReconciled =
       items === approved + rejected + pending &&
-      items === ssotStats.totalUniqueDrawings;
+      approved === ssotStats.approved &&
+      rejected === ssotStats.rejectedOpen + ssotStats.rejectedClosed &&
+      pending === ssotStats.pending;
+
+    const isCrossGrainReconciled =
+      items + supersededTotalRows === rawTotalRows;
 
     return {
       discipline: disc,
@@ -387,18 +446,31 @@ export function buildManagementReportOutput(
       approved,
       rejected,
       pending,
+      uniqueSubmittalPackages: uniqueSubKeys.size,
+      unclassifiedRevItems: unclassifiedRevItemsCount,
       rejectedOpen: rejectedOpenCount,
       rejectedClosed: rejectedClosedCount,
-      isWorkloadReconciled,
+      rawTotalRows,
+      rawRev00Rows,
+      rawFurtherRevRows,
+      supersededTotalRows,
+      supersededRev00Rows,
+      supersededFurtherRevRows,
+      isUniqueGrainReconciled,
       isCurrentStateReconciled,
+      isCrossGrainReconciled,
       reconciliation: {
         items: itemsRecords,
         totalSubmittals: totalSubmittalsRecords,
-        rev00: rev00Records,
-        furtherRev: furtherRevRecords,
+        rev00: rev00UniqueRecords,
+        furtherRev: furtherRevUniqueRecords,
         approved: approvedRecords,
         rejected: rejectedRecords,
-        pending: pendingRecords
+        pending: pendingRecords,
+        rawTotalRows: rawTotalRowsRecords,
+        rawRev00Rows: rawRev00RowsRecords,
+        rawFurtherRevRows: rawFurtherRevRowsRecords,
+        supersededRows: supersededRowsRecords
       }
     };
   };
@@ -407,7 +479,6 @@ export function buildManagementReportOutput(
     buildRowForDiscipline(disc, rowsByDisc.get(disc) || [])
   );
 
-  // Build GRAND TOTAL row from the 6 official disciplines
   const grandTotalReconciliation: Record<ManagementKpiColumnKey, ReconciledSourceRecord[]> = {
     items: [],
     totalSubmittals: [],
@@ -415,7 +486,11 @@ export function buildManagementReportOutput(
     furtherRev: [],
     approved: [],
     rejected: [],
-    pending: []
+    pending: [],
+    rawTotalRows: [],
+    rawRev00Rows: [],
+    rawFurtherRevRows: [],
+    supersededRows: []
   };
 
   let sumItems = 0;
@@ -425,8 +500,16 @@ export function buildManagementReportOutput(
   let sumApproved = 0;
   let sumRejected = 0;
   let sumPending = 0;
+  let sumUniquePackages = 0;
+  let sumUnclassifiedRev = 0;
   let sumRejectedOpen = 0;
   let sumRejectedClosed = 0;
+  let sumRawTotalRows = 0;
+  let sumRawRev00Rows = 0;
+  let sumRawFurtherRevRows = 0;
+  let sumSupersededTotalRows = 0;
+  let sumSupersededRev00Rows = 0;
+  let sumSupersededFurtherRevRows = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -437,8 +520,16 @@ export function buildManagementReportOutput(
     sumApproved += r.approved;
     sumRejected += r.rejected;
     sumPending += r.pending;
+    sumUniquePackages += r.uniqueSubmittalPackages;
+    sumUnclassifiedRev += r.unclassifiedRevItems;
     sumRejectedOpen += r.rejectedOpen;
     sumRejectedClosed += r.rejectedClosed;
+    sumRawTotalRows += r.rawTotalRows;
+    sumRawRev00Rows += r.rawRev00Rows;
+    sumRawFurtherRevRows += r.rawFurtherRevRows;
+    sumSupersededTotalRows += r.supersededTotalRows;
+    sumSupersededRev00Rows += r.supersededRev00Rows;
+    sumSupersededFurtherRevRows += r.supersededFurtherRevRows;
 
     grandTotalReconciliation.items.push(...r.reconciliation.items);
     grandTotalReconciliation.totalSubmittals.push(...r.reconciliation.totalSubmittals);
@@ -447,6 +538,10 @@ export function buildManagementReportOutput(
     grandTotalReconciliation.approved.push(...r.reconciliation.approved);
     grandTotalReconciliation.rejected.push(...r.reconciliation.rejected);
     grandTotalReconciliation.pending.push(...r.reconciliation.pending);
+    grandTotalReconciliation.rawTotalRows.push(...r.reconciliation.rawTotalRows);
+    grandTotalReconciliation.rawRev00Rows.push(...r.reconciliation.rawRev00Rows);
+    grandTotalReconciliation.rawFurtherRevRows.push(...r.reconciliation.rawFurtherRevRows);
+    grandTotalReconciliation.supersededRows.push(...r.reconciliation.supersededRows);
   }
 
   const grandTotal: ManagementDisciplineRow = {
@@ -460,10 +555,21 @@ export function buildManagementReportOutput(
     approved: sumApproved,
     rejected: sumRejected,
     pending: sumPending,
+    uniqueSubmittalPackages: sumUniquePackages,
+    unclassifiedRevItems: sumUnclassifiedRev,
     rejectedOpen: sumRejectedOpen,
     rejectedClosed: sumRejectedClosed,
-    isWorkloadReconciled: sumTotalSubmittals === sumRev00 + sumFurtherRev,
+    rawTotalRows: sumRawTotalRows,
+    rawRev00Rows: sumRawRev00Rows,
+    rawFurtherRevRows: sumRawFurtherRevRows,
+    supersededTotalRows: sumSupersededTotalRows,
+    supersededRev00Rows: sumSupersededRev00Rows,
+    supersededFurtherRevRows: sumSupersededFurtherRevRows,
+    isUniqueGrainReconciled:
+      sumTotalSubmittals === sumRev00 + sumFurtherRev + sumUnclassifiedRev &&
+      sumTotalSubmittals === sumItems,
     isCurrentStateReconciled: sumItems === sumApproved + sumRejected + sumPending,
+    isCrossGrainReconciled: sumItems + sumSupersededTotalRows === sumRawTotalRows,
     reconciliation: grandTotalReconciliation
   };
 
@@ -477,8 +583,9 @@ export function buildManagementReportOutput(
     otherDisciplineRowsCount: otherRows.length,
     otherDisciplineRecords,
     isFullyReconciled:
-      rows.every(r => r.isWorkloadReconciled && r.isCurrentStateReconciled) &&
-      grandTotal.isWorkloadReconciled &&
-      grandTotal.isCurrentStateReconciled
+      rows.every(r => r.isUniqueGrainReconciled && r.isCurrentStateReconciled && r.isCrossGrainReconciled) &&
+      grandTotal.isUniqueGrainReconciled &&
+      grandTotal.isCurrentStateReconciled &&
+      grandTotal.isCrossGrainReconciled
   };
 }

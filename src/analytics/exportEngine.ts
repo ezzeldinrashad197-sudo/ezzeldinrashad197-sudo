@@ -501,13 +501,13 @@ export const generatePptxReport = async (
         const sectionSubtitle = isArabic ? `سجل ومخططات أداء تقديمات ${longName}` : `Performance Log & Quality Charts for ${longName}`;
         addDividerSlide(pres, sectionSubtitle, sectionTitle, projectInfo, logoUrl, options);
         
-        // Columns variables
+        // Columns variables (Official Management KPIs at Unique Item Grain)
         let cols = [
            { label: "Discipline", key: "discipline" },
            { label: "Items", key: "CurrentUnique" },
-           { label: "Total Submittals", key: "TotalRows" },
-           { label: "Rev.00", key: "Rev00Rows" },
-           { label: "Further Rev.", key: "FurtherRevRows" },
+           { label: "Total Submittals", key: "TotalSubmittals" },
+           { label: "Rev.00", key: "Rev00" },
+           { label: "Further Rev.", key: "FurtherRev" },
            { label: "Approved", key: "Approved" },
            { label: "Rejected", key: "Rejected" },
            { label: "Pending", key: "Pending" },
@@ -602,12 +602,12 @@ export const generatePptxReport = async (
                 {
                     name: chartVal1Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.Rev00Rows || s.Rev00) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.Rev00) || 0)
                 },
                 {
                     name: chartVal2Label,
                     labels: statsData.stats.map((s: any) => s.discipline),
-                    values: statsData.stats.map((s: any) => Number(s.FurtherRevRows || s.FurtherRev) || 0)
+                    values: statsData.stats.map((s: any) => Number(s.FurtherRev) || 0)
                 }
             ];
             
@@ -662,7 +662,7 @@ export const generatePptxReport = async (
                     pieLabelsList = ["Sent", "Received"];
                     colors = ["5B9BD5", "ED7D31"];
                 } else {
-                    pieDataValues = [Number(s.Approved) || 0, (Number(s.RejectedOpen) || 0), Number(s.Pending) || 0];
+                    pieDataValues = [Number(s.Approved) || 0, Number(s.Rejected ?? ((Number(s.RejectedOpen) || 0) + (Number(s.RejectedClosed) || 0))), Number(s.Pending) || 0];
                     pieLabelsList = ["Approved", "Rejected", "Pending"];
                     colors = ["70AD47", "C00000", "FFC000"];
                 }

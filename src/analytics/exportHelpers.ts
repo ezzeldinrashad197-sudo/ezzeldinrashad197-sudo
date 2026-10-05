@@ -1,6 +1,7 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType, processRevisionEngine, getDocumentIdentityKey } from "../utils/calculations";
+import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./revisionResolver";
 import { processNCRData } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
@@ -146,18 +147,46 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       const curUniq = s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
       const superRows = Math.max(0, tRows - curUniq);
 
+      // Unique Item Grain revision classification:
+      // A document with Rev.00 + Rev.01 + Rev.02 remains ONE Unique Item classified by its resolved latest revision.
+      let uniqueItemRev00 = 0;
+      let uniqueItemFurtherRev = 0;
+      let uniqueItemUnclassifiedRev = 0;
+      if (bt !== 'NCR' && bt !== 'SOR' && bt !== 'LTR') {
+        const targetDocKeys = new Set<string>();
+        dData.forEach(r => targetDocKeys.add(getDocumentIdentityKey(r)));
+        const revMap = processRevisionEngine(fullDataset || dataset);
+        targetDocKeys.forEach(docKey => {
+          const group = revMap.get(docKey);
+          if (!group) return;
+          const latest = group.latest;
+          const rawRev = extractRevisionRaw(latest);
+          if (isRevision0(rawRev, latest.isRev0)) {
+            uniqueItemRev00++;
+          } else if (isFurtherRevision(rawRev, latest.isRev0)) {
+            uniqueItemFurtherRev++;
+          } else {
+            uniqueItemUnclassifiedRev++;
+          }
+        });
+      } else {
+        uniqueItemRev00 = s.totalSheetsRev0 || 0;
+        uniqueItemFurtherRev = s.totalSheetsFurtherRev || 0;
+      }
+      const uniqueItemTotalSubmittals = uniqueItemRev00 + uniqueItemFurtherRev + uniqueItemUnclassifiedRev;
+
       return {
         discipline: disc,
-        TotalSubmittals: totalSubmittals,
-        UniqueRev00: s.totalSubmittalsRev0 || 0,
-        UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+        TotalSubmittals: uniqueItemTotalSubmittals,
+        UniqueRev00: uniqueItemRev00,
+        UniqueFurtherRev: uniqueItemFurtherRev,
         Rev00Rows: s.totalSheetsRev0 || 0,
         FurtherRevRows: s.totalSheetsFurtherRev || 0,
         TotalRows: tRows,
         Superseded: superRows,
         CurrentUnique: curUniq,
-        Rev00: s.totalSheetsRev0 || 0,
-        FurtherRev: s.totalSheetsFurtherRev || 0,
+        Rev00: uniqueItemRev00,
+        FurtherRev: uniqueItemFurtherRev,
         Approved: s.approved,
         RejectedOpen: s.rejectedOpen,
         RejectedClosed: s.rejectedClosed,
