@@ -5,8 +5,12 @@ import {
   calculateMonthlyEvents,
   normalizeDiscipline,
   normalizeNCRData,
-  getLatestRev
+  getLatestRev,
+  getRevisionActivityDateMs,
+  normalizeNcrRevisionHistory,
+  compileCanonicalNCRPresentationStats
 } from '../ncr/ncrEngine';
+import { calculateNCRStats as calculateLegacyAnalyticsNCRStats } from '../../utils/ncrAnalytics';
 import {
   isValidRevision,
   getRevisionWeight,
@@ -1650,6 +1654,132 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
 
     if (!engineOut.integrityReport.passed) {
       throw new Error(`Expected all 10 forensic & mathematical checks to pass: ${JSON.stringify(engineOut.integrityReport)}`);
+    }
+  });
+
+  test('ER-031 (Defect #1 Mandatory Regression — NCR-TEMP-001): Revision with ONLY inherited dates has NULL activityDate and NEVER leaks different state into historical snapshot', () => {
+    const rows: SubmittalRow[] = [
+      {
+        id: 'NCR-TEMP-001-R0',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-TEMP-001',
+        docNo: 'NCR-TEMP-001',
+        rev: '00',
+        discipline: 'STR',
+        submissionDate: '2026-06-03',
+        ncrSentDateCorrectiveAction: '2026-06-20',
+        responseDate: '2026-06-25',
+        ncrAction: 'Rejected',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      {
+        id: 'NCR-TEMP-001-R1',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-TEMP-001',
+        docNo: 'NCR-TEMP-001',
+        rev: '01',
+        discipline: 'STR',
+        submissionDate: '2026-06-03', // inherited
+        ncrSentDateCorrectiveAction: '2026-06-20', // inherited
+        responseDate: '2026-06-25', // inherited
+        ncrAction: 'Approved',
+        ncrStatus: 'Closed'
+      } as SubmittalRow
+    ];
+
+    const sorted = normalizeNcrRevisionHistory(rows);
+    const rev00Act = getRevisionActivityDateMs(sorted[0], 0, sorted);
+    const rev01Act = getRevisionActivityDateMs(sorted[1], 1, sorted);
+
+    if (rev00Act === null) {
+      throw new Error('Expected Rev00 to have a valid activityDate');
+    }
+    if (rev01Act !== null) {
+      throw new Error(`Expected Rev01 with only inherited dates to have NO genuine activity date (null), got ${rev01Act}`);
+    }
+
+    const selectedForJune = getLatestRev(rows, new Date(2026, 5, 30));
+    if (!selectedForJune || selectedForJune.rev !== '00') {
+      throw new Error(`Expected June 30 snapshot to select Rev00, got ${selectedForJune?.rev}`);
+    }
+
+    const juneReport = processNCRData(rows, '2026-06-01');
+    // At June 30, selected revision MUST be Rev00 (Rejected/Open -> waitingContractor = 1, overdue = 1), NOT Rev01 (Approved/Closed)
+    if (juneReport.monthlyKPIs.waitingContractor !== 1 || juneReport.monthlyKPIs.criticalDelays !== 1) {
+      throw new Error(
+        `Temporal Revision Leakage detected! Expected June 30 state = Rejected/Open (waitingContractor=1, criticalDelays=1), got waitingContractor=${juneReport.monthlyKPIs.waitingContractor}, criticalDelays=${juneReport.monthlyKPIs.criticalDelays}`
+      );
+    }
+    // Also verify inherited June 20 & June 25 on Rev01 did not double-count June events
+    if (
+      juneReport.monthlyKPIs.newNcrReceived !== 1 ||
+      juneReport.monthlyKPIs.correctiveSubmitted !== 1 ||
+      juneReport.monthlyKPIs.responsesReceived !== 1 ||
+      juneReport.monthlyKPIs.rejected !== 1 ||
+      juneReport.monthlyKPIs.approved !== 0
+    ) {
+      throw new Error(
+        `Inherited dates on Rev01 corrupted June events: ${JSON.stringify(juneReport.monthlyKPIs)}`
+      );
+    }
+  });
+
+  test('ER-032: Genuine same-day resubmission vs inherited duplicate & Cross-Consumer SSOT Parity (Presentation / ExportHelpers / ncrAnalytics)', () => {
+    const sameDayResubRows: SubmittalRow[] = [
+      {
+        id: 'NCR-SD-R0',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-SD-001',
+        docNo: 'NCR-SD-001',
+        rev: '00',
+        discipline: 'SURVEY',
+        submissionDate: '2026-06-02',
+        ncrSentDateCorrectiveAction: '2026-06-10',
+        responseDate: '2026-06-10', // Same-day rejection on Rev00
+        ncrAction: 'Rejected',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      {
+        id: 'NCR-SD-R1',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-SD-001',
+        docNo: 'NCR-SD-001',
+        rev: '01',
+        discipline: 'SURVEY',
+        submissionDate: '2026-06-02', // inherited
+        ncrSentDateCorrectiveAction: '2026-06-10', // Genuine same-day resubmission on Rev01 initiating new cycle!
+        responseDate: '2026-06-18', // Responded 8 days later
+        ncrAction: 'Approved',
+        ncrStatus: 'Closed'
+      } as SubmittalRow
+    ];
+
+    const res = processNCRData(sameDayResubRows, '2026-06-01');
+    if (res.monthlyKPIs.correctiveSubmitted !== 2 || res.monthlyKPIs.responsesReceived !== 2) {
+      throw new Error(
+        `Expected 2 corrective submissions and 2 responses for genuine same-day resubmission cycle, got sub=${res.monthlyKPIs.correctiveSubmitted}, resp=${res.monthlyKPIs.responsesReceived}`
+      );
+    }
+
+    const presCum = compileCanonicalNCRPresentationStats(sameDayResubRows, undefined);
+    const exportCum = compileStatsForBaseType(sameDayResubRows, 'NCR', undefined, sameDayResubRows);
+    const utilStats = calculateLegacyAnalyticsNCRStats(sameDayResubRows);
+
+    if (
+      presCum.totalRow.Total !== 1 ||
+      presCum.totalRow.Closed !== 1 ||
+      exportCum.totalRow.Total !== presCum.totalRow.Total ||
+      exportCum.totalRow.Closed !== presCum.totalRow.Closed ||
+      utilStats.ncrRaised !== 1 ||
+      utilStats.ncrClosed !== 1
+    ) {
+      throw new Error(
+        `Cross-consumer SSOT mismatch: pres=${JSON.stringify(presCum.totalRow)}, export=${JSON.stringify(exportCum.totalRow)}, util=${JSON.stringify(utilStats)}`
+      );
     }
   });
 

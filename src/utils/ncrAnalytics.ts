@@ -1,7 +1,11 @@
 import { SubmittalRow } from "../types";
-import { compareRevisionsCanonical } from "../analytics/revisionResolver";
 import { getMonthStr } from "./rfiAnalytics";
-import { classifyNcrStatus } from "./calculations";
+import {
+  normalizeNCRData,
+  groupNCRByReference,
+  normalizeNcrRevisionHistory,
+  evaluateNcrRevisionState
+} from "../analytics/ncr/ncrEngine";
 
 export interface NCRStats {
   ncrRaised: number;
@@ -61,18 +65,8 @@ const parseRootCause = (subject: string): string => {
 };
 
 export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCRStats => {
-  const ncrMap = new Map<string, SubmittalRow[]>();
-
-  const ncrData = data.filter(d => (d.documentType || '').includes('NCR') || (d.logType || '').toUpperCase().includes('NCR'));
-
-  ncrData.forEach(row => {
-    const key = (row.ncrRef || row.docNo || '').trim().toUpperCase();
-    if (!key) return;
-    if (!ncrMap.has(key)) {
-      ncrMap.set(key, []);
-    }
-    ncrMap.get(key)!.push(row);
-  });
+  const ncrData = normalizeNCRData(data);
+  const ncrMap = groupNCRByReference(ncrData);
 
   const stats: NCRStats = {
     ncrRaised: 0,
@@ -91,21 +85,25 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
   let totalClosureDays = 0;
   let closureCount = 0;
 
-  Array.from(ncrMap.values()).forEach(history => {
-    history.sort((a, b) => compareRevisionsCanonical(a.rev, b.rev));
+  Array.from(ncrMap.values()).forEach(rawHistory => {
+    const history = normalizeNcrRevisionHistory(rawHistory);
+    if (!history.length) return;
 
     const firstSubmission = history[0];
     const latestSubmission = history[history.length - 1];
 
-    const issueDateStr = firstSubmission.submissionDate;
-    const closureDateStr = latestSubmission.responseDate;
-    
-    const ncrClassification = classifyNcrStatus(latestSubmission);
-    const isClosed = ncrClassification.isClosed;
-    const isUnderReview = ncrClassification.isUnderReview;
-    const isCorrectiveAction = Boolean(latestSubmission.ncrSentDateCorrectiveAction);
-    const isUnderInvestigation = ncrClassification.isOpen && !isUnderReview && !isCorrectiveAction;
-    
+    const issueDateStr = firstSubmission.submissionDate || latestSubmission.submissionDate;
+    const issueDateMs = issueDateStr ? new Date(issueDateStr).getTime() : null;
+    const validIssueMs = issueDateMs !== null && !isNaN(issueDateMs) ? issueDateMs : null;
+
+    const state = evaluateNcrRevisionState(latestSubmission, validIssueMs, undefined);
+    const closureDateStr = state.receivedCorrectiveStr || latestSubmission.responseDate;
+
+    const isClosed = state.isApprovedClosed;
+    const isUnderReview = state.isUnderReview;
+    const isCorrectiveAction = state.isRejectedOpen;
+    const isUnderInvestigation = state.isNotSent;
+
     // Check target month for raised vs closed if applicable
     const issueMonth = getMonthStr(issueDateStr);
     const closureMonth = getMonthStr(closureDateStr);
@@ -148,10 +146,9 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
     }
 
     let daysOpen = 0;
-    if (!isClosed && issueDateStr) {
-      daysOpen = Math.floor((new Date().getTime() - new Date(issueDateStr).getTime()) / (1000 * 3600 * 24));
-      const targetSLA = 14; 
-      if (daysOpen > targetSLA) stats.ncrOverdue++;
+    if (!isClosed && validIssueMs !== null) {
+      daysOpen = Math.floor((Date.now() - validIssueMs) / (1000 * 3600 * 24));
+      if (state.isOverdue) stats.ncrOverdue++;
 
       if (daysOpen <= 30) stats.aging.days0_30++;
       else if (daysOpen <= 60) stats.aging.days31_60++;
@@ -159,15 +156,18 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
       else stats.aging.daysMore90++;
     }
 
-    if (isClosed && issueDateStr && closureDateStr) {
-      const clsTime = Math.floor((new Date(closureDateStr).getTime() - new Date(issueDateStr).getTime()) / (1000 * 3600 * 24));
-      if (clsTime >= 0) {
-         closureCount++;
-         totalClosureDays += clsTime;
+    if (isClosed && validIssueMs !== null && closureDateStr) {
+      const clsMs = new Date(closureDateStr).getTime();
+      if (!isNaN(clsMs)) {
+        const clsTime = Math.floor((clsMs - validIssueMs) / (1000 * 3600 * 24));
+        if (clsTime >= 0) {
+          closureCount++;
+          totalClosureDays += clsTime;
+        }
       }
     }
 
-    if (!isClosed && issueDateStr) {
+    if (!isClosed && validIssueMs !== null) {
        stats.trackingTable.push({
            ...latestSubmission,
            delayDays: daysOpen

@@ -2,136 +2,15 @@ import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
 import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, resolveRowRegister, isExcludedRow } from "./managementReportOutput";
-import { processNCRData } from "./ncr/ncrEngine";
+import { processNCRData, compileCanonicalNCRPresentationStats } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
 // Compile statistics logic extracted from exportEngine
 export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
     if (bt === 'NCR') {
         const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
-        const ncrResult = processNCRData(sourceData, monthlyStart);
-        const isMon = !!monthlyStart;
-        const normDisc = (d: string) => {
-            const up = (d || '').toUpperCase().trim().replace(/^NCR-/, '');
-            if (up === 'STR/SUR' || up === 'STR-SUR') return 'STR/SUR';
-            if (up === 'SURVEY' || up === 'SURV' || up === 'SUR' || up.startsWith('SURV')) return 'SURVEY';
-            if (up === 'STR' || up.startsWith('STR')) return 'STR';
-            if (up === 'ARCH' || up === 'ARC' || up === 'ARCHITECTURAL' || up.startsWith('ARC')) return 'ARCH';
-            if (up === 'MECH' || up === 'MEC' || up === 'MECHANICAL' || up.startsWith('MEC')) return 'MECH';
-            if (up === 'ELEC' || up === 'ELE' || up === 'ELECTRICAL' || up.startsWith('ELE')) return 'ELEC';
-            if (up === 'INFRA' || up === 'INF' || up === 'INFR' || up === 'INFRASTRUCTURE' || up.startsWith('INF')) return 'INFRA';
-            if (up === 'LAND' || up === 'LND' || up === 'LANDSCAPE' || up.startsWith('LND') || up.startsWith('LAN')) return 'LANDSCAPE';
-            if (up === 'HSE' || up.includes('HSE')) return 'HSE';
-            return up || 'GENERAL';
-        };
-
-        const baseDisciplines = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE'];
-        const knownNorms = new Set(baseDisciplines.map(normDisc));
-        const extraDisciplines: string[] = [];
-        if (isMon) {
-            ncrResult.monthly.forEach(m => {
-                const n = normDisc(m.classification);
-                if (!knownNorms.has(n)) {
-                    knownNorms.add(n);
-                    extraDisciplines.push(n);
-                }
-            });
-        } else {
-            ncrResult.cumulative.forEach(c => {
-                const n = normDisc(c.discipline);
-                if (!knownNorms.has(n)) {
-                    knownNorms.add(n);
-                    extraDisciplines.push(n);
-                }
-            });
-        }
-        const disciplines = [...baseDisciplines, ...extraDisciplines];
-
-        const stats = disciplines.map((disc) => {
-           const targetNorm = normDisc(disc);
-           if (isMon) {
-               const matching = ncrResult.monthly.filter(m => normDisc(m.classification) === targetNorm);
-               const sub = matching.reduce((acc, m) => ({
-                   rev0: acc.rev0 + (m.rev0 || 0),
-                   revHigh: acc.revHigh + (m.revHigh || 0),
-                   totalSubs: acc.totalSubs + (m.totalSubs || 0),
-                   approved: acc.approved + (m.approved || 0),
-                   rejectedOpen: acc.rejectedOpen + (m.rejectedOpen || 0),
-                   rejectedClosed: acc.rejectedClosed + (m.rejectedClosed || 0),
-                   pending: acc.pending + (m.pending || 0),
-                   overdue: acc.overdue + (m.overdue || 0)
-               }), {
-                   rev0: 0,
-                   revHigh: 0,
-                   totalSubs: 0,
-                   approved: 0,
-                   rejectedOpen: 0,
-                   rejectedClosed: 0,
-                   pending: 0,
-                   overdue: 0
-               });
-               return {
-                   discipline: disc,
-                   Rev00: sub.rev0,
-                   FurtherRev: sub.revHigh,
-                   Approved: sub.approved,
-                   RejectedOpen: sub.rejectedOpen,
-                   RejectedClosed: sub.rejectedClosed,
-                   Pending: sub.pending,
-                   Total: sub.totalSubs,
-                   Closed: sub.approved,
-                   Open: sub.rejectedOpen
-               };
-           } else {
-               const matching = ncrResult.cumulative.filter(c => normDisc(c.discipline) === targetNorm);
-               const sub = matching.reduce((acc, c) => ({
-                   totalUnique: acc.totalUnique + (c.totalUnique || 0),
-                   open: acc.open + (c.open || 0),
-                   closed: acc.closed + (c.closed || 0),
-                   underReview: acc.underReview + (c.underReview || 0),
-                   approved: acc.approved + (c.approved || 0),
-                   rejected: acc.rejected + (c.rejected || 0),
-                   rev0: acc.rev0 + (c.rev0 || 0),
-                   revHigh: acc.revHigh + (c.revHigh || 0)
-               }), {
-                   totalUnique: 0,
-                   open: 0,
-                   closed: 0,
-                   underReview: 0,
-                   approved: 0,
-                   rejected: 0,
-                   rev0: 0,
-                   revHigh: 0
-               });
-               return {
-                   discipline: disc,
-                   Rev00: sub.rev0 || 0,
-                   FurtherRev: sub.revHigh || 0,
-                   Approved: sub.approved,
-                   RejectedOpen: sub.rejected,
-                   RejectedClosed: 0,
-                   Pending: sub.underReview,
-                   Total: sub.totalUnique || ((sub.rev0 || 0) + (sub.revHigh || 0)),
-                   Closed: sub.closed,
-                   Open: sub.open
-               };
-           }
-        });
-
-        const totalRow = {
-           discipline: "TOTAL",
-           Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
-           FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
-           Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
-           RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
-           RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
-           Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
-           Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
-           Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
-           Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
-        };
-
-        return { stats, totalRow, hasData: stats.reduce((acc, curr) => acc + Number(curr.Total), 0) > 0 };
+        const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart);
+        return { stats, totalRow, hasData };
     }
 
     const typeData = dataset.filter(d => {

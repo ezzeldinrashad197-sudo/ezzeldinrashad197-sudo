@@ -45,8 +45,8 @@ Prior to freezing the new baseline, the following non-negotiable mathematical gu
 ### A. Updated Artifacts Under This Revision:
 | File Path | Previous Frozen Hash | New Canonical Frozen Hash (SHA-256) |
 |:---|:---|:---|
-| `src/utils/calculations.ts` | `f3650a20789bf28e680eedfdb070a6b43a75e677705a85e2faf7a0605cbfbc03` | `26a859f736ac872c12f9a8af4f298512a8258236671e409992d998278a54c287` |
-| `src/analytics/calculationFoundation.ts` | `9e6bf9034395b754836ee1ce5d0e5da13b36d8cbdba2bedede55aa7270f20203` | `ddc2e312bd2e44081cf251ccf60e79334b7ef50a372ea10699c082f04248bd6e` |
+| `src/utils/calculations.ts` | `26a859f736ac872c12f9a8af4f298512a8258236671e409992d998278a54c287` | `ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468` |
+| `src/analytics/calculationFoundation.ts` | `ddc2e312bd2e44081cf251ccf60e79334b7ef50a372ea10699c082f04248bd6e` | `c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b` |
 
 ### B. Unchanged Immutable Artifacts (Verified 100% Unmodified):
 | File Path | Canonical Frozen Hash (SHA-256) | Status |

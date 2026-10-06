@@ -33,14 +33,149 @@ const toIsoDay = (ms: number | null): string => {
 };
 
 /**
+ * Determines whether `submissionDate` (Issue Date) on revision `r` at `index`
+ * is inherited from an earlier revision (`0 .. index-1`).
+ */
+export const isInheritedIssueDate = (
+  r: SubmittalRow,
+  index: number,
+  sortedHistory: SubmittalRow[]
+): boolean => {
+  const issueMs = parseDateToMs(r.submissionDate);
+  if (issueMs === null) return true;
+  if (index === 0) return false;
+
+  const issueDay = toIsoDay(issueMs);
+  for (let i = 0; i < index; i++) {
+    const prev = sortedHistory[i];
+    const pIssueMs = parseDateToMs(prev.submissionDate);
+    const pSentMs = parseDateToMs(prev.ncrSentDateCorrectiveAction || prev.sentDateCorrectiveAction);
+    const pRespMs = parseDateToMs(prev.responseDate);
+
+    if (pIssueMs !== null && (toIsoDay(pIssueMs) === issueDay || issueMs <= pIssueMs)) {
+      return true;
+    }
+    if (pSentMs !== null && issueMs <= pSentMs) {
+      return true;
+    }
+    if (pRespMs !== null && issueMs <= pRespMs) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Determines whether `sentDateCorrectiveAction` on revision `r` at `index`
+ * is an inherited historical date from an earlier revision (`0 .. index-1`)
+ * rather than a genuine new Corrective Action Submission event on `r`.
+ *
+ * Distinguishes:
+ * 1. Inherited duplicate (e.g. Rev00 Sent=10-Jun, Rev01 Sent=10-Jun inherited) -> returns true
+ * 2. Genuine new event on a later date (e.g. Rev00 Sent=10-Jun, Rev01 Sent=22-Jun) -> returns false
+ * 3. Genuine same-day resubmission in a strictly higher revision after same-day rejection on prior revision,
+ *    where the new revision initiates a new review cycle (blank or later responseDate, or explicit activity date) -> returns false
+ */
+export const isInheritedSentDate = (
+  r: SubmittalRow,
+  index: number,
+  sortedHistory: SubmittalRow[]
+): boolean => {
+  const sentMs = parseDateToMs(r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction);
+  if (sentMs === null) return true;
+  if (index === 0) return false;
+
+  const sentDay = toIsoDay(sentMs);
+  const respMs = parseDateToMs(r.responseDate);
+  const respDay = toIsoDay(respMs);
+  const anyR = r as Record<string, any>;
+  const hasExplicitActivity =
+    parseDateToMs(anyR.revisionActivityDate || anyR.revisionDate || anyR.activityDate) !== null;
+
+  for (let i = 0; i < index; i++) {
+    const prev = sortedHistory[i];
+    const pSentMs = parseDateToMs(prev.ncrSentDateCorrectiveAction || prev.sentDateCorrectiveAction);
+    const pRespMs = parseDateToMs(prev.responseDate);
+    const pSentDay = toIsoDay(pSentMs);
+    const pRespDay = toIsoDay(pRespMs);
+
+    // Chronological impossibility: cannot be a new submission if earlier than a prior revision's sent or response timestamp
+    if (pSentMs !== null && sentMs < pSentMs) return true;
+    if (pRespMs !== null && sentMs < pRespMs) return true;
+
+    if (pSentDay && pSentDay === sentDay) {
+      const isHigherRev = compareRevisions(r.rev, prev.rev) > 0;
+      const prevRespondedSameDay = pRespDay === sentDay;
+      const initiatesNewCycle =
+        respMs === null ||
+        respDay !== pRespDay ||
+        hasExplicitActivity ||
+        anyR.isGenuineSameDayEvent === true;
+
+      if (isHigherRev && prevRespondedSameDay && initiatesNewCycle) {
+        continue;
+      }
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Determines whether `responseDate` on revision `r` at `index`
+ * is an inherited historical date from an earlier revision (`0 .. index-1`)
+ * rather than a genuine new Consultant Response event on `r`.
+ */
+export const isInheritedResponseDate = (
+  r: SubmittalRow,
+  index: number,
+  sortedHistory: SubmittalRow[]
+): boolean => {
+  const sentMs = parseDateToMs(r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction);
+  const respMs = parseDateToMs(r.responseDate);
+  if (respMs === null) return true;
+
+  // A consultant response cannot precede the revision's own corrective action submission
+  if (sentMs !== null && respMs < sentMs) return true;
+  if (index === 0) return false;
+
+  const respDay = toIsoDay(respMs);
+  const anyR = r as Record<string, any>;
+  const hasExplicitActivity =
+    parseDateToMs(anyR.revisionActivityDate || anyR.revisionDate || anyR.activityDate) !== null;
+  const sentWasInherited = isInheritedSentDate(r, index, sortedHistory);
+
+  for (let i = 0; i < index; i++) {
+    const prev = sortedHistory[i];
+    const pSentMs = parseDateToMs(prev.ncrSentDateCorrectiveAction || prev.sentDateCorrectiveAction);
+    const pRespMs = parseDateToMs(prev.responseDate);
+    const pRespDay = toIsoDay(pRespMs);
+
+    if (pSentMs !== null && respMs < pSentMs) return true;
+    if (pRespMs !== null && respMs < pRespMs) return true;
+
+    if (pRespDay && pRespDay === respDay) {
+      const isHigherRev = compareRevisions(r.rev, prev.rev) > 0;
+      if (isHigherRev && !sentWasInherited && (hasExplicitActivity || anyR.isGenuineSameDayEvent === true)) {
+        continue;
+      }
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
  * Resolves the true temporal activity start timestamp of a specific revision `r`
  * within a sorted NCR revision history (`sortedHistory`).
  *
- * Fixes NCR-006 & NCR-007:
- * Subsequent revisions (Rev01, Rev02, ...) frequently inherit the original NCR's
- * `submissionDate` (Issue Date) or earlier `sentDate`/`responseDate`.
- * Using an inherited `submissionDate` caused future revisions (e.g. July Rev01)
- * to leak into past month-end snapshots (e.g. June 30 Snapshot).
+ * Fixes NCR-006 & NCR-007 (and Defect #1 Temporal Revision Leakage):
+ * - Distinguishes CURRENT REVISION ACTIVITY from INHERITED HISTORICAL DATA.
+ * - If a subsequent revision (`index > 0`) contains NO genuine activity attributable
+ *   to that revision (all dates are inherited from prior revisions), returns `null`.
+ * - NEVER falls back to `maxPriorEventMs` or inherited `submissionDate`/`sentDate`/`responseDate`.
  */
 export const getRevisionActivityDateMs = (
   r: SubmittalRow,
@@ -63,72 +198,63 @@ export const getRevisionActivityDateMs = (
     return respMs;
   }
 
-  // Subsequent revision (index > 0): identify and exclude dates inherited from earlier revisions (0 .. index-1)
-  const priorIssueDays = new Set<string>();
-  const priorSentDays = new Set<string>();
-  const priorRespDays = new Set<string>();
+  // Subsequent revision (index > 0): collect ONLY genuine current-revision activity timestamps
+  const priorExplicitDays = new Set<string>();
   let maxPriorEventMs: number | null = null;
 
   for (let i = 0; i < index; i++) {
     const prev = sortedHistory[i];
+    const anyPrev = prev as Record<string, any>;
+    const pExplicitMs = parseDateToMs(
+      anyPrev.revisionActivityDate || anyPrev.revisionDate || anyPrev.activityDate
+    );
     const pIssueMs = parseDateToMs(prev.submissionDate);
     const pSentMs = parseDateToMs(prev.ncrSentDateCorrectiveAction || prev.sentDateCorrectiveAction);
     const pRespMs = parseDateToMs(prev.responseDate);
 
-    if (pIssueMs !== null) {
-      priorIssueDays.add(toIsoDay(pIssueMs));
-      if (maxPriorEventMs === null || pIssueMs > maxPriorEventMs) maxPriorEventMs = pIssueMs;
+    if (pExplicitMs !== null) {
+      priorExplicitDays.add(toIsoDay(pExplicitMs));
+      if (maxPriorEventMs === null || pExplicitMs > maxPriorEventMs) maxPriorEventMs = pExplicitMs;
     }
-    if (pSentMs !== null) {
-      priorSentDays.add(toIsoDay(pSentMs));
-      if (maxPriorEventMs === null || pSentMs > maxPriorEventMs) maxPriorEventMs = pSentMs;
+    if (pIssueMs !== null && (maxPriorEventMs === null || pIssueMs > maxPriorEventMs)) {
+      maxPriorEventMs = pIssueMs;
     }
-    if (pRespMs !== null) {
-      priorRespDays.add(toIsoDay(pRespMs));
-      if (maxPriorEventMs === null || pRespMs > maxPriorEventMs) maxPriorEventMs = pRespMs;
+    if (pSentMs !== null && (maxPriorEventMs === null || pSentMs > maxPriorEventMs)) {
+      maxPriorEventMs = pSentMs;
+    }
+    if (pRespMs !== null && (maxPriorEventMs === null || pRespMs > maxPriorEventMs)) {
+      maxPriorEventMs = pRespMs;
     }
   }
 
   const candidateMs: number[] = [];
 
-  if (explicitRevActivityMs !== null) {
+  if (
+    explicitRevActivityMs !== null &&
+    !priorExplicitDays.has(toIsoDay(explicitRevActivityMs)) &&
+    (maxPriorEventMs === null || explicitRevActivityMs >= maxPriorEventMs)
+  ) {
     candidateMs.push(explicitRevActivityMs);
   }
 
-  // `submissionDate` on Rev01+ is only a genuine revision activity date if it was NOT inherited from an earlier revision
-  if (issueMs !== null) {
-    const issueDay = toIsoDay(issueMs);
-    const isInheritedIssue = priorIssueDays.has(issueDay) || (maxPriorEventMs !== null && issueMs < maxPriorEventMs);
-    if (!isInheritedIssue) {
-      candidateMs.push(issueMs);
-    }
+  if (issueMs !== null && !isInheritedIssueDate(r, index, sortedHistory)) {
+    candidateMs.push(issueMs);
   }
 
-  // `sentDate` on Rev01+ is a genuine revision activity date if it was NOT inherited from an earlier revision
-  if (sentMs !== null) {
-    const sentDay = toIsoDay(sentMs);
-    const isInheritedSent = priorSentDays.has(sentDay) || (maxPriorEventMs !== null && sentMs < maxPriorEventMs);
-    if (!isInheritedSent) {
-      candidateMs.push(sentMs);
-    }
+  if (sentMs !== null && !isInheritedSentDate(r, index, sortedHistory)) {
+    candidateMs.push(sentMs);
   }
 
-  // `responseDate` on Rev01+ is a genuine revision activity date if it was NOT inherited from an earlier revision
-  if (respMs !== null) {
-    const respDay = toIsoDay(respMs);
-    const isInheritedResp = priorRespDays.has(respDay) || (maxPriorEventMs !== null && respMs < maxPriorEventMs);
-    if (!isInheritedResp) {
-      candidateMs.push(respMs);
-    }
+  if (respMs !== null && !isInheritedResponseDate(r, index, sortedHistory)) {
+    candidateMs.push(respMs);
   }
 
   if (candidateMs.length > 0) {
     return Math.min(...candidateMs);
   }
 
-  // Fallback if all dates on the subsequent revision are identical to prior revisions
-  if (maxPriorEventMs !== null) return maxPriorEventMs;
-  return issueMs ?? sentMs ?? respMs;
+  // Mandatory Temporal Rule: If a subsequent revision has NO genuine activity, return null.
+  return null;
 };
 
 /**
@@ -428,6 +554,8 @@ export interface NCREvidence {
   isRespondedInMonth: boolean;
   monthlyOutcome: "Approved" | "Rejected" | "None";
   eventsInMonth?: NCREventRecord[];
+  monthEndRev?: string;
+  monthEndStage?: NCREvidence["stage"] | "Not Issued Yet";
 }
 
 export interface NCRIntegrityReport {
@@ -460,6 +588,142 @@ export interface NCRIntegrityReport {
     crossEngineReconciliationPassed: boolean;
   };
 }
+
+/**
+ * Canonical 3-Stage NCR Workflow State Machine & 14-Day Overdue Evaluator.
+ * Shared identically by Cumulative Snapshot (`asOfTimestampMs === undefined`)
+ * and Month-End Historical Snapshot (`asOfTimestampMs = endOfTargetMonthMs`).
+ */
+export const evaluateNcrRevisionState = (
+  revisionRow: SubmittalRow,
+  originalIssueMs: number | null,
+  asOfTimestampMs?: number
+) => {
+  const issueMs = originalIssueMs ?? parseDateToMs(revisionRow.submissionDate);
+  const rawSentStr =
+    revisionRow.ncrSentDateCorrectiveAction || revisionRow.sentDateCorrectiveAction || "";
+  const rawSentMs = parseDateToMs(rawSentStr);
+
+  const hasSentByCutoff =
+    asOfTimestampMs === undefined
+      ? Boolean(rawSentStr)
+      : rawSentMs !== null && rawSentMs <= asOfTimestampMs;
+  const effectiveSentMs = hasSentByCutoff ? rawSentMs : null;
+  const effectiveSentStr = hasSentByCutoff ? rawSentStr : "";
+
+  const rawRespStr = revisionRow.responseDate || "";
+  const rawRespMs = parseDateToMs(rawRespStr);
+  const isRespNotInheritedPriorToSent =
+    rawSentMs === null || rawRespMs === null || rawRespMs >= rawSentMs;
+
+  const hasRespByCutoff =
+    isRespNotInheritedPriorToSent &&
+    (asOfTimestampMs === undefined
+      ? Boolean(rawRespStr)
+      : rawRespMs !== null && rawRespMs <= asOfTimestampMs);
+  const effectiveRespMs = hasRespByCutoff ? rawRespMs : null;
+  const effectiveRespStr = hasRespByCutoff ? rawRespStr : "";
+
+  const cStatus = resolveNcrOutcome(revisionRow);
+
+  let stage: NCREvidence["stage"] = "Stage 1: Waiting Contractor";
+  let explanation = "";
+  let isNotSent = false;
+  let isUnderReview = false;
+  let isApprovedClosed = false;
+  let isRejectedOpen = false;
+
+  if (hasRespByCutoff) {
+    if (cStatus.isApprovedClosed) {
+      isApprovedClosed = true;
+      stage = "Stage 3: Approved Closed";
+      explanation =
+        "Corrective action was received and officially approved/closed by the consultant.";
+    } else {
+      isRejectedOpen = true;
+      stage = "Stage 3: Rejected Open";
+      explanation =
+        "Corrective action plan was reviewed but rejected. NCR remains open, awaiting contractor re-submission.";
+    }
+  } else if (hasSentByCutoff) {
+    isUnderReview = true;
+    stage = "Stage 2: Waiting Consultant";
+    explanation =
+      "Contractor submitted a corrective plan. Currently pending review by the consultant (Response Date is blank).";
+  } else if (!rawSentStr && !rawRespStr) {
+    if (cStatus.isApprovedClosed) {
+      isApprovedClosed = true;
+      stage = "Stage 3: Approved Closed";
+      explanation =
+        "Corrective action was officially approved/closed by the consultant (workflow dates omitted).";
+    } else if (cStatus.isRejectedOpen) {
+      isRejectedOpen = true;
+      stage = "Stage 3: Rejected Open";
+      explanation =
+        "Corrective action plan was reviewed and rejected. NCR remains open (workflow dates omitted).";
+    } else if (cStatus.isUnderReview) {
+      isUnderReview = true;
+      stage = "Stage 2: Waiting Consultant";
+      explanation =
+        "Corrective plan is currently pending review by the consultant (workflow dates omitted).";
+    } else {
+      isNotSent = true;
+      stage = "Stage 1: Waiting Contractor";
+      explanation =
+        "Issued to contractor but no corrective action response has been submitted yet (Sent Date is blank).";
+    }
+  } else {
+    isNotSent = true;
+    stage = "Stage 1: Waiting Contractor";
+    explanation =
+      "Issued to contractor but no corrective action response has been submitted yet (Sent Date is blank).";
+  }
+
+  const isOpen = isNotSent || isRejectedOpen;
+  const isClosed = isApprovedClosed;
+  const isWaitingContractor =
+    (isNotSent && (asOfTimestampMs === undefined || (issueMs !== null && issueMs <= asOfTimestampMs))) ||
+    isRejectedOpen;
+  const isWaitingConsultant = isUnderReview;
+
+  let isOverdue = false;
+  if (
+    issueMs !== null &&
+    (asOfTimestampMs === undefined || issueMs <= asOfTimestampMs) &&
+    !isApprovedClosed
+  ) {
+    const nowMs = Date.now();
+    const referenceMs =
+      asOfTimestampMs === undefined
+        ? nowMs
+        : asOfTimestampMs > nowMs
+          ? nowMs
+          : asOfTimestampMs;
+    const daysOpen = Math.floor((referenceMs - issueMs) / (1000 * 3600 * 24));
+    if (daysOpen > 14) {
+      isOverdue = true;
+    }
+  }
+
+  return {
+    stage,
+    explanation,
+    isNotSent,
+    isUnderReview,
+    isApprovedClosed,
+    isRejectedOpen,
+    isOpen,
+    isClosed,
+    isWaitingContractor,
+    isWaitingConsultant,
+    isOverdue,
+    issueMs,
+    sentMs: effectiveSentMs,
+    responseMs: effectiveRespMs,
+    sentDateStr: effectiveSentStr,
+    receivedCorrectiveStr: effectiveRespStr
+  };
+};
 
 // ==========================================
 // 1. Cumulative NCR State Engine (Snapshot)
@@ -503,53 +767,22 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
     const cumSt = cumMap.get(disc)!;
     cumSt.totalUnique++;
 
-    const cStatus = resolveNcrOutcome(latestOverall);
-    const sentDateStr =
-      latestOverall.ncrSentDateCorrectiveAction || latestOverall.sentDateCorrectiveAction;
-    const sentDateMs = parseDateToMs(sentDateStr);
-    const rawReceivedCorrectiveStr = latestOverall.responseDate;
-    const rawReceivedCorrectiveMs = parseDateToMs(rawReceivedCorrectiveStr);
-    const receivedCorrectiveStr =
-      rawReceivedCorrectiveStr &&
-      (sentDateMs === null || rawReceivedCorrectiveMs === null || rawReceivedCorrectiveMs >= sentDateMs)
-        ? rawReceivedCorrectiveStr
-        : "";
+    const state = evaluateNcrRevisionState(latestOverall, originalIssueMs, undefined);
 
-    let stage: NCREvidence["stage"] = "Stage 1: Waiting Contractor";
-    let explanation = "";
-
-    // Strict implementation of State Machine on Latest Revision
-    if (!sentDateStr) {
-      // Stage 1: Sent Date Corrective Action is blank -> Open (Waiting Contractor)
+    if (state.isNotSent) {
       cumSt.notSent++;
       cumSt.open++;
-      stage = "Stage 1: Waiting Contractor";
-      explanation =
-        "Issued to contractor but no corrective action response has been submitted yet (Sent Date is blank).";
-    } else if (sentDateStr && !receivedCorrectiveStr) {
-      // Stage 2: Sent Date exists, Received Corrective blank -> Under Review (Waiting Consultant)
+    } else if (state.isUnderReview) {
       cumSt.underReview++;
       cumSt.waiting++;
-      stage = "Stage 2: Waiting Consultant";
-      explanation =
-        "Contractor submitted a corrective plan. Currently pending review by the consultant (Response Date is blank).";
-    } else if (receivedCorrectiveStr) {
-      // Stage 3: Received Corrective exists
-      if (cStatus.isApprovedClosed) {
-        cumSt.approvedClosed++;
-        cumSt.closed++;
-        cumSt.approved++;
-        stage = "Stage 3: Approved Closed";
-        explanation =
-          "Corrective action was received and officially approved/closed by the consultant.";
-      } else {
-        cumSt.rejectedOpen++;
-        cumSt.open++;
-        cumSt.rejected++;
-        stage = "Stage 3: Rejected Open";
-        explanation =
-          "Corrective action plan was reviewed but rejected. NCR remains open, awaiting contractor re-submission.";
-      }
+    } else if (state.isApprovedClosed) {
+      cumSt.approvedClosed++;
+      cumSt.closed++;
+      cumSt.approved++;
+    } else if (state.isRejectedOpen) {
+      cumSt.rejectedOpen++;
+      cumSt.open++;
+      cumSt.rejected++;
     }
 
     const isLatestFurther = isFurtherRevision(latestOverall.rev, latestOverall.isRev0);
@@ -559,29 +792,17 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
       cumSt.rev0++;
     }
 
-    // Days open for overdue calculation (14 days limit from original issue date)
-    let isOverdue = false;
-    if (originalIssueMs !== null) {
-      const responseMs = parseDateToMs(latestOverall.responseDate);
-      const isClosed = Boolean(receivedCorrectiveStr && cStatus.isApprovedClosed);
-      const endMs = isClosed && responseMs !== null ? responseMs : Date.now();
-      const daysOpen = Math.floor((endMs - originalIssueMs) / (1000 * 3600 * 24));
-      if (daysOpen > 14 && !isClosed) {
-        isOverdue = true;
-      }
-    }
-
     cumulativeEvidence.push({
       ref: refKey || latestOverall.ncrRef || latestOverall.docNo || "UNKNOWN",
       discipline: disc,
       latestRev: latestOverall.rev || "0",
-      stage,
+      stage: state.stage,
       issueDate: originalIssueStr || "-",
-      sentDate: sentDateStr || "-",
-      responseDate: receivedCorrectiveStr || "-",
+      sentDate: state.sentDateStr || "-",
+      responseDate: state.receivedCorrectiveStr || "-",
       actionCode: latestOverall.ncrAction || latestOverall.action || "-",
-      isOverdue,
-      explanation
+      isOverdue: state.isOverdue,
+      explanation: state.explanation
     });
   });
 
@@ -626,6 +847,8 @@ export const calculateMonthlyEvents = (
       isResponded: boolean;
       outcome: "Approved" | "Rejected" | "None";
       events: NCREventRecord[];
+      monthEndRev?: string;
+      monthEndStage?: NCREvidence["stage"] | "Not Issued Yet";
     }
   >();
 
@@ -736,13 +959,12 @@ export const calculateMonthlyEvents = (
     }
 
     // EVENT 2 (CORRECTIVE_SUBMITTED) & EVENT 3 (RESPONSE)
-    // Deduplicate inherited `sentDate` and `responseDate` across revisions of the same NCR Ref.
-    // Fixes NCR-002, NCR-004, NCR-005, NCR-012, NCR-013.
-    const seenSentDays = new Set<string>();
-    const seenRespDays = new Set<string>();
+    // Uses history-aware `isInheritedSentDate` & `isInheritedResponseDate` at true
+    // `NCR Ref + Event Type + Event Date + Revision` grain (Fixes NCR-002, NCR-004, NCR-005, NCR-012, NCR-013).
+    const seenEventIds = new Set<string>();
     let lastValidResponseMs: number | null = null;
 
-    history.forEach((r) => {
+    history.forEach((r, idx) => {
       const sentStr = r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction;
       const sentDateMs = parseDateToMs(sentStr);
       const sentDay = toIsoDay(sentDateMs);
@@ -752,14 +974,15 @@ export const calculateMonthlyEvents = (
       const respDay = toIsoDay(responseDateMs);
       const normRev = getNormalizedRevision(r.rev, r.isRev0);
 
-      // Check if `sentDate` is a genuine new Corrective Action Submission event for this NCR
+      const sentEventId = `${refKey}|CORRECTIVE_SUBMITTED|${sentDay}|${normRev}`;
       const isGenuineSentEvent =
         sentDateMs !== null &&
-        !seenSentDays.has(sentDay) &&
+        !isInheritedSentDate(r, idx, history) &&
+        !seenEventIds.has(sentEventId) &&
         (lastValidResponseMs === null || sentDateMs >= lastValidResponseMs);
 
       if (isGenuineSentEvent && sentDateMs !== null) {
-        seenSentDays.add(sentDay);
+        seenEventIds.add(sentEventId);
 
         if (sentDateMs >= startOfTargetMonthMs && sentDateMs <= endOfTargetMonthMs) {
           mSt.correctiveSubmitted++;
@@ -788,7 +1011,7 @@ export const calculateMonthlyEvents = (
           // Critical Overdue is strictly a Month-End Snapshot KPI (count of distinct NCRs open > 14 days at month-end).
 
           const subEv: NCREventRecord = {
-            eventId: `${refKey}|CORRECTIVE_SUBMITTED|${sentDay}|${normRev}`,
+            eventId: sentEventId,
             ref: refKey,
             discipline: disc,
             eventType: "CORRECTIVE_SUBMITTED",
@@ -816,14 +1039,15 @@ export const calculateMonthlyEvents = (
         }
       }
 
-      // Check if `responseDate` is a genuine new Consultant Response event for this NCR
+      const respEventId = `${refKey}|RESPONSE|${respDay}|${normRev}`;
       const isGenuineResponseEvent =
         responseDateMs !== null &&
-        !seenRespDays.has(respDay) &&
+        !isInheritedResponseDate(r, idx, history) &&
+        !seenEventIds.has(respEventId) &&
         (!isGenuineSentEvent || sentDateMs === null || responseDateMs >= sentDateMs);
 
       if (isGenuineResponseEvent && responseDateMs !== null) {
-        seenRespDays.add(respDay);
+        seenEventIds.add(respEventId);
         if (lastValidResponseMs === null || responseDateMs > lastValidResponseMs) {
           lastValidResponseMs = responseDateMs;
         }
@@ -846,7 +1070,7 @@ export const calculateMonthlyEvents = (
           }
 
           const respEv: NCREventRecord = {
-            eventId: `${refKey}|RESPONSE|${respDay}|${normRev}`,
+            eventId: respEventId,
             ref: refKey,
             discipline: disc,
             eventType: "RESPONSE",
@@ -865,20 +1089,11 @@ export const calculateMonthlyEvents = (
       }
     });
 
-    if (refKey) {
-      monthlyEventTraces.set(refKey, {
-        isNew,
-        isSubmitted,
-        isResponded,
-        outcome,
-        events: ncrMonthEvents
-      });
-    }
-
     // ------------------------------------------------------------
     // B. State assessment of this NCR *as of* the last day of the target month
-    //    Fixes NCR-006: Uses `getRevisionActivityDateMs` so future revisions with
-    //    inherited `submissionDate` NEVER leak into historical month-end snapshots.
+    //    Fixes NCR-006 & Defect #1: Uses `getRevisionActivityDateMs` (returning `null`
+    //    for revisions with only inherited dates) so future/inert revisions NEVER leak
+    //    into historical month-end snapshots.
     // ------------------------------------------------------------
     const historyBeforeEnd = history.filter((r, idx) => {
       const actMs = getRevisionActivityDateMs(r, idx, history);
@@ -886,70 +1101,53 @@ export const calculateMonthlyEvents = (
       return actMs <= endOfTargetMonthMs;
     });
 
+    let monthEndRev: string | undefined = undefined;
+    let monthEndStage: NCREvidence["stage"] | "Not Issued Yet" = "Not Issued Yet";
+
     if (historyBeforeEnd.length > 0) {
       const latestAtEnd = historyBeforeEnd[historyBeforeEnd.length - 1];
       const latestAtEndIdx = history.indexOf(latestAtEnd);
       const latestAtEndActMs = getRevisionActivityDateMs(latestAtEnd, latestAtEndIdx, history);
-      if (latestAtEndActMs !== null && latestAtEndActMs > endOfTargetMonthMs) {
+      if (latestAtEndActMs === null || latestAtEndActMs > endOfTargetMonthMs) {
         temporalSnapshotPassed = false;
       }
 
-      const sentMs = parseDateToMs(
-        latestAtEnd.ncrSentDateCorrectiveAction || latestAtEnd.sentDateCorrectiveAction
-      );
-      const rawResponseMs = parseDateToMs(latestAtEnd.responseDate);
-      const responseMs =
-        rawResponseMs !== null && (sentMs === null || rawResponseMs >= sentMs)
-          ? rawResponseMs
-          : null;
-      const issueMs = originalIssueMs ?? parseDateToMs(latestAtEnd.submissionDate);
+      const stateAtEnd = evaluateNcrRevisionState(latestAtEnd, originalIssueMs, endOfTargetMonthMs);
+      monthEndRev = latestAtEnd.rev || "00";
+      monthEndStage = stateAtEnd.stage;
 
-      if (sentMs !== null && sentMs <= endOfTargetMonthMs) {
-        // Sent corrective action has been submitted on or before end of month
-        if (responseMs === null || responseMs > endOfTargetMonthMs) {
-          // No response yet, or response came after month end -> Waiting Consultant
-          mSt.waitingConsultant++;
-          mSt.pending++; // Legacy
-          mSt.waiting++; // Legacy
+      if (stateAtEnd.isWaitingConsultant) {
+        mSt.waitingConsultant++;
+        mSt.pending++; // Legacy
+        mSt.waiting++; // Legacy
 
-          if (sentMs < startOfTargetMonthMs) {
-            mSt.carryForwardPending++;
-          } else {
-            mSt.currentMonthPending++;
-          }
+        if (stateAtEnd.sentMs !== null && stateAtEnd.sentMs < startOfTargetMonthMs) {
+          mSt.carryForwardPending++;
         } else {
-          // Response was received on or before end of month
-          const cStatusAtEnd = resolveNcrOutcome(latestAtEnd);
-          if (!cStatusAtEnd.isApprovedClosed) {
-            // Rejected -> Waiting Contractor
-            mSt.waitingContractor++;
-          }
+          mSt.currentMonthPending++;
         }
-      } else {
-        // Sent corrective action has NOT been submitted as of end of month -> Waiting Contractor
-        if (issueMs !== null && issueMs <= endOfTargetMonthMs) {
-          mSt.waitingContractor++;
-        }
+      } else if (stateAtEnd.isWaitingContractor) {
+        mSt.waitingContractor++;
       }
 
       // Single-Count Month-End Overdue Rule (Fixes NCR-001):
       // Critical Overdue = COUNT(DISTINCT NCR Ref) that were open at month-end AND daysOpen > 14
-      if (issueMs !== null && issueMs <= endOfTargetMonthMs) {
-        const hasApprovedResponseByEnd =
-          responseMs !== null &&
-          responseMs <= endOfTargetMonthMs &&
-          resolveNcrOutcome(latestAtEnd).isApprovedClosed;
-
-        if (!hasApprovedResponseByEnd) {
-          const nowMs = Date.now();
-          const referenceMs = endOfTargetMonthMs > nowMs ? nowMs : endOfTargetMonthMs;
-          const daysOpen = Math.floor((referenceMs - issueMs) / (1000 * 3600 * 24));
-          if (daysOpen > 14) {
-            mSt.overdue++;
-            distinctOverdueNcrRefsAtMonthEnd.add(refKey);
-          }
-        }
+      if (stateAtEnd.isOverdue) {
+        mSt.overdue++;
+        distinctOverdueNcrRefsAtMonthEnd.add(refKey);
       }
+    }
+
+    if (refKey) {
+      monthlyEventTraces.set(refKey, {
+        isNew,
+        isSubmitted,
+        isResponded,
+        outcome,
+        events: ncrMonthEvents,
+        monthEndRev,
+        monthEndStage
+      });
     }
   });
 
@@ -1029,7 +1227,9 @@ export const processNCRData = (
       isSubmitted: false,
       isResponded: false,
       outcome: "None" as const,
-      events: []
+      events: [],
+      monthEndRev: undefined,
+      monthEndStage: "Not Issued Yet" as const
     };
     return {
       ...e,
@@ -1037,7 +1237,9 @@ export const processNCRData = (
       isSubmittedInMonth: trace.isSubmitted,
       isRespondedInMonth: trace.isResponded,
       monthlyOutcome: trace.outcome,
-      eventsInMonth: trace.events
+      eventsInMonth: trace.events,
+      monthEndRev: trace.monthEndRev,
+      monthEndStage: trace.monthEndStage
     };
   });
 
@@ -1159,5 +1361,167 @@ export const processNCRData = (
     cumulativeKPIs,
     evidenceList,
     integrityReport
+  };
+};
+
+/**
+ * Canonical NCR Presentation & Export Adapter (Fixes NCR-008 & Defect #2 SSOT).
+ * Shared identically by `Presentation.tsx` and `exportHelpers.ts` so neither consumer
+ * reimplements NCR discipline normalization or monthly/cumulative table compilation.
+ */
+export const compileCanonicalNCRPresentationStats = (
+  sourceData: SubmittalRow[],
+  monthlyStart?: string
+) => {
+  const ncrResult = processNCRData(sourceData, monthlyStart);
+  const isMon = Boolean(monthlyStart);
+
+  const normDiscKey = (d: string) =>
+    normalizeDiscipline({ discipline: (d || "").replace(/^NCR-/i, "") } as SubmittalRow).toUpperCase();
+
+  const baseDisciplines = ["STR", "Arch", "Mech", "Elec", "Infra", "Landscape", "HSE"];
+  const knownNorms = new Set(baseDisciplines.map(normDiscKey));
+  const extraDisciplines: string[] = [];
+
+  if (isMon) {
+    ncrResult.monthly.forEach((m) => {
+      const cleanName = m.classification.replace(/^NCR-/i, "");
+      const n = normDiscKey(cleanName);
+      if (!knownNorms.has(n)) {
+        knownNorms.add(n);
+        extraDisciplines.push(cleanName);
+      }
+    });
+  } else {
+    ncrResult.cumulative.forEach((c) => {
+      const n = normDiscKey(c.discipline);
+      if (!knownNorms.has(n)) {
+        knownNorms.add(n);
+        extraDisciplines.push(c.discipline);
+      }
+    });
+  }
+
+  const disciplines = [...baseDisciplines, ...extraDisciplines];
+
+  const stats = disciplines.map((disc) => {
+    const targetNorm = normDiscKey(disc);
+    if (isMon) {
+      const matching = ncrResult.monthly.filter(
+        (m) => normDiscKey(m.classification) === targetNorm
+      );
+      const sub = matching.reduce(
+        (acc, m) => ({
+          rev0: acc.rev0 + (m.rev0 || 0),
+          revHigh: acc.revHigh + (m.revHigh || 0),
+          totalSubs: acc.totalSubs + (m.totalSubs || 0),
+          approved: acc.approved + (m.approved || 0),
+          rejectedOpen: acc.rejectedOpen + (m.rejectedOpen || 0),
+          rejectedClosed: acc.rejectedClosed + (m.rejectedClosed || 0),
+          pending: acc.pending + (m.pending || 0),
+          overdue: acc.overdue + (m.overdue || 0)
+        }),
+        {
+          rev0: 0,
+          revHigh: 0,
+          totalSubs: 0,
+          approved: 0,
+          rejectedOpen: 0,
+          rejectedClosed: 0,
+          pending: 0,
+          overdue: 0
+        }
+      );
+
+      return {
+        discipline: disc,
+        TotalSubmittals: sub.totalSubs,
+        UniqueRev00: sub.rev0,
+        UniqueFurtherRev: sub.revHigh,
+        Rev00Rows: sub.rev0,
+        FurtherRevRows: sub.revHigh,
+        TotalRows: sub.totalSubs,
+        Rev00: sub.rev0,
+        FurtherRev: sub.revHigh,
+        Approved: sub.approved,
+        RejectedOpen: sub.rejectedOpen,
+        RejectedClosed: sub.rejectedClosed,
+        Pending: sub.pending,
+        Total: sub.totalSubs,
+        Closed: sub.approved,
+        Open: sub.rejectedOpen
+      };
+    } else {
+      const matching = ncrResult.cumulative.filter(
+        (c) => normDiscKey(c.discipline) === targetNorm
+      );
+      const sub = matching.reduce(
+        (acc, c) => ({
+          totalUnique: acc.totalUnique + (c.totalUnique || 0),
+          open: acc.open + (c.open || 0),
+          closed: acc.closed + (c.closed || 0),
+          underReview: acc.underReview + (c.underReview || 0),
+          approved: acc.approved + (c.approved || 0),
+          rejected: acc.rejected + (c.rejected || 0),
+          rev0: acc.rev0 + (c.rev0 || 0),
+          revHigh: acc.revHigh + (c.revHigh || 0)
+        }),
+        {
+          totalUnique: 0,
+          open: 0,
+          closed: 0,
+          underReview: 0,
+          approved: 0,
+          rejected: 0,
+          rev0: 0,
+          revHigh: 0
+        }
+      );
+      const ncrTotal = sub.totalUnique || (sub.rev0 || 0) + (sub.revHigh || 0);
+      return {
+        discipline: disc,
+        TotalSubmittals: ncrTotal,
+        UniqueRev00: sub.rev0 || 0,
+        UniqueFurtherRev: sub.revHigh || 0,
+        Rev00Rows: sub.rev0 || 0,
+        FurtherRevRows: sub.revHigh || 0,
+        TotalRows: ncrTotal,
+        Rev00: sub.rev0 || 0,
+        FurtherRev: sub.revHigh || 0,
+        Approved: sub.approved,
+        RejectedOpen: sub.rejected,
+        RejectedClosed: 0,
+        Pending: sub.underReview,
+        Total: ncrTotal,
+        Closed: sub.closed,
+        Open: sub.open
+      };
+    }
+  });
+
+  const totalRow = {
+    discipline: "TOTAL",
+    TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+    UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
+    UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
+    Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+    FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+    TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
+    Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
+    FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
+    Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
+    RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
+    RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
+    Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
+    Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
+    Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
+    Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0)
+  };
+
+  return {
+    stats,
+    totalRow,
+    hasData: totalRow.Total > 0,
+    ncrResult
   };
 };

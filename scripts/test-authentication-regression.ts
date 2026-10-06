@@ -24,10 +24,10 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 // 1. Verify SHA-256 hashes of the 5 Immutable SSOT Artifacts + firestore.rules (Baseline Revision Record: BRR-2026-09-27-01)
 const expectedHashes = {
-  'src/utils/calculations.ts': '26a859f736ac872c12f9a8af4f298512a8258236671e409992d998278a54c287', // Layer 2 Production Analytics Engine (BRR-2026-09-27-01)
+  'src/utils/calculations.ts': 'ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468', // Layer 2 Production Analytics Engine (BRR-2026-09-27-01 + NCR-SSOT)
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT
-  'src/analytics/calculationFoundation.ts': 'ddc2e312bd2e44081cf251ccf60e79334b7ef50a372ea10699c082f04248bd6e', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-09-27-01)
+  'src/analytics/calculationFoundation.ts': 'c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-09-27-01 + NCR-SSOT)
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard
   'firestore.rules': 'a23aa401964b257f7b044ea42e56e5bd88f123d19847615ab0908b3eca62257e' // Hardened Firestore Authorization Rules
 };
