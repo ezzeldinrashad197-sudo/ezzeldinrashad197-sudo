@@ -10,7 +10,14 @@ import {
 } from '../revisionResolver';
 import { SubmittalRow } from '../../types';
 import { normalizeData } from '../../utils/calculations';
-import { buildManagementReportOutput } from '../managementReportOutput';
+import {
+  buildManagementReportOutput,
+  resolveOfficialSubmittalRegister,
+  resolveRowRegister,
+  auditOfficialSourcePopulation,
+  exportOfficialManagementReportXlsx
+} from '../managementReportOutput';
+import { calculateExecutiveDashboardData, compileStatsForBaseType } from '../exportHelpers';
 
 export function runCanonicalCalculationTests(): { name: string; passed: boolean; error?: string }[] {
   const testResults: { name: string; passed: boolean; error?: string }[] = [];
@@ -1159,6 +1166,200 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
       discReport.grandTotal.pending !== 4
     ) {
       throw new Error(`Discipline Breakdown Layer dropped rows: ${JSON.stringify(discReport.grandTotal)}`);
+    }
+  });
+
+  test('ER-024: Final Source-Based Acceptance Audit (All 9 Acceptance Criteria, Executive Summary Parity, Monthly/Cumulative Parity, and PDF/PPTX/Excel Export Parity)', () => {
+    const wirRows: SubmittalRow[] = [];
+
+    for (let i = 1; i <= 68; i++) {
+      wirRows.push({
+        id: `WIR-SUR-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'SURVEY',
+        disciplineCode: 'SUR',
+        submissionRef: `WIR-SUR-SUB-${i}`,
+        docNo: `WIR-SUR-DOC-${i}`,
+        rev: '00',
+        status: 'APPROVED',
+        submissionDate: i <= 30 ? '2026-08-10' : '2026-09-12',
+        documentType: 'WIR-SURVEY'
+      } as SubmittalRow);
+    }
+    for (let i = 69; i <= 73; i++) {
+      wirRows.push({
+        id: `WIR-SUR-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'SURVEY',
+        disciplineCode: 'SUR',
+        submissionRef: `WIR-SUR-SUB-${i}`,
+        docNo: `WIR-SUR-DOC-${i}`,
+        rev: '01',
+        status: 'APPROVED',
+        submissionDate: '2026-09-18',
+        documentType: 'WIR-SURVEY'
+      } as SubmittalRow);
+    }
+
+    wirRows.push({
+      id: 'WIR-LND-1-R0',
+      registerIdentity: 'WIR',
+      discipline: 'Landscape',
+      disciplineCode: 'LND',
+      submissionRef: 'WIR-LND-SUB-1',
+      docNo: 'WIR-LND-DOC-1',
+      rev: '00',
+      status: 'REJECTED_OPEN',
+      submissionDate: '2026-08-12',
+      documentType: 'WIR-LANDSCAPE'
+    } as SubmittalRow);
+    wirRows.push({
+      id: 'WIR-LND-1-R1',
+      registerIdentity: 'WIR',
+      discipline: 'Landscape',
+      disciplineCode: 'LND',
+      submissionRef: 'WIR-LND-SUB-1',
+      docNo: 'WIR-LND-DOC-1',
+      rev: '01',
+      status: 'APPROVED',
+      submissionDate: '2026-09-21',
+      documentType: 'WIR-LANDSCAPE'
+    } as SubmittalRow);
+
+    for (let i = 2; i <= 87; i++) {
+      const isFurther = i > 80;
+      const status =
+        i <= 75
+          ? 'APPROVED'
+          : i <= 83
+          ? 'REJECTED_OPEN'
+          : 'PENDING';
+      wirRows.push({
+        id: `WIR-LND-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'Landscape',
+        disciplineCode: 'LND',
+        submissionRef: `WIR-LND-SUB-${i}`,
+        docNo: `WIR-LND-DOC-${i}`,
+        rev: isFurther ? '01' : '00',
+        status,
+        submissionDate: i <= 40 ? '2026-08-12' : '2026-09-14',
+        documentType: 'WIR-LANDSCAPE'
+      } as SubmittalRow);
+    }
+
+    const filterMonthly = (r: SubmittalRow) => (r.submissionDate || '').startsWith('2026-09');
+    const filterCumulative = (_r: SubmittalRow) => true;
+
+    const audit = auditOfficialSourcePopulation(wirRows, wirRows, filterMonthly, filterCumulative);
+    if (!audit.acceptanceChecks.allChecksPassed) {
+      throw new Error(`Expected all 9 acceptance checks to pass: ${JSON.stringify(audit.acceptanceChecks)}`);
+    }
+    if (audit.unaccountedRowsCount !== 0 || audit.otherDisciplineExcludedCount !== 0) {
+      throw new Error(`Expected 0 unaccounted/excluded rows, got unaccounted=${audit.unaccountedRowsCount}, otherExcluded=${audit.otherDisciplineExcludedCount}`);
+    }
+
+    // Check Executive Dashboard / PDF / PPTX data builder uses the exact same canonical registers
+    const execDash = calculateExecutiveDashboardData(wirRows, wirRows, false, 'en');
+    const execRegKeys = execDash.byDocType.map(d => d.documentType);
+    if (!execRegKeys.includes('WIR-SURVEY') || !execRegKeys.includes('WIR-LANDSCAPE') || execRegKeys.length !== 2) {
+      throw new Error(`Executive Dashboard / PDF / PPTX register mismatch: ${execRegKeys.join(', ')}`);
+    }
+
+    // Check PPTX / PDF per-register table compiler (compileStatsForBaseType) preserves both SURVEY and LANDSCAPE
+    const wirCompiled = compileStatsForBaseType(wirRows, 'WIR', undefined, wirRows);
+    const activeWirRows = wirCompiled.stats.filter((s: any) => (s.TotalSheets || 0) > 0);
+    const totalCompiledSubmittals = activeWirRows.reduce((acc: number, s: any) => acc + (s.TotalSubmittals || 0), 0);
+    const totalCompiledSheets = activeWirRows.reduce((acc: number, s: any) => acc + (s.TotalSheets || 0), 0);
+    if (totalCompiledSubmittals !== 160 || totalCompiledSheets !== 161) {
+      throw new Error(`compileStatsForBaseType dropped rows: submittals=${totalCompiledSubmittals}, sheets=${totalCompiledSheets}`);
+    }
+
+    // Check Excel (.xlsx) Official Export workbook preserves the exact same register population and figures
+    const xlsxExport = exportOfficialManagementReportXlsx(wirRows, wirRows, { skipDownload: true });
+    if (
+      xlsxExport.registerReport.grandTotal.totalSubmittals !== 160 ||
+      xlsxExport.registerReport.grandTotal.totalSheets !== 161 ||
+      xlsxExport.workbook.SheetNames.length !== 4
+    ) {
+      throw new Error('Excel export failed to preserve 160/161 population and 4 sheets');
+    }
+  });
+
+  test('ER-025: Source Population Audit confirms resolveOfficialSubmittalRegister never hides any official register or discipline', () => {
+    const diverseSourceRows: SubmittalRow[] = [
+      // Row where registerIdentity is UNCLASSIFIED, resolved from sourceSheetName / docNo
+      {
+        id: 'R-1',
+        docNo: 'STS-WIR-SUR-0001',
+        submissionRef: 'STS-WIR-SUR-0001',
+        rev: '00',
+        sheetNo: '1',
+        documentType: 'GENERAL',
+        registerIdentity: 'UNCLASSIFIED',
+        sourceRegisterIdentity: 'UNCLASSIFIED',
+        sourceSheetName: 'WIR-SURVEY',
+        discipline: 'SURVEY',
+        status: 'A',
+        code: 'A',
+        submissionDate: '2026-09-01',
+        responseDate: '2026-09-05',
+        delayDays: 2,
+        isLatestRev: true,
+        workflowStage: 'Approved'
+      },
+      // Row with non-standard discipline (GEOTECH) in MIR
+      {
+        id: 'R-2',
+        docNo: 'STS-MIR-GEO-0001',
+        submissionRef: 'STS-MIR-GEO-0001',
+        rev: '00',
+        sheetNo: '1',
+        documentType: 'MIR',
+        registerIdentity: 'MIR',
+        discipline: 'GEOTECH',
+        trade: 'GEOTECH',
+        sourceSheetName: 'MIR-GEOTECH',
+        status: 'B',
+        code: 'B',
+        submissionDate: '2026-09-02',
+        responseDate: '2026-09-06',
+        delayDays: 2,
+        isLatestRev: true,
+        workflowStage: 'Approved'
+      },
+      // Row with SHD alias normalized to SDW
+      {
+        id: 'R-3',
+        docNo: 'STS-SDW-ARC-0001',
+        submissionRef: 'STS-SDW-ARC-0001',
+        rev: '00',
+        sheetNo: '1',
+        documentType: 'SHD-ARC',
+        registerIdentity: 'SHD',
+        discipline: 'ARCH',
+        sourceSheetName: 'SHD-ARCH',
+        status: 'UR',
+        code: 'UR',
+        submissionDate: '2026-09-03',
+        responseDate: '',
+        delayDays: 2,
+        isLatestRev: true,
+        workflowStage: 'Pending'
+      }
+    ];
+
+    const reg1 = resolveOfficialSubmittalRegister(diverseSourceRows[0]);
+    const reg2 = resolveOfficialSubmittalRegister(diverseSourceRows[1]);
+    const reg3 = resolveOfficialSubmittalRegister(diverseSourceRows[2]);
+
+    if (reg1 !== 'WIR-SURVEY') throw new Error(`Expected WIR-SURVEY, got ${reg1}`);
+    if (reg2 !== 'MIR-GEOTECH') throw new Error(`Expected MIR-GEOTECH, got ${reg2}`);
+    if (reg3 !== 'SDW-ARCH') throw new Error(`Expected SDW-ARCH, got ${reg3}`);
+
+    const audit = auditOfficialSourcePopulation(diverseSourceRows, diverseSourceRows);
+    if (!audit.acceptanceChecks.allChecksPassed || audit.canonicalRegisters.length !== 3 || audit.unaccountedRowsCount !== 0) {
+      throw new Error(`Audit failed on diverse registers: ${JSON.stringify(audit)}`);
     }
   });
 

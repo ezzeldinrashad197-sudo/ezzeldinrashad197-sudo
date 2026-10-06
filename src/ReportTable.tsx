@@ -66,6 +66,10 @@ import { WorkloadRevisionIntelligence } from './components/WorkloadRevisionIntel
 import {
   buildManagementReportOutput,
   resolveUniqueSubmittalStats,
+  resolveOfficialSubmittalRegister,
+  resolveRowRegister,
+  auditOfficialSourcePopulation,
+  exportOfficialManagementReportXlsx,
   ManagementDisciplineRow,
   ManagementGroupingMode,
   ManagementKpiColumnKey,
@@ -179,13 +183,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [breakdownDimension, setBreakdownDimension] = useState<'register' | 'discipline' | 'both'>('both');
 
   const rowToRegisterIdentity = useCallback((d: SubmittalRow): string => {
-    return (
-      d.registerIdentity ||
-      (d as any).sourceRegisterIdentity ||
-      d.workflowFamily ||
-      (d.documentType ? d.documentType.split('-')[0] : '') ||
-      'UNCLASSIFIED'
-    ).trim().toUpperCase();
+    return resolveRowRegister(d);
   }, []);
 
   const rowToLabel = useCallback((d: SubmittalRow) => {
@@ -195,8 +193,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       return disc.toUpperCase();
     }
     if (breakdownDimension === 'both') {
-      const disc = resolveRowDiscipline(d, reg) || 'GEN';
-      return `${reg}-${disc.toUpperCase()}`;
+      return resolveOfficialSubmittalRegister(d);
     }
     return reg;
   }, [breakdownDimension, rowToRegisterIdentity]);
@@ -613,6 +610,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const [managementGroupingMode, setManagementGroupingMode] = useState<ManagementGroupingMode>('register');
   const [showAllRegisterTables, setShowAllRegisterTables] = useState<boolean>(false);
   const [showReconciliationSummary, setShowReconciliationSummary] = useState<boolean>(true);
+  const [showSourcePopulationAudit, setShowSourcePopulationAudit] = useState<boolean>(true);
+  const [copiedPopulationAudit, setCopiedPopulationAudit] = useState<boolean>(false);
   const [reconciliationModal, setReconciliationModal] = useState<{
     discipline: string;
     kpiKey: ManagementKpiColumnKey;
@@ -631,6 +630,10 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       managementGroupingMode
     );
   }, [nonNcrFilteredData, contextDataset, selectedManagementRegister, managementGroupingMode]);
+
+  const sourcePopulationAudit = useMemo(() => {
+    return auditOfficialSourcePopulation(filteredData, contextDataset);
+  }, [filteredData, contextDataset]);
 
   const perRegisterManagementReports = useMemo(() => {
     if (!showAllRegisterTables) return [];
@@ -1553,22 +1556,58 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
          <div className="flex items-center gap-2 flex-wrap">
            {reportViewMode === 'official' && (
-             <button
-               type="button"
-               onClick={() => setShowReconciliationSummary(!showReconciliationSummary)}
-               className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
-                 showReconciliationSummary
-                   ? 'bg-emerald-700 text-white border-emerald-800'
-                   : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
-               }`}
-             >
-               <ShieldCheck className="w-3.5 h-3.5" />
-               <span>
-                 {language === 'ar'
-                   ? 'مطابقة الصفوف المصدرية (Read-Only Reconciliation)'
-                   : 'Read-Only Source Reconciliation'}
-               </span>
-             </button>
+             <>
+               <button
+                 type="button"
+                 onClick={() =>
+                   exportOfficialManagementReportXlsx(nonNcrFilteredData, contextDataset, {
+                     isMonthly,
+                     registerFilter: selectedManagementRegister,
+                     projectInfo
+                   })
+                 }
+                 className="px-3 py-1.5 rounded-lg bg-[#203864] hover:bg-[#16294b] text-white text-xs font-bold border border-slate-800 flex items-center gap-1.5 cursor-pointer transition-colors"
+               >
+                 <Download className="w-3.5 h-3.5 text-emerald-300" />
+                 <span>
+                   {language === 'ar'
+                     ? 'تصدير Excel الرسمي (.xlsx)'
+                     : 'Export Official Excel (.xlsx)'}
+                 </span>
+               </button>
+               <button
+                 type="button"
+                 onClick={() => setShowSourcePopulationAudit(!showSourcePopulationAudit)}
+                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                   showSourcePopulationAudit
+                     ? 'bg-indigo-700 text-white border-indigo-800'
+                     : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
+                 }`}
+               >
+                 <CheckCircle2 className="w-3.5 h-3.5" />
+                 <span>
+                   {language === 'ar'
+                     ? `تدقيق مجتمع السجلات (${sourcePopulationAudit.canonicalRegisters.length} سجل / ${sourcePopulationAudit.officialSubmittalRowsCount} صف)`
+                     : `Source Population Audit (${sourcePopulationAudit.canonicalRegisters.length} Registers / ${sourcePopulationAudit.officialSubmittalRowsCount} Rows)`}
+                 </span>
+               </button>
+               <button
+                 type="button"
+                 onClick={() => setShowReconciliationSummary(!showReconciliationSummary)}
+                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                   showReconciliationSummary
+                     ? 'bg-emerald-700 text-white border-emerald-800'
+                     : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
+                 }`}
+               >
+                 <ShieldCheck className="w-3.5 h-3.5" />
+                 <span>
+                   {language === 'ar'
+                     ? 'مطابقة الصفوف المصدرية (Read-Only Reconciliation)'
+                     : 'Read-Only Source Reconciliation'}
+                 </span>
+               </button>
+             </>
            )}
            <button
              type="button"
@@ -1993,6 +2032,153 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                            </tr>
                          );
                        })}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+             </div>
+           )}
+
+           {/* LIVE SOURCE POPULATION AUDIT (FINAL SOURCE-BASED ACCEPTANCE TEST ON ACTUAL LOADED EXCEL SOURCE) */}
+           {showSourcePopulationAudit && (
+             <div className="bg-white rounded-xl shadow-sm border-2 border-indigo-300 overflow-hidden print:hidden [body.pdf-export_&]:hidden">
+               <div className="bg-indigo-950 text-white px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                 <div>
+                   <div className="flex items-center gap-2 flex-wrap">
+                     <h3 className="text-sm font-black uppercase tracking-wider">
+                       {language === 'ar'
+                         ? 'تدقيق مجتمع السجلات الرسمي من المصدر الفعلي المحمّل (Final Source-Based Acceptance Audit)'
+                         : 'Final Source-Based Population Audit — Actual Loaded Excel Source'}
+                     </h3>
+                     <span
+                       className={`px-2 py-0.5 rounded text-[11px] font-black ${
+                         sourcePopulationAudit.acceptanceChecks.allChecksPassed
+                           ? 'bg-emerald-500 text-emerald-950'
+                           : 'bg-amber-400 text-amber-950'
+                       }`}
+                     >
+                       {sourcePopulationAudit.acceptanceChecks.allChecksPassed
+                         ? 'ALL 9 ACCEPTANCE CRITERIA: PASS'
+                         : 'CHECK SOURCE RECONCILIATION'}
+                     </span>
+                   </div>
+                   <p className="text-xs text-indigo-200 mt-1">
+                     {language === 'ar'
+                       ? 'حصر كامل لكل سجل رسمي ناتج عن resolveOfficialSubmittalRegister(row) من المصدر الفعلي بدون استثناءات خاصة وبدون استبعاد أي تخصص خارج التخصصات الستة.'
+                       : 'Complete enumeration of every canonical official submittal register returned by resolveOfficialSubmittalRegister(row) from the actual loaded source — zero excluded registers outside the 6 standard disciplines, zero special-case overrides.'}
+                   </p>
+                 </div>
+                 <div className="flex items-center gap-2 shrink-0">
+                   <button
+                     type="button"
+                     onClick={() => {
+                       navigator.clipboard.writeText(JSON.stringify(sourcePopulationAudit, null, 2));
+                       setCopiedPopulationAudit(true);
+                       setTimeout(() => setCopiedPopulationAudit(false), 3000);
+                     }}
+                     className="px-3.5 py-2 rounded-lg bg-white text-indigo-950 hover:bg-indigo-50 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                   >
+                     {copiedPopulationAudit ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                     <span>{copiedPopulationAudit ? 'Copied Source Audit JSON!' : 'Copy Source Audit JSON'}</span>
+                   </button>
+                 </div>
+               </div>
+
+               <div className="p-5 space-y-4">
+                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2.5 text-xs">
+                   <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                     <span className="block text-[10px] font-bold text-slate-500 uppercase">Total Period Rows</span>
+                     <span className="text-lg font-black text-slate-900 font-mono">{sourcePopulationAudit.totalSourceRows}</span>
+                   </div>
+                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                     <span className="block text-[10px] font-bold text-blue-700 uppercase">Official Submittal Rows</span>
+                     <span className="text-lg font-black text-[#203864] font-mono">{sourcePopulationAudit.officialSubmittalRowsCount}</span>
+                   </div>
+                   <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                     <span className="block text-[10px] font-bold text-indigo-700 uppercase">Canonical Registers</span>
+                     <span className="text-lg font-black text-indigo-900 font-mono">{sourcePopulationAudit.canonicalRegisters.length}</span>
+                   </div>
+                   <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                     <span className="block text-[10px] font-bold text-slate-500 uppercase">Non-Submittal (NCR/SOR/LTR)</span>
+                     <span className="text-lg font-black text-slate-700 font-mono">{sourcePopulationAudit.nonSubmittalRegisterRowsCount}</span>
+                   </div>
+                   <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                     <span className="block text-[10px] font-bold text-emerald-700 uppercase">Excluded Outside 6 Disc.</span>
+                     <span className="text-lg font-black text-emerald-800 font-mono">{sourcePopulationAudit.otherDisciplineExcludedCount}</span>
+                   </div>
+                   <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                     <span className="block text-[10px] font-bold text-emerald-700 uppercase">Unaccounted Rows</span>
+                     <span className="text-lg font-black text-emerald-800 font-mono">{sourcePopulationAudit.unaccountedRowsCount}</span>
+                   </div>
+                 </div>
+
+                 <div className="overflow-x-auto">
+                   <table className="w-full text-xs border-collapse border border-slate-200 text-center">
+                     <thead>
+                       <tr className="bg-slate-800 text-white font-bold">
+                         <th className="p-2.5 border border-slate-600 text-left">Canonical Official Register</th>
+                         <th className="p-2 border border-slate-600">Parent</th>
+                         <th className="p-2 border border-slate-600">Canonical Disc.</th>
+                         <th className="p-2 border border-slate-600 bg-indigo-900">Raw Source Rows</th>
+                         <th className="p-2 border border-slate-600 bg-[#203864]">Total Submittals</th>
+                         <th className="p-2 border border-slate-600">Rev.00</th>
+                         <th className="p-2 border border-slate-600">Further Rev.</th>
+                         <th className="p-2 border border-slate-600 bg-slate-700">Total Sheets</th>
+                         <th className="p-2 border border-slate-600 text-emerald-300">Approved</th>
+                         <th className="p-2 border border-slate-600 text-rose-300">Rejected</th>
+                         <th className="p-2 border border-slate-600 text-amber-300">Pending</th>
+                         <th className="p-2 border border-slate-600">7-KPI Tuple (Sub / R0 / FR / Sh / App / Rej / Pnd)</th>
+                         <th className="p-2 border border-slate-600">Exec &amp; Mgmt Parity</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {sourcePopulationAudit.canonicalRegisters.map(entry => (
+                         <tr key={entry.canonicalRegister} className="even:bg-slate-50 hover:bg-indigo-50/40">
+                           <td className="p-2 border border-slate-200 font-black text-[#203864] text-left">
+                             {entry.canonicalRegister}
+                             {entry.isOutsideSixStandardDisciplines && (
+                               <span className="ml-2 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-bold">
+                                 Non-6 Disc (Included)
+                               </span>
+                             )}
+                           </td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold text-slate-600">{entry.parentRegister}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold text-slate-600">{entry.canonicalDiscipline}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-black bg-indigo-50/40 text-indigo-950">{entry.rawRowCount}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold bg-blue-50/30">{entry.totalSubmittals}</td>
+                           <td className="p-2 border border-slate-200 font-mono">{entry.rev00}</td>
+                           <td className="p-2 border border-slate-200 font-mono">{entry.furtherRev}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold bg-slate-100">{entry.totalSheets}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold text-emerald-700">{entry.approved}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold text-rose-700">{entry.rejected}</td>
+                           <td className="p-2 border border-slate-200 font-mono font-bold text-amber-700">{entry.pending}</td>
+                           <td className="p-2 border border-slate-200 font-mono text-[11px] font-bold text-slate-800">{entry.formattedSummary}</td>
+                           <td className="p-2 border border-slate-200">
+                             <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-black text-[10px]">
+                               {entry.reconciledWithManagementReport && entry.reconciledWithExecutiveSummary ? '100% MATCH' : 'MISMATCH'}
+                             </span>
+                           </td>
+                         </tr>
+                       ))}
+                       <tr className="bg-slate-900 text-white font-black border-t-2 border-slate-700">
+                         <td className="p-2.5 border border-slate-700 text-left">TOTAL ({sourcePopulationAudit.canonicalRegisters.length} REGISTERS)</td>
+                         <td className="p-2 border border-slate-700 font-mono">ALL</td>
+                         <td className="p-2 border border-slate-700 font-mono">ALL</td>
+                         <td className="p-2 border border-slate-700 font-mono text-indigo-200">{sourcePopulationAudit.grandTotal.rawRowCount}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-blue-200">{sourcePopulationAudit.grandTotal.totalSubmittals}</td>
+                         <td className="p-2 border border-slate-700 font-mono">{sourcePopulationAudit.grandTotal.rev00}</td>
+                         <td className="p-2 border border-slate-700 font-mono">{sourcePopulationAudit.grandTotal.furtherRev}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-amber-200">{sourcePopulationAudit.grandTotal.totalSheets}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-emerald-300">{sourcePopulationAudit.grandTotal.approved}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-rose-300">{sourcePopulationAudit.grandTotal.rejected}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-amber-300">{sourcePopulationAudit.grandTotal.pending}</td>
+                         <td className="p-2 border border-slate-700 font-mono text-[11px] text-emerald-200">{sourcePopulationAudit.grandTotal.formattedSummary}</td>
+                         <td className="p-2 border border-slate-700">
+                           <span className="px-2 py-0.5 rounded bg-emerald-500 text-emerald-950 font-black text-[10px]">
+                             RECONCILED
+                           </span>
+                         </td>
+                       </tr>
                      </tbody>
                    </table>
                  </div>

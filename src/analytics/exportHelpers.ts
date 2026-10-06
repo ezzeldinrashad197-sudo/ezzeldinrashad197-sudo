@@ -1,7 +1,7 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
 import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
-import { resolveUniqueSubmittalStats } from "./managementReportOutput";
+import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, resolveRowRegister, isExcludedRow } from "./managementReportOutput";
 import { processNCRData } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
@@ -133,6 +133,9 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
     }
 
     const typeData = dataset.filter(d => {
+        if (isExcludedRow(d)) return false;
+        const parentReg = resolveRowRegister(d);
+        if (parentReg === bt) return true;
         const docT = (d.documentType || 'GENERAL').toUpperCase();
         return docT.startsWith(`${bt}-`) || docT === bt || (bt==='NCR' && docT.includes('NCR')) || (bt==='SOR' && docT.includes('SOR')) || (bt==='RFI' && docT.includes('RFI')) || (bt==='LTR' && (docT.includes('LTR') || docT.includes('CORRES')));
     });
@@ -604,18 +607,21 @@ export const calculateExecutiveDashboardData = (
     language: 'ar' | 'en' = 'en'
 ): ExecutiveDashboardData => {
     const baseOrder = ['ABD', 'SDW', 'SHD', 'MAR', 'QS', 'DOC', 'WIR', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR', 'PQ', 'PRQ', 'TRS'];
-    const discOrder = ['STR', 'ARC', 'MEC', 'LND', 'INFRA', 'GEN', 'ELE'];
+    const discOrder = ['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'LANDSCAPE', 'LAND', 'LND', 'SURVEY', 'SUR', 'GEN'];
 
     const rowToLabel = (d: SubmittalRow): string => {
-        let t = (d.documentType || 'DOC-GEN').toUpperCase().trim();
-        if (t === 'DOC') t = 'DOC-GEN';
-        if (t === 'HSE') t = 'NCR-HSE';
-        if (t === 'SHD') t = 'SDW';
-        return t;
+        const parentReg = resolveRowRegister(d);
+        if (parentReg === 'NCR' || parentReg === 'SOR' || parentReg === 'LTR') {
+            let t = (d.documentType || parentReg).toUpperCase().trim();
+            if (t === 'HSE') t = 'NCR-HSE';
+            return t;
+        }
+        return resolveOfficialSubmittalRegister(d);
     };
 
     const map = new Map<string, SubmittalRow[]>();
     filteredData.forEach(row => {
+        if (isExcludedRow(row)) return;
         const key = rowToLabel(row);
         if (!map.has(key)) map.set(key, []);
         map.get(key)!.push(row);
