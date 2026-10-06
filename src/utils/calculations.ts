@@ -432,11 +432,21 @@ export const getClosedOpenByDocType = (
     return { closed, open };
   }
 
-  const closed = docType === 'NCR' || docType === 'SOR'
+  if (docType === 'NCR') {
+    const anyS = s as any;
+    const closed = anyS.closed !== undefined ? anyS.closed : (s.approved || 0);
+    const open =
+      anyS.open !== undefined
+        ? anyS.open
+        : (anyS.notSent || 0) + (s.rejectedOpen || 0);
+    return { closed, open };
+  }
+
+  const closed = docType === 'SOR'
     ? (s.approved || 0)
     : (s.approved || 0) + (s.rejectedClosed || 0) + (s.finalClosed || 0);
 
-  const open = docType === 'NCR' || docType === 'SOR'
+  const open = docType === 'SOR'
     ? (s.rejectedOpen || 0)
     : (s.rejectedOpen || 0) + (s.pending || 0);
 

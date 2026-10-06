@@ -1,4 +1,12 @@
-import { calculateCanonicalKPIs, getBusinessEntityKey, getDocumentIdentityKey, getSubmissionIdentityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
+import { calculateCanonicalKPIs, calculateNCRStats, getBusinessEntityKey, getDocumentIdentityKey, getSubmissionIdentityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
+import {
+  processNCRData,
+  calculateCumulativeSnapshot,
+  calculateMonthlyEvents,
+  normalizeDiscipline,
+  normalizeNCRData,
+  getLatestRev
+} from '../ncr/ncrEngine';
 import {
   isValidRevision,
   getRevisionWeight,
@@ -1360,6 +1368,288 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     const audit = auditOfficialSourcePopulation(diverseSourceRows, diverseSourceRows);
     if (!audit.acceptanceChecks.allChecksPassed || audit.canonicalRegisters.length !== 3 || audit.unaccountedRowsCount !== 0) {
       throw new Error(`Audit failed on diverse registers: ${JSON.stringify(audit)}`);
+    }
+  });
+
+  // =========================================================================
+  // NCR FORENSIC AUDIT REGRESSION SUITE (ER-026 to ER-032)
+  // Covers Findings NCR-001 through NCR-013
+  // =========================================================================
+
+  test('ER-026 (NCR-001): Single-Count Monthly Critical Overdue — Never double-counted between Event 2 and Month-End Snapshot', () => {
+    const rows: SubmittalRow[] = [
+      {
+        id: 'NCR-OVD-1',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-001',
+        docNo: 'NCR-001',
+        rev: '00',
+        discipline: 'STR',
+        submissionDate: '2026-06-01', // Issued June 1
+        ncrSentDateCorrectiveAction: '2026-06-20', // Sent June 20 (19 days > 14 days)
+        responseDate: '', // Still open at June 30 (29 days > 14 days)
+        ncrStatus: 'Open',
+        ncrAction: 'Under Review'
+      } as SubmittalRow
+    ];
+
+    const res = processNCRData(rows, '2026-06-01');
+    if (res.monthlyKPIs.criticalDelays !== 1) {
+      throw new Error(`Expected Critical Overdue = 1 (single-counted), got ${res.monthlyKPIs.criticalDelays}`);
+    }
+    if (res.monthly[0]?.overdue !== 1) {
+      throw new Error(`Expected discipline overdue = 1, got ${res.monthly[0]?.overdue}`);
+    }
+    if (!res.integrityReport.passed || !res.integrityReport.forensicChecks?.overdueSingleCountPassed) {
+      throw new Error('Expected overdueSingleCountPassed forensic check to pass');
+    }
+  });
+
+  test('ER-027 (NCR-002, NCR-003, NCR-004, NCR-005): Event Deduplication — Inherited dates across Rev00/Rev01/Rev02 never inflate New NCR, Corrective Submitted, or Consultant Responses', () => {
+    const rows: SubmittalRow[] = [
+      {
+        id: 'NCR-INH-R0',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-100',
+        docNo: 'NCR-100',
+        rev: '00',
+        discipline: 'Arch',
+        submissionDate: '2026-06-03',
+        ncrSentDateCorrectiveAction: '2026-06-10',
+        responseDate: '2026-06-15',
+        ncrAction: 'Rejected',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      // Rev01 inherits submissionDate=2026-06-03, sentDate=2026-06-10, responseDate=2026-06-15!
+      {
+        id: 'NCR-INH-R1-DUP',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-100',
+        docNo: 'NCR-100',
+        rev: '01',
+        discipline: 'Arch',
+        submissionDate: '2026-06-03',
+        ncrSentDateCorrectiveAction: '2026-06-10',
+        responseDate: '2026-06-15',
+        ncrAction: 'Rejected',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      // Rev02 inherits submissionDate=2026-06-03, has genuine new sentDate=2026-06-22 and genuine new responseDate=2026-06-28 (Approved)
+      {
+        id: 'NCR-INH-R2',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-100',
+        docNo: 'NCR-100',
+        rev: '02',
+        discipline: 'Arch',
+        submissionDate: '2026-06-03',
+        ncrSentDateCorrectiveAction: '2026-06-22',
+        responseDate: '2026-06-28',
+        ncrAction: 'Approved',
+        ncrStatus: 'Closed'
+      } as SubmittalRow
+    ];
+
+    const res = processNCRData(rows, '2026-06-01');
+    // 1 unique NCR issued in June (NOT 3!)
+    if (res.monthlyKPIs.newNcrReceived !== 1) {
+      throw new Error(`Expected newNcrReceived = 1, got ${res.monthlyKPIs.newNcrReceived}`);
+    }
+    // 2 genuine corrective submissions (June 10 on Rev00 + June 22 on Rev02; Rev01 inherited June 10 is deduplicated)
+    if (res.monthlyKPIs.correctiveSubmitted !== 2) {
+      throw new Error(`Expected correctiveSubmitted = 2, got ${res.monthlyKPIs.correctiveSubmitted}`);
+    }
+    // 2 genuine consultant responses (June 15 Rejected + June 28 Approved; Rev01 inherited June 15 is deduplicated)
+    if (res.monthlyKPIs.responsesReceived !== 2 || res.monthlyKPIs.rejected !== 1 || res.monthlyKPIs.approved !== 1) {
+      throw new Error(
+        `Expected responsesReceived=2 (1 Approved, 1 Rejected), got total=${res.monthlyKPIs.responsesReceived}, app=${res.monthlyKPIs.approved}, rej=${res.monthlyKPIs.rejected}`
+      );
+    }
+    // Detail table grain parity: monthlySubmissions.length === correctiveSubmitted
+    if (res.monthlySubmissions.length !== res.monthlyKPIs.correctiveSubmitted) {
+      throw new Error(`Detail table grain mismatch: rows=${res.monthlySubmissions.length}, KPI=${res.monthlyKPIs.correctiveSubmitted}`);
+    }
+    if (!res.integrityReport.passed) {
+      throw new Error(`Expected integrityReport.passed = true, got ${JSON.stringify(res.integrityReport)}`);
+    }
+  });
+
+  test('ER-028 (NCR-006 & NCR-007): Temporal Month-End Snapshot & getLatestRev(upToDate) — Future revisions with inherited submissionDate never leak into prior month snapshot', () => {
+    const rows: SubmittalRow[] = [
+      {
+        id: 'NCR-TMP-R0',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-200',
+        docNo: 'NCR-200',
+        rev: '00',
+        discipline: 'STR',
+        submissionDate: '2026-06-03',
+        ncrSentDateCorrectiveAction: '2026-06-20',
+        responseDate: '', // Still Waiting Consultant as of June 30!
+        ncrAction: '',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      {
+        id: 'NCR-TMP-R1',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-200',
+        docNo: 'NCR-200',
+        rev: '01',
+        discipline: 'STR',
+        submissionDate: '2026-06-03', // Inherited June 03 issue date!
+        ncrSentDateCorrectiveAction: '2026-07-10', // Actual Rev01 activity in July!
+        responseDate: '2026-07-18', // Closed in July!
+        ncrAction: 'Approved',
+        ncrStatus: 'Closed'
+      } as SubmittalRow
+    ];
+
+    // 1. Check June 2026 report: As of June 30, only Rev00 existed -> Waiting Consultant = 1, Waiting Contractor = 0
+    const juneRes = processNCRData(rows, '2026-06-01');
+    if (juneRes.monthlyKPIs.waitingConsultant !== 1 || juneRes.monthlyKPIs.waitingContractor !== 0) {
+      throw new Error(
+        `June 30 Snapshot corrupted by July Rev01! Expected waitingConsultant=1, waitingContractor=0, got consultant=${juneRes.monthlyKPIs.waitingConsultant}, contractor=${juneRes.monthlyKPIs.waitingContractor}`
+      );
+    }
+
+    // 2. Check getLatestRev(rows, new Date(2026, 5, 15)) -> must return Rev 00, NOT Rev 01
+    const latestInJune = getLatestRev(rows, new Date(2026, 5, 15));
+    if (!latestInJune || latestInJune.rev !== '00') {
+      throw new Error(`Expected getLatestRev for June 2026 to return Rev 00, got ${latestInJune?.rev}`);
+    }
+
+    // 3. Check July 2026 report: Closed in July -> waitingConsultant = 0, waitingContractor = 0, approved = 1
+    const julyRes = processNCRData(rows, '2026-07-01');
+    if (julyRes.monthlyKPIs.waitingConsultant !== 0 || julyRes.monthlyKPIs.waitingContractor !== 0 || julyRes.monthlyKPIs.approved !== 1) {
+      throw new Error(
+        `July 31 Snapshot mismatch: got consultant=${julyRes.monthlyKPIs.waitingConsultant}, contractor=${julyRes.monthlyKPIs.waitingContractor}, approved=${julyRes.monthlyKPIs.approved}`
+      );
+    }
+  });
+
+  test('ER-029 (NCR-010): Discipline Normalization Isolation — SURVEY/SURV/SUR is preserved as SURVEY and never mapped to HSE', () => {
+    const surv1 = normalizeDiscipline({ discipline: 'SURVEY' } as SubmittalRow);
+    const surv2 = normalizeDiscipline({ discipline: 'SURV' } as SubmittalRow);
+    const surv3 = normalizeDiscipline({ discipline: 'SUR' } as SubmittalRow);
+    const strSur = normalizeDiscipline({ discipline: 'STR/SUR' } as SubmittalRow);
+    const hse = normalizeDiscipline({ discipline: 'HSE' } as SubmittalRow);
+
+    if (surv1 !== 'SURVEY' || surv2 !== 'SURVEY' || surv3 !== 'SURVEY') {
+      throw new Error(`SURVEY discipline corrupted: surv1=${surv1}, surv2=${surv2}, surv3=${surv3}`);
+    }
+    if (strSur !== 'STR/SUR') {
+      throw new Error(`Expected STR/SUR, got ${strSur}`);
+    }
+    if (hse !== 'HSE') {
+      throw new Error(`Expected HSE, got ${hse}`);
+    }
+  });
+
+  test('ER-030 (NCR-008, NCR-009, NCR-011): Single NCR SSOT Equivalence between processNCRData and calculateNCRStats & Canonical NCR Filter', () => {
+    const mixedRows: SubmittalRow[] = [
+      // Stage 1: Waiting Contractor (notSent)
+      {
+        id: 'NCR-S1',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-301',
+        docNo: 'NCR-301',
+        rev: '00',
+        discipline: 'STR',
+        submissionDate: '2026-06-05',
+        ncrSentDateCorrectiveAction: '',
+        responseDate: '',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      // Stage 2: Waiting Consultant (underReview)
+      {
+        id: 'NCR-S2',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-302',
+        docNo: 'NCR-302',
+        rev: '00',
+        discipline: 'Arch',
+        submissionDate: '2026-06-06',
+        ncrSentDateCorrectiveAction: '2026-06-12',
+        responseDate: '',
+        ncrStatus: 'Under Review'
+      } as SubmittalRow,
+      // Stage 3: Rejected Open
+      {
+        id: 'NCR-S3-REJ',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-303',
+        docNo: 'NCR-303',
+        rev: '00',
+        discipline: 'Mech',
+        submissionDate: '2026-06-07',
+        ncrSentDateCorrectiveAction: '2026-06-14',
+        responseDate: '2026-06-19',
+        ncrAction: 'Rejected',
+        ncrStatus: 'Open'
+      } as SubmittalRow,
+      // Stage 3: Approved Closed
+      {
+        id: 'NCR-S3-APP',
+        registerIdentity: 'NCR',
+        documentType: 'NCR',
+        ncrRef: 'NCR-304',
+        docNo: 'NCR-304',
+        rev: '01',
+        discipline: 'SURVEY',
+        submissionDate: '2026-06-08',
+        ncrSentDateCorrectiveAction: '2026-06-15',
+        responseDate: '2026-06-21',
+        ncrAction: 'Approved',
+        ncrStatus: 'Closed'
+      } as SubmittalRow,
+      // Non-NCR row from SDW that happens to mention NCR in remarks — MUST be rejected by normalizeNCRData
+      {
+        id: 'SDW-NON-NCR',
+        registerIdentity: 'SDW',
+        documentType: 'SDW-STR',
+        docNo: 'SDW-STR-001',
+        rev: '00',
+        discipline: 'STR',
+        remarks: 'Related to NCR-301',
+        submissionDate: '2026-06-10',
+        status: 'Approved'
+      } as SubmittalRow
+    ];
+
+    const filteredNcr = normalizeNCRData(mixedRows);
+    if (filteredNcr.length !== 4) {
+      throw new Error(`Expected normalizeNCRData to keep 4 NCR rows and exclude SDW row, got ${filteredNcr.length}`);
+    }
+
+    const engineOut = processNCRData(mixedRows, '2026-06-01');
+    const foundationStats = calculateNCRStats(filteredNcr);
+
+    if (
+      engineOut.cumulativeKPIs.totalUnique !== 4 ||
+      foundationStats.totalUnique !== engineOut.cumulativeKPIs.totalUnique ||
+      foundationStats.notSent !== engineOut.cumulativeKPIs.notSent ||
+      foundationStats.underReview !== engineOut.cumulativeKPIs.underReview ||
+      foundationStats.rejectedOpen !== engineOut.cumulativeKPIs.rejectedOpen ||
+      foundationStats.approvedClosed !== engineOut.cumulativeKPIs.approvedClosed ||
+      foundationStats.open !== engineOut.cumulativeKPIs.open ||
+      foundationStats.closed !== engineOut.cumulativeKPIs.closed
+    ) {
+      throw new Error(
+        `SSOT Drift between processNCRData and calculateNCRStats: engine=${JSON.stringify(engineOut.cumulativeKPIs)}, foundation=${JSON.stringify(foundationStats)}`
+      );
+    }
+
+    if (!engineOut.integrityReport.passed) {
+      throw new Error(`Expected all 10 forensic & mathematical checks to pass: ${JSON.stringify(engineOut.integrityReport)}`);
     }
   });
 

@@ -460,6 +460,8 @@ export default function Presentation({
 
       const normDisc = (d: string) => {
         const up = (d || '').toUpperCase().trim().replace(/^NCR-/, '');
+        if (up === 'STR/SUR' || up === 'STR-SUR') return 'STR/SUR';
+        if (up === 'SURVEY' || up === 'SURV' || up === 'SUR' || up.startsWith('SURV')) return 'SURVEY';
         if (up === 'STR' || up.startsWith('STR')) return 'STR';
         if (up === 'ARCH' || up === 'ARC' || up === 'ARCHITECTURAL' || up.startsWith('ARC')) return 'ARCH';
         if (up === 'MECH' || up === 'MEC' || up === 'MECHANICAL' || up.startsWith('MEC')) return 'MECH';
@@ -537,7 +539,7 @@ export default function Presentation({
             rev0: acc.rev0 + (c.rev0 || 0),
             revHigh: acc.revHigh + (c.revHigh || 0)
           }), { totalUnique: 0, open: 0, closed: 0, underReview: 0, approved: 0, rejected: 0, rev0: 0, revHigh: 0 });
-          const ncrTotal = (sub.rev0 || 0) + (sub.revHigh || 0);
+          const ncrTotal = sub.totalUnique || ((sub.rev0 || 0) + (sub.revHigh || 0));
           return {
             discipline: disc,
             TotalSubmittals: ncrTotal,

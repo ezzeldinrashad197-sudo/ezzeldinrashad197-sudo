@@ -22,6 +22,7 @@ import {
   runComprehensiveSequenceAudit,
   generateForensicLifecycleLedger
 } from './sequenceAuditEngine';
+import { calculateCumulativeSnapshot } from './ncr/ncrEngine';
 
 export {
   getStatusCodeCategory,
@@ -2652,41 +2653,46 @@ export function calculateNCRStats(
       dataset
     );
 
+  const ncrSnapshot = calculateCumulativeSnapshot(data || []);
+  const cum = ncrSnapshot.cumulativeKPIs;
+  const rev0Sum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.rev0 || 0), 0);
+  const revHighSum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.revHigh || 0), 0);
+  const overdueCount = ncrSnapshot.cumulativeEvidence.filter(e => e.isOverdue).length;
+
   return {
     ...kpi,
 
-    discipline: '',
+    discipline: ncrSnapshot.cumulative.length === 1 ? ncrSnapshot.cumulative[0].discipline : '',
 
-    totalUnique:
-      kpi.totalUniqueDrawings,
+    totalUnique: cum.totalUnique,
+    totalUniqueDrawings: cum.totalUnique,
+    totalUniqueItems: cum.totalUnique,
 
-    notSent: 0,
+    notSent: cum.notSent,
 
-    underReview:
-      kpi.pending,
+    underReview: cum.underReview,
 
-    rejectedOpen:
-      kpi.rejectedOpen,
+    rejectedOpen: cum.rejectedOpen,
 
-    approvedClosed:
-      kpi.approved,
+    approvedClosed: cum.approvedClosed,
 
-    open:
-      kpi.pending +
-      kpi.rejectedOpen,
+    open: cum.open,
 
-    closed:
-      kpi.approved +
-      kpi.rejectedClosed,
+    closed: cum.closed,
 
-    approved:
-      kpi.approved,
+    approved: cum.approved,
 
-    rejected:
-      kpi.rejectedOpen,
+    rejected: cum.rejected,
 
-    waiting:
-      kpi.pending
+    waiting: cum.waiting,
+
+    pending: cum.underReview,
+
+    rev0: rev0Sum,
+
+    revHigh: revHighSum,
+
+    overdue: overdueCount
   };
 }
 

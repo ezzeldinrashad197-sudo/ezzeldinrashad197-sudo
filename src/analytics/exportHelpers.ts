@@ -13,6 +13,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         const isMon = !!monthlyStart;
         const normDisc = (d: string) => {
             const up = (d || '').toUpperCase().trim().replace(/^NCR-/, '');
+            if (up === 'STR/SUR' || up === 'STR-SUR') return 'STR/SUR';
+            if (up === 'SURVEY' || up === 'SURV' || up === 'SUR' || up.startsWith('SURV')) return 'SURVEY';
             if (up === 'STR' || up.startsWith('STR')) return 'STR';
             if (up === 'ARCH' || up === 'ARC' || up === 'ARCHITECTURAL' || up.startsWith('ARC')) return 'ARCH';
             if (up === 'MECH' || up === 'MEC' || up === 'MECHANICAL' || up.startsWith('MEC')) return 'MECH';
@@ -109,7 +111,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
                    RejectedOpen: sub.rejected,
                    RejectedClosed: 0,
                    Pending: sub.underReview,
-                   Total: (sub.rev0 || 0) + (sub.revHigh || 0),
+                   Total: sub.totalUnique || ((sub.rev0 || 0) + (sub.revHigh || 0)),
                    Closed: sub.closed,
                    Open: sub.open
                };

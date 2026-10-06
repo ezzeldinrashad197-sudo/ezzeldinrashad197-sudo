@@ -18,7 +18,7 @@ To prevent guess-work and heuristic failures, the engine maps raw Excel/CSV rows
 * **Sent Date Corrective Action (`sentDateCorrectiveAction` / `ncrSentDateCorrectiveAction`):** The date the contractor submitted the corrective action.
 * **Received Date Corrective Action / Response Date (`responseDate`):** The date the consultant responded.
 * **Action / Approval Code (`ncrAction` / `action`):** Code indicating approval/rejection (e.g., `Approved`, `Approved with Comments`, `Rejected`, `Revise & Resubmit`).
-* **Discipline/Trade (`discipline` / `trade`):** Standardized disciplines (Arch, STR, Infra, HSE, Mech, Elec, Landscape).
+* **Discipline/Trade (`discipline` / `trade`):** Standardized disciplines (`Arch`, `STR`, `STR/SUR`, `SURVEY`, `Infra`, `HSE`, `Mech`, `Elec`, `Landscape`). `SURVEY` / `SURV` / `SUR` is strictly isolated as `SURVEY` and never mapped to `HSE`.
 
 ---
 
@@ -33,34 +33,34 @@ Every unique NCR lifecycle is modeled as a strictly linear state-machine transit
   * *Condition:* Received Date is present AND Sent Date Corrective Action is blank/empty.
   * *Classification:* **Currently Open**
 * **Stage 2: Waiting Consultant (بانتظار الاستشاري / قيد المراجعة)**
-  * *Condition:* Sent Date Corrective Action is present AND Received Date Corrective Action is blank/empty.
+  * *Condition:* Sent Date Corrective Action is present AND Received Date Corrective Action is blank/empty (or inherited from a prior revision earlier than the current revision's Sent Date).
   * *Classification:* **Currently Under Review**
 * **Stage 3: Approved Closed (مغلق معتمد)**
-  * *Condition:* Received Date Corrective Action is present AND (Action is `Approved` OR Status is `Closed`).
+  * *Condition:* Received Date Corrective Action is present ($\ge$ Sent Date) AND (Action is `Approved` OR Status is `Closed`).
   * *Classification:* **Currently Closed**
 * **Stage 3: Rejected Open (مرفوض ومفتوح)**
-  * *Condition:* Received Date Corrective Action is present AND (Action is `Rejected` OR Status is NOT closed/approved).
+  * *Condition:* Received Date Corrective Action is present ($\ge$ Sent Date) AND (Action is `Rejected` OR Status is NOT closed/approved).
   * *Classification:* **Currently Open (Rejected Cycle)**
 
 ---
 
 ### Chapter 4 – Monthly Event Engine (محرك أحداث الشهر)
-**The Monthly Report is NOT a database snapshot.** It tracks actual occurrences of events within the boundaries of the reporting month:
-* **Event 1: New NCR Received (مستلمة جديدة):** Recorded if the `Received Date` falls within the reporting month.
-* **Event 2: Corrective Action Submitted (تقديمات الحلول):** Recorded if the `Sent Date Corrective Action` falls within the reporting month.
-* **Event 3: Consultant Response (ردود الاستشاري):** Recorded if the `Received Date Corrective Action` falls within the reporting month.
-  * Sub-categorized as **Approved** or **Rejected** based on the Action code at the time of response.
+**The Monthly Report is NOT a database snapshot, nor is it a raw row counter.** It tracks genuine, deduplicated workflow events at true Event Grain (`NCR Ref + Event Type + Event Date + Revision`) within the boundaries of the reporting month:
+* **Event 1: New NCR Received (مستلمة جديدة):** Recorded **at most once per distinct NCR Reference**, strictly using the Original NCR Issuance (`submissionDate` on the baseline revision). Subsequent revisions (`Rev01`, `Rev02`, ...) carrying an inherited `submissionDate` never inflate `New NCR Received`.
+* **Event 2: Corrective Action Submitted (تقديمات الحلول):** Recorded per genuine distinct `(NCR Ref + Sent Date Corrective Action)` within the reporting month, deduplicating any `sentDateCorrectiveAction` inherited from an earlier revision.
+* **Event 3: Consultant Response (ردود الاستشاري):** Recorded per genuine distinct `(NCR Ref + Response Date)` within the reporting month, deduplicating any `responseDate` inherited from an earlier revision.
+  * Sub-categorized as **Approved** or **Rejected** based on the Action/Status code of the revision that received that response.
 
 ---
 
 ### Chapter 5 – End of Month Snapshot (لقطة نهاية الشهر الزمنية)
-To accurately compute historical metrics (such as carry-forward, backlog, and monthly pending), the engine can reconstruct the exact state of the project as it existed on the *last day of the target month*:
-1. Filter out all revisions or actions that occurred *after* the last millisecond of the target month.
-2. For the remaining history, select the latest revision.
+To accurately compute historical metrics (such as carry-forward, backlog, and monthly pending), the engine reconstructs the exact state of the project as it existed on the *last day of the target month*:
+1. Compute the true temporal revision activity start date (`getRevisionActivityDateMs`) for each revision by stripping dates inherited from prior revisions (`0 .. idx-1`). This guarantees that future revisions (e.g. a July `Rev01` carrying an inherited June `submissionDate`) never leak into historical month-end snapshots.
+2. Filter out all revisions whose true revision activity occurred *after* the last millisecond of the target month, and select the latest eligible revision.
 3. Apply the Workflow State Machine to determine if, on that specific date, the NCR was:
    * **Waiting Consultant** (Sent Date $\le$ End of Month AND Response Date is either blank or $>$ End of Month).
    * **Waiting Contractor** (No Sent Date yet, or Rejected on or before End of Month with no subsequent Sent Date).
-   * **Critical Overdue** (NCR was open/pending for $> 14$ days as of the end of that month).
+   * **Critical Overdue (Single-Counted Month-End Snapshot KPI):** Count of distinct NCR references (`COUNT(DISTINCT NCR Ref)`) that were issued on or before End of Month, remained open/unapproved as of End of Month, and had $\text{Days Open} > 14$. Never double-counted with Event 2 submission delays.
 
 ---
 
