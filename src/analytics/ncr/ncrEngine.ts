@@ -436,52 +436,384 @@ const NON_NCR_CANONICAL_REGISTERS = new Set([
   "TRS"
 ]);
 
+const FORBIDDEN_NCR_REF_TOKENS = new Set([
+  "",
+  "-",
+  "--",
+  "---",
+  "N/A",
+  "NA",
+  "NONE",
+  "NULL",
+  "UNDEFINED",
+  "UNKNOWN",
+  "NIL",
+  "TBD",
+  "BLANK",
+  "PENDING",
+  "OPEN",
+  "CLOSED",
+  "WAITING",
+  "UNDER REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "YES",
+  "NO",
+  "TRUE",
+  "FALSE",
+  // Discipline / Trade / Register tokens must NEVER be manufactured into NCR Refs
+  "STR",
+  "STRUCT",
+  "STRUCTURAL",
+  "CIVIL",
+  "CVL",
+  "STRUCTURE",
+  "ARC",
+  "ARCH",
+  "ARCHITECTURAL",
+  "ARCHITECTURE",
+  "MEC",
+  "MECH",
+  "MECHANICAL",
+  "HVAC",
+  "PLUMBING",
+  "ELE",
+  "ELEC",
+  "ELECTRICAL",
+  "MEP",
+  "INF",
+  "INFR",
+  "INFRA",
+  "INFRASTRUCTURE",
+  "UTILITIES",
+  "ROADS",
+  "LND",
+  "LAND",
+  "LANDSCAPE",
+  "IRR",
+  "IRRIGATION",
+  "SUR",
+  "SURV",
+  "SURVEY",
+  "SURVEYING",
+  "HSE",
+  "SAFETY",
+  "GEN",
+  "GENERAL",
+  "COMMON",
+  "ALL",
+  "MIXED",
+  "MULTIDISCIPLINE",
+  "UNCLASSIFIED",
+  "STR/SUR",
+  "STR-SUR",
+  "NCR",
+  "SOR",
+  "WIR",
+  "MIR",
+  "MAR",
+  "SDW",
+  "SHD",
+  "RFI",
+  "DOC",
+  "ABD",
+  "LTR",
+  "QS"
+]);
+
 /**
- * Canonical NCR Population Filter (Fixes NCR-011)
- * Prioritizes canonical `registerIdentity === 'NCR'` and rejects rows belonging to other canonical registers,
- * with a documented fallback when `registerIdentity` is absent or unclassified.
+ * Validates whether a candidate string is a genuine source NCR Ref.
+ * Strictly forbids manufacturing NCR identifiers from:
+ * - blank NCR Ref / placeholders
+ * - synthetic composite keys (e.g. `STR::16- NON-CONFORMANCE REPORT (NCR)::1`)
+ * - Excel row numbers / positions (e.g. `1`, `2`, `ROW-1`)
+ * - Trade / Discipline codes
+ * - Subject / section / category / workbook title text
+ */
+export const isValidNcrReference = (
+  candidate: string | undefined | null,
+  row?: SubmittalRow
+): boolean => {
+  if (!candidate || typeof candidate !== "string") return false;
+  const clean = candidate.trim().toUpperCase();
+  if (!clean || FORBIDDEN_NCR_REF_TOKENS.has(clean)) return false;
+
+  // Never allow synthetic composite keys (such as `${sheetName}::${cleanFileBase}::${idx}`)
+  if (clean.includes("::")) return false;
+
+  // Never allow pure row numbers or Excel position indices
+  if (/^(?:ROW[-_\s#]*|ITEM[-_\s#]*|LINE[-_\s#]*|POS[-_\s#]*|SR[-_\s#]*|SN[-_\s#]*|S\/N[-_\s#]*|#)?\d+$/i.test(clean)) {
+    return false;
+  }
+
+  // Never allow workbook/sheet/section/category header text
+  if (
+    /\b(?:NON[- ]?CONFORMANCE|NCR\s+REGISTER|NCR\s+LOG|NCR\s+REPORT|SUMMARY|SUBTOTAL|GRAND\s+TOTAL|TOTAL|SECTION|CATEGORY|CONTINUATION)\b/i.test(
+      clean
+    )
+  ) {
+    return false;
+  }
+
+  if (row) {
+    const fileBase = (row.sourceFile || row.sourceFileName || "")
+      .replace(/\.[^/.]+$/, "")
+      .trim()
+      .toUpperCase();
+    if (fileBase && clean === fileBase) return false;
+
+    const sheetName = (row.sourceSheetName || row.disciplineSourceSheet || "")
+      .trim()
+      .toUpperCase();
+    if (sheetName && clean === sheetName) return false;
+
+    const subj = (row.subject || "").trim().toUpperCase();
+    if (subj && clean === subj && !/\bNCR[-_/\s0-9]/i.test(clean)) return false;
+  }
+
+  return true;
+};
+
+const getNcrSourceScopeKey = (row: SubmittalRow): string => {
+  return (
+    row.rawSourceIdentity ||
+    row.sourceWorkbookName ||
+    row.sourceFileName ||
+    row.sourceFile ||
+    "__DEFAULT_SCOPE__"
+  )
+    .trim()
+    .toUpperCase();
+};
+
+const detectScopesWithExplicitNcrRef = (rows: SubmittalRow[]): Set<string> => {
+  const scopes = new Set<string>();
+  if (!Array.isArray(rows)) return scopes;
+  for (const r of rows) {
+    if (!r) continue;
+    const rawNcrRef = (r.ncrRef || "").trim();
+    if (rawNcrRef && isValidNcrReference(rawNcrRef, r)) {
+      scopes.add(getNcrSourceScopeKey(r));
+    }
+  }
+  return scopes;
+};
+
+/**
+ * Resolves the canonical NCR Reference for a row.
+ * - `ncrRef` is the primary NCR identity.
+ * - If the source sheet/workbook has explicit `ncrRef` values, rows with blank `ncrRef`
+ *   are continuation/template rows and MUST return `""` (never falling back to docNo/id/trade/subject).
+ * - Fallback to `docNo` or `submissionRef` is only permitted when the source scope has no explicit
+ *   `ncrRef` column and the candidate passes `isValidNcrReference`.
+ * - `row.id` is NEVER used to manufacture an NCR identity.
+ */
+export const resolveCanonicalNcrRef = (
+  row: SubmittalRow | undefined | null,
+  scopeHasExplicitNcrRef = false
+): string => {
+  if (!row) return "";
+
+  const explicitNcrRef = (row.ncrRef || "").trim();
+  if (explicitNcrRef) {
+    return isValidNcrReference(explicitNcrRef, row) ? explicitNcrRef.toUpperCase() : "";
+  }
+
+  if (scopeHasExplicitNcrRef) {
+    return "";
+  }
+
+  const candidateDocNo = (row.docNo || "").trim();
+  if (candidateDocNo && isValidNcrReference(candidateDocNo, row)) {
+    return candidateDocNo.toUpperCase();
+  }
+
+  const candidateSubRef = (row.submissionRef || "").trim();
+  if (candidateSubRef && isValidNcrReference(candidateSubRef, row)) {
+    return candidateSubRef.toUpperCase();
+  }
+
+  return "";
+};
+
+/**
+ * Determines whether a row belongs to the NCR register domain (before identity filtering).
+ */
+export const isNCRDomainRow = (d: SubmittalRow): boolean => {
+  if (!d) return false;
+  if ((d as any).excludeFromKPI === true || (d as any).isExcluded === true) return false;
+
+  const regId = (d.registerIdentity || "").trim().toUpperCase();
+  const baseRegId = regId.includes("-") ? regId.split("-")[0].trim() : regId;
+  if (baseRegId === "NCR") return true;
+  if (baseRegId && NON_NCR_CANONICAL_REGISTERS.has(baseRegId)) return false;
+
+  const wf = (d.workflowFamily || "").trim().toUpperCase();
+  if (wf === "NCR") return true;
+  if (wf && NON_NCR_CANONICAL_REGISTERS.has(wf)) return false;
+
+  const srcReg = (d.sourceRegisterIdentity || "").trim().toUpperCase();
+  const baseSrcReg = srcReg.includes("-") ? srcReg.split("-")[0].trim() : srcReg;
+  if (baseSrcReg === "NCR") return true;
+  if (baseSrcReg && NON_NCR_CANONICAL_REGISTERS.has(baseSrcReg)) return false;
+
+  const docT = (d.documentType || "").trim().toUpperCase();
+  const logT = (d.logType || "").trim().toUpperCase();
+  const ncrRef = (d.ncrRef || "").trim().toUpperCase();
+  const docNo = (d.docNo || "").trim().toUpperCase();
+
+  if (docT === "NCR" || docT.startsWith("NCR-") || logT === "NCR" || logT.startsWith("NCR-")) {
+    return true;
+  }
+  if (
+    ncrRef.startsWith("NCR") ||
+    /^NCR[-_/\s0-9]/i.test(docNo) ||
+    /(?:^|[-_/\s])NCR(?:$|[-_/\s0-9])/i.test(docNo) ||
+    /(?:^|[-_/\s])NCR(?:$|[-_/\s0-9])/i.test(ncrRef)
+  ) {
+    return true;
+  }
+  return false;
+};
+
+export interface NCRForensicIdentityRowSummary {
+  rowId: string;
+  ncrRef: string;
+  rev: string;
+  lastRev: string;
+  trade: string;
+  receivedDate: string;
+  sentCorrectiveDate: string;
+  responseDate: string;
+  action: string;
+  status: string;
+  sourceSheet: string;
+}
+
+export interface NCRBlankContinuationRowSummary {
+  rowId: string;
+  sourceSheet: string;
+  trade: string;
+  rev: string;
+  rawNcrRef: string;
+  rawDocNo: string;
+  blockedSyntheticId: string;
+  classification: "BLANK_NCR_REF_CONTINUATION_ROW";
+}
+
+export interface NCRForensicIdentityInventory {
+  discoveredNcrRefs: string[];
+  uniqueNcrRefCount: number;
+  rowsByNcrRef: Record<string, NCRForensicIdentityRowSummary[]>;
+  blankContinuationRows: NCRBlankContinuationRowSummary[];
+  rejectedSyntheticIdentities: string[];
+  zeroSyntheticCountVerified: boolean;
+}
+
+/**
+ * Produces a forensic source-identity inventory across the supplied dataset:
+ * 1. Lists every actual non-empty NCR Ref discovered.
+ * 2. Counts unique NCR Ref values.
+ * 3. Shows all source rows assigned to each NCR Ref.
+ * 4. Identifies blank NCR Ref continuation rows separately.
+ * 5. Proves that no synthetic NCR identity (`::`, row index, trade, blank ref) is counted as a unique NCR.
+ */
+export const buildNCRForensicIdentityInventory = (
+  safeData: SubmittalRow[]
+): NCRForensicIdentityInventory => {
+  const domainRows = Array.isArray(safeData) ? safeData.filter(isNCRDomainRow) : [];
+  const scopesWithExplicitNcrRef = detectScopesWithExplicitNcrRef(domainRows);
+
+  const discoveredNcrRefs: string[] = [];
+  const seenRefs = new Set<string>();
+  const rowsByNcrRef: Record<string, NCRForensicIdentityRowSummary[]> = {};
+  const blankContinuationRows: NCRBlankContinuationRowSummary[] = [];
+  const rejectedSyntheticIdentities: string[] = [];
+
+  for (const r of domainRows) {
+    const scopeHasExplicit = scopesWithExplicitNcrRef.has(getNcrSourceScopeKey(r));
+    const resolvedRef = resolveCanonicalNcrRef(r, scopeHasExplicit);
+
+    if (resolvedRef) {
+      if (!seenRefs.has(resolvedRef)) {
+        seenRefs.add(resolvedRef);
+        discoveredNcrRefs.push(resolvedRef);
+        rowsByNcrRef[resolvedRef] = [];
+      }
+      rowsByNcrRef[resolvedRef].push({
+        rowId: r.id || "",
+        ncrRef: resolvedRef,
+        rev: r.rev || "0",
+        lastRev: r.ncrLastRev || (r.isLatestRev ? "Yes" : ""),
+        trade: normalizeDiscipline(r),
+        receivedDate: r.submissionDate || "",
+        sentCorrectiveDate: r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction || "",
+        responseDate: r.responseDate || "",
+        action: r.ncrAction || r.action || "",
+        status: r.ncrStatus || r.status || "",
+        sourceSheet: r.sourceSheetName || r.disciplineSourceSheet || ""
+      });
+    } else {
+      const blockedSyntheticId = (r.id || "").trim().toUpperCase();
+      if (blockedSyntheticId) {
+        rejectedSyntheticIdentities.push(blockedSyntheticId);
+      }
+      blankContinuationRows.push({
+        rowId: r.id || "",
+        sourceSheet: r.sourceSheetName || r.disciplineSourceSheet || "",
+        trade: normalizeDiscipline(r),
+        rev: r.rev || "",
+        rawNcrRef: r.ncrRef || "",
+        rawDocNo: r.docNo || "",
+        blockedSyntheticId,
+        classification: "BLANK_NCR_REF_CONTINUATION_ROW"
+      });
+    }
+  }
+
+  const zeroSyntheticCountVerified = discoveredNcrRefs.every(
+    (ref) => isValidNcrReference(ref) && !ref.includes("::")
+  );
+
+  return {
+    discoveredNcrRefs,
+    uniqueNcrRefCount: discoveredNcrRefs.length,
+    rowsByNcrRef,
+    blankContinuationRows,
+    rejectedSyntheticIdentities,
+    zeroSyntheticCountVerified
+  };
+};
+
+/**
+ * Canonical NCR Population Filter (Fixes NCR-011 & Source-Identity Rule)
+ * Prioritizes canonical `registerIdentity === 'NCR'`, rejects rows belonging to other canonical registers,
+ * and strictly excludes blank `NCR Ref` continuation rows so synthetic row IDs never become NCR entities.
  */
 export const normalizeNCRData = (safeData: SubmittalRow[]): SubmittalRow[] => {
   if (!Array.isArray(safeData)) return [];
-  return safeData.filter((d: SubmittalRow) => {
-    if (!d) return false;
-    if (d.excludeFromKPI === true || (d as any).isExcluded === true) return false;
+  const domainRows = safeData.filter(isNCRDomainRow);
+  const scopesWithExplicitNcrRef = detectScopesWithExplicitNcrRef(domainRows);
 
-    const regId = (d.registerIdentity || "").trim().toUpperCase();
-    const baseRegId = regId.includes("-") ? regId.split("-")[0].trim() : regId;
-    if (baseRegId === "NCR") return true;
-    if (baseRegId && NON_NCR_CANONICAL_REGISTERS.has(baseRegId)) return false;
-
-    const wf = (d.workflowFamily || "").trim().toUpperCase();
-    if (wf === "NCR") return true;
-    if (wf && NON_NCR_CANONICAL_REGISTERS.has(wf)) return false;
-
-    const srcReg = (d.sourceRegisterIdentity || "").trim().toUpperCase();
-    const baseSrcReg = srcReg.includes("-") ? srcReg.split("-")[0].trim() : srcReg;
-    if (baseSrcReg === "NCR") return true;
-    if (baseSrcReg && NON_NCR_CANONICAL_REGISTERS.has(baseSrcReg)) return false;
-
-    // Documented fallback when registerIdentity is absent/UNCLASSIFIED
-    const docT = (d.documentType || "").trim().toUpperCase();
-    const logT = (d.logType || "").trim().toUpperCase();
-    const ncrRef = (d.ncrRef || "").trim().toUpperCase();
-    const docNo = (d.docNo || "").trim().toUpperCase();
-
-    if (docT === "NCR" || docT.startsWith("NCR-") || logT === "NCR" || logT.startsWith("NCR-")) {
-      return true;
-    }
-    if (ncrRef.startsWith("NCR") || /^NCR[-_/\s0-9]/i.test(docNo) || /(?:^|[-_/\s])NCR(?:$|[-_/\s0-9])/i.test(docNo)) {
-      return true;
-    }
-    return false;
-  });
+  const result: SubmittalRow[] = [];
+  for (const d of domainRows) {
+    const scopeHasExplicit = scopesWithExplicitNcrRef.has(getNcrSourceScopeKey(d));
+    const canonicalRef = resolveCanonicalNcrRef(d, scopeHasExplicit);
+    if (!canonicalRef) continue;
+    result.push(d.ncrRef === canonicalRef ? d : { ...d, ncrRef: canonicalRef });
+  }
+  return result;
 };
 
-// Group by Unique Reference No.
+// Group by Unique Canonical NCR Reference No. (NEVER falls back to synthetic row.id)
 export const groupNCRByReference = (normalizedData: SubmittalRow[]): Map<string, SubmittalRow[]> => {
   const grouped = new Map<string, SubmittalRow[]>();
+  if (!Array.isArray(normalizedData)) return grouped;
+  const scopesWithExplicitNcrRef = detectScopesWithExplicitNcrRef(normalizedData);
+
   normalizedData.forEach((r) => {
-    const key = (r.ncrRef || r.docNo || r.submissionRef || r.id || "").trim().toUpperCase();
+    const scopeHasExplicit = scopesWithExplicitNcrRef.has(getNcrSourceScopeKey(r));
+    const key = resolveCanonicalNcrRef(r, scopeHasExplicit);
     if (!key) return;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(r);
@@ -586,7 +918,9 @@ export interface NCRIntegrityReport {
     detailTableGrainParityPassed: boolean;
     disciplineClassificationPassed: boolean;
     crossEngineReconciliationPassed: boolean;
+    sourceIdentityCheckPassed: boolean;
   };
+  identityInventory?: NCRForensicIdentityInventory;
 }
 
 /**
@@ -1206,6 +1540,7 @@ export const processNCRData = (
   safeData: SubmittalRow[],
   monthlyStart: string | undefined
 ) => {
+  const identityInventory = buildNCRForensicIdentityInventory(safeData);
   const normalizedData = normalizeNCRData(safeData);
   const grouped = groupNCRByReference(normalizedData);
 
@@ -1296,6 +1631,11 @@ export const processNCRData = (
     sumRevBuckets === cumulativeKPIs.totalUnique &&
     cumulativeKPIs.totalUnique === grouped.size;
 
+  const sourceIdentityCheckPassed =
+    identityInventory.zeroSyntheticCountVerified &&
+    grouped.size === identityInventory.uniqueNcrRefCount &&
+    Array.from(grouped.keys()).every((k) => isValidNcrReference(k) && !k.includes("::"));
+
   const allForensicChecksPassed =
     cumulativeTotalPassed &&
     monthlyResponsePassed &&
@@ -1306,7 +1646,8 @@ export const processNCRData = (
     overdueSingleCountPassed &&
     detailTableGrainParityPassed &&
     disciplineClassificationPassed &&
-    crossEngineReconciliationPassed;
+    crossEngineReconciliationPassed &&
+    sourceIdentityCheckPassed;
 
   const integrityReport: NCRIntegrityReport = {
     passed: allForensicChecksPassed,
@@ -1335,8 +1676,10 @@ export const processNCRData = (
       overdueSingleCountPassed,
       detailTableGrainParityPassed,
       disciplineClassificationPassed,
-      crossEngineReconciliationPassed
-    }
+      crossEngineReconciliationPassed,
+      sourceIdentityCheckPassed
+    },
+    identityInventory
   };
 
   const auditId = `AUD-NCR-${Math.floor(Math.random() * 90000 + 10000)}`;
@@ -1360,7 +1703,8 @@ export const processNCRData = (
     monthlyKPIs,
     cumulativeKPIs,
     evidenceList,
-    integrityReport
+    integrityReport,
+    identityInventory
   };
 };
 
@@ -1435,7 +1779,10 @@ export const compileCanonicalNCRPresentationStats = (
 
       return {
         discipline: disc,
+        CurrentUnique: sub.totalSubs,
+        Items: sub.totalSubs,
         TotalSubmittals: sub.totalSubs,
+        TotalSheets: sub.totalSubs,
         UniqueRev00: sub.rev0,
         UniqueFurtherRev: sub.revHigh,
         Rev00Rows: sub.rev0,
@@ -1446,6 +1793,7 @@ export const compileCanonicalNCRPresentationStats = (
         Approved: sub.approved,
         RejectedOpen: sub.rejectedOpen,
         RejectedClosed: sub.rejectedClosed,
+        Rejected: sub.rejectedOpen + sub.rejectedClosed,
         Pending: sub.pending,
         Total: sub.totalSubs,
         Closed: sub.approved,
@@ -1480,7 +1828,10 @@ export const compileCanonicalNCRPresentationStats = (
       const ncrTotal = sub.totalUnique || (sub.rev0 || 0) + (sub.revHigh || 0);
       return {
         discipline: disc,
+        CurrentUnique: ncrTotal,
+        Items: ncrTotal,
         TotalSubmittals: ncrTotal,
+        TotalSheets: ncrTotal,
         UniqueRev00: sub.rev0 || 0,
         UniqueFurtherRev: sub.revHigh || 0,
         Rev00Rows: sub.rev0 || 0,
@@ -1491,6 +1842,7 @@ export const compileCanonicalNCRPresentationStats = (
         Approved: sub.approved,
         RejectedOpen: sub.rejected,
         RejectedClosed: 0,
+        Rejected: sub.rejected,
         Pending: sub.underReview,
         Total: ncrTotal,
         Closed: sub.closed,
@@ -1501,7 +1853,10 @@ export const compileCanonicalNCRPresentationStats = (
 
   const totalRow = {
     discipline: "TOTAL",
+    CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
+    Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
     TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+    TotalSheets: stats.reduce((acc, curr) => acc + Number(curr.TotalSheets || 0), 0),
     UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || 0), 0),
     UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || 0), 0),
     Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
@@ -1512,6 +1867,7 @@ export const compileCanonicalNCRPresentationStats = (
     Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
     RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
     RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
+    Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected), 0),
     Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
     Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
     Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),

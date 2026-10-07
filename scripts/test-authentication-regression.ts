@@ -23,15 +23,16 @@ function assert(condition: boolean, testName: string, detail?: string) {
 }
 
 // 1. Verify SHA-256 hashes of the Immutable SSOT Artifacts + firestore.rules
-//    Baseline Revision Record: BRR-2026-09-27-01 / BRR-2026-10-06-NCR-SSOT
-//    Certified Commit: 2cd7cfeea798449793243701e5f27fff1090474c
+//    Baseline Revision Record: BRR-2026-09-27-01 / BRR-2026-10-06-NCR-SSOT / BRR-2026-10-07-NCR-SOURCE-IDENTITY
+//    Certified Commit Lineage: 6a40ef8... -> 46bd155... -> 2cd7cfeea798449793243701e5f27fff1090474c (Amended for NCR Source-Identity Rule)
 const expectedHashes = {
-  'src/utils/calculations.ts': 'ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468', // Layer 2 Production Analytics Engine (Certified Commit 2cd7cfeea798449793243701e5f27fff1090474c)
+  'src/utils/calculations.ts': 'ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468', // Layer 2 Production Analytics Engine
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT (UNCHANGED)
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT (UNCHANGED)
-  'src/analytics/calculationFoundation.ts': 'c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b', // Layer 1 Universal Source Identity & Taxonic Lock (Certified Commit 2cd7cfeea798449793243701e5f27fff1090474c)
-  'src/analytics/ncr/ncrEngine.ts': '2f980f7a0806bb9cc577d5cc2d05186ad0f0c2a7400ca8944dd46ab540db9c37', // Layer 1 Canonical NCR Event & State SSOT (Certified Commit 2cd7cfeea798449793243701e5f27fff1090474c)
-  'src/utils/ncrAnalytics.ts': '1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c', // Layer 2 NCR Analytics Adapter (Certified Commit 2cd7cfeea798449793243701e5f27fff1090474c)
+  'src/analytics/calculationFoundation.ts': '941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
+  'src/analytics/ncr/ncrEngine.ts': 'bcf7592554d5b97487ab72e30b5ce9d4fbf4df4fe77a059c62b3c368db9505c5', // Layer 1 Canonical NCR Event, State & Source-Identity SSOT (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
+  'src/utils/ncrAnalytics.ts': '1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c', // Layer 2 NCR Analytics Adapter
+  'src/utils/parser.ts': 'e5e71e2c2448ae6a0593469cefc8a64980bd61428a40fd2adcd234cab6e64263', // Canonical Excel Ingestion & NCR Column Isolation
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard (UNCHANGED)
   'firestore.rules': 'a23aa401964b257f7b044ea42e56e5bd88f123d19847615ab0908b3eca62257e' // Hardened Firestore Authorization Rules (UNCHANGED)
 };

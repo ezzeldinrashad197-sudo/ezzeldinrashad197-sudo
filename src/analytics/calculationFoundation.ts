@@ -22,7 +22,11 @@ import {
   runComprehensiveSequenceAudit,
   generateForensicLifecycleLedger
 } from './sequenceAuditEngine';
-import { calculateCumulativeSnapshot } from './ncr/ncrEngine';
+import {
+  calculateCumulativeSnapshot,
+  isValidNcrReference,
+  resolveCanonicalNcrRef
+} from './ncr/ncrEngine';
 
 export {
   getStatusCodeCategory,
@@ -2642,6 +2646,35 @@ export function calculateNCRStats(
   data: SubmittalRow[],
   fullDataset?: SubmittalRow[] | boolean
 ): any {
+  const rawList = Array.isArray(data) ? data : [];
+  const scopesWithExplicit = new Set<string>();
+  for (const r of rawList) {
+    if (r && (r.ncrRef || '').trim() && isValidNcrReference(r.ncrRef, r)) {
+      const scopeKey = (
+        r.rawSourceIdentity ||
+        r.sourceWorkbookName ||
+        r.sourceFileName ||
+        r.sourceFile ||
+        '__DEFAULT_SCOPE__'
+      )
+        .trim()
+        .toUpperCase();
+      scopesWithExplicit.add(scopeKey);
+    }
+  }
+  const filteredNcrData = rawList.filter((r) => {
+    const scopeKey = (
+      r?.rawSourceIdentity ||
+      r?.sourceWorkbookName ||
+      r?.sourceFileName ||
+      r?.sourceFile ||
+      '__DEFAULT_SCOPE__'
+    )
+      .trim()
+      .toUpperCase();
+    return Boolean(resolveCanonicalNcrRef(r, scopesWithExplicit.has(scopeKey)));
+  });
+
   const dataset =
     Array.isArray(fullDataset)
       ? fullDataset
@@ -2649,11 +2682,11 @@ export function calculateNCRStats(
 
   const kpi =
     calculateCanonicalKPIs(
-      data,
+      filteredNcrData,
       dataset
     );
 
-  const ncrSnapshot = calculateCumulativeSnapshot(data || []);
+  const ncrSnapshot = calculateCumulativeSnapshot(filteredNcrData);
   const cum = ncrSnapshot.cumulativeKPIs;
   const rev0Sum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.rev0 || 0), 0);
   const revHighSum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.revHigh || 0), 0);

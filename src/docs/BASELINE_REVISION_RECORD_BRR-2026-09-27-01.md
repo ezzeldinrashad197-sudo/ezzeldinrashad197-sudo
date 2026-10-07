@@ -1,12 +1,14 @@
 # BASELINE REVISION RECORD: BRR-2026-09-27-01
 
-- **Record Identifier**: `BRR-2026-09-27-01` (Amended by `BRR-2026-10-06-NCR-SSOT`)
-- **Effective Date**: 2026-10-06
+- **Record Identifier**: `BRR-2026-09-27-01` (Amended by `BRR-2026-10-06-NCR-SSOT` & `BRR-2026-10-07-NCR-SOURCE-IDENTITY`)
+- **Effective Date**: 2026-10-07
 - **Authority / Sign-off**: Engineering Governance & Architecture Direction
-- **Subject**: Formal Approval & Freezing of Submission-Level Grain Identity, KPI Extensions & Canonical NCR SSOT Unification (`NCR-001` → `NCR-013`)
-- **Certified Commit (Final Baseline Lock)**: `2cd7cfeea798449793243701e5f27fff1090474c` (`refactor(ncr): implement canonical NCR presentation engine`)
-- **Pre-Remediation Audited Base Commit**: `46bd155fa438ad54df8de9d96f8cbe8696113df8`
-- **Prior Baseline Commit**: `6a40ef8b1a1b4b128e5741d416633d37062037c6`
+- **Subject**: Formal Approval & Freezing of Submission-Level Grain Identity, KPI Extensions, Canonical NCR SSOT Unification (`NCR-001` → `NCR-013`) & Strict NCR Source-Identity Rule (`ER-033`)
+- **Certified Commit Lineage**:
+  - **Initial Baseline Commit (`BRR-2026-09-27-01`)**: `6a40ef8b1a1b4b128e5741d416633d37062037c6`
+  - **Pre-Remediation Audited Base Commit**: `46bd155fa438ad54df8de9d96f8cbe8696113df8`
+  - **NCR Presentation & SSOT Commit (`BRR-2026-10-06-NCR-SSOT`)**: `2cd7cfeea798449793243701e5f27fff1090474c` (`refactor(ncr): implement canonical NCR presentation engine`)
+  - **Final NCR Source-Identity Remediation (`BRR-2026-10-07-NCR-SOURCE-IDENTITY`)**: Current working tree on top of `2cd7cfeea798449793243701e5f27fff1090474c`
 
 ---
 
@@ -48,9 +50,10 @@ Prior to freezing the new baseline, the following non-negotiable mathematical gu
 | File Path | Previous Frozen Hash | New Canonical Frozen Hash (SHA-256) |
 |:---|:---|:---|
 | `src/utils/calculations.ts` | `26a859f736ac872c12f9a8af4f298512a8258236671e409992d998278a54c287` | `ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468` |
-| `src/analytics/calculationFoundation.ts` | `ddc2e312bd2e44081cf251ccf60e79334b7ef50a372ea10699c082f04248bd6e` | `c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b` |
-| `src/analytics/ncr/ncrEngine.ts` | *(Pre-Remediation Dual-Engine)* | `2f980f7a0806bb9cc577d5cc2d05186ad0f0c2a7400ca8944dd46ab540db9c37` |
+| `src/analytics/calculationFoundation.ts` | `c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b` | `941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64` |
+| `src/analytics/ncr/ncrEngine.ts` | `2f980f7a0806bb9cc577d5cc2d05186ad0f0c2a7400ca8944dd46ab540db9c37` | `bcf7592554d5b97487ab72e30b5ce9d4fbf4df4fe77a059c62b3c368db9505c5` |
 | `src/utils/ncrAnalytics.ts` | *(Pre-Remediation Legacy Helper)* | `1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c` |
+| `src/utils/parser.ts` | *(Pre-Remediation Parser)* | `e5e71e2c2448ae6a0593469cefc8a64980bd61428a40fd2adcd234cab6e64263` |
 
 ### B. Unchanged Immutable Artifacts (Verified 100% Unmodified):
 | File Path | Canonical Frozen Hash (SHA-256) | Status |

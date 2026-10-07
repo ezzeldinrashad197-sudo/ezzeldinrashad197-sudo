@@ -250,7 +250,9 @@ export const parseExcelWorkbook = (
           rowStr.includes("submission date") ||
           rowStr.includes("date sent") ||
           rowStr.includes("letter ref") ||
-          rowStr.includes("sub ref")
+          rowStr.includes("sub ref") ||
+          rowStr.includes("ncr ref") ||
+          rowStr.includes("sor ref")
         ) {
           headerRowIdx = i;
           break;
@@ -540,9 +542,19 @@ export const parseExcelWorkbook = (
       ],
     );
 
-    const colNcrAction = getColIdx([
-      "action",
-    ]);
+    const colNcrAction = getColIdx(
+      [
+        "action",
+      ],
+      [
+        "corrective",
+        "sent",
+        "date",
+        "received",
+        "response",
+        "required",
+      ],
+    );
 
     const colResponseTime = getColIdx([
       "response time",

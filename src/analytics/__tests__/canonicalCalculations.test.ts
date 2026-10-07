@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import { calculateCanonicalKPIs, calculateNCRStats, getBusinessEntityKey, getDocumentIdentityKey, getSubmissionIdentityKey, getStatusCodeCategory, processRevisionEngine, classifyRow } from '../calculationFoundation';
 import {
   processNCRData,
@@ -8,8 +9,12 @@ import {
   getLatestRev,
   getRevisionActivityDateMs,
   normalizeNcrRevisionHistory,
-  compileCanonicalNCRPresentationStats
+  compileCanonicalNCRPresentationStats,
+  buildNCRForensicIdentityInventory,
+  resolveCanonicalNcrRef,
+  isValidNcrReference
 } from '../ncr/ncrEngine';
+import { parseExcelBuffer } from '../../utils/parser';
 import { calculateNCRStats as calculateLegacyAnalyticsNCRStats } from '../../utils/ncrAnalytics';
 import {
   isValidRevision,
@@ -1779,6 +1784,109 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     ) {
       throw new Error(
         `Cross-consumer SSOT mismatch: pres=${JSON.stringify(presCum.totalRow)}, export=${JSON.stringify(exportCum.totalRow)}, util=${JSON.stringify(utilStats)}`
+      );
+    }
+  });
+
+  // =========================================================================
+  // ER-033: Real Source-Identity Acceptance Test — 16- Non-Conformance Report (NCR).xlsx (Sheet: STR)
+  // =========================================================================
+  test('ER-033 (NCR Source-Identity Rule): 16- Non-Conformance Report (NCR).xlsx (Sheet: STR) discovers only ACE-INN-P1.03B-NCR-0001 and NEVER invents STR::16- NON-CONFORMANCE REPORT (NCR)::1 or ::2 from blank NCR Ref continuation rows', () => {
+    const wb = XLSX.utils.book_new();
+    const strSheetAoA = [
+      ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Received Date', 'Sent Corrective Action', 'Action', 'Status', 'Response Date', 'Subject'],
+      // Row 0 (identifiable NCR Ref in source)
+      ['ACE-INN-P1.03B-NCR-0001', '0', 'Yes', 'STR', '2026-05-23', '2026-07-06', 'Under Review', 'Waiting', '', 'Concrete surface defect at Zone B'],
+      // Row 1 (blank NCR Ref continuation row belonging to the same NCR structure)
+      ['', '', '', 'STR', '', '', 'Under Review', 'Waiting', '', 'Continuation: repair method statement attached'],
+      // Row 2 (blank NCR Ref continuation row belonging to the same NCR structure)
+      ['', '', '', 'STR', '', '', 'Under Review', 'Waiting', '', 'Continuation: additional inspection note']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(strSheetAoA);
+    XLSX.utils.book_append_sheet(wb, ws, 'STR');
+    const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const parsedRows = parseExcelBuffer(excelBuffer, '16- Non-Conformance Report (NCR).xlsx');
+    if (parsedRows.length !== 3) {
+      throw new Error(`Expected parser to emit 3 raw worksheet rows from STR sheet, got ${parsedRows.length}`);
+    }
+
+    // 1. Forensic Identity Inventory
+    const inventory = buildNCRForensicIdentityInventory(parsedRows);
+    if (inventory.uniqueNcrRefCount !== 1 || inventory.discoveredNcrRefs[0] !== 'ACE-INN-P1.03B-NCR-0001') {
+      throw new Error(
+        `Expected exactly 1 discovered NCR Ref ['ACE-INN-P1.03B-NCR-0001'], got ${JSON.stringify(inventory.discoveredNcrRefs)}`
+      );
+    }
+    if ((inventory.rowsByNcrRef['ACE-INN-P1.03B-NCR-0001'] || []).length !== 1) {
+      throw new Error(
+        `Expected 1 source row assigned to ACE-INN-P1.03B-NCR-0001, got ${(inventory.rowsByNcrRef['ACE-INN-P1.03B-NCR-0001'] || []).length}`
+      );
+    }
+    if (inventory.blankContinuationRows.length !== 2) {
+      throw new Error(
+        `Expected 2 blank NCR Ref continuation rows identified separately, got ${inventory.blankContinuationRows.length}`
+      );
+    }
+    if (
+      !inventory.rejectedSyntheticIdentities.includes('STR::16- NON-CONFORMANCE REPORT (NCR)::1') ||
+      !inventory.rejectedSyntheticIdentities.includes('STR::16- NON-CONFORMANCE REPORT (NCR)::2')
+    ) {
+      throw new Error(
+        `Expected rejectedSyntheticIdentities to record STR::16- NON-CONFORMANCE REPORT (NCR)::1 and ::2, got ${JSON.stringify(inventory.rejectedSyntheticIdentities)}`
+      );
+    }
+    if (!inventory.zeroSyntheticCountVerified) {
+      throw new Error('Expected zeroSyntheticCountVerified === true');
+    }
+
+    // 2. Engine Execution & Proof of Zero Synthetic NCRs
+    const ncrOut = processNCRData(parsedRows, '2026-07-01');
+    if (ncrOut.cumulativeKPIs.totalUnique !== 1) {
+      throw new Error(`Expected STR totalUnique = 1 (NOT 3!), got ${ncrOut.cumulativeKPIs.totalUnique}`);
+    }
+    if (ncrOut.cumulativeKPIs.underReview !== 1 || ncrOut.cumulativeKPIs.open !== 0 || ncrOut.cumulativeKPIs.closed !== 0) {
+      throw new Error(
+        `Expected ACE-INN-P1.03B-NCR-0001 to be Stage 2 Under Review (underReview=1, open=0, closed=0), got ${JSON.stringify(ncrOut.cumulativeKPIs)}`
+      );
+    }
+    const strDisciplineRow = ncrOut.cumulative.find((c) => c.discipline === 'STR');
+    if (!strDisciplineRow || strDisciplineRow.totalUnique !== 1) {
+      throw new Error(`Expected STR discipline row totalUnique = 1, got ${JSON.stringify(strDisciplineRow)}`);
+    }
+    if (
+      ncrOut.evidenceList.length !== 1 ||
+      ncrOut.evidenceList[0].ref !== 'ACE-INN-P1.03B-NCR-0001' ||
+      ncrOut.evidenceList[0].stage !== 'Stage 2: Waiting Consultant'
+    ) {
+      throw new Error(
+        `Expected single evidence entry for ACE-INN-P1.03B-NCR-0001 in Stage 2: Waiting Consultant, got ${JSON.stringify(ncrOut.evidenceList)}`
+      );
+    }
+    const forbiddenRefs = ncrOut.evidenceList.filter(
+      (e) =>
+        e.ref.includes('::') ||
+        e.ref === 'STR::16- NON-CONFORMANCE REPORT (NCR)::1' ||
+        e.ref === 'STR::16- NON-CONFORMANCE REPORT (NCR)::2'
+    );
+    if (forbiddenRefs.length > 0) {
+      throw new Error(`Synthetic NCR identities leaked into evidenceList: ${JSON.stringify(forbiddenRefs)}`);
+    }
+
+    // 3. Cross-consumer verification (Presentation, Export, Foundation, Legacy Analytics)
+    const presStats = compileCanonicalNCRPresentationStats(parsedRows);
+    const foundationStats = calculateNCRStats(parsedRows);
+    const legacyStats = calculateLegacyAnalyticsNCRStats(parsedRows);
+    if (
+      presStats.totalRow.Total !== 1 ||
+      presStats.totalRow.Pending !== 1 ||
+      foundationStats.totalUniqueDrawings !== 1 ||
+      foundationStats.pending !== 1 ||
+      legacyStats.ncrRaised !== 1 ||
+      legacyStats.statusBreakdown.underReview !== 1
+    ) {
+      throw new Error(
+        `Cross-consumer parity failure on 16- Non-Conformance Report (NCR).xlsx: pres=${JSON.stringify(presStats.totalRow)}, foundation=${JSON.stringify(foundationStats)}, legacy=${JSON.stringify(legacyStats)}`
       );
     }
   });
