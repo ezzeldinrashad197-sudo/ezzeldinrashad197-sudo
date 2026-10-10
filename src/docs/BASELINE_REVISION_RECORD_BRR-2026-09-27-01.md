@@ -51,9 +51,9 @@ Prior to freezing the new baseline, the following non-negotiable mathematical gu
 |:---|:---|:---|
 | `src/utils/calculations.ts` | `26a859f736ac872c12f9a8af4f298512a8258236671e409992d998278a54c287` | `ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468` |
 | `src/analytics/calculationFoundation.ts` | `c75a63f4cc664dbad6d5988f4b717bf4af33c7489317dfc1731795887c81546b` | `941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64` |
-| `src/analytics/ncr/ncrEngine.ts` | `2f980f7a0806bb9cc577d5cc2d05186ad0f0c2a7400ca8944dd46ab540db9c37` | `bcf7592554d5b97487ab72e30b5ce9d4fbf4df4fe77a059c62b3c368db9505c5` |
+| `src/analytics/ncr/ncrEngine.ts` | `2f980f7a0806bb9cc577d5cc2d05186ad0f0c2a7400ca8944dd46ab540db9c37` | `c84112c1bbc5653d949da1588baf4b5df2ed3925694ea0a9727c7b9ee7ad3a45` |
 | `src/utils/ncrAnalytics.ts` | *(Pre-Remediation Legacy Helper)* | `1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c` |
-| `src/utils/parser.ts` | *(Pre-Remediation Parser)* | `e5e71e2c2448ae6a0593469cefc8a64980bd61428a40fd2adcd234cab6e64263` |
+| `src/utils/parser.ts` | *(Pre-Remediation Parser)* | `3026c386543635d29e925fb6f97870b85a2f50155912e0e8ea1617946b067239` |
 
 ### B. Unchanged Immutable Artifacts (Verified 100% Unmodified):
 | File Path | Canonical Frozen Hash (SHA-256) | Status |

@@ -5,7 +5,7 @@ import { normalizeData } from "./calculations";
 import { isRevision0 } from "../analytics/revisionResolver";
 import { classifyRegisterSheet, normalizeDiscipline, getAuthoritativeSourceRegisterName } from "./classificationEngine";
 import { mapDocumentToWorkflow } from "./workflowMapping";
-import { resolveParentRegister, normalizeDisciplineName, isDisciplineSheet, KNOWN_PARENT_REGISTERS } from "./parentRegisterResolver";
+import { resolveParentRegister, normalizeDisciplineName, isDisciplineSheet, isPureDisciplineSheet, KNOWN_PARENT_REGISTERS } from "./parentRegisterResolver";
 
 const MONTH_NAME_MAP: Record<string, string> = {
   jan: "01",
@@ -965,6 +965,7 @@ export const parseExcelWorkbook = (
     const cleanFileBase = fileName.replace(/\.[^/.]+$/, "").trim();
     const sheetDiscInfo = normalizeDisciplineName(sheetName);
     const isSheetDisc = isDisciplineSheet(sheetName);
+    const isPureSheetDisc = !isRfiWorksheet && isPureDisciplineSheet(sheetName);
     const normalizedDisciplineCache = new Map<string, string>();
     const getCachedNormalizedDiscipline = (val: string): string => {
       let cached = normalizedDisciplineCache.get(val);
@@ -1051,7 +1052,10 @@ export const parseExcelWorkbook = (
 
       let disciplineEvidenceSource = "UNCLASSIFIED";
 
-      if (isRegisterDisciplineLocked) {
+      if (isPureSheetDisc) {
+        disciplineVal = sheetDiscInfo.normalized;
+        disciplineEvidenceSource = "REGISTER_LOCK";
+      } else if (isRegisterDisciplineLocked) {
         disciplineVal = compDisc!;
         disciplineEvidenceSource = "REGISTER_LOCK";
       } else if (rowHasExplicitDiscipline) {
@@ -1156,11 +1160,13 @@ export const parseExcelWorkbook = (
        *   retain Composite Identity context behavior.
        */
       const rowContextDiscipline =
-        isRegisterDisciplineLocked
-          ? compDisc
-          : (isRfiWorksheet && rowHasExplicitDiscipline
-              ? finalDisciplineVal
-              : compIdent?.discipline);
+        isPureSheetDisc
+          ? sheetDiscInfo.normalized
+          : isRegisterDisciplineLocked
+            ? compDisc
+            : (isRfiWorksheet && rowHasExplicitDiscipline
+                ? finalDisciplineVal
+                : compIdent?.discipline);
 
       /*
        * ============================================================
@@ -1192,7 +1198,11 @@ export const parseExcelWorkbook = (
           ? String(r[colDrawingNo] || "").trim()
           : "";
 
-      const resolvedDiscipline = isSheetDisc ? sheetDiscInfo.normalized : (finalDisciplineVal || sheetDiscInfo.normalized);
+      const resolvedDiscipline = isPureSheetDisc
+        ? sheetDiscInfo.normalized
+        : (isSheetDisc && !rowHasExplicitDiscipline)
+          ? sheetDiscInfo.normalized
+          : (finalDisciplineVal || sheetDiscInfo.normalized);
 
       parsed.push({
         id: `${sheetName}::${cleanFileBase}::${idx}`,
@@ -1205,6 +1215,7 @@ export const parseExcelWorkbook = (
         sourceSheetName: sheetName,
         disciplineSourceSheet: sheetName,
         disciplineCode: sheetDiscInfo.code,
+        rawTrade: rawDiscipline || undefined,
 
         logType: authoritativeSourceName || parentRegister.identity,
         sourceFile: cleanFileBase,
@@ -1213,7 +1224,7 @@ export const parseExcelWorkbook = (
         compositeIdentity: compIdent,
 
         disciplineEvidenceSource,
-        isDisciplineLocked: isRegisterDisciplineLocked,
+        isDisciplineLocked: isPureSheetDisc || isRegisterDisciplineLocked,
         hasAuthoritativeSourceIdentity: Boolean(authoritativeSourceName),
         sourceRegisterIdentity: authoritativeSourceName || parentRegister.identity,
         workflowFamily: parentRegister.workflowFamily,

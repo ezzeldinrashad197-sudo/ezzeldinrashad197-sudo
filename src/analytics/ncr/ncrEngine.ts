@@ -1,6 +1,10 @@
 import { SubmittalRow } from "../../types";
 import { classifyNcrStatus } from "../../utils/calculations";
 import {
+  isPureDisciplineSheet,
+  cleanSheetDisciplineToken
+} from "../../utils/parentRegisterResolver";
+import {
   compareRevisionsCanonical as compareRevisions,
   isRevision0,
   isFurtherRevision,
@@ -394,29 +398,183 @@ export interface NCREventRecord {
   status: string;
 }
 
-/**
- * Helper to normalize the discipline/trade name consistently across all engines.
- * Fixes NCR-010: SURVEY / SURV / SUR is preserved as "SURVEY" and NEVER mapped to "HSE".
- */
-export const normalizeDiscipline = (row: SubmittalRow): string => {
-  const rawDisc = (row.discipline || row.trade || row.disciplineCode || "GENERAL")
+export interface NCRDisciplineResolution {
+  canonicalDiscipline: string;
+  sourceSheet: string;
+  rawTrade: string;
+  disciplineEvidenceSource:
+    | "REGISTER_LOCK"
+    | "SHEET_LOCK"
+    | "ROW_EXPLICIT"
+    | "COMPOSITE_FALLBACK"
+    | "DEFAULT"
+    | string;
+  isPureDisciplineSheet: boolean;
+}
+
+const normalizeRawDisciplineToken = (rawInput: string): string => {
+  const rawDisc = (rawInput || "GENERAL")
     .trim()
     .replace(/^NCR[-_\s]*/i, "")
+    .replace(/\.+$/, "")
     .trim();
   const disc = rawDisc.toUpperCase();
 
   if (disc === "STR/SUR" || disc === "STR-SUR") return "STR/SUR";
-  if (disc === "SURVEY" || disc === "SURV" || disc === "SUR" || disc === "SURVEYING" || disc.startsWith("SURV")) {
+  if (
+    disc === "SURVEY" ||
+    disc === "SURV" ||
+    disc === "SUR" ||
+    disc === "SURVEYING" ||
+    disc.startsWith("SURV")
+  ) {
     return "SURVEY";
   }
-  if (disc === "MECHANICAL" || disc === "MECH" || disc === "MEC" || disc.startsWith("MECH")) return "Mech";
-  if (disc === "ELECTRICAL" || disc === "ELEC" || disc === "ELE" || disc.startsWith("ELEC")) return "Elec";
-  if (disc === "STRUCTURAL" || disc === "STR" || disc === "CIVIL" || disc.startsWith("STR")) return "STR";
-  if (disc === "ARCHITECTURAL" || disc === "ARCH" || disc === "ARC" || disc.startsWith("ARCH")) return "Arch";
-  if (disc === "INFRASTRUCTURE" || disc === "INFR" || disc === "INFRA" || disc === "INF" || disc.startsWith("INF")) return "Infra";
-  if (disc === "LANDSCAPE" || disc === "LAND" || disc === "LND" || disc.includes("LAND")) return "Landscape";
-  if (disc === "HSE" || disc === "SAFETY" || disc.includes("HSE") || disc.includes("SAFETY")) return "HSE";
+  if (disc === "MECHANICAL" || disc === "MECH" || disc === "MEC" || disc.startsWith("MECH")) {
+    return "Mech";
+  }
+  if (disc === "ELECTRICAL" || disc === "ELEC" || disc === "ELE" || disc.startsWith("ELEC")) {
+    return "Elec";
+  }
+  if (
+    disc === "STRUCTURAL" ||
+    disc === "STR" ||
+    disc === "STRUCT" ||
+    disc === "CIVIL" ||
+    disc === "STRUCTURE" ||
+    disc.startsWith("STR")
+  ) {
+    return "STR";
+  }
+  if (
+    disc === "ARCHITECTURAL" ||
+    disc === "ARCH" ||
+    disc === "ARC" ||
+    disc === "ARCHITECTURE" ||
+    disc.startsWith("ARCH")
+  ) {
+    return "Arch";
+  }
+  if (
+    disc === "INFRASTRUCTURE" ||
+    disc === "INFR" ||
+    disc === "INFRA" ||
+    disc === "INF" ||
+    disc === "UTILITIES" ||
+    disc === "ROADS" ||
+    disc.startsWith("INF")
+  ) {
+    return "Infra";
+  }
+  if (disc === "LANDSCAPE" || disc === "LAND" || disc === "LND" || disc.includes("LAND")) {
+    return "Landscape";
+  }
+  if (disc === "HSE" || disc === "SAFETY" || disc.includes("HSE") || disc.includes("SAFETY")) {
+    return "HSE";
+  }
+  if (disc === "MEP") return "MEP";
+  if (disc === "IRR" || disc === "IRRIGATION" || disc.startsWith("IRR")) return "Irrigation";
+  if (disc === "GEN" || disc === "GENERAL" || disc === "COMMON") return "GENERAL";
   return rawDisc || "GENERAL";
+};
+
+const extractRowSourceSheet = (row: SubmittalRow | undefined | null): string => {
+  if (!row) return "";
+  const direct = (row.sourceSheetName || row.disciplineSourceSheet || "").trim();
+  if (direct) return direct;
+  if (row.rawSourceIdentity && row.rawSourceIdentity.includes("::")) {
+    const parts = row.rawSourceIdentity.split("::");
+    const candidate = (parts[parts.length - 1] || "").trim();
+    if (candidate) return candidate;
+  }
+  if (row.id && row.id.includes("::")) {
+    const firstPart = (row.id.split("::")[0] || "").trim();
+    if (firstPart) return firstPart;
+  }
+  return "";
+};
+
+/**
+ * Resolves the authoritative NCR discipline with full forensic provenance:
+ * 1. Pure Discipline Sheet (e.g. ARCH, INFR, STR, ELEC, MECH, LAND, HSE):
+ *    - Sheet Discipline > Row Trade (authoritative worksheet lock).
+ *    - Conflicting row-level Trade text (e.g. WAREHOUSE, Multi-Discipline, SURVEY)
+ *      never overrides the pure worksheet discipline.
+ *    - Discipline Evidence Source = 'REGISTER_LOCK' / 'SHEET_LOCK'.
+ * 2. Mixed / Multi-Discipline Sheet (e.g. 'NCR Register', 'GEN', 'All'):
+ *    - Row-level explicit Trade/Discipline is authoritative ('ROW_EXPLICIT').
+ */
+export const resolveCanonicalNcrDiscipline = (row: SubmittalRow): NCRDisciplineResolution => {
+  if (!row) {
+    return {
+      canonicalDiscipline: "GENERAL",
+      sourceSheet: "",
+      rawTrade: "",
+      disciplineEvidenceSource: "DEFAULT",
+      isPureDisciplineSheet: false
+    };
+  }
+
+  const sourceSheet = extractRowSourceSheet(row);
+  const rawTrade = (
+    row.rawTrade ||
+    row.trade ||
+    row.discipline ||
+    row.disciplineCode ||
+    ""
+  ).trim();
+
+  if (sourceSheet && isPureDisciplineSheet(sourceSheet)) {
+    const sheetToken = cleanSheetDisciplineToken(sourceSheet);
+    const canonicalDiscipline = normalizeRawDisciplineToken(sheetToken);
+    const evidenceSource =
+      row.disciplineEvidenceSource === "SHEET_LOCK" ||
+      row.disciplineEvidenceSource === "REGISTER_LOCK"
+        ? row.disciplineEvidenceSource
+        : "REGISTER_LOCK";
+
+    return {
+      canonicalDiscipline,
+      sourceSheet,
+      rawTrade: rawTrade || sourceSheet,
+      disciplineEvidenceSource: evidenceSource,
+      isPureDisciplineSheet: true
+    };
+  }
+
+  const rowCandidate = (
+    row.discipline ||
+    row.trade ||
+    row.rawTrade ||
+    row.disciplineCode ||
+    "GENERAL"
+  ).trim();
+  const canonicalDiscipline = normalizeRawDisciplineToken(rowCandidate);
+  const evidenceSource =
+    row.disciplineEvidenceSource &&
+    row.disciplineEvidenceSource !== "REGISTER_LOCK" &&
+    row.disciplineEvidenceSource !== "SHEET_LOCK"
+      ? row.disciplineEvidenceSource
+      : rawTrade
+        ? "ROW_EXPLICIT"
+        : "DEFAULT";
+
+  return {
+    canonicalDiscipline,
+    sourceSheet,
+    rawTrade: rawTrade || canonicalDiscipline,
+    disciplineEvidenceSource: evidenceSource,
+    isPureDisciplineSheet: false
+  };
+};
+
+/**
+ * Helper to normalize the discipline/trade name consistently across all engines.
+ * Enforces Pure Discipline Sheet authority (Sheet Discipline > Row Trade) with safe Mixed-Sheet fallback,
+ * while preserving NCR-010 (SURVEY is never mapped to HSE when valid).
+ */
+export const normalizeDiscipline = (row: SubmittalRow): string => {
+  return resolveCanonicalNcrDiscipline(row).canonicalDiscipline;
 };
 
 const NON_NCR_CANONICAL_REGISTERS = new Set([
@@ -682,6 +840,9 @@ export interface NCRForensicIdentityRowSummary {
   rev: string;
   lastRev: string;
   trade: string;
+  rawTrade: string;
+  canonicalDiscipline: string;
+  disciplineEvidenceSource: string;
   receivedDate: string;
   sentCorrectiveDate: string;
   responseDate: string;
@@ -740,18 +901,22 @@ export const buildNCRForensicIdentityInventory = (
         discoveredNcrRefs.push(resolvedRef);
         rowsByNcrRef[resolvedRef] = [];
       }
+      const discRes = resolveCanonicalNcrDiscipline(r);
       rowsByNcrRef[resolvedRef].push({
         rowId: r.id || "",
         ncrRef: resolvedRef,
         rev: r.rev || "0",
         lastRev: r.ncrLastRev || (r.isLatestRev ? "Yes" : ""),
-        trade: normalizeDiscipline(r),
+        trade: discRes.canonicalDiscipline,
+        rawTrade: discRes.rawTrade,
+        canonicalDiscipline: discRes.canonicalDiscipline,
+        disciplineEvidenceSource: discRes.disciplineEvidenceSource,
         receivedDate: r.submissionDate || "",
         sentCorrectiveDate: r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction || "",
         responseDate: r.responseDate || "",
         action: r.ncrAction || r.action || "",
         status: r.ncrStatus || r.status || "",
-        sourceSheet: r.sourceSheetName || r.disciplineSourceSheet || ""
+        sourceSheet: discRes.sourceSheet
       });
     } else {
       const blockedSyntheticId = (r.id || "").trim().toUpperCase();
@@ -800,7 +965,18 @@ export const normalizeNCRData = (safeData: SubmittalRow[]): SubmittalRow[] => {
     const scopeHasExplicit = scopesWithExplicitNcrRef.has(getNcrSourceScopeKey(d));
     const canonicalRef = resolveCanonicalNcrRef(d, scopeHasExplicit);
     if (!canonicalRef) continue;
-    result.push(d.ncrRef === canonicalRef ? d : { ...d, ncrRef: canonicalRef });
+    const discRes = resolveCanonicalNcrDiscipline(d);
+    result.push({
+      ...d,
+      ncrRef: canonicalRef,
+      discipline: discRes.canonicalDiscipline,
+      trade: discRes.canonicalDiscipline,
+      rawTrade: discRes.rawTrade,
+      sourceSheetName: d.sourceSheetName || discRes.sourceSheet || undefined,
+      disciplineSourceSheet: d.disciplineSourceSheet || discRes.sourceSheet || undefined,
+      disciplineEvidenceSource: discRes.disciplineEvidenceSource,
+      isDisciplineLocked: discRes.isPureDisciplineSheet ? true : d.isDisciplineLocked
+    });
   }
   return result;
 };
@@ -869,6 +1045,10 @@ const resolveNcrOutcome = (row: SubmittalRow) => {
 export interface NCREvidence {
   ref: string;
   discipline: string;
+  canonicalDiscipline?: string;
+  sourceSheet?: string;
+  rawTrade?: string;
+  disciplineEvidenceSource?: string;
   latestRev: string;
   stage:
     | "Stage 1: Waiting Contractor"
@@ -1079,7 +1259,8 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
     const originalIssueStr = firstRevision?.submissionDate || latestOverall.submissionDate || "";
     const originalIssueMs = parseDateToMs(originalIssueStr);
 
-    const disc = normalizeDiscipline(latestOverall);
+    const discRes = resolveCanonicalNcrDiscipline(latestOverall);
+    const disc = discRes.canonicalDiscipline;
 
     if (!cumMap.has(disc)) {
       cumMap.set(disc, {
@@ -1129,6 +1310,10 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
     cumulativeEvidence.push({
       ref: refKey || latestOverall.ncrRef || latestOverall.docNo || "UNKNOWN",
       discipline: disc,
+      canonicalDiscipline: disc,
+      sourceSheet: discRes.sourceSheet || "-",
+      rawTrade: discRes.rawTrade || disc,
+      disciplineEvidenceSource: discRes.disciplineEvidenceSource,
       latestRev: latestOverall.rev || "0",
       stage: state.stage,
       issueDate: originalIssueStr || "-",
@@ -1622,9 +1807,27 @@ export const processNCRData = (
     monthlySubmissions.length === monthlyKPIs.correctiveSubmitted &&
     monthlySubmissions.length === submittedEventsInLedger;
 
+  const pureSheetPrecedenceVerified = normalizedData.every((r) => {
+    const res = resolveCanonicalNcrDiscipline(r);
+    if (!res.isPureDisciplineSheet) return true;
+    const expectedDisc = normalizeRawDisciplineToken(cleanSheetDisciplineToken(res.sourceSheet));
+    return (
+      res.canonicalDiscipline === expectedDisc &&
+      r.discipline === expectedDisc &&
+      (res.disciplineEvidenceSource === "REGISTER_LOCK" ||
+        res.disciplineEvidenceSource === "SHEET_LOCK")
+    );
+  });
+
   const disciplineClassificationPassed =
     normalizeDiscipline({ discipline: "SURVEY" } as SubmittalRow) === "SURVEY" &&
-    normalizeDiscipline({ discipline: "HSE" } as SubmittalRow) === "HSE";
+    normalizeDiscipline({ discipline: "HSE" } as SubmittalRow) === "HSE" &&
+    normalizeDiscipline({
+      sourceSheetName: "ARCH",
+      discipline: "Multi-Discipline",
+      trade: "WAREHOUSE"
+    } as SubmittalRow) === "Arch" &&
+    pureSheetPrecedenceVerified;
 
   const sumRevBuckets = cumulative.reduce((acc, c) => acc + c.rev0 + c.revHigh, 0);
   const crossEngineReconciliationPassed =

@@ -107,12 +107,13 @@ export interface SubmittalRow {
   sourceSheetName?: string;         // e.g. 'STR'
   disciplineSourceSheet?: string;   // e.g. 'STR'
   disciplineCode?: string;          // e.g. 'STR'
+  rawTrade?: string;                // Raw row-level Trade/Discipline cell text before sheet lock
 
   // Composite Identity Fields
   rawSourceIdentity?: string;
   contextDiscipline?: string;
   compositeIdentity?: CompositeIdentity;
-  disciplineEvidenceSource?: 'REGISTER_LOCK' | 'ROW_EXPLICIT' | 'COMPOSITE_FALLBACK' | 'REFERENCE_FALLBACK' | 'UNCLASSIFIED' | string;
+  disciplineEvidenceSource?: 'REGISTER_LOCK' | 'SHEET_LOCK' | 'ROW_EXPLICIT' | 'COMPOSITE_FALLBACK' | 'REFERENCE_FALLBACK' | 'UNCLASSIFIED' | string;
   isDisciplineLocked?: boolean;
   hasAuthoritativeSourceIdentity?: boolean;
   sourceRegisterIdentity?: string;

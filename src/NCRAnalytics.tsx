@@ -317,7 +317,7 @@ export default function NCRAnalytics({ data, monthlyStart }: Props) {
             filteredEvidence.map((item) => (
               <div key={item.ref} className="p-4 hover:bg-slate-50 transition-colors space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-xs font-bold text-slate-950 bg-slate-100 px-2 py-0.5 rounded border">
                       {item.ref}
                     </span>
@@ -327,6 +327,21 @@ export default function NCRAnalytics({ data, monthlyStart }: Props) {
                     <span className="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded border border-indigo-100">
                       {item.discipline}
                     </span>
+                    {item.sourceSheet && item.sourceSheet !== '-' && (
+                      <span className="text-[11px] bg-slate-100 text-slate-700 font-mono px-2 py-0.5 rounded border border-slate-200">
+                        Sheet: {item.sourceSheet}
+                      </span>
+                    )}
+                    {item.rawTrade && (
+                      <span className="text-[11px] bg-slate-50 text-slate-600 font-mono px-2 py-0.5 rounded border border-slate-200">
+                        Raw Trade: {item.rawTrade}
+                      </span>
+                    )}
+                    {item.disciplineEvidenceSource && (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 font-mono px-1.5 py-0.5 rounded border border-emerald-200">
+                        {item.disciplineEvidenceSource}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">

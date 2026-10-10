@@ -3,7 +3,7 @@
 
 import { WorkflowFamily, WORKFLOW_FAMILIES_META, AliasMapping } from './workflowMapping';
 import { CompositeIdentity, EvidenceLevel } from '../types';
-import { isDisciplineSheet, normalizeDisciplineName, resolveParentRegister, KNOWN_PARENT_REGISTERS } from './parentRegisterResolver';
+import { isDisciplineSheet, isPureDisciplineSheet, normalizeDisciplineName, resolveParentRegister, KNOWN_PARENT_REGISTERS } from './parentRegisterResolver';
 
 export interface ClassificationResult {
   detectedFamily: WorkflowFamily;
@@ -253,7 +253,11 @@ export function buildCompositeIdentity(
       resolvedFamily = upperAuth;
     }
 
-    const authDisc = detectDisciplineFromText(authName);
+    const sheetPureDisc =
+      resolvedFamily !== 'RFI' && isPureDisciplineSheet(sheetName)
+        ? detectDisciplineFromText(sheetName)
+        : null;
+    const authDisc = detectDisciplineFromText(authName) || sheetPureDisc;
     const discipline = authDisc ? authDisc.discipline : 'GEN';
     const isRegisterLocked = checkRegisterLock(resolvedFamily, discipline);
 

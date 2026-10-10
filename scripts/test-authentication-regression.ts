@@ -30,9 +30,9 @@ const expectedHashes = {
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT (UNCHANGED)
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT (UNCHANGED)
   'src/analytics/calculationFoundation.ts': '941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
-  'src/analytics/ncr/ncrEngine.ts': 'bcf7592554d5b97487ab72e30b5ce9d4fbf4df4fe77a059c62b3c368db9505c5', // Layer 1 Canonical NCR Event, State & Source-Identity SSOT (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
+  'src/analytics/ncr/ncrEngine.ts': 'c84112c1bbc5653d949da1588baf4b5df2ed3925694ea0a9727c7b9ee7ad3a45', // Layer 1 Canonical NCR Event, State, Source-Identity & Sheet-Discipline SSOT
   'src/utils/ncrAnalytics.ts': '1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c', // Layer 2 NCR Analytics Adapter
-  'src/utils/parser.ts': 'e5e71e2c2448ae6a0593469cefc8a64980bd61428a40fd2adcd234cab6e64263', // Canonical Excel Ingestion & NCR Column Isolation
+  'src/utils/parser.ts': '3026c386543635d29e925fb6f97870b85a2f50155912e0e8ea1617946b067239', // Canonical Excel Ingestion, Pure Discipline Sheet Lock & NCR Column Isolation
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard (UNCHANGED)
   'firestore.rules': 'a23aa401964b257f7b044ea42e56e5bd88f123d19847615ab0908b3eca62257e' // Hardened Firestore Authorization Rules (UNCHANGED)
 };

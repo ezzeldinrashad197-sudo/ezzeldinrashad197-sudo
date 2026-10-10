@@ -140,14 +140,45 @@ export const DISCIPLINE_SHEET_NAMES = new Set([
   'MEP'
 ]);
 
+const GENERIC_MIXED_SHEET_TOKENS = new Set([
+  'GEN', 'GENERAL', 'GEN.', 'COMMON', 'ALL', 'MIXED', 'MULTIDISCIPLINE', 'MULTI-DISCIPLINE'
+]);
+
+export function cleanSheetDisciplineToken(name: string): string {
+  if (!name) return '';
+  let clean = name.trim().toUpperCase().replace(/\.+$/, '').trim();
+  const regPrefixMatch = clean.match(/^(?:NCR|SOR)[-_:\s]+(.+)$/);
+  if (regPrefixMatch) {
+    const suffix = regPrefixMatch[1].replace(/\.+$/, '').trim();
+    if (DISCIPLINE_SHEET_NAMES.has(suffix)) {
+      clean = suffix;
+    }
+  }
+  return clean;
+}
+
 export function isDisciplineSheet(name: string): boolean {
   if (!name) return false;
-  const clean = name.trim().toUpperCase();
+  const rawUpper = name.trim().toUpperCase();
+  if (DISCIPLINE_SHEET_NAMES.has(rawUpper)) return true;
+  const clean = cleanSheetDisciplineToken(name);
+  return Boolean(clean && DISCIPLINE_SHEET_NAMES.has(clean));
+}
+
+/**
+ * Determines whether a worksheet name is an authoritative Pure Discipline Sheet
+ * (e.g. ARCH, STR, MECH, ELEC, INFR, LAND, HSE, SURVEY, MEP) rather than a generic/mixed
+ * register sheet (e.g. GEN, GENERAL, COMMON, NCR Register, Sheet1).
+ */
+export function isPureDisciplineSheet(name: string): boolean {
+  if (!name) return false;
+  const clean = cleanSheetDisciplineToken(name);
+  if (!clean || GENERIC_MIXED_SHEET_TOKENS.has(clean)) return false;
   return DISCIPLINE_SHEET_NAMES.has(clean);
 }
 
 export function normalizeDisciplineName(name: string): { normalized: string; code: string } {
-  const clean = (name || '').trim().toUpperCase();
+  const clean = cleanSheetDisciplineToken(name);
   if (['STR', 'STRUCT', 'STRUCTURAL', 'CIVIL', 'STRUCTURE'].includes(clean)) {
     return { normalized: 'Structural', code: 'STR' };
   }

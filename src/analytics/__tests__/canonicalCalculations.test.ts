@@ -12,6 +12,7 @@ import {
   compileCanonicalNCRPresentationStats,
   buildNCRForensicIdentityInventory,
   resolveCanonicalNcrRef,
+  resolveCanonicalNcrDiscipline,
   isValidNcrReference
 } from '../ncr/ncrEngine';
 import { parseExcelBuffer } from '../../utils/parser';
@@ -1888,6 +1889,171 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
       throw new Error(
         `Cross-consumer parity failure on 16- Non-Conformance Report (NCR).xlsx: pres=${JSON.stringify(presStats.totalRow)}, foundation=${JSON.stringify(foundationStats)}, legacy=${JSON.stringify(legacyStats)}`
       );
+    }
+  });
+
+  // =========================================================================
+  // ER-034: NCR DISCIPLINE SOURCE-OF-TRUTH FIX — SHEET AUTHORITY WITH SAFE MIXED-SHEET FALLBACK
+  // =========================================================================
+  test('ER-034: Pure Discipline Sheets (ARCH/INFR/STR/ELEC/MECH/LAND/HSE) Enforce Sheet Discipline > Row Trade While Mixed Sheet (NCR Register) Preserves Row Trade', () => {
+    // 1. Build a multi-sheet NCR workbook with the 7 recognized pure discipline worksheets:
+    //    ARCH, INFR, STR, ELEC, MECH, LAND, HSE
+    //    Inside these pure discipline sheets, deliberately place conflicting row-level Trade text
+    //    such as "WAREHOUSE", "STR/SUR" (which previously triggered Multi-Discipline), and "SURVEY".
+    const wbPure = XLSX.utils.book_new();
+    const sheetSpecs = [
+      { sheetName: 'ARCH', ncrRef: 'ACE-INN-P1.03B-NCR-A001', rawTrade: 'WAREHOUSE', expectedDisc: 'Arch' },
+      { sheetName: 'INFR', ncrRef: 'ACE-INN-P1.03B-NCR-I001', rawTrade: 'SURVEY', expectedDisc: 'Infra' },
+      { sheetName: 'STR', ncrRef: 'ACE-INN-P1.03B-NCR-0001', rawTrade: 'STR/SUR', expectedDisc: 'STR' },
+      { sheetName: 'ELEC', ncrRef: 'ACE-INN-P1.03B-NCR-E001', rawTrade: 'ARCH / ELEC', expectedDisc: 'Elec' },
+      { sheetName: 'MECH', ncrRef: 'ACE-INN-P1.03B-NCR-M001', rawTrade: 'WAREHOUSE', expectedDisc: 'Mech' },
+      { sheetName: 'LAND', ncrRef: 'ACE-INN-P1.03B-NCR-L001', rawTrade: 'SURVEY', expectedDisc: 'Landscape' },
+      { sheetName: 'HSE', ncrRef: 'ACE-INN-P1.03B-NCR-H001', rawTrade: 'SAFETY', expectedDisc: 'HSE' }
+    ];
+
+    for (const sp of sheetSpecs) {
+      const sheetAoA = [
+        ['16- Non-Conformance Report (NCR) - ' + sp.sheetName],
+        [
+          'NCR Ref',
+          'Rev',
+          'Last Rev',
+          'Trade',
+          'Subject',
+          'Received Date',
+          'Sent Corrective Action',
+          'Response Date',
+          'Action',
+          'Status'
+        ],
+        [
+          sp.ncrRef,
+          '0',
+          'Yes',
+          sp.rawTrade,
+          `Defective item in ${sp.sheetName}`,
+          '2026-06-05',
+          '2026-06-12',
+          '',
+          'Under Review',
+          'Waiting'
+        ],
+        // Blank NCR Ref continuation row with rogue trade text — must be excluded from NCR population
+        ['', '', '', 'WAREHOUSE', 'Continuation note', '', '', '', '', '']
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(sheetAoA);
+      XLSX.utils.book_append_sheet(wbPure, ws, sp.sheetName);
+    }
+
+    const bufPure = XLSX.write(wbPure, { type: 'buffer', bookType: 'xlsx' });
+    const parsedPureRows = parseExcelBuffer(bufPure, '16- Non-Conformance Report (NCR).xlsx');
+
+    const pureReport = processNCRData(parsedPureRows, '2026-06-01');
+    if (!pureReport.integrityReport.passed) {
+      throw new Error(
+        `Expected pureReport.integrityReport.passed === true, got ${JSON.stringify(pureReport.integrityReport)}`
+      );
+    }
+    if (pureReport.cumulativeKPIs.totalUnique !== 7) {
+      throw new Error(`Expected 7 totalUnique NCRs across 7 pure discipline sheets, got ${pureReport.cumulativeKPIs.totalUnique}`);
+    }
+
+    // Verify ZERO rogue categories (Multi-Discipline, WAREHOUSE, SURVEY) exist in cumulative, monthly, or presentation/export
+    const forbiddenDisciplines = new Set(['MULTI-DISCIPLINE', 'MULTIDISCIPLINE', 'WAREHOUSE', 'SURVEY', 'STR/SUR']);
+    for (const c of pureReport.cumulative) {
+      if (forbiddenDisciplines.has(c.discipline.toUpperCase())) {
+        throw new Error(`Forbidden rogue discipline '${c.discipline}' leaked into cumulative NCR report!`);
+      }
+    }
+    for (const m of pureReport.monthly) {
+      const cleanM = m.classification.replace(/^NCR-/i, '').toUpperCase();
+      if (forbiddenDisciplines.has(cleanM)) {
+        throw new Error(`Forbidden rogue discipline '${m.classification}' leaked into monthly NCR report!`);
+      }
+    }
+
+    const presPure = compileCanonicalNCRPresentationStats(parsedPureRows);
+    for (const s of presPure.stats) {
+      if (forbiddenDisciplines.has(s.discipline.toUpperCase())) {
+        throw new Error(`Forbidden rogue discipline '${s.discipline}' leaked into Presentation/PDF Export stats!`);
+      }
+    }
+
+    // Verify each of the 7 sheets mapped to its exact authoritative canonical discipline with REGISTER_LOCK evidence
+    for (const sp of sheetSpecs) {
+      const cumRow = pureReport.cumulative.find((c) => c.discipline === sp.expectedDisc);
+      if (!cumRow || cumRow.totalUnique !== 1) {
+        throw new Error(`Expected cumulative discipline '${sp.expectedDisc}' = 1 for sheet '${sp.sheetName}', got ${JSON.stringify(cumRow)}`);
+      }
+      const ev = pureReport.evidenceList.find((e) => e.ref === sp.ncrRef);
+      if (
+        !ev ||
+        ev.discipline !== sp.expectedDisc ||
+        ev.canonicalDiscipline !== sp.expectedDisc ||
+        ev.sourceSheet !== sp.sheetName ||
+        ev.rawTrade !== sp.rawTrade ||
+        ev.disciplineEvidenceSource !== 'REGISTER_LOCK'
+      ) {
+        throw new Error(
+          `Forensic source-trace mismatch for ${sp.ncrRef}: expected sheet=${sp.sheetName}, rawTrade=${sp.rawTrade}, canonical=${sp.expectedDisc}, source=REGISTER_LOCK; got ${JSON.stringify(ev)}`
+        );
+      }
+    }
+
+    // Also verify resilience even if pre-existing/cached rows had overwritten row.discipline/row.trade before processNCRData
+    const corruptedLegacyRow = {
+      ...parsedPureRows.find((r) => r.ncrRef === 'ACE-INN-P1.03B-NCR-A001')!,
+      discipline: 'Multi-Discipline',
+      trade: 'WAREHOUSE',
+      rawTrade: 'WAREHOUSE',
+      sourceSheetName: 'ARCH'
+    };
+    const repairedRes = resolveCanonicalNcrDiscipline(corruptedLegacyRow);
+    if (
+      repairedRes.canonicalDiscipline !== 'Arch' ||
+      repairedRes.sourceSheet !== 'ARCH' ||
+      repairedRes.rawTrade !== 'WAREHOUSE' ||
+      repairedRes.disciplineEvidenceSource !== 'REGISTER_LOCK'
+    ) {
+      throw new Error(`Expected corrupted row from ARCH sheet to resolve to Arch via REGISTER_LOCK, got ${JSON.stringify(repairedRes)}`);
+    }
+
+    // 2. Verify Genuinely Mixed Sheet ("NCR Register") uses row-level Trade ("ROW_EXPLICIT")
+    const wbMixed = XLSX.utils.book_new();
+    const mixedAoA = [
+      ['Consolidated Non-Conformance Register'],
+      ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+      ['NCR-MIX-001', '0', 'Yes', 'ARCH', 'Arch item in mixed register', '2026-06-02', '2026-06-10', '', 'Under Review', 'Waiting'],
+      ['NCR-MIX-002', '0', 'Yes', 'STR', 'Str item in mixed register', '2026-06-03', '2026-06-11', '', 'Under Review', 'Waiting'],
+      ['NCR-MIX-003', '0', 'Yes', 'MECH', 'Mech item in mixed register', '2026-06-04', '2026-06-12', '', 'Under Review', 'Waiting'],
+      ['NCR-MIX-004', '0', 'Yes', 'ELEC', 'Elec item in mixed register', '2026-06-05', '2026-06-13', '', 'Under Review', 'Waiting']
+    ];
+    XLSX.utils.book_append_sheet(wbMixed, XLSX.utils.aoa_to_sheet(mixedAoA), 'NCR Register');
+    const bufMixed = XLSX.write(wbMixed, { type: 'buffer', bookType: 'xlsx' });
+    const parsedMixedRows = parseExcelBuffer(bufMixed, '16- Non-Conformance Report (NCR).xlsx');
+
+    const mixedReport = processNCRData(parsedMixedRows, '2026-06-01');
+    if (mixedReport.cumulativeKPIs.totalUnique !== 4) {
+      throw new Error(`Expected 4 unique NCRs in mixed register, got ${mixedReport.cumulativeKPIs.totalUnique}`);
+    }
+    for (const expected of [
+      { ref: 'NCR-MIX-001', disc: 'Arch', raw: 'ARCH' },
+      { ref: 'NCR-MIX-002', disc: 'STR', raw: 'STR' },
+      { ref: 'NCR-MIX-003', disc: 'Mech', raw: 'MECH' },
+      { ref: 'NCR-MIX-004', disc: 'Elec', raw: 'ELEC' }
+    ]) {
+      const ev = mixedReport.evidenceList.find((e) => e.ref === expected.ref);
+      if (
+        !ev ||
+        ev.discipline !== expected.disc ||
+        ev.sourceSheet !== 'NCR Register' ||
+        ev.rawTrade !== expected.raw ||
+        ev.disciplineEvidenceSource !== 'ROW_EXPLICIT'
+      ) {
+        throw new Error(
+          `Mixed-sheet fallback failure for ${expected.ref}: expected disc=${expected.disc}, source=ROW_EXPLICIT, got ${JSON.stringify(ev)}`
+        );
+      }
     }
   });
 
