@@ -29,6 +29,10 @@ export const generatePptxReport = async (
         showTradeCol?: boolean;
         showRemarksCol?: boolean;
         monthlyStart?: string;
+        monthlyEnd?: string;
+        startDate?: string;
+        endDate?: string;
+        cutoffDate?: string;
         selectedSections?: string[];
         slideRangeStart?: number;
         slideRangeEnd?: number;
@@ -99,8 +103,8 @@ export const generatePptxReport = async (
             const wf = d.workflowFamily.toUpperCase();
             return wf === 'LETTER' ? 'LTR' : wf;
         }
-        let dt = d.documentType || "GENERAL";
-        if (dt === 'NCR') dt = 'HSE'; 
+        const dt = (d.documentType || d.logType || "GENERAL").trim().toUpperCase();
+        if (dt.startsWith('NCR') || dt.includes('NCR')) return 'NCR';
         return dt.split('-')[0].trim().toUpperCase();
     }))).filter(Boolean)
         .filter(t => !['CORRESPONDENCE', 'LETTERS'].includes(t))
@@ -488,8 +492,10 @@ export const generatePptxReport = async (
     baseTypes.forEach((bt, sectionIdx) => {
         if (!isSectionSelected('logs')) return;
         
-        const monthlyStats = compileStatsForBaseType(monthlyWorkingData, bt, options?.monthlyStart || 'ACTIVE_PERIOD', data);
-        const cumulativeStats = compileStatsForBaseType(cumulativeWorkingData, bt, undefined, data);
+        const effectiveMonthlyStart = options?.monthlyStart || options?.startDate || 'ACTIVE_PERIOD';
+        const effectiveCutoffDate = options?.monthlyEnd || options?.endDate || options?.cutoffDate;
+        const monthlyStats = compileStatsForBaseType(monthlyWorkingData, bt, effectiveMonthlyStart, data, effectiveCutoffDate);
+        const cumulativeStats = compileStatsForBaseType(cumulativeWorkingData, bt, undefined, data, effectiveCutoffDate);
         
         if (!monthlyStats.hasData && !cumulativeStats.hasData) return;
         
@@ -524,7 +530,19 @@ export const generatePptxReport = async (
               { label: "Closed", key: "Closed" },
            ];
            pieLabels = ["Closed", "Pending"];
-        } else if (bt === 'NCR' || bt === 'SOR') {
+        } else if (bt === 'NCR') {
+           cols = [
+              { label: "Discipline", key: "discipline" },
+              { label: "Unique NCRs", key: "CurrentUnique" },
+              { label: "Rev.00", key: "Rev00" },
+              { label: "Further Revisions", key: "FurtherRev" },
+              { label: "Total Source Rows", key: "TotalRows" },
+              { label: "Closed", key: "Closed" },
+              { label: "Open", key: "Open" },
+              { label: "Pending", key: "Pending" },
+           ];
+           pieLabels = ["Closed", "Open", "Pending"];
+        } else if (bt === 'SOR') {
            cols = [
               { label: "Items", key: "discipline" },
               { label: "Total Rev.00", key: "Rev00" },

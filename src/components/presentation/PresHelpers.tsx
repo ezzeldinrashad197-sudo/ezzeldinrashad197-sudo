@@ -40,6 +40,9 @@ export function getColLabel(label: string, language: 'ar' | 'en') {
   if (language !== 'ar') return label;
   const lower = label.toUpperCase().trim();
   if (lower === 'ITEMS' || lower === 'DISCIPLINE') return 'التخصص الفني';
+  if (lower === 'UNIQUE NCRS') return 'تقارير عدم مطابقة فريدة';
+  if (lower === 'FURTHER REVISIONS') return 'مراجعات إضافية';
+  if (lower === 'TOTAL SOURCE ROWS') return 'إجمالي صفوف السجل';
   if (lower === 'UNIQUE REV.00' || lower === 'UNIQUE REV 00') return 'تقديمات فريدة Rev.00';
   if (lower === 'UNIQUE FURTHER REV.' || lower === 'UNIQUE FURTHER REV') return 'تقديمات فريدة لاحقة';
   if (lower === 'REV.00 ROWS' || lower === 'REV 00 ROWS') return 'صفوف مراجعة 00';

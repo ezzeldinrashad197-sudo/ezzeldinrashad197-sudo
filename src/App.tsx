@@ -754,7 +754,7 @@ export default function App() {
                   {activeTab === 'cumulative' && <ReportTable data={generalData} filterFn={filterCumulative} title="Cumulative Performance Analytics" projectInfo={activeProject} rawDataset={data} precomputedGlobalStats={isAllGeneralCumulative ? (getGeneralStats() ?? undefined) : undefined} />}
                   {activeTab === 'delay' && <DelayAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
                   {activeTab === 'rfi' && <RFIAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'presentation' && <Presentation data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} />}
+                  {activeTab === 'presentation' && <Presentation data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} endDate={endDate} />}
                   {activeTab === 'insights' && <AIInsights data={filteredData} projectInfo={activeProject} />}
                   {activeTab === 'ncr' && <NCRAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
                   {activeTab === 'sor' && <SORAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}

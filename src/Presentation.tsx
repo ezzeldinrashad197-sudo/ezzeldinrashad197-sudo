@@ -323,6 +323,7 @@ interface PresentationProps {
   filterCumulative: (row: SubmittalRow) => boolean;
   projectInfo: ProjectSettings | null;
   startDate?: string;
+  endDate?: string;
 }
 
 export default function Presentation({
@@ -331,6 +332,7 @@ export default function Presentation({
   filterCumulative,
   projectInfo,
   startDate,
+  endDate,
 }: PresentationProps) {
   const { language, t } = useLanguage();
 
@@ -454,8 +456,9 @@ export default function Presentation({
     const family = resolveRegisterFamilyFromKey(bt, sampleRow);
 
     if (family === 'NCR') {
-      const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
-      const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart);
+      const ncrFullSource = data && data.length > 0 ? data : (fullDataset && fullDataset.length > 0 ? fullDataset : dataset);
+      const sourceData = bt === 'NCR' ? ncrFullSource : ncrFullSource.filter(d => resolveRowRegister(d) === bt);
+      const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, endDate);
       return { stats, totalRow, hasData };
     }
 
@@ -509,6 +512,8 @@ export default function Presentation({
           TotalSubmittals: subStats.totalSubmittals,
           CurrentUnique: subStats.totalSubmittals,
           Items: subStats.totalSubmittals,
+          UniqueRev00: subStats.rev00,
+          UniqueFurtherRev: subStats.furtherRev,
           // Raw Excel Row Grain (Rev.00 | Further Rev. | Total Sheets):
           Rev00: subStats.rev00,
           FurtherRev: subStats.furtherRev,
@@ -536,6 +541,8 @@ export default function Presentation({
         TotalSubmittals: curUniq,
         CurrentUnique: curUniq,
         Items: curUniq,
+        UniqueRev00: s.totalSheetsRev0 || 0,
+        UniqueFurtherRev: s.totalSheetsFurtherRev || 0,
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
         TotalSheets: s.totalSubmittedSheets || 0,
@@ -559,6 +566,8 @@ export default function Presentation({
       Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
       TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
+      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || curr.Rev00 || 0), 0),
+      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || curr.FurtherRev || 0), 0),
       Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
       FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
       TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
@@ -2143,7 +2152,19 @@ export default function Presentation({
         ];
 
         let pieLabels = ["Approved", "Rejected", "Pending"];
-        if (regFamily === 'NCR' || regFamily === 'SOR') {
+        if (regFamily === 'NCR') {
+          monthlyCols = [
+            { label: "Discipline", key: "discipline" },
+            { label: "Unique NCRs", key: "CurrentUnique" },
+            { label: "Rev.00", key: "Rev00" },
+            { label: "Further Revisions", key: "FurtherRev" },
+            { label: "Total Source Rows", key: "TotalRows" },
+            { label: "Closed", key: "Closed" },
+            { label: "Open", key: "Open" },
+            { label: "Pending", key: "Pending" },
+          ];
+          pieLabels = ["Closed", "Open", "Pending"];
+        } else if (regFamily === 'SOR') {
           monthlyCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },
@@ -2228,7 +2249,19 @@ export default function Presentation({
         ];
 
         let pieLabels = ["Approved", "Rejected", "Pending"];
-        if (regFamily === 'NCR' || regFamily === 'SOR') {
+        if (regFamily === 'NCR') {
+          cumulativeCols = [
+            { label: "Discipline", key: "discipline" },
+            { label: "Unique NCRs", key: "CurrentUnique" },
+            { label: "Rev.00", key: "Rev00" },
+            { label: "Further Revisions", key: "FurtherRev" },
+            { label: "Total Source Rows", key: "TotalRows" },
+            { label: "Closed", key: "Closed" },
+            { label: "Open", key: "Open" },
+            { label: "Pending", key: "Pending" },
+          ];
+          pieLabels = ["Closed", "Open", "Pending"];
+        } else if (regFamily === 'SOR') {
           cumulativeCols = [
             { label: "Items", key: "discipline" },
             { label: "Total Rev.00", key: "Rev00" },

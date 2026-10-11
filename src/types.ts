@@ -118,6 +118,8 @@ export interface SubmittalRow {
   hasAuthoritativeSourceIdentity?: boolean;
   sourceRegisterIdentity?: string;
   submissionIdentityKey?: string;   // Submission grain: 'Register|Discipline|SUB Ref' (e.g. 'SDW|STR|SUB-001')
+  excludeFromKPI?: boolean;
+  isExcluded?: boolean;
 }
 
 export type EvidenceLevel = 

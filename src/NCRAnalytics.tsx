@@ -12,15 +12,15 @@ interface Props {
   projectInfo?: ProjectSettings | null;
 }
 
-export default function NCRAnalytics({ data, monthlyStart }: Props) {
+export default function NCRAnalytics({ data, monthlyStart, monthlyEnd }: Props) {
   const { language } = useLanguage();
   const safeData = Array.isArray(data) ? data : [];
 
   const parse = (text: string) => parseMixedText(text, language);
 
   const { cumulative, monthly, monthlySubmissions, monthlyEvents, monthlyKPIs, cumulativeKPIs, evidenceList, integrityReport } = useMemo(() => {
-    return processNCRData(safeData, monthlyStart);
-  }, [safeData, monthlyStart]);
+    return processNCRData(safeData, monthlyStart, monthlyEnd);
+  }, [safeData, monthlyStart, monthlyEnd]);
 
   const [showIntegrityDetails, setShowIntegrityDetails] = useState(false);
   const [evidenceSearch, setEvidenceSearch] = useState('');
@@ -31,7 +31,10 @@ export default function NCRAnalytics({ data, monthlyStart }: Props) {
 
   const cumulativeCols = useMemo(() => [
     { key: 'discipline', label: parse('Discipline | التخصص') },
-    { key: 'totalUnique', label: parse('Total Unique | الإجمالي الفريد'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-900">{val.totalUnique}</span> },
+    { key: 'totalUnique', label: parse('Unique NCRs | الإجمالي الفريد'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-900">{val.totalUnique}</span> },
+    { key: 'rev0', label: parse('Rev.00 | مراجعة 00'), rightAlign: true, render: (val: Record<string, any>) => <span className="text-slate-700 font-medium">{val.rev0 ?? 0}</span> },
+    { key: 'revHigh', label: parse('Further Revisions | مراجعات إضافية'), rightAlign: true, render: (val: Record<string, any>) => <span className="text-slate-700 font-medium">{val.revHigh ?? 0}</span> },
+    { key: 'totalRows', label: parse('Total Source Rows | إجمالي الصفوف'), rightAlign: true, render: (val: Record<string, any>) => <span className="text-slate-600 font-mono">{val.totalRows ?? val.totalUnique}</span> },
     { key: 'notSent', label: parse('Not Sent yet (Stage 1) | لم ترسل (جديد/مسودة)'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.notSent > 0 ? "text-amber-600 font-medium" : "text-slate-500"}>{val.notSent}</span> },
     { key: 'underReview', label: parse('Under Review (Stage 2) | قيد مراجعة الاستشاري'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.underReview > 0 ? "text-indigo-600 font-medium" : "text-slate-500"}>{val.underReview}</span> },
     { key: 'rejectedOpen', label: parse('Rejected (Stage 3) | مرفوض ومفتوح'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.rejectedOpen > 0 ? "text-rose-600 font-medium" : "text-slate-500"}>{val.rejectedOpen}</span> },
@@ -229,6 +232,9 @@ export default function NCRAnalytics({ data, monthlyStart }: Props) {
         footerData={{
           discipline: parse('TOTAL | الإجمالي'),
           totalUnique: cumulativeKPIs.totalUnique,
+          rev0: cumulativeKPIs.rev0 ?? 0,
+          revHigh: cumulativeKPIs.revHigh ?? 0,
+          totalRows: cumulativeKPIs.totalRows ?? cumulativeKPIs.totalUnique,
           notSent: cumulativeKPIs.notSent,
           underReview: cumulativeKPIs.underReview,
           rejectedOpen: cumulativeKPIs.rejectedOpen,

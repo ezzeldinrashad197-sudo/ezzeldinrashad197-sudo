@@ -36,6 +36,7 @@ import {
   exportOfficialManagementReportXlsx
 } from '../managementReportOutput';
 import { calculateExecutiveDashboardData, compileStatsForBaseType } from '../exportHelpers';
+import { buildPresentationViewModel } from '../presentationViewModel';
 
 export function runCanonicalCalculationTests(): { name: string; passed: boolean; error?: string }[] {
   const testResults: { name: string; passed: boolean; error?: string }[] = [];
@@ -1325,7 +1326,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
         delayDays: 2,
         isLatestRev: true,
         workflowStage: 'Approved'
-      },
+      } as unknown as SubmittalRow,
       // Row with non-standard discipline (GEOTECH) in MIR
       {
         id: 'R-2',
@@ -1345,7 +1346,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
         delayDays: 2,
         isLatestRev: true,
         workflowStage: 'Approved'
-      },
+      } as unknown as SubmittalRow,
       // Row with SHD alias normalized to SDW
       {
         id: 'R-3',
@@ -1364,7 +1365,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
         delayDays: 2,
         isLatestRev: true,
         workflowStage: 'Pending'
-      }
+      } as unknown as SubmittalRow
     ];
 
     const reg1 = resolveOfficialSubmittalRegister(diverseSourceRows[0]);
@@ -2054,6 +2055,165 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
           `Mixed-sheet fallback failure for ${expected.ref}: expected disc=${expected.disc}, source=ROW_EXPLICIT, got ${JSON.stringify(ev)}`
         );
       }
+    }
+  });
+
+  // =========================================================================
+  // ER-035: FULL NCR FORENSIC RECONCILIATION — CONFLICTING WORKBOOK TOKEN,
+  //         CUTOFF SNAPSHOTS, TABLE ALIGNMENT & ENGINE/DASHBOARD/PDF/PPTX PARITY
+  // =========================================================================
+  test('ER-035: Conflicting Workbook Token Precedence, Cutoff Date Snapshot, 8-Column Alignment & Engine/Dashboard/PDF/PPTX Parity', () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: ARCH dedicated sheet inside a workbook whose filename contains a conflicting token ("STR")
+    // Contains:
+    // - NCR-A100: Rev.00 (May, Rejected) + Rev.01 (June, Approved, with inherited May submissionDate) -> 1 Unique NCR (Further Rev), 2 Source Rows, Closed=1
+    // - Blank continuation row (must be excluded from unique NCRs and source rows)
+    const archAoA = [
+      ['NCR Register - ARCH'],
+      ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+      ['ACE-NCR-A100', '0', 'No', 'WAREHOUSE', 'Arch finish defect Rev0', '2026-05-10', '2026-05-12', '2026-05-18', 'Rejected', 'Open'],
+      ['ACE-NCR-A100', '1', 'Yes', 'WAREHOUSE', 'Arch finish defect Rev1', '2026-05-10', '2026-06-05', '2026-06-12', 'Approved', 'Closed'],
+      ['', '', '', 'SURVEY', 'Blank continuation note on ARCH sheet', '', '', '', '', '']
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(archAoA), 'ARCH');
+
+    // Sheet 2: LAND dedicated sheet (aliases LAND -> Landscape)
+    // Contains:
+    // - ACE-NCR-L200: Rev.00 issued in June, sent in June, Waiting Consultant -> 1 Unique NCR (Rev.00), 1 Source Row, Pending=1
+    // - ACE-NCR-L201: Rev.00 issued in July (2026-07-15) -> must be excluded at June 2026 cutoff (2026-06-30)
+    const landAoA = [
+      ['NCR Register - LAND'],
+      ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+      ['ACE-NCR-L200', '0', 'Yes', 'MULTI-DISCIPLINE', 'Irrigation valve non-conformance', '2026-06-08', '2026-06-14', '', 'Under Review', 'Waiting'],
+      ['ACE-NCR-L201', '0', 'Yes', 'STR', 'Future July hardscape NCR', '2026-07-15', '', '', '', 'Open']
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(landAoA), 'LAND');
+
+    // Parse with a workbook filename that deliberately contains a conflicting discipline token ("STR")
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const parsedRows = parseExcelBuffer(buf, '16- NCR_STR_Master_Log.xlsx');
+
+    // 1. Verify worksheet precedence over conflicting workbook/register name ("STR") and conflicting row trade ("WAREHOUSE")
+    const a100Rows = parsedRows.filter((r) => r.ncrRef === 'ACE-NCR-A100');
+    if (a100Rows.length !== 2) {
+      throw new Error(`Expected 2 revision rows for ACE-NCR-A100, got ${a100Rows.length}`);
+    }
+    for (const r of a100Rows) {
+      const dRes = resolveCanonicalNcrDiscipline(r);
+      if (dRes.canonicalDiscipline !== 'Arch') {
+        throw new Error(`Expected worksheet ARCH to resolve to 'Arch' despite 'STR' in filename and 'WAREHOUSE' in trade, got ${JSON.stringify(dRes)}`);
+      }
+    }
+
+    // 2. Execute canonical engine with June 2026 reporting period & cutoff (2026-06-01 to 2026-06-30)
+    const monthlyStart = '2026-06-01';
+    const cutoffDate = '2026-06-30';
+    const engineJune = processNCRData(parsedRows, monthlyStart, cutoffDate);
+
+    if (!engineJune.integrityReport.passed) {
+      throw new Error(`Expected integrityReport.passed === true at cutoff ${cutoffDate}, got ${JSON.stringify(engineJune.integrityReport)}`);
+    }
+
+    // At 2026-06-30 cutoff: ACE-NCR-L201 (issued 2026-07-15) is excluded from cumulative snapshot!
+    // Eligible unique NCRs = 2 (ACE-NCR-A100 in Arch, ACE-NCR-L200 in Landscape)
+    // Eligible source rows = 3 (2 rows for ACE-NCR-A100 + 1 row for ACE-NCR-L200)
+    if (
+      engineJune.cumulativeKPIs.totalUnique !== 2 ||
+      engineJune.cumulativeKPIs.rev0 !== 1 ||
+      engineJune.cumulativeKPIs.revHigh !== 1 ||
+      engineJune.cumulativeKPIs.totalRows !== 3 ||
+      engineJune.cumulativeKPIs.closed !== 1 ||
+      engineJune.cumulativeKPIs.underReview !== 1 ||
+      engineJune.cumulativeKPIs.open !== 0
+    ) {
+      throw new Error(`Unexpected June cutoff cumulativeKPIs: ${JSON.stringify(engineJune.cumulativeKPIs)}`);
+    }
+
+    // Monthly June events:
+    // - New NCRs received in June: 1 (ACE-NCR-L200; ACE-NCR-A100 Rev.1 inherited May submissionDate is NOT a new NCR)
+    // - Corrective submitted in June: 2 (ACE-NCR-A100 Rev.1 on 2026-06-05 + ACE-NCR-L200 Rev.0 on 2026-06-14)
+    // - Consultant responses in June: 1 (ACE-NCR-A100 Rev.1 Approved on 2026-06-12)
+    if (
+      engineJune.monthlyKPIs.newNcrReceived !== 1 ||
+      engineJune.monthlyKPIs.correctiveSubmitted !== 2 ||
+      engineJune.monthlyKPIs.responsesReceived !== 1 ||
+      engineJune.monthlyKPIs.approved !== 1
+    ) {
+      throw new Error(`Unexpected June monthlyKPIs: ${JSON.stringify(engineJune.monthlyKPIs)}`);
+    }
+
+    // 3. Verify Parity across Canonical Engine, Presentation Adapter, PPTX Export Helper, and PDF/PPTX PresentationViewModel
+    const presCum = compileCanonicalNCRPresentationStats(parsedRows, undefined, cutoffDate);
+    const exportCum = compileStatsForBaseType(parsedRows, 'NCR', undefined, parsedRows, cutoffDate);
+    const vm = buildPresentationViewModel(parsedRows, null, 'presentation', {
+      startDate: monthlyStart,
+      endDate: cutoffDate
+    });
+    const ncrRegVm = vm.registers.find((reg) => reg.baseType === 'NCR');
+    if (!ncrRegVm) {
+      throw new Error('Expected NCR register in PresentationViewModel');
+    }
+
+    // Verify explicit 8-column NCR table structure in PresentationViewModel
+    const expectedColKeys = ['discipline', 'CurrentUnique', 'Rev00', 'FurtherRev', 'TotalRows', 'Closed', 'Open', 'Pending'];
+    const actualColKeys = ncrRegVm.cols.map((c) => c.key);
+    if (JSON.stringify(actualColKeys) !== JSON.stringify(expectedColKeys)) {
+      throw new Error(`Expected NCR columns ${JSON.stringify(expectedColKeys)}, got ${JSON.stringify(actualColKeys)}`);
+    }
+
+    // Verify discipline subtotals reconcile with totalRow and match engineJune
+    const sumFromDisciplines = presCum.stats.reduce(
+      (acc, r) => ({
+        CurrentUnique: acc.CurrentUnique + r.CurrentUnique,
+        Rev00: acc.Rev00 + r.Rev00,
+        FurtherRev: acc.FurtherRev + r.FurtherRev,
+        TotalRows: acc.TotalRows + r.TotalRows,
+        Closed: acc.Closed + r.Closed,
+        Open: acc.Open + r.Open,
+        Pending: acc.Pending + r.Pending
+      }),
+      { CurrentUnique: 0, Rev00: 0, FurtherRev: 0, TotalRows: 0, Closed: 0, Open: 0, Pending: 0 }
+    );
+
+    if (
+      sumFromDisciplines.CurrentUnique !== presCum.totalRow.CurrentUnique ||
+      sumFromDisciplines.Rev00 !== presCum.totalRow.Rev00 ||
+      sumFromDisciplines.FurtherRev !== presCum.totalRow.FurtherRev ||
+      sumFromDisciplines.TotalRows !== presCum.totalRow.TotalRows ||
+      sumFromDisciplines.Closed !== presCum.totalRow.Closed ||
+      sumFromDisciplines.Open !== presCum.totalRow.Open ||
+      sumFromDisciplines.Pending !== presCum.totalRow.Pending
+    ) {
+      throw new Error(`Discipline subtotals do not reconcile to totalRow: sum=${JSON.stringify(sumFromDisciplines)}, total=${JSON.stringify(presCum.totalRow)}`);
+    }
+
+    // Verify status invariant per discipline: Closed + Open + Pending === CurrentUnique, and Rev00 + FurtherRev === CurrentUnique
+    for (const dRow of presCum.stats) {
+      if (dRow.Closed + dRow.Open + dRow.Pending !== dRow.CurrentUnique) {
+        throw new Error(`Status sum mismatch for discipline ${dRow.discipline}: ${JSON.stringify(dRow)}`);
+      }
+      if (dRow.Rev00 + dRow.FurtherRev !== dRow.CurrentUnique) {
+        throw new Error(`Revision bucket sum mismatch for discipline ${dRow.discipline}: ${JSON.stringify(dRow)}`);
+      }
+    }
+
+    // Verify exact parity across Engine, Presentation, Export Helper, and ViewModel
+    const vmCumTotal = ncrRegVm.cumulativeStats.totalRow;
+    if (
+      presCum.totalRow.CurrentUnique !== engineJune.cumulativeKPIs.totalUnique ||
+      exportCum.totalRow.CurrentUnique !== engineJune.cumulativeKPIs.totalUnique ||
+      vmCumTotal.CurrentUnique !== engineJune.cumulativeKPIs.totalUnique ||
+      vmCumTotal.Rev00 !== engineJune.cumulativeKPIs.rev0 ||
+      vmCumTotal.FurtherRev !== engineJune.cumulativeKPIs.revHigh ||
+      vmCumTotal.TotalRows !== engineJune.cumulativeKPIs.totalRows ||
+      vmCumTotal.Closed !== engineJune.cumulativeKPIs.closed ||
+      vmCumTotal.Open !== engineJune.cumulativeKPIs.open ||
+      vmCumTotal.Pending !== engineJune.cumulativeKPIs.underReview
+    ) {
+      throw new Error(
+        `Cross-consumer cumulative parity failure: engine=${JSON.stringify(engineJune.cumulativeKPIs)}, vm=${JSON.stringify(vmCumTotal)}`
+      );
     }
   });
 

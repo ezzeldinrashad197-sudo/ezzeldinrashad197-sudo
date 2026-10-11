@@ -48,8 +48,11 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
 
   if (language === 'ar') {
     if (norm === 'DISCIPLINE' || norm === 'STATUS') return 'التخصص';
+    if (norm === 'UNIQUE NCRS') return 'تقارير\nفريدة';
     if (norm === 'UNIQUE ITEMS' || norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'البنود\nالفريدة';
     if (norm === 'REV.00' || norm === 'REV 00') return 'Rev.00';
+    if (norm === 'FURTHER REVISIONS') return 'مراجعات\nإضافية';
+    if (norm === 'TOTAL SOURCE ROWS') return 'إجمالي\nالصفوف';
     if (norm === 'UNIQUE REV.00' || norm === 'UNIQUE REV 00') return 'فريدة\nR00';
     if (norm === 'UNIQUE FURTHER REV.' || norm === 'UNIQUE FURTHER REV' || norm === 'UNIQUE FURTHER') return 'فريدة\nلاحقة';
     if (norm === 'REV.00 ROWS' || norm === 'REV 00 ROWS') return 'صفوف\nRev.00';
@@ -60,6 +63,8 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
     if (norm === 'REJECTED OPEN' || norm === 'REJ. OPEN') return 'مرفوض\nمفتوح';
     if (norm === 'REJECTED CLOSED' || norm === 'REJ. CLOSED') return 'مرفوض\nمغلق';
     if (norm === 'PENDING') return 'معلق';
+    if (norm === 'CLOSED') return 'مغلق';
+    if (norm === 'OPEN') return 'مفتوح';
     if (norm === 'SUPERSEDED' || norm === 'SUPERSEDED ROWS') return 'ملغاة\nسابقاً';
     if (norm === 'ROW APP/CLOSED') return 'معتمد\nصفوف';
     if (norm === 'ROW REJ/OPEN') return 'مرفوض\nصفوف';
@@ -76,6 +81,9 @@ export function getCanonicalHeader(rawLabel: string, language: 'ar' | 'en' = 'en
   // English Canonical Short Headers with clean two-line whole words
   if (norm === 'STATUS') return 'Status';
   if (norm === 'DISCIPLINE') return 'Discipline';
+  if (norm === 'UNIQUE NCRS') return 'Unique\nNCRs';
+  if (norm === 'FURTHER REVISIONS') return 'Further\nRevisions';
+  if (norm === 'TOTAL SOURCE ROWS') return 'Total Source\nRows';
   if (norm === 'TOTAL SUBMITTALS') return 'Total\nSubmittals';
   if (norm === 'TOTAL SHEETS') return 'Total\nSheets';
   if (norm === 'UNIQUE ITEMS' || norm === 'CURRENT UNIQUE' || norm === 'TOTAL UNIQUE') return 'Unique\nItems';

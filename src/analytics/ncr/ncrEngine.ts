@@ -353,6 +353,9 @@ export interface NCRStats {
   rejected: number;       // Legacy compatibility (= rejectedOpen)
   rev0: number;
   revHigh: number;
+  rev0Rows?: number;
+  furtherRevRows?: number;
+  totalRows?: number;
   waiting: number;        // Legacy compatibility (= underReview)
 }
 
@@ -366,6 +369,16 @@ export interface NCRClassificationStats {
   waitingConsultant: number;    // Pending review at the end of the month
   waitingContractor: number;    // Pending action at the end of the month
   overdue: number;              // Unique NCRs open > 14 days at month-end (Single-counted)
+
+  // Monthly Unique NCR Snapshot & Source Row Grain (reconciled at month-end cutoff)
+  totalUnique?: number;
+  uniqueRev0?: number;
+  uniqueRevHigh?: number;
+  rev0Rows?: number;
+  furtherRevRows?: number;
+  totalRows?: number;
+  closed?: number;
+  open?: number;
 
   // Legacy compatibility fields to prevent any external breakage
   totalSubs: number;
@@ -1242,7 +1255,10 @@ export const evaluateNcrRevisionState = (
 // ==========================================
 // 1. Cumulative NCR State Engine (Snapshot)
 // ==========================================
-export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
+export const calculateCumulativeSnapshot = (
+  normalizedData: SubmittalRow[],
+  cutoffDate?: string | Date
+) => {
   const grouped = groupNCRByReference(normalizedData);
   const cumMap = new Map<string, NCRStats>();
   const cumulativeEvidence: Omit<
@@ -1250,14 +1266,55 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
     "isNewInMonth" | "isSubmittedInMonth" | "isRespondedInMonth" | "monthlyOutcome"
   >[] = [];
 
+  let cutoffEndOfDayMs: number | undefined = undefined;
+  if (cutoffDate) {
+    const rawMs =
+      typeof cutoffDate === "string"
+        ? cutoffDate !== "ACTIVE_PERIOD"
+          ? parseDateToMs(cutoffDate)
+          : null
+        : cutoffDate.getTime();
+    if (rawMs !== null && !isNaN(rawMs)) {
+      const cd = new Date(rawMs);
+      cutoffEndOfDayMs = new Date(
+        cd.getFullYear(),
+        cd.getMonth(),
+        cd.getDate(),
+        23,
+        59,
+        59,
+        999
+      ).getTime();
+    }
+  }
+
   Array.from(grouped.entries()).forEach(([refKey, rawHistory]) => {
-    const history = normalizeNcrRevisionHistory(rawHistory);
+    const fullHistory = normalizeNcrRevisionHistory(rawHistory);
+    if (!fullHistory.length) return;
+
+    const firstRevision = fullHistory[0];
+    const originalIssueStr =
+      firstRevision?.submissionDate || fullHistory[fullHistory.length - 1]?.submissionDate || "";
+    const originalIssueMs = parseDateToMs(originalIssueStr);
+
+    let history = fullHistory;
+    if (cutoffEndOfDayMs !== undefined) {
+      if (originalIssueMs !== null && originalIssueMs > cutoffEndOfDayMs) {
+        return;
+      }
+      const eligible = fullHistory.filter((r, idx) => {
+        const actMs = getRevisionActivityDateMs(r, idx, fullHistory);
+        if (actMs !== null) return actMs <= cutoffEndOfDayMs!;
+        const subMs = parseDateToMs(r.submissionDate);
+        if (subMs !== null) return subMs <= cutoffEndOfDayMs!;
+        return idx === 0;
+      });
+      if (!eligible.length) return;
+      history = eligible;
+    }
+
     const latestOverall = history[history.length - 1];
     if (!latestOverall) return;
-
-    const firstRevision = history[0];
-    const originalIssueStr = firstRevision?.submissionDate || latestOverall.submissionDate || "";
-    const originalIssueMs = parseDateToMs(originalIssueStr);
 
     const discRes = resolveCanonicalNcrDiscipline(latestOverall);
     const disc = discRes.canonicalDiscipline;
@@ -1276,13 +1333,29 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
         rejected: 0,
         rev0: 0,
         revHigh: 0,
+        rev0Rows: 0,
+        furtherRevRows: 0,
+        totalRows: 0,
         waiting: 0
       });
     }
     const cumSt = cumMap.get(disc)!;
     cumSt.totalUnique++;
 
-    const state = evaluateNcrRevisionState(latestOverall, originalIssueMs, undefined);
+    let rev0RowCount = 0;
+    let furtherRevRowCount = 0;
+    history.forEach((r) => {
+      if (isFurtherRevision(r.rev, r.isRev0)) {
+        furtherRevRowCount++;
+      } else {
+        rev0RowCount++;
+      }
+    });
+    cumSt.rev0Rows = (cumSt.rev0Rows || 0) + rev0RowCount;
+    cumSt.furtherRevRows = (cumSt.furtherRevRows || 0) + furtherRevRowCount;
+    cumSt.totalRows = (cumSt.totalRows || 0) + history.length;
+
+    const state = evaluateNcrRevisionState(latestOverall, originalIssueMs, cutoffEndOfDayMs);
 
     if (state.isNotSent) {
       cumSt.notSent++;
@@ -1337,7 +1410,12 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
     closed: cumArr.reduce((a, c) => a + c.closed, 0),
     approved: cumArr.reduce((a, c) => a + c.approved, 0),
     rejected: cumArr.reduce((a, c) => a + c.rejected, 0),
-    waiting: cumArr.reduce((a, c) => a + (c.underReview || 0), 0)
+    waiting: cumArr.reduce((a, c) => a + (c.underReview || 0), 0),
+    rev0: cumArr.reduce((a, c) => a + (c.rev0 || 0), 0),
+    revHigh: cumArr.reduce((a, c) => a + (c.revHigh || 0), 0),
+    rev0Rows: cumArr.reduce((a, c) => a + (c.rev0Rows || 0), 0),
+    furtherRevRows: cumArr.reduce((a, c) => a + (c.furtherRevRows || 0), 0),
+    totalRows: cumArr.reduce((a, c) => a + (c.totalRows || 0), 0)
   };
 
   return {
@@ -1352,7 +1430,8 @@ export const calculateCumulativeSnapshot = (normalizedData: SubmittalRow[]) => {
 // ==========================================
 export const calculateMonthlyEvents = (
   normalizedData: SubmittalRow[],
-  monthlyStart: string | undefined
+  monthlyStart: string | undefined,
+  cutoffDate?: string | Date
 ) => {
   const grouped = groupNCRByReference(normalizedData);
   const mMap = new Map<string, NCRClassificationStats>();
@@ -1371,7 +1450,23 @@ export const calculateMonthlyEvents = (
     }
   >();
 
-  const targetMonth = monthlyStart ? new Date(monthlyStart) : new Date(2026, 5, 1); // default June 2026
+  const parsedMonthlyStartMs =
+    monthlyStart && monthlyStart !== "ACTIVE_PERIOD" ? parseDateToMs(monthlyStart) : null;
+  let targetMonth: Date;
+  if (parsedMonthlyStartMs !== null) {
+    targetMonth = new Date(parsedMonthlyStartMs);
+  } else {
+    let maxDateMs: number | null = null;
+    for (const r of normalizedData) {
+      const m1 = parseDateToMs(r.submissionDate);
+      const m2 = parseDateToMs(r.ncrSentDateCorrectiveAction || r.sentDateCorrectiveAction);
+      const m3 = parseDateToMs(r.responseDate);
+      if (m1 !== null && (maxDateMs === null || m1 > maxDateMs)) maxDateMs = m1;
+      if (m2 !== null && (maxDateMs === null || m2 > maxDateMs)) maxDateMs = m2;
+      if (m3 !== null && (maxDateMs === null || m3 > maxDateMs)) maxDateMs = m3;
+    }
+    targetMonth = maxDateMs !== null ? new Date(maxDateMs) : new Date(2026, 5, 1);
+  }
 
   const startOfTargetMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1, 0, 0, 0, 0);
   const endOfTargetMonth = new Date(
@@ -1384,8 +1479,36 @@ export const calculateMonthlyEvents = (
     999
   );
 
+  let cutoffEndOfDayMs: number | undefined = undefined;
+  if (cutoffDate) {
+    const rawCutMs =
+      typeof cutoffDate === "string"
+        ? cutoffDate !== "ACTIVE_PERIOD"
+          ? parseDateToMs(cutoffDate)
+          : null
+        : cutoffDate.getTime();
+    if (rawCutMs !== null && !isNaN(rawCutMs)) {
+      const cd = new Date(rawCutMs);
+      cutoffEndOfDayMs = new Date(
+        cd.getFullYear(),
+        cd.getMonth(),
+        cd.getDate(),
+        23,
+        59,
+        59,
+        999
+      ).getTime();
+    }
+  }
+
   const startOfTargetMonthMs = startOfTargetMonth.getTime();
-  const endOfTargetMonthMs = endOfTargetMonth.getTime();
+  const rawEndOfTargetMonthMs = endOfTargetMonth.getTime();
+  const endOfTargetMonthMs =
+    cutoffEndOfDayMs !== undefined &&
+    cutoffEndOfDayMs >= startOfTargetMonthMs &&
+    cutoffEndOfDayMs < rawEndOfTargetMonthMs
+      ? cutoffEndOfDayMs
+      : rawEndOfTargetMonthMs;
 
   let temporalSnapshotPassed = true;
   const distinctNewNcrRefsInMonth = new Set<string>();
@@ -1410,6 +1533,16 @@ export const calculateMonthlyEvents = (
         waitingConsultant: 0,
         waitingContractor: 0,
         overdue: 0,
+
+        // Monthly Unique NCR Snapshot & Source Row Grain
+        totalUnique: 0,
+        uniqueRev0: 0,
+        uniqueRevHigh: 0,
+        rev0Rows: 0,
+        furtherRevRows: 0,
+        totalRows: 0,
+        closed: 0,
+        open: 0,
 
         // Legacy compatibility
         totalSubs: 0,
@@ -1649,6 +1782,45 @@ export const calculateMonthlyEvents = (
         mSt.waitingContractor++;
       }
 
+      // Monthly Unique NCR Snapshot & Source-Row Reconciliation:
+      // Any NCR active in the target month (event in month OR open/pending at month-end)
+      // is counted once in the monthly unique NCR population and partitioned into
+      // mutually exclusive month-end status categories (Closed + Open + Pending === Unique NCRs).
+      const isActiveInMonthSnapshot =
+        isNew ||
+        isSubmitted ||
+        isResponded ||
+        stateAtEnd.isWaitingConsultant ||
+        stateAtEnd.isWaitingContractor;
+
+      if (isActiveInMonthSnapshot) {
+        mSt.totalUnique = (mSt.totalUnique || 0) + 1;
+        if (isFurtherRevision(latestAtEnd.rev, latestAtEnd.isRev0)) {
+          mSt.uniqueRevHigh = (mSt.uniqueRevHigh || 0) + 1;
+        } else {
+          mSt.uniqueRev0 = (mSt.uniqueRev0 || 0) + 1;
+        }
+
+        let mRev0Rows = 0;
+        let mFurtherRevRows = 0;
+        historyBeforeEnd.forEach((r) => {
+          if (isFurtherRevision(r.rev, r.isRev0)) {
+            mFurtherRevRows++;
+          } else {
+            mRev0Rows++;
+          }
+        });
+        mSt.rev0Rows = (mSt.rev0Rows || 0) + mRev0Rows;
+        mSt.furtherRevRows = (mSt.furtherRevRows || 0) + mFurtherRevRows;
+        mSt.totalRows = (mSt.totalRows || 0) + historyBeforeEnd.length;
+
+        if (stateAtEnd.isApprovedClosed) {
+          mSt.closed = (mSt.closed || 0) + 1;
+        } else if (!stateAtEnd.isWaitingConsultant) {
+          mSt.open = (mSt.open || 0) + 1;
+        }
+      }
+
       // Single-Count Month-End Overdue Rule (Fixes NCR-001):
       // Critical Overdue = COUNT(DISTINCT NCR Ref) that were open at month-end AND daysOpen > 14
       if (stateAtEnd.isOverdue) {
@@ -1678,7 +1850,8 @@ export const calculateMonthlyEvents = (
         s.responsesReceived > 0 ||
         s.waitingConsultant > 0 ||
         s.waitingContractor > 0 ||
-        s.overdue > 0
+        s.overdue > 0 ||
+        (s.totalUnique || 0) > 0
     )
     .sort((a, b) => b.newNcrReceived - a.newNcrReceived);
 
@@ -1691,6 +1864,16 @@ export const calculateMonthlyEvents = (
     waitingConsultant: monArr.reduce((a, c) => a + c.waitingConsultant, 0),
     waitingContractor: monArr.reduce((a, c) => a + c.waitingContractor, 0),
     criticalDelays: monArr.reduce((a, c) => a + c.overdue, 0),
+
+    // Monthly Unique NCR Snapshot KPIs
+    totalUnique: monArr.reduce((a, c) => a + (c.totalUnique || 0), 0),
+    uniqueRev0: monArr.reduce((a, c) => a + (c.uniqueRev0 || 0), 0),
+    uniqueRevHigh: monArr.reduce((a, c) => a + (c.uniqueRevHigh || 0), 0),
+    rev0Rows: monArr.reduce((a, c) => a + (c.rev0Rows || 0), 0),
+    furtherRevRows: monArr.reduce((a, c) => a + (c.furtherRevRows || 0), 0),
+    totalRows: monArr.reduce((a, c) => a + (c.totalRows || 0), 0),
+    closed: monArr.reduce((a, c) => a + (c.closed || 0), 0),
+    open: monArr.reduce((a, c) => a + (c.open || 0), 0),
 
     // Legacy compatibility fields
     totalSubs: monArr.reduce((a, c) => a + c.correctiveSubmitted, 0),
@@ -1723,14 +1906,15 @@ export const calculateMonthlyEvents = (
 // ==========================================
 export const processNCRData = (
   safeData: SubmittalRow[],
-  monthlyStart: string | undefined
+  monthlyStart: string | undefined,
+  cutoffDate?: string | Date
 ) => {
   const identityInventory = buildNCRForensicIdentityInventory(safeData);
   const normalizedData = normalizeNCRData(safeData);
   const grouped = groupNCRByReference(normalizedData);
 
   const { cumulative, cumulativeKPIs, cumulativeEvidence } =
-    calculateCumulativeSnapshot(normalizedData);
+    calculateCumulativeSnapshot(normalizedData, cutoffDate);
   const {
     monthly,
     monthlyKPIs,
@@ -1738,7 +1922,7 @@ export const processNCRData = (
     monthlyEvents,
     monthlyEventTraces,
     forensicMeta
-  } = calculateMonthlyEvents(normalizedData, monthlyStart);
+  } = calculateMonthlyEvents(normalizedData, monthlyStart, cutoffDate);
 
   // Join cumulative evidence with monthly event traces & full event ledger
   const evidenceList: NCREvidence[] = cumulativeEvidence.map((e) => {
@@ -1764,11 +1948,14 @@ export const processNCRData = (
   });
 
   // Execute Chapter 9 + Forensic Business Accuracy Certification Auditing (Fixes NCR-009)
+  const eligibleUniqueNcrCount = cutoffDate ? cumulativeEvidence.length : grouped.size;
+  const distinctCumulativeRefCount = new Set(cumulativeEvidence.map((e) => e.ref)).size;
+
   const sumOfStates =
     cumulativeKPIs.open + cumulativeKPIs.underReview + cumulativeKPIs.closed;
   const cumulativeTotalPassed =
     cumulativeKPIs.totalUnique === sumOfStates &&
-    cumulativeKPIs.totalUnique === grouped.size;
+    cumulativeKPIs.totalUnique === eligibleUniqueNcrCount;
 
   const monthlyResSum = monthlyKPIs.approved + monthlyKPIs.rejected;
   const responseEventsInLedger = monthlyEvents.filter(
@@ -1789,7 +1976,8 @@ export const processNCRData = (
   ).length;
 
   const entityUniquenessPassed =
-    cumulativeKPIs.totalUnique === grouped.size &&
+    cumulativeKPIs.totalUnique === distinctCumulativeRefCount &&
+    cumulativeKPIs.totalUnique === eligibleUniqueNcrCount &&
     monthlyKPIs.newNcrReceived === forensicMeta.distinctNewNcrRefsCount &&
     monthlyKPIs.newNcrReceived === receivedEventsInLedger;
 
@@ -1832,7 +2020,7 @@ export const processNCRData = (
   const sumRevBuckets = cumulative.reduce((acc, c) => acc + c.rev0 + c.revHigh, 0);
   const crossEngineReconciliationPassed =
     sumRevBuckets === cumulativeKPIs.totalUnique &&
-    cumulativeKPIs.totalUnique === grouped.size;
+    cumulativeKPIs.totalUnique === eligibleUniqueNcrCount;
 
   const sourceIdentityCheckPassed =
     identityInventory.zeroSyntheticCountVerified &&
@@ -1918,9 +2106,10 @@ export const processNCRData = (
  */
 export const compileCanonicalNCRPresentationStats = (
   sourceData: SubmittalRow[],
-  monthlyStart?: string
+  monthlyStart?: string,
+  cutoffDate?: string | Date
 ) => {
-  const ncrResult = processNCRData(sourceData, monthlyStart);
+  const ncrResult = processNCRData(sourceData, monthlyStart, cutoffDate);
   const isMon = Boolean(monthlyStart);
 
   const normDiscKey = (d: string) =>
@@ -1959,48 +2148,57 @@ export const compileCanonicalNCRPresentationStats = (
       );
       const sub = matching.reduce(
         (acc, m) => ({
-          rev0: acc.rev0 + (m.rev0 || 0),
-          revHigh: acc.revHigh + (m.revHigh || 0),
-          totalSubs: acc.totalSubs + (m.totalSubs || 0),
-          approved: acc.approved + (m.approved || 0),
-          rejectedOpen: acc.rejectedOpen + (m.rejectedOpen || 0),
-          rejectedClosed: acc.rejectedClosed + (m.rejectedClosed || 0),
-          pending: acc.pending + (m.pending || 0),
+          totalUnique: acc.totalUnique + (m.totalUnique ?? 0),
+          uniqueRev0: acc.uniqueRev0 + (m.uniqueRev0 ?? 0),
+          uniqueRevHigh: acc.uniqueRevHigh + (m.uniqueRevHigh ?? 0),
+          rev0Rows: acc.rev0Rows + (m.rev0Rows ?? 0),
+          furtherRevRows: acc.furtherRevRows + (m.furtherRevRows ?? 0),
+          totalRows: acc.totalRows + (m.totalRows ?? 0),
+          closed: acc.closed + (m.closed ?? 0),
+          open: acc.open + (m.open ?? 0),
+          waitingConsultant: acc.waitingConsultant + (m.waitingConsultant || 0),
           overdue: acc.overdue + (m.overdue || 0)
         }),
         {
-          rev0: 0,
-          revHigh: 0,
-          totalSubs: 0,
-          approved: 0,
-          rejectedOpen: 0,
-          rejectedClosed: 0,
-          pending: 0,
+          totalUnique: 0,
+          uniqueRev0: 0,
+          uniqueRevHigh: 0,
+          rev0Rows: 0,
+          furtherRevRows: 0,
+          totalRows: 0,
+          closed: 0,
+          open: 0,
+          waitingConsultant: 0,
           overdue: 0
         }
       );
 
+      const ncrTotal = sub.totalUnique;
+      const totalRows = sub.totalRows || ncrTotal;
+      const rev0Rows = sub.totalRows ? sub.rev0Rows : sub.uniqueRev0;
+      const furtherRevRows = sub.totalRows ? sub.furtherRevRows : sub.uniqueRevHigh;
+
       return {
         discipline: disc,
-        CurrentUnique: sub.totalSubs,
-        Items: sub.totalSubs,
-        TotalSubmittals: sub.totalSubs,
-        TotalSheets: sub.totalSubs,
-        UniqueRev00: sub.rev0,
-        UniqueFurtherRev: sub.revHigh,
-        Rev00Rows: sub.rev0,
-        FurtherRevRows: sub.revHigh,
-        TotalRows: sub.totalSubs,
-        Rev00: sub.rev0,
-        FurtherRev: sub.revHigh,
-        Approved: sub.approved,
-        RejectedOpen: sub.rejectedOpen,
-        RejectedClosed: sub.rejectedClosed,
-        Rejected: sub.rejectedOpen + sub.rejectedClosed,
-        Pending: sub.pending,
-        Total: sub.totalSubs,
-        Closed: sub.approved,
-        Open: sub.rejectedOpen
+        CurrentUnique: ncrTotal,
+        Items: ncrTotal,
+        TotalSubmittals: ncrTotal,
+        TotalSheets: totalRows,
+        UniqueRev00: sub.uniqueRev0,
+        UniqueFurtherRev: sub.uniqueRevHigh,
+        Rev00Rows: rev0Rows,
+        FurtherRevRows: furtherRevRows,
+        TotalRows: totalRows,
+        Rev00: sub.uniqueRev0,
+        FurtherRev: sub.uniqueRevHigh,
+        Approved: sub.closed,
+        RejectedOpen: sub.open,
+        RejectedClosed: 0,
+        Rejected: sub.open,
+        Pending: sub.waitingConsultant,
+        Total: ncrTotal,
+        Closed: sub.closed,
+        Open: sub.open
       };
     } else {
       const matching = ncrResult.cumulative.filter(
@@ -2015,7 +2213,10 @@ export const compileCanonicalNCRPresentationStats = (
           approved: acc.approved + (c.approved || 0),
           rejected: acc.rejected + (c.rejected || 0),
           rev0: acc.rev0 + (c.rev0 || 0),
-          revHigh: acc.revHigh + (c.revHigh || 0)
+          revHigh: acc.revHigh + (c.revHigh || 0),
+          rev0Rows: acc.rev0Rows + (c.rev0Rows ?? c.rev0 ?? 0),
+          furtherRevRows: acc.furtherRevRows + (c.furtherRevRows ?? c.revHigh ?? 0),
+          totalRows: acc.totalRows + (c.totalRows ?? c.totalUnique ?? 0)
         }),
         {
           totalUnique: 0,
@@ -2025,27 +2226,31 @@ export const compileCanonicalNCRPresentationStats = (
           approved: 0,
           rejected: 0,
           rev0: 0,
-          revHigh: 0
+          revHigh: 0,
+          rev0Rows: 0,
+          furtherRevRows: 0,
+          totalRows: 0
         }
       );
       const ncrTotal = sub.totalUnique || (sub.rev0 || 0) + (sub.revHigh || 0);
+      const totalRows = sub.totalRows || ncrTotal;
       return {
         discipline: disc,
         CurrentUnique: ncrTotal,
         Items: ncrTotal,
         TotalSubmittals: ncrTotal,
-        TotalSheets: ncrTotal,
+        TotalSheets: totalRows,
         UniqueRev00: sub.rev0 || 0,
         UniqueFurtherRev: sub.revHigh || 0,
-        Rev00Rows: sub.rev0 || 0,
-        FurtherRevRows: sub.revHigh || 0,
-        TotalRows: ncrTotal,
+        Rev00Rows: sub.rev0Rows || 0,
+        FurtherRevRows: sub.furtherRevRows || 0,
+        TotalRows: totalRows,
         Rev00: sub.rev0 || 0,
         FurtherRev: sub.revHigh || 0,
-        Approved: sub.approved,
-        RejectedOpen: sub.rejected,
+        Approved: sub.closed,
+        RejectedOpen: sub.open,
         RejectedClosed: 0,
-        Rejected: sub.rejected,
+        Rejected: sub.open,
         Pending: sub.underReview,
         Total: ncrTotal,
         Closed: sub.closed,

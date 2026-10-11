@@ -154,7 +154,8 @@ export function buildPresentationViewModel(
   const accentColor = opts?.accentColor ? opts.accentColor.replace('#', '') : "EAB308";
 
   // Date Filters
-  const monthlyStart = opts?.monthlyStart;
+  const monthlyStart = opts?.monthlyStart || opts?.startDate;
+  const cutoffDate = opts?.monthlyEnd || opts?.endDate || opts?.cutoffDate;
   const isMonthlyRow = (r: SubmittalRow) => !monthlyStart || !r.submissionDate || r.submissionDate >= monthlyStart;
   const monthlyData = data.filter(isMonthlyRow);
   const cumulativeData = data;
@@ -346,7 +347,18 @@ export function buildPresentationViewModel(
       { label: "Pending", key: "Pending" }
     ];
 
-    if (bt === 'NCR' || bt === 'SOR') {
+    if (bt === 'NCR') {
+      cols = [
+        { label: "Discipline", key: "discipline" },
+        { label: "Unique NCRs", key: "CurrentUnique" },
+        { label: "Rev.00", key: "Rev00" },
+        { label: "Further Revisions", key: "FurtherRev" },
+        { label: "Total Source Rows", key: "TotalRows" },
+        { label: "Closed", key: "Closed" },
+        { label: "Open", key: "Open" },
+        { label: "Pending", key: "Pending" }
+      ];
+    } else if (bt === 'SOR') {
       cols = [
         { label: "Discipline", key: "discipline" },
         { label: "Total Rev.00", key: "Rev00" },
@@ -374,8 +386,8 @@ export function buildPresentationViewModel(
       ];
     }
 
-    const mStats = compileStatsForBaseType(monthlyData, bt, monthlyStart, data);
-    const cStats = compileStatsForBaseType(cumulativeData, bt, undefined, data);
+    const mStats = compileStatsForBaseType(monthlyData, bt, monthlyStart || 'ACTIVE_PERIOD', data, cutoffDate);
+    const cStats = compileStatsForBaseType(cumulativeData, bt, undefined, data, cutoffDate);
 
     const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
 

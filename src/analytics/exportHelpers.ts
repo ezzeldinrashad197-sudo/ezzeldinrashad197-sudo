@@ -6,10 +6,10 @@ import { processNCRData, compileCanonicalNCRPresentationStats } from "./ncr/ncrE
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 
 // Compile statistics logic extracted from exportEngine
-export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
+export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[], cutoffDate?: string | Date) => {
     if (bt === 'NCR') {
         const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
-        const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart);
+        const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, cutoffDate);
         return { stats, totalRow, hasData };
     }
 
