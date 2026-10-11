@@ -125,6 +125,10 @@
       "layer": 2
     },
     {
+      "id": "src/analytics/managementReportOutput.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/models.ts",
       "layer": 2
     },
@@ -315,6 +319,10 @@
     {
       "id": "src/utils/enterpriseAnalyticsEngine.ts",
       "layer": 1
+    },
+    {
+      "id": "src/utils/excelParser.worker.ts",
+      "layer": 3
     },
     {
       "id": "src/utils/i18n.tsx",
@@ -592,7 +600,15 @@
     },
     {
       "source": "src/Presentation.tsx",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/Presentation.tsx",
       "target": "src/analytics/ncr/ncrEngine.ts"
+    },
+    {
+      "source": "src/Presentation.tsx",
+      "target": "src/analytics/managementReportOutput.ts"
     },
     {
       "source": "src/Presentation.tsx",
@@ -659,6 +675,10 @@
       "target": "src/components/WorkloadRevisionIntelligence.tsx"
     },
     {
+      "source": "src/ReportTable.tsx",
+      "target": "src/analytics/managementReportOutput.ts"
+    },
+    {
       "source": "src/SORAnalytics.tsx",
       "target": "src/types.ts"
     },
@@ -696,6 +716,18 @@
     },
     {
       "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/analytics/ncr/ncrEngine.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/utils/parser.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/utils/ncrAnalytics.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
       "target": "src/analytics/revisionResolver.ts"
     },
     {
@@ -705,6 +737,18 @@
     {
       "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/analytics/managementReportOutput.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/analytics/exportHelpers.ts"
+    },
+    {
+      "source": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "target": "src/analytics/presentationViewModel.ts"
     },
     {
       "source": "src/analytics/analyticsCore.ts",
@@ -741,6 +785,10 @@
     {
       "source": "src/analytics/calculationFoundation.ts",
       "target": "src/analytics/sequenceAuditEngine.ts"
+    },
+    {
+      "source": "src/analytics/calculationFoundation.ts",
+      "target": "src/analytics/ncr/ncrEngine.ts"
     },
     {
       "source": "src/analytics/dataValidator.ts",
@@ -781,6 +829,10 @@
     {
       "source": "src/analytics/exportHelpers.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/exportHelpers.ts",
+      "target": "src/analytics/managementReportOutput.ts"
     },
     {
       "source": "src/analytics/exportHelpers.ts",
@@ -875,12 +927,32 @@
       "target": "src/analytics/models.ts"
     },
     {
+      "source": "src/analytics/managementReportOutput.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/managementReportOutput.ts",
+      "target": "src/analytics/calculationFoundation.ts"
+    },
+    {
+      "source": "src/analytics/managementReportOutput.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/managementReportOutput.ts",
+      "target": "src/analytics/statusResolver.ts"
+    },
+    {
       "source": "src/analytics/ncr/ncrEngine.ts",
       "target": "src/types.ts"
     },
     {
       "source": "src/analytics/ncr/ncrEngine.ts",
       "target": "src/utils/calculations.ts"
+    },
+    {
+      "source": "src/analytics/ncr/ncrEngine.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
     },
     {
       "source": "src/analytics/ncr/ncrEngine.ts",
@@ -1120,6 +1192,10 @@
     },
     {
       "source": "src/components/FinalAcceptanceAuditView.tsx",
+      "target": "src/analytics/managementReportOutput.ts"
+    },
+    {
+      "source": "src/components/FinalAcceptanceAuditView.tsx",
       "target": "src/firebase.ts"
     },
     {
@@ -1351,6 +1427,10 @@
       "target": "src/analytics/statusResolver.ts"
     },
     {
+      "source": "src/utils/excelParser.worker.ts",
+      "target": "src/utils/parser.ts"
+    },
+    {
       "source": "src/utils/multiFileParser.ts",
       "target": "src/utils/parser.ts"
     },
@@ -1364,15 +1444,11 @@
     },
     {
       "source": "src/utils/ncrAnalytics.ts",
-      "target": "src/analytics/revisionResolver.ts"
-    },
-    {
-      "source": "src/utils/ncrAnalytics.ts",
       "target": "src/utils/rfiAnalytics.ts"
     },
     {
       "source": "src/utils/ncrAnalytics.ts",
-      "target": "src/utils/calculations.ts"
+      "target": "src/analytics/ncr/ncrEngine.ts"
     },
     {
       "source": "src/utils/parser.ts",

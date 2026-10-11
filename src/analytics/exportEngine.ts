@@ -54,7 +54,8 @@ export const generatePptxReport = async (
         executiveOnly?: boolean;
     }
 ) => {
-    let pres = new pptxgen();
+    const PptxGenCtor: any = typeof (pptxgen as any) === "function" ? pptxgen : (pptxgen as any).default;
+    let pres = new PptxGenCtor();
     pres.layout = "LAYOUT_16x9";
     pres.author = "StructuSight Engineering Intelligence Platform";
     pres.company = "Corporate Management Report";

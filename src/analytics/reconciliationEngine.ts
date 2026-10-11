@@ -1,7 +1,7 @@
 import { SubmittalRow } from '../types';
 import { resolveRowDiscipline } from './calculationFoundation';
 import { getStatusCodeCategory } from './statusResolver';
-import { extractRevisionRaw, isRevision0, isFurtherRevision } from './revisionResolver';
+import { extractRevisionRaw, isRevision0, isFurtherRevision, compareRevisionsCanonical } from './revisionResolver';
 
 export interface DisciplineReconciliationRecord {
   register: string;
@@ -253,7 +253,7 @@ export function generateDisciplineReconciliationReport(
         const tA = a.submissionDate ? new Date(a.submissionDate).getTime() : 0;
         const tB = b.submissionDate ? new Date(b.submissionDate).getTime() : 0;
         if (tA !== tB) return tB - tA;
-        return (b.rev || '').localeCompare(a.rev || '');
+        return compareRevisionsCanonical(extractRevisionRaw(b), extractRevisionRaw(a));
       });
       const latestRow = sorted[0];
       const latestCat = getStatusCodeCategory(latestRow);

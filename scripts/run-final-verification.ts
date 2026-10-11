@@ -261,10 +261,10 @@ function runVerification() {
 
     if (reg === 'NCR') {
       const stats = calculateNCRStats(testRows, false);
-      appUnique = stats.totalSubmittedSheets;
+      appUnique = stats.totalUniqueDrawings;
       appPending = stats.pending;
       appApproved = stats.approved;
-      appRejected = stats.rejectedOpen + stats.rejectedClosed;
+      appRejected = stats.rejected;
       appMonthly = testRows.length;
       appCumulative = testRows.length;
     } else {

@@ -1618,7 +1618,7 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
         discipline: 'SURVEY',
         submissionDate: '2026-06-08',
         ncrSentDateCorrectiveAction: '2026-06-15',
-        responseDate: '2026-06-21',
+        responseDate: '2026-06-22',
         ncrAction: 'Approved',
         ncrStatus: 'Closed'
       } as SubmittalRow,

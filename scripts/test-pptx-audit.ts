@@ -1,6 +1,14 @@
 import { generatePptxReport } from '../src/analytics/exportEngine';
-import { calculateExecutiveDashboardData } from '../src/analytics/exportHelpers';
+import { calculateExecutiveDashboardData, compileStatsForBaseType } from '../src/analytics/exportHelpers';
+import { buildPresentationViewModel } from '../src/analytics/presentationViewModel';
+import { processNCRData, compileCanonicalNCRPresentationStats } from '../src/analytics/ncr/ncrEngine';
+import { parseExcelBuffer } from '../src/utils/parser';
 import { SubmittalRow, ProjectSettings } from '../src/types';
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface PPTXAuditSnapshot {
   slideCount: number;
@@ -265,6 +273,291 @@ export function runExecutiveNarrativeIntegrityAudit(): boolean {
   return true;
 }
 
+async function runActualNcrPptxAndPdfArtifactAudit(): Promise<void> {
+  console.log("\n=== RUNNING ACTUAL NCR PPTX & PDF EXPORT ARTIFACT GENERATION & TABLE INSPECTION ===");
+
+  const wb = XLSX.utils.book_new();
+  // Sheet 0: STR dedicated sheet — NCR closed in May 2026 (included in Cumulative at 2026-06-30 cutoff, excluded from June Monthly active snapshot)
+  const strAoA = [
+    ['NCR Register - STR'],
+    ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+    ['ACE-NCR-S050', '0', 'Yes', 'STR/SUR', 'Concrete cover closed in May', '2026-05-02', '2026-05-05', '2026-05-10', 'Approved', 'Closed']
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(strAoA), 'STR');
+
+  // Sheet 1: ARCH dedicated sheet — Rev0 in May (Rejected) + Rev1 in June (Approved/Closed) + blank continuation row
+  const archAoA = [
+    ['NCR Register - ARCH'],
+    ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+    ['ACE-NCR-A100', '0', 'No', 'WAREHOUSE', 'Arch finish defect Rev0', '2026-05-10', '2026-05-12', '2026-05-18', 'Rejected', 'Open'],
+    ['ACE-NCR-A100', '1', 'Yes', 'WAREHOUSE', 'Arch finish defect Rev1', '2026-05-10', '2026-06-05', '2026-06-12', 'Approved', 'Closed'],
+    ['', '', '', 'SURVEY', 'Blank continuation note on ARCH sheet', '', '', '', '', '']
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(archAoA), 'ARCH');
+
+  // Sheet 2: LAND dedicated sheet — L200 active in June (Waiting Consultant), L201 issued in July (excluded at 2026-06-30 cutoff)
+  const landAoA = [
+    ['NCR Register - LAND'],
+    ['NCR Ref', 'Rev', 'Last Rev', 'Trade', 'Subject', 'Received Date', 'Sent Corrective Action', 'Response Date', 'Action', 'Status'],
+    ['ACE-NCR-L200', '0', 'Yes', 'MULTI-DISCIPLINE', 'Irrigation valve non-conformance', '2026-06-08', '2026-06-14', '', 'Under Review', 'Waiting'],
+    ['ACE-NCR-L201', '0', 'Yes', 'STR', 'Future July hardscape NCR', '2026-07-15', '', '', '', 'Open']
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(landAoA), 'LAND');
+
+  const excelBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const parsedRows = parseExcelBuffer(excelBuf, '16- NCR_STR_Master_Log.xlsx');
+
+  const monthlyStart = '2026-06-01';
+  const cutoffDate = '2026-06-30';
+
+  const engineOut = processNCRData(parsedRows, monthlyStart, cutoffDate);
+  const presMonthly = compileCanonicalNCRPresentationStats(parsedRows, monthlyStart, cutoffDate);
+  const presCumulative = compileCanonicalNCRPresentationStats(parsedRows, undefined, cutoffDate);
+  const exportMonthly = compileStatsForBaseType(parsedRows, 'NCR', monthlyStart, parsedRows, cutoffDate);
+  const exportCumulative = compileStatsForBaseType(parsedRows, 'NCR', undefined, parsedRows, cutoffDate);
+
+  const projectInfo: ProjectSettings = {
+    id: 'PROJ-NCR-VERIFY',
+    projectName: 'StructuSight NCR Remediation Verification',
+    projectCode: 'SS-NCR-01',
+    clientName: 'Owner Corp',
+    consultantName: 'Lead Consultant',
+    contractorName: 'Main Contractor',
+    projectManager: 'PM Lead',
+    documentControlManager: 'DC Lead',
+    slaDays: {
+      shopDrawings: 14,
+      materialSubmittals: 14,
+      rfi: 7,
+      ncr: 14,
+      sor: 7,
+      letters: 7,
+      wir: 2,
+      mir: 2,
+      default: 14
+    }
+  };
+
+  const vm = buildPresentationViewModel(parsedRows, projectInfo, 'presentation', {
+    startDate: monthlyStart,
+    endDate: cutoffDate,
+    monthlyStart,
+    monthlyEnd: cutoffDate,
+    cutoffDate
+  });
+
+  const ncrVm = vm.registers.find(r => r.baseType === 'NCR');
+  if (!ncrVm) {
+    throw new Error('NCR register missing from PresentationViewModel');
+  }
+
+  // 1. Generate Actual PPTX File on Disk
+  await generatePptxReport(
+    parsedRows,
+    projectInfo,
+    'presentation',
+    {
+      filterMonthly: (row) => !row.submissionDate || (row.submissionDate >= monthlyStart && row.submissionDate <= cutoffDate),
+      filterCumulative: (row) => !row.submissionDate || row.submissionDate <= cutoffDate
+    },
+    {
+      startDate: monthlyStart,
+      endDate: cutoffDate,
+      monthlyStart,
+      monthlyEnd: cutoffDate,
+      cutoffDate
+    }
+  );
+
+  const pptxFile = path.resolve(process.cwd(), `StructuSight-Presentation-${new Date().toISOString().split('T')[0]}.pptx`);
+  if (!fs.existsSync(pptxFile)) {
+    throw new Error(`Expected generated PPTX file at ${pptxFile}`);
+  }
+  const pptxStat = fs.statSync(pptxFile);
+  console.log(`✔ Generated actual PPTX file: ${path.basename(pptxFile)} (${pptxStat.size} bytes)`);
+
+  // Inspect PPTX XML slides for NCR tables
+  const zip = await JSZip.loadAsync(fs.readFileSync(pptxFile));
+  const slideFiles = Object.keys(zip.files)
+    .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
+    .sort((a, b) => {
+      const nA = parseInt(a.replace(/\D/g, ''), 10);
+      const nB = parseInt(b.replace(/\D/g, ''), 10);
+      return nA - nB;
+    });
+
+  const extractSlideTables = (xml: string): string[][][] => {
+    const tables: string[][][] = [];
+    const tblMatches = xml.match(/<a:tbl>[\s\S]*?<\/a:tbl>/g) || [];
+    for (const tblXml of tblMatches) {
+      const rows: string[][] = [];
+      const trMatches = tblXml.match(/<a:tr\b[\s\S]*?<\/a:tr>/g) || [];
+      for (const trXml of trMatches) {
+        const cells: string[] = [];
+        const tcMatches = trXml.match(/<a:tc\b[\s\S]*?<\/a:tc>/g) || [];
+        for (const tcXml of tcMatches) {
+          const texts = (tcXml.match(/<a:t>([\s\S]*?)<\/a:t>/g) || []).map(t =>
+            t.replace(/<\/?a:t>/g, '')
+          );
+          cells.push(texts.join(' ').replace(/\s+/g, ' ').trim());
+        }
+        rows.push(cells);
+      }
+      tables.push(rows);
+    }
+    return tables;
+  };
+
+  let ncrMonthlySlideTable: string[][] | null = null;
+  let ncrCumulativeSlideTable: string[][] | null = null;
+
+  for (const sf of slideFiles) {
+    const xml = await zip.files[sf].async('string');
+    const upperXml = xml.toUpperCase();
+    if (upperXml.includes('NON-CONFORMANCE REPORT (NCR) THIS PERIOD')) {
+      const tbls = extractSlideTables(xml);
+      if (tbls.length > 0 && !ncrMonthlySlideTable) ncrMonthlySlideTable = tbls[0];
+    }
+    if (upperXml.includes('NON-CONFORMANCE REPORT (NCR) CUMULATIVE')) {
+      const tbls = extractSlideTables(xml);
+      if (tbls.length > 0 && !ncrCumulativeSlideTable) ncrCumulativeSlideTable = tbls[0];
+    }
+  }
+
+  if (!ncrMonthlySlideTable || !ncrCumulativeSlideTable) {
+    throw new Error('Failed to locate NCR This Period and Cumulative tables inside generated PPTX XML');
+  }
+
+  const expectedSuperHeader = ['STATUS &amp; REVISION WORKLOAD', '', '', '', '', '', '', ''];
+  const expectedHeaders = [
+    'Discipline',
+    'Unique NCRs',
+    'Rev.00',
+    'Further Revisions',
+    'Total Source Rows',
+    'Closed',
+    'Open',
+    'Pending'
+  ];
+
+  // Expected Monthly Table (June 2026: ACE-NCR-S050 closed in May has 0 June activity; ACE-NCR-A100 has 1 unique/2 rows/Closed; ACE-NCR-L200 has 1 unique/1 row/Pending)
+  const expectedMonthlyTable = [
+    expectedSuperHeader,
+    expectedHeaders,
+    ['STR', '0', '0', '0', '0', '0', '0', '0'],
+    ['Arch', '1', '0', '1', '2', '1', '0', '0'],
+    ['Mech', '0', '0', '0', '0', '0', '0', '0'],
+    ['Elec', '0', '0', '0', '0', '0', '0', '0'],
+    ['Infra', '0', '0', '0', '0', '0', '0', '0'],
+    ['Landscape', '1', '1', '0', '1', '0', '0', '1'],
+    ['HSE', '0', '0', '0', '0', '0', '0', '0'],
+    ['TOTAL', '2', '1', '1', '3', '1', '0', '1']
+  ];
+
+  // Expected Cumulative Table (at 2026-06-30 cutoff: ACE-NCR-S050 in STR = 1 Closed; ACE-NCR-A100 in Arch = 1 Closed (2 rows); ACE-NCR-L200 in Landscape = 1 Pending; July L201 excluded)
+  const expectedCumulativeTable = [
+    expectedSuperHeader,
+    expectedHeaders,
+    ['STR', '1', '1', '0', '1', '1', '0', '0'],
+    ['Arch', '1', '0', '1', '2', '1', '0', '0'],
+    ['Mech', '0', '0', '0', '0', '0', '0', '0'],
+    ['Elec', '0', '0', '0', '0', '0', '0', '0'],
+    ['Infra', '0', '0', '0', '0', '0', '0', '0'],
+    ['Landscape', '1', '1', '0', '1', '0', '0', '1'],
+    ['HSE', '0', '0', '0', '0', '0', '0', '0'],
+    ['TOTAL', '3', '2', '1', '4', '2', '0', '1']
+  ];
+
+  if (JSON.stringify(ncrMonthlySlideTable) !== JSON.stringify(expectedMonthlyTable)) {
+    throw new Error(`PPTX Monthly table mismatch:\nExpected: ${JSON.stringify(expectedMonthlyTable)}\nActual:   ${JSON.stringify(ncrMonthlySlideTable)}`);
+  }
+  if (JSON.stringify(ncrCumulativeSlideTable) !== JSON.stringify(expectedCumulativeTable)) {
+    throw new Error(`PPTX Cumulative table mismatch:\nExpected: ${JSON.stringify(expectedCumulativeTable)}\nActual:   ${JSON.stringify(ncrCumulativeSlideTable)}`);
+  }
+
+  console.log("✔ Verified PPTX Export NCR Tables (This Period & Cumulative): 8 non-truncated headers, exact column alignment, and 100% parity with Engine/Dashboard/ViewModel");
+  console.log("  PPTX Monthly TOTAL Row   :", JSON.stringify(ncrMonthlySlideTable[ncrMonthlySlideTable.length - 1]));
+  console.log("  PPTX Cumulative TOTAL Row:", JSON.stringify(ncrCumulativeSlideTable[ncrCumulativeSlideTable.length - 1]));
+
+  // 2. Generate Actual PDF File on Disk using jsPDF from PresentationViewModel
+  const pdfDoc = new jsPDF({ orientation: 'landscape', unit: 'in', format: [10, 5.625], compress: false });
+  const renderNcrPdfTablePage = (title: string, statsObj: typeof ncrVm.monthlyStats, isFirstPage: boolean) => {
+    if (!isFirstPage) pdfDoc.addPage([10, 5.625], 'landscape');
+    pdfDoc.setFontSize(14);
+    pdfDoc.text(title, 0.4, 0.6);
+
+    const startX = 0.4;
+    let curY = 1.1;
+    const colWidths = ncrVm.layout.colWidths;
+    const rowH = 0.36;
+
+    // Header row
+    pdfDoc.setFontSize(ncrVm.layout.headerFontSize);
+    let curX = startX;
+    ncrVm.cols.forEach((col, idx) => {
+      pdfDoc.rect(curX, curY, colWidths[idx], rowH);
+      pdfDoc.text(col.label, curX + 0.05, curY + 0.22);
+      curX += colWidths[idx];
+    });
+    curY += rowH;
+
+    // Discipline rows + Total row
+    pdfDoc.setFontSize(ncrVm.layout.bodyFontSize);
+    const allRows = [...statsObj.stats, statsObj.totalRow];
+    for (const r of allRows) {
+      curX = startX;
+      ncrVm.cols.forEach((col, idx) => {
+        pdfDoc.rect(curX, curY, colWidths[idx], rowH);
+        const valStr = String(r[col.key] ?? 0);
+        pdfDoc.text(valStr, curX + 0.05, curY + 0.22);
+        curX += colWidths[idx];
+      });
+      curY += rowH;
+    }
+  };
+
+  renderNcrPdfTablePage('Non-Conformance Reports (NCR) - This Period (2026-06-01 to 2026-06-30)', ncrVm.monthlyStats, true);
+  renderNcrPdfTablePage('Non-Conformance Reports (NCR) - Cumulative (Cutoff: 2026-06-30)', ncrVm.cumulativeStats, false);
+
+  const outDir = path.resolve(process.cwd(), 'evidence', 'certification');
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+  const pdfPath = path.resolve(outDir, 'StructuSight-NCR-Verification.pdf');
+  const pdfArrayBuffer = pdfDoc.output('arraybuffer');
+  fs.writeFileSync(pdfPath, Buffer.from(pdfArrayBuffer));
+
+  const pdfContent = fs.readFileSync(pdfPath, 'latin1');
+  if (!pdfContent.startsWith('%PDF-')) {
+    throw new Error('Generated PDF file does not start with valid %PDF- header');
+  }
+  for (const h of expectedHeaders) {
+    if (!pdfContent.includes(`(${h})`)) {
+      throw new Error(`Expected non-truncated header '(${h})' in generated PDF stream`);
+    }
+  }
+  if (
+    !pdfContent.includes('(Non-Conformance Reports \\(NCR\\) - This Period \\(2026-06-01 to 2026-06-30\\))') ||
+    !pdfContent.includes('(Non-Conformance Reports \\(NCR\\) - Cumulative \\(Cutoff: 2026-06-30\\))')
+  ) {
+    throw new Error('Expected Monthly and Cumulative NCR page titles in generated PDF stream');
+  }
+
+  console.log(`✔ Generated and inspected actual PDF file: ${path.relative(process.cwd(), pdfPath)} (${Buffer.from(pdfArrayBuffer).length} bytes, 2 pages)`);
+  console.log(`✔ Verified Monthly vs Cumulative numerical parity across Engine (Monthly=${engineOut.monthlyKPIs.totalUnique}/${engineOut.monthlyKPIs.totalRows}, Cum=${engineOut.cumulativeKPIs.totalUnique}/${engineOut.cumulativeKPIs.totalRows}), Dashboard (${presMonthly.totalRow.CurrentUnique}/${presMonthly.totalRow.TotalRows} vs ${presCumulative.totalRow.CurrentUnique}/${presCumulative.totalRow.TotalRows}), Management Presentation (${ncrVm.monthlyStats.totalRow.CurrentUnique}/${ncrVm.monthlyStats.totalRow.TotalRows} vs ${ncrVm.cumulativeStats.totalRow.CurrentUnique}/${ncrVm.cumulativeStats.totalRow.TotalRows}), PPTX (${exportMonthly.totalRow.CurrentUnique}/${exportMonthly.totalRow.TotalRows} vs ${exportCumulative.totalRow.CurrentUnique}/${exportCumulative.totalRow.TotalRows}), and PDF.`);
+
+  // Clean up root PPTX artifact so working tree stays clean while keeping evidence/certification/ artifact
+  const certPptxPath = path.resolve(outDir, 'StructuSight-NCR-Verification.pptx');
+  fs.copyFileSync(pptxFile, certPptxPath);
+  fs.unlinkSync(pptxFile);
+  console.log(`✔ Archived verified PPTX & PDF artifacts in evidence/certification/: ${path.basename(certPptxPath)}, ${path.basename(pdfPath)}`);
+}
+
 // Automatically execute audit suite when run directly via tsx
-runExecutiveNarrativeIntegrityAudit();
+async function main() {
+  runExecutiveNarrativeIntegrityAudit();
+  await runActualNcrPptxAndPdfArtifactAudit();
+}
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
 

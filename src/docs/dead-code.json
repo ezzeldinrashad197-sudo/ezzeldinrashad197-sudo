@@ -322,14 +322,6 @@
     },
     {
       "file": "src/analytics/calculationFoundation.ts",
-      "exportName": "calculateNCRStats",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'calculateNCRStats' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/calculationFoundation.ts",
       "exportName": "calculateSORStats",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -553,6 +545,102 @@
       "referencedBy": []
     },
     {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "ManagementDiscipline",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ManagementDiscipline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "OFFICIAL_MANAGEMENT_DISCIPLINES",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'OFFICIAL_MANAGEMENT_DISCIPLINES' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "isOfficialSubmittalPopulationRow",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isOfficialSubmittalPopulationRow' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "ManagementReportRow",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ManagementReportRow' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "ManagementReportValidation",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ManagementReportValidation' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "ManagementReportOutput",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'ManagementReportOutput' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "UniqueSubmittalGroupResolution",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'UniqueSubmittalGroupResolution' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "processUniqueSubmittalEngine",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'processUniqueSubmittalEngine' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "resolveManagementDiscipline",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveManagementDiscipline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "SourceRegisterPopulationEntry",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'SourceRegisterPopulationEntry' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "NonSubmittalRegisterPopulationEntry",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'NonSubmittalRegisterPopulationEntry' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/managementReportOutput.ts",
+      "exportName": "SourcePopulationAuditReport",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'SourcePopulationAuditReport' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/models.ts",
       "exportName": "NormalizedStatus",
       "type": "Type/Interface",
@@ -658,10 +746,26 @@
     },
     {
       "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "getLatestRev",
+      "exportName": "isInheritedIssueDate",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'getLatestRev' detected in any active source modules.",
+      "reason": "No incoming imports of 'isInheritedIssueDate' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ncr/ncrEngine.ts",
+      "exportName": "isInheritedSentDate",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isInheritedSentDate' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ncr/ncrEngine.ts",
+      "exportName": "isInheritedResponseDate",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isInheritedResponseDate' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -682,26 +786,50 @@
     },
     {
       "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "normalizeDiscipline",
-      "type": "Function",
+      "exportName": "NCREventRecord",
+      "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'normalizeDiscipline' detected in any active source modules.",
+      "reason": "No incoming imports of 'NCREventRecord' detected in any active source modules.",
       "referencedBy": []
     },
     {
       "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "normalizeNCRData",
-      "type": "Function",
+      "exportName": "NCRDisciplineResolution",
+      "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'normalizeNCRData' detected in any active source modules.",
+      "reason": "No incoming imports of 'NCRDisciplineResolution' detected in any active source modules.",
       "referencedBy": []
     },
     {
       "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "groupNCRByReference",
+      "exportName": "isNCRDomainRow",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'groupNCRByReference' detected in any active source modules.",
+      "reason": "No incoming imports of 'isNCRDomainRow' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ncr/ncrEngine.ts",
+      "exportName": "NCRForensicIdentityRowSummary",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'NCRForensicIdentityRowSummary' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ncr/ncrEngine.ts",
+      "exportName": "NCRBlankContinuationRowSummary",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'NCRBlankContinuationRowSummary' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ncr/ncrEngine.ts",
+      "exportName": "NCRForensicIdentityInventory",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'NCRForensicIdentityInventory' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -718,22 +846,6 @@
       "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'NCRIntegrityReport' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "calculateCumulativeSnapshot",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'calculateCumulativeSnapshot' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/ncr/ncrEngine.ts",
-      "exportName": "calculateMonthlyEvents",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'calculateMonthlyEvents' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -870,14 +982,6 @@
       "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'SORClassificationStats' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/statusResolver.ts",
-      "exportName": "CanonicalStatus",
-      "type": "Type/Interface",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'CanonicalStatus' detected in any active source modules.",
       "referencedBy": []
     },
     {
@@ -1582,14 +1686,6 @@
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'parseExcelWorkbook' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/parser.ts",
-      "exportName": "parseExcelBuffer",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'parseExcelBuffer' detected in any active source modules.",
       "referencedBy": []
     },
     {
