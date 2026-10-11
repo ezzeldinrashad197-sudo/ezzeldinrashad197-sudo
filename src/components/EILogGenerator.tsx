@@ -28,7 +28,9 @@ import {
   parseReferenceEILogBuffer,
   compareWithReferenceEILog,
   downloadEILogExcel,
-  buildBenchmarkCumulativeSDWWorkbook
+  buildBenchmarkCumulativeSDWWorkbook,
+  getPlatformWorkbookBuffer,
+  registerPlatformWorkbookBuffer
 } from '../analytics/ei/eiLogEngine';
 
 interface EILogGeneratorProps {
@@ -65,11 +67,18 @@ export const EILogGenerator: React.FC<EILogGeneratorProps> = ({ data = [] }) => 
   const [expandedSubRef, setExpandedSubRef] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Compute current EI Log result from uploaded raw workbook OR from platform data
+  // Compute current EI Log result from uploaded raw workbook, platform cached workbook, OR platform SubmittalRow[]
   const generationResult: EILogGenerationResult | null = useMemo(() => {
     try {
       if (rawWorkbookBuffer) {
         return generateEILogFromExcelBuffer(rawWorkbookBuffer, uploadedFileName || 'Uploaded_SDW_Register.xlsx', {
+          resolutionMode,
+          selectedSheetNames: selectedSheets.length > 0 ? selectedSheets : undefined
+        });
+      }
+      const platformWb = getPlatformWorkbookBuffer();
+      if (platformWb) {
+        return generateEILogFromExcelBuffer(platformWb.buffer, platformWb.fileName, {
           resolutionMode,
           selectedSheetNames: selectedSheets.length > 0 ? selectedSheets : undefined
         });
@@ -105,6 +114,7 @@ export const EILogGenerator: React.FC<EILogGeneratorProps> = ({ data = [] }) => 
     setUploadError(null);
     try {
       const buf = await file.arrayBuffer();
+      registerPlatformWorkbookBuffer(buf, file.name);
       const initialPreview = generateEILogFromExcelBuffer(buf, file.name, { resolutionMode });
       const defaultSelected = initialPreview.discoveredSheets
         .filter(s => s.sheetRole === 'DISCIPLINE_REGISTER' && s.isSelectedByDefault)

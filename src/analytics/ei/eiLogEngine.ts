@@ -294,7 +294,6 @@ const REV_ALIASES = [
 ];
 
 const DATE_SENT_ALIASES = [
-  'rev00.date sent',
   'date sent',
   'sent date',
   'submission date',
@@ -302,11 +301,17 @@ const DATE_SENT_ALIASES = [
   'submittal date',
   'date submitted',
   'date of submission',
-  'received date',
+  'rev00.date sent',
+  'rev00 date sent',
+  'rev.00 date sent',
   'issue date',
   'date issued',
+  'date in',
+  'in date',
   'تاريخ التقديم',
-  'تاريخ الإرسال'
+  'تاريخ الإرسال',
+  'تاريخ الطلب',
+  'received date'
 ];
 
 const DATE_RETURN_ALIASES = [
@@ -314,23 +319,83 @@ const DATE_RETURN_ALIASES = [
   'return date',
   'date returned',
   'returned date',
+  'date of return',
+  'actual return date',
+  'date retrun',
+  'retrun date',
+  'date ret.',
+  'date ret',
+  'ret. date',
+  'ret date',
   'response date',
+  'date of response',
   'consultant response date',
   'consultant return date',
+  'consultant response',
+  'consultant return',
+  'consultant date',
+  'consultant reply date',
+  'consultant reply',
+  'consultant action date',
+  'engineer response date',
+  'engineer return date',
+  'engineer date',
+  'client response date',
   'reply date',
   'date replied',
-  'action date',
+  'replied date',
+  'date of reply',
+  'received date',
+  'date received',
+  'date of receipt',
+  'receipt date',
+  'date rec.',
+  'date rec',
+  'rec. date',
+  'rec date',
   'approval date',
-  'actual return date',
-  'date of return',
+  'approved date',
+  'date approved',
+  'date of approval',
+  'review date',
+  'reviewed date',
+  'date reviewed',
+  'date of review',
+  'action date',
+  'status date',
+  'closed date',
+  'date closed',
+  'closing date',
+  'completion date',
+  'closeout date',
+  'verified date',
+  'answered date',
+  'disposition date',
+  'sign off date',
+  'clearance date',
+  'date out',
+  'out date',
+  'return',
+  'returned',
+  'reply',
+  'response',
   'تاريخ الرد',
   'تاريخ الإرجاع',
-  'تاريخ الاعتماد'
+  'تاريخ الاعتماد',
+  'تاريخ الاستشاري',
+  'تاريخ الإغلاق',
+  'تاريخ المراجعة',
+  'تاريخ الانتهاء',
+  'تاريخ الاستجابة',
+  'تاريخ الفحص',
+  'تاريخ الاستلام',
+  'تاريخ العودة',
+  'الرد'
 ];
 
 const CODE_ALIASES = [
-  'code.1',
   'code',
+  'code.1',
   'status code',
   'approval code',
   'code status',
@@ -341,6 +406,7 @@ const CODE_ALIASES = [
   'status',
   'كود الاعتماد',
   'الكود',
+  'كود',
   'الحالة'
 ];
 
@@ -380,6 +446,197 @@ const EI_REFERENCE_SHEET_NAMES = new Set([
   'EI SUMMARY',
   'ENGINEERING ITEM LOG'
 ]);
+
+// Shared in-memory cache of the most recently uploaded Excel workbook buffer from the main platform header
+let cachedPlatformWorkbook: { buffer: ArrayBuffer; fileName: string; updatedAt: number } | null = null;
+
+export function registerPlatformWorkbookBuffer(buffer: ArrayBuffer, fileName: string): void {
+  cachedPlatformWorkbook = {
+    buffer: buffer.slice(0),
+    fileName,
+    updatedAt: Date.now()
+  };
+}
+
+export function getPlatformWorkbookBuffer(): { buffer: ArrayBuffer; fileName: string; updatedAt: number } | null {
+  return cachedPlatformWorkbook;
+}
+
+const MONTH_NAME_MAP: Record<string, number> = {
+  jan: 1, january: 1, 'يناير': 1,
+  feb: 2, february: 2, 'فبراير': 2,
+  mar: 3, march: 3, 'مارس': 3,
+  apr: 4, april: 4, 'ابريل': 4, 'أبريل': 4,
+  may: 5, 'مايو': 5,
+  jun: 6, june: 6, 'يونيو': 6,
+  jul: 7, july: 7, 'يوليو': 7,
+  aug: 8, august: 8, 'اغسطس': 8, 'أغسطس': 8,
+  sep: 9, sept: 9, september: 9, 'سبتمبر': 9,
+  oct: 10, october: 10, 'اكتوبر': 10, 'أكتوبر': 10,
+  nov: 11, november: 11, 'نوفمبر': 11,
+  dec: 12, december: 12, 'ديسمبر': 12
+};
+
+function buildSafeYMD(year: number, month: number, day: number): string {
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return '';
+  if (year < 1970 || year > 2100) return '';
+  if (month < 1 || month > 12) return '';
+  const maxDays = new Date(year, month, 0).getDate();
+  if (day < 1 || day > maxDays) return '';
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function dateObjectToYMD(d: Date): string {
+  if (isNaN(d.getTime())) return '';
+  // Add 12 hours to prevent UTC midnight timezone rollback (e.g. 2025-11-24T22:00:00Z -> 2025-11-25)
+  const adjusted = new Date(d.getTime() + 12 * 3600 * 1000);
+  return buildSafeYMD(
+    adjusted.getUTCFullYear(),
+    adjusted.getUTCMonth() + 1,
+    adjusted.getUTCDate()
+  );
+}
+
+function excelSerialToYMD(serial: number): string {
+  if (!isFinite(serial) || serial < 20000 || serial > 80000) return '';
+  // Excel epoch: 25569 is 1970-01-01 UTC
+  const utcMs = Math.round((serial - 25569) * 86400 * 1000);
+  const d = new Date(utcMs + 12 * 3600 * 1000);
+  return buildSafeYMD(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+
+/**
+ * Ultra-resilient date extractor for Excel cells (supports Date objects, Excel serial numbers,
+ * 2-digit and 4-digit year strings dd/mm/yy, dd/mm/yyyy, mm/dd/yy, dd-MMM-yy, timestamps,
+ * formula cached values, and Eastern Arabic numerals).
+ */
+export function parseEIDateValue(
+  rawVal: unknown,
+  formattedVal?: unknown,
+  cellObj?: XLSX.CellObject
+): string {
+  // 1. Direct Date instance
+  if (rawVal instanceof Date) {
+    const res = dateObjectToYMD(rawVal);
+    if (res) return res;
+  }
+  if (cellObj?.v instanceof Date) {
+    const res = dateObjectToYMD(cellObj.v);
+    if (res) return res;
+  }
+
+  // 2. Numeric Excel serial
+  if (typeof rawVal === 'number') {
+    const res = excelSerialToYMD(rawVal);
+    if (res) return res;
+  }
+  if (typeof cellObj?.v === 'number') {
+    const res = excelSerialToYMD(cellObj.v);
+    if (res) return res;
+  }
+
+  // 3. Candidate string representations
+  const candidates: string[] = [];
+  if (typeof formattedVal === 'string' && formattedVal.trim()) candidates.push(formattedVal.trim());
+  if (typeof rawVal === 'string' && rawVal.trim()) candidates.push(rawVal.trim());
+  if (typeof cellObj?.w === 'string' && cellObj.w.trim()) candidates.push(cellObj.w.trim());
+  if (typeof cellObj?.v === 'string' && cellObj.v.trim()) candidates.push(cellObj.v.trim());
+
+  for (const rawCandidate of candidates) {
+    // Normalize Eastern Arabic numerals & invisible chars
+    const str = rawCandidate
+      .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+      .replace(/[\u200B-\u200F\uFEFF]/g, '')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+
+    if (!str || ['-', '--', 'n/a', 'na', 'nil', 'none', 'null', 'ur', 'u.r', 'under review', 'pending', 'open', 'waiting'].includes(str.toLowerCase())) {
+      continue;
+    }
+
+    // 3a. 5-digit Excel serial stored as string (e.g. "45986" or "45986.5")
+    if (/^\d{5}(?:\.\d+)?$/.test(str)) {
+      const serialRes = excelSerialToYMD( parseFloat(str) );
+      if (serialRes) return serialRes;
+      continue;
+    }
+
+    // Strip trailing time component if present (e.g. "25/11/2025 12:00:00 AM" or "2025-11-25T00:00:00")
+    const datePartOnly = str
+      .replace(/T\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/i, '')
+      .replace(/\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|ص|م))?$/i, '')
+      .trim();
+
+    // 3b. YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD
+    const ymdMatch = datePartOnly.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    if (ymdMatch) {
+      const y = parseInt(ymdMatch[1], 10);
+      const m = parseInt(ymdMatch[2], 10);
+      const d = parseInt(ymdMatch[3], 10);
+      const res = buildSafeYMD(y, m, d) || buildSafeYMD(y, d, m);
+      if (res) return res;
+    }
+
+    // 3c. DD/MM/YYYY or MM/DD/YYYY (4-digit year)
+    const dmy4Match = datePartOnly.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if (dmy4Match) {
+      const p1 = parseInt(dmy4Match[1], 10);
+      const p2 = parseInt(dmy4Match[2], 10);
+      const y = parseInt(dmy4Match[3], 10);
+      // Prefer DD/MM/YYYY (standard in MENA/UK engineering registers), fallback to MM/DD/YYYY if p2 > 12
+      const res = buildSafeYMD(y, p2, p1) || buildSafeYMD(y, p1, p2);
+      if (res) return res;
+    }
+
+    // 3d. DD/MM/YY or MM/DD/YY (2-digit year, e.g. "25/11/25" or "04/01/26")
+    const dmy2Match = datePartOnly.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2})$/);
+    if (dmy2Match) {
+      const p1 = parseInt(dmy2Match[1], 10);
+      const p2 = parseInt(dmy2Match[2], 10);
+      const yy = parseInt(dmy2Match[3], 10);
+      const fullYear = yy < 70 ? 2000 + yy : 1900 + yy;
+      const res = buildSafeYMD(fullYear, p2, p1) || buildSafeYMD(fullYear, p1, p2);
+      if (res) return res;
+    }
+
+    // 3e. DD-MMM-YYYY or DD-MMM-YY (e.g. "25-Nov-25", "25 Nov 2025")
+    const dMonYMatch = datePartOnly.match(/^(\d{1,2})[\s\/\-.]+([A-Za-z\u0600-\u06FF]+)[\s\/\-.]+(\d{2,4})$/);
+    if (dMonYMatch) {
+      const d = parseInt(dMonYMatch[1], 10);
+      const monToken = dMonYMatch[2].toLowerCase();
+      const m = MONTH_NAME_MAP[monToken] || MONTH_NAME_MAP[monToken.slice(0, 3)];
+      let y = parseInt(dMonYMatch[3], 10);
+      if (y < 100) y = y < 70 ? 2000 + y : 1900 + y;
+      if (m) {
+        const res = buildSafeYMD(y, m, d);
+        if (res) return res;
+      }
+    }
+
+    // 3f. MMM DD, YYYY or MMM-DD-YY
+    const monDYMatch = datePartOnly.match(/^([A-Za-z\u0600-\u06FF]+)[\s\/\-.]+(\d{1,2})[,\s\/\-.]+(\d{2,4})$/);
+    if (monDYMatch) {
+      const monToken = monDYMatch[1].toLowerCase();
+      const m = MONTH_NAME_MAP[monToken] || MONTH_NAME_MAP[monToken.slice(0, 3)];
+      const d = parseInt(monDYMatch[2], 10);
+      let y = parseInt(monDYMatch[3], 10);
+      if (y < 100) y = y < 70 ? 2000 + y : 1900 + y;
+      if (m) {
+        const res = buildSafeYMD(y, m, d);
+        if (res) return res;
+      }
+    }
+
+    // 3g. Fallback to platform formatDate if it produces a valid year in 1970..2100
+    const stdFormatted = formatDate(datePartOnly);
+    if (stdFormatted && /^(19[7-9]\d|20\d{2})-\d{2}-\d{2}$/.test(stdFormatted)) {
+      return stdFormatted;
+    }
+  }
+
+  return '';
+}
 
 export function detectSheetDisciplineCode(sheetName: string): {
   code: string;
@@ -442,39 +699,63 @@ export function detectSheetDisciplineCode(sheetName: string): {
 
 function normalizeHeaderCell(val: unknown): string {
   return String(val ?? '')
+    .replace(/[\u200B-\u200F\uFEFF]/g, '')
+    .replace(/\u00A0/g, ' ')
     .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
 }
 
+function normalizeHeaderTokens(val: unknown): string {
+  return normalizeHeaderCell(val)
+    .replace(/[_/\-.:;()[\]]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function findMatchingColumnIndex(
   headers: string[],
   aliases: string[],
   exclusions: string[] = [],
-  usedIndices: Set<number> = new Set()
+  usedIndices: Set<number> = new Set(),
+  overrideExclusionKeywords: string[] = []
 ): { index: number; matchedHeader: string | null } {
-  // Pass 1: Exact match
+  const isExcludedHeader = (h: string): boolean => {
+    if (overrideExclusionKeywords.length > 0 && overrideExclusionKeywords.some(ov => h.includes(ov))) {
+      // Only enforce hard planned/due exclusions if header explicitly has return/response override
+      return ['expected', 'planned', 'target', 'due', 'forecast', 'scheduled', 'sla'].some(
+        hardEx => exclusions.includes(hardEx) && h.includes(hardEx)
+      );
+    }
+    return exclusions.some(ex => h.includes(ex));
+  };
+
+  // Pass 1: Exact match (raw normalized or token-normalized)
   for (const alias of aliases) {
+    const aliasTokens = normalizeHeaderTokens(alias);
     for (let i = 0; i < headers.length; i++) {
       if (usedIndices.has(i)) continue;
       const h = normalizeHeaderCell(headers[i]);
+      const hTokens = normalizeHeaderTokens(headers[i]);
       if (!h) continue;
-      if (exclusions.some(ex => h.includes(ex))) continue;
-      if (h === alias) {
+      if (isExcludedHeader(h)) continue;
+      if (h === alias || (aliasTokens && hTokens === aliasTokens)) {
         return { index: i, matchedHeader: String(headers[i]).trim() };
       }
     }
   }
 
-  // Pass 2: Substring match
+  // Pass 2: Substring match (raw normalized or token-normalized)
   for (const alias of aliases) {
+    const aliasTokens = normalizeHeaderTokens(alias);
     for (let i = 0; i < headers.length; i++) {
       if (usedIndices.has(i)) continue;
       const h = normalizeHeaderCell(headers[i]);
+      const hTokens = normalizeHeaderTokens(headers[i]);
       if (!h) continue;
-      if (exclusions.some(ex => h.includes(ex))) continue;
-      if (h.includes(alias)) {
+      if (isExcludedHeader(h)) continue;
+      if (h.includes(alias) || (aliasTokens.length >= 4 && hTokens.includes(aliasTokens))) {
         return { index: i, matchedHeader: String(headers[i]).trim() };
       }
     }
@@ -633,7 +914,17 @@ export function extractReferenceEISheetFromWorksheet(
   records: EIReferenceRecord[];
   inspectedFormulas: EIInspectedFormulaPattern[];
 } {
-  const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as unknown[][];
+  const rawRows = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw: false,
+    dateNF: 'yyyy-mm-dd',
+    defval: ''
+  }) as unknown[][];
+  const rawValueRows = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw: true,
+    defval: null
+  }) as unknown[][];
   let headerRowIdx = -1;
 
   for (let r = 0; r < Math.min(25, rawRows.length); r++) {
@@ -664,7 +955,13 @@ export function extractReferenceEISheetFromWorksheet(
   );
   if (rev00DateMatch.index >= 0) used.add(rev00DateMatch.index);
 
-  const dateReturnMatch = findMatchingColumnIndex(headers, DATE_RETURN_ALIASES, ['sent', 'submit'], used);
+  const dateReturnMatch = findMatchingColumnIndex(
+    headers,
+    DATE_RETURN_ALIASES,
+    ['expected', 'planned', 'target', 'due', 'forecast', 'sent', 'submit'],
+    used,
+    ['return', 'returned', 'retrun', 'response', 'reply', 'replied', 'approval', 'approved', 'الرد', 'الإرجاع', 'الاعتماد']
+  );
   if (dateReturnMatch.index >= 0) used.add(dateReturnMatch.index);
 
   const lastRevMatch = findMatchingColumnIndex(
@@ -730,16 +1027,31 @@ export function extractReferenceEISheetFromWorksheet(
   const records: EIReferenceRecord[] = [];
   for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
     const row = rawRows[r];
+    const valRow = rawValueRows[r] || [];
     if (!Array.isArray(row)) continue;
     const rawSubRef = subRefMatch.index >= 0 ? String(row[subRefMatch.index] ?? '').trim() : '';
     if (!rawSubRef || rawSubRef.toUpperCase() === 'TOTAL' || rawSubRef.toUpperCase() === 'SUB REF.') {
       continue;
     }
 
+    const rev00DateCell =
+      rev00DateMatch.index >= 0
+        ? (ws[XLSX.utils.encode_cell({ r, c: rev00DateMatch.index })] as XLSX.CellObject | undefined)
+        : undefined;
     const rev00DateSent =
-      rev00DateMatch.index >= 0 ? formatDate(row[rev00DateMatch.index]) : '';
+      rev00DateMatch.index >= 0
+        ? parseEIDateValue(valRow[rev00DateMatch.index], row[rev00DateMatch.index], rev00DateCell)
+        : '';
+
+    const dateReturnCell =
+      dateReturnMatch.index >= 0
+        ? (ws[XLSX.utils.encode_cell({ r, c: dateReturnMatch.index })] as XLSX.CellObject | undefined)
+        : undefined;
     const dateReturn =
-      dateReturnMatch.index >= 0 ? formatDate(row[dateReturnMatch.index]) : '';
+      dateReturnMatch.index >= 0
+        ? parseEIDateValue(valRow[dateReturnMatch.index], row[dateReturnMatch.index], dateReturnCell)
+        : '';
+
     const rawLastRev =
       lastRevMatch.index >= 0 ? String(row[lastRevMatch.index] ?? '').trim() : '';
     const lastRev = formatCanonicalEIRevision(rawLastRev, isRevision0(rawLastRev)) || rawLastRev;
@@ -782,9 +1094,31 @@ function inspectAndParseWorksheet(
   sheetName: string,
   sheetIndex: number
 ): ParsedWorksheetInternal {
-  const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as unknown[][];
+  const rawRows = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw: false,
+    dateNF: 'yyyy-mm-dd',
+    defval: ''
+  }) as unknown[][];
+  const rawValueRows = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw: true,
+    defval: null
+  }) as unknown[][];
   const upperName = sheetName.trim().toUpperCase();
   const discInfo = detectSheetDisciplineCode(sheetName);
+
+  // Build merge lookup map so merged header cells and vertically merged data cells resolve to their top-left origin
+  const merges = ws['!merges'] || [];
+  const resolveMergedCoord = (r: number, c: number): { r: number; c: number; isMerged: boolean } => {
+    for (let m = 0; m < merges.length; m++) {
+      const rng = merges[m];
+      if (r >= rng.s.r && r <= rng.e.r && c >= rng.s.c && c <= rng.e.c) {
+        return { r: rng.s.r, c: rng.s.c, isMerged: r !== rng.s.r || c !== rng.s.c };
+      }
+    }
+    return { r, c, isMerged: false };
+  };
 
   // Check if this sheet is a Reference EI Log sheet
   let headerRowIdx = -1;
@@ -844,11 +1178,12 @@ function inspectAndParseWorksheet(
     };
   }
 
-  // Locate header row in discipline sheet
+  // Locate best header row in discipline sheet (scoring candidate rows in top 30 rows)
+  let bestHeaderScore = 0;
   for (let i = 0; i < Math.min(30, rawRows.length); i++) {
     const r = rawRows[i];
     if (!Array.isArray(r)) continue;
-    const joined = r.map(c => normalizeHeaderCell(c)).join(' | ');
+    const joined = r.map(c => normalizeHeaderTokens(c)).join(' | ');
     const hasRefSignal =
       joined.includes('sub ref') ||
       joined.includes('submittal ref') ||
@@ -856,17 +1191,31 @@ function inspectAndParseWorksheet(
       joined.includes('dwg no') ||
       joined.includes('drawing no') ||
       joined.includes('document no') ||
-      joined.includes('doc no');
+      joined.includes('doc no') ||
+      joined.includes('رقم التقديم') ||
+      joined.includes('رقم اللوحة');
     const hasRevOrDateSignal =
       joined.includes('rev') ||
       joined.includes('date sent') ||
       joined.includes('submission date') ||
       joined.includes('date return') ||
-      joined.includes('response date');
+      joined.includes('return date') ||
+      joined.includes('response date') ||
+      joined.includes('المراجعة') ||
+      joined.includes('تاريخ');
 
     if (hasRefSignal && hasRevOrDateSignal) {
-      headerRowIdx = i;
-      break;
+      let score = 2;
+      if (joined.includes('sub ref') || joined.includes('submittal ref') || joined.includes('submission ref')) score += 2;
+      if (joined.includes('dwg') || joined.includes('drawing')) score += 2;
+      if (joined.includes('rev')) score += 2;
+      if (joined.includes('sent') || joined.includes('submission date')) score += 2;
+      if (joined.includes('return') || joined.includes('response') || joined.includes('reply') || joined.includes('received')) score += 2;
+      if (joined.includes('code') || joined.includes('status')) score += 1;
+      if (score > bestHeaderScore) {
+        bestHeaderScore = score;
+        headerRowIdx = i;
+      }
     }
   }
 
@@ -893,7 +1242,69 @@ function inspectAndParseWorksheet(
     };
   }
 
-  const headers = (rawRows[headerRowIdx] || []).map(c => String(c ?? '').trim());
+  // Build effective headers supporting multi-row merged headers (headerRowIdx - 1, headerRowIdx, headerRowIdx + 1)
+  const baseHeaderRow = rawRows[headerRowIdx] || [];
+  const nextRow = rawRows[headerRowIdx + 1] || [];
+  const prevRow = headerRowIdx > 0 ? rawRows[headerRowIdx - 1] || [] : [];
+  const maxHeaderCols = Math.max(baseHeaderRow.length, nextRow.length, prevRow.length);
+
+  const getHeaderCellResolved = (r: number, c: number): string => {
+    const resolved = resolveMergedCoord(r, c);
+    return String(rawRows[resolved.r]?.[resolved.c] ?? '').trim();
+  };
+
+  // Determine if headerRowIdx + 1 is a sub-header row (rather than the first data row)
+  let hasSubHeaderRow = false;
+  if (Array.isArray(nextRow) && nextRow.length > 0) {
+    const nextJoined = nextRow.map(c => normalizeHeaderTokens(c)).join(' | ');
+    const hasSubHeaderKeywords =
+      /\b(date return|return date|date sent|sent date|response date|reply date|received date|code|status|rev|dwg no|sub ref)\b/.test(
+        nextJoined
+      ) || nextJoined.includes('تاريخ الرد') || nextJoined.includes('تاريخ الإرسال');
+    // Check if nextRow has any valid date cell (a real data row will have a date in Date Sent, whereas a sub-header row has text labels)
+    const nextValRow = rawValueRows[headerRowIdx + 1] || [];
+    const hasAnyParsedDateInNextRow = nextRow.some((cell, cIdx) => {
+      const cellObj = ws[XLSX.utils.encode_cell({ r: headerRowIdx + 1, c: cIdx })] as XLSX.CellObject | undefined;
+      return Boolean(parseEIDateValue(nextValRow[cIdx], cell, cellObj));
+    });
+    if (hasSubHeaderKeywords && !hasAnyParsedDateInNextRow) {
+      hasSubHeaderRow = true;
+    }
+  }
+
+  const dataStartRowIdx = hasSubHeaderRow ? headerRowIdx + 2 : headerRowIdx + 1;
+  const headers: string[] = [];
+  for (let c = 0; c < maxHeaderCols; c++) {
+    const primary = String(baseHeaderRow[c] ?? '').trim() || getHeaderCellResolved(headerRowIdx, c);
+    const sub = hasSubHeaderRow ? String(nextRow[c] ?? '').trim() : '';
+    const parent = headerRowIdx > 0 ? getHeaderCellResolved(headerRowIdx - 1, c) : '';
+
+    if (sub && primary && normalizeHeaderTokens(sub) !== normalizeHeaderTokens(primary)) {
+      // Prefer sub-header if it is a specific column name under a group header, or combine them
+      const subNorm = normalizeHeaderTokens(sub);
+      if (
+        DATE_RETURN_ALIASES.some(a => subNorm === normalizeHeaderTokens(a)) ||
+        DATE_SENT_ALIASES.some(a => subNorm === normalizeHeaderTokens(a)) ||
+        CODE_ALIASES.some(a => subNorm === normalizeHeaderTokens(a))
+      ) {
+        headers.push(sub);
+      } else {
+        headers.push(`${primary} ${sub}`.trim());
+      }
+    } else if (sub && !primary) {
+      headers.push(sub);
+    } else if (
+      primary &&
+      parent &&
+      normalizeHeaderTokens(primary) === 'date' &&
+      normalizeHeaderTokens(parent) !== 'date'
+    ) {
+      headers.push(`${parent} ${primary}`.trim());
+    } else {
+      headers.push(primary);
+    }
+  }
+
   const usedIndices = new Set<number>();
 
   const subRefCol = findMatchingColumnIndex(headers, SUB_REF_ALIASES, ['dwg', 'drawing'], usedIndices);
@@ -913,13 +1324,28 @@ function inspectAndParseWorksheet(
   );
   if (dateSentCol.index >= 0) usedIndices.add(dateSentCol.index);
 
-  const dateReturnCol = findMatchingColumnIndex(
+  let dateReturnCol = findMatchingColumnIndex(
     headers,
     DATE_RETURN_ALIASES,
-    ['sent', 'submit', 'issue'],
-    usedIndices
+    ['expected', 'planned', 'target', 'due', 'forecast', 'scheduled', 'sla', 'sent', 'submit', 'issue'],
+    usedIndices,
+    [
+      'return',
+      'returned',
+      'retrun',
+      'response',
+      'reply',
+      'replied',
+      'approval',
+      'approved',
+      'review',
+      'consultant',
+      'الرد',
+      'الإرجاع',
+      'الاعتماد',
+      'الاستلام'
+    ]
   );
-  if (dateReturnCol.index >= 0) usedIndices.add(dateReturnCol.index);
 
   const codeCol = findMatchingColumnIndex(
     headers,
@@ -928,6 +1354,98 @@ function inspectAndParseWorksheet(
     usedIndices
   );
   if (codeCol.index >= 0) usedIndices.add(codeCol.index);
+
+  // Helper to read a cell's parsed date (accounting for vertical merges within the sheet)
+  const extractCellDateAt = (rIdx: number, cIdx: number): string => {
+    if (cIdx < 0) return '';
+    const directCell = ws[XLSX.utils.encode_cell({ r: rIdx, c: cIdx })] as XLSX.CellObject | undefined;
+    const directDate = parseEIDateValue(rawValueRows[rIdx]?.[cIdx], rawRows[rIdx]?.[cIdx], directCell);
+    if (directDate) return directDate;
+
+    const merged = resolveMergedCoord(rIdx, cIdx);
+    if (merged.isMerged) {
+      const mergedCell = ws[XLSX.utils.encode_cell({ r: merged.r, c: merged.c })] as XLSX.CellObject | undefined;
+      return parseEIDateValue(rawValueRows[merged.r]?.[merged.c], rawRows[merged.r]?.[merged.c], mergedCell);
+    }
+    return '';
+  };
+
+  // Verify that dateReturnCol actually contains valid dates if the sheet has returned submittals;
+  // if dateReturnCol is -1 or has 0 valid dates across data rows, check other candidate columns!
+  const countValidDatesInCol = (cIdx: number): number => {
+    if (cIdx < 0) return 0;
+    let count = 0;
+    for (let rIdx = dataStartRowIdx; rIdx < rawRows.length; rIdx++) {
+      if (extractCellDateAt(rIdx, cIdx)) count++;
+    }
+    return count;
+  };
+
+  const initialReturnDatesCount = countValidDatesInCol(dateReturnCol.index);
+  if (initialReturnDatesCount === 0) {
+    // 1. Check if another column matching DATE_RETURN_ALIASES has > 0 valid dates
+    const tempExclusions = new Set(usedIndices);
+    if (dateReturnCol.index >= 0) tempExclusions.add(dateReturnCol.index);
+    const altMatch = findMatchingColumnIndex(
+      headers,
+      DATE_RETURN_ALIASES,
+      ['expected', 'planned', 'target', 'due', 'forecast', 'scheduled', 'sla'],
+      tempExclusions,
+      ['return', 'returned', 'retrun', 'response', 'reply', 'replied', 'approval', 'approved', 'review', 'consultant']
+    );
+    if (altMatch.index >= 0 && countValidDatesInCol(altMatch.index) > 0) {
+      dateReturnCol = altMatch;
+    } else {
+      // 2. Content-based discovery: scan unused columns (especially near dateSentCol and codeCol) for valid return dates
+      let bestFallbackCol = -1;
+      let bestFallbackScore = 0;
+      const maxColsToScan = Math.max(
+        headers.length,
+        ...rawRows.slice(dataStartRowIdx, Math.min(dataStartRowIdx + 50, rawRows.length)).map(r => (Array.isArray(r) ? r.length : 0))
+      );
+
+      for (let c = 0; c < maxColsToScan; c++) {
+        if (usedIndices.has(c) || c === dateReturnCol.index) continue;
+        const hNorm = normalizeHeaderTokens(headers[c] || '');
+        if (/\b(due|planned|expected|target|forecast|sla|rev00|total sheets|dwg|sub ref)\b/.test(hNorm)) {
+          continue;
+        }
+        let validDates = 0;
+        let validAfterSent = 0;
+        for (let rIdx = dataStartRowIdx; rIdx < rawRows.length; rIdx++) {
+          const dRet = extractCellDateAt(rIdx, c);
+          if (dRet) {
+            validDates++;
+            const dSent = extractCellDateAt(rIdx, dateSentCol.index);
+            if (!dSent || dRet >= dSent) {
+              validAfterSent++;
+            }
+          }
+        }
+        if (validDates > 0 && validAfterSent >= validDates * 0.5) {
+          // Prefer columns adjacent to dateSentCol or codeCol
+          const distToSent = dateSentCol.index >= 0 ? Math.abs(c - dateSentCol.index) : 5;
+          const distToCode = codeCol.index >= 0 ? Math.abs(c - codeCol.index) : 5;
+          const proximityBonus = (distToSent <= 2 ? 20 : 0) + (distToCode <= 2 ? 20 : 0);
+          const score = validDates * 10 + proximityBonus;
+          if (score > bestFallbackScore) {
+            bestFallbackScore = score;
+            bestFallbackCol = c;
+          }
+        }
+      }
+
+      if (bestFallbackCol >= 0) {
+        const colLetter = XLSX.utils.encode_col(bestFallbackCol);
+        dateReturnCol = {
+          index: bestFallbackCol,
+          matchedHeader: headers[bestFallbackCol]?.trim() || `Date Return (Col ${colLetter})`
+        };
+      }
+    }
+  }
+
+  if (dateReturnCol.index >= 0) usedIndices.add(dateReturnCol.index);
 
   const statusCol = findMatchingColumnIndex(headers, ['status', 'workflow status'], ['code'], usedIndices);
   const titleCol = findMatchingColumnIndex(headers, TITLE_ALIASES, [], usedIndices);
@@ -988,16 +1506,27 @@ function inspectAndParseWorksheet(
   // Critical columns needed to extract at least SUB Ref. and Rev.
   const canExtract = subRefCol.index >= 0 && revCol.index >= 0 && dateSentCol.index >= 0;
 
-  for (let rIdx = headerRowIdx + 1; rIdx < rawRows.length; rIdx++) {
+  const getCellTextWithMerge = (rIdx: number, cIdx: number): string => {
+    if (cIdx < 0) return '';
+    const direct = String(rawRows[rIdx]?.[cIdx] ?? '').trim();
+    if (direct) return direct;
+    const merged = resolveMergedCoord(rIdx, cIdx);
+    if (merged.isMerged) {
+      return String(rawRows[merged.r]?.[merged.c] ?? '').trim();
+    }
+    return '';
+  };
+
+  for (let rIdx = dataStartRowIdx; rIdx < rawRows.length; rIdx++) {
     const row = rawRows[rIdx];
     if (!Array.isArray(row)) continue;
 
-    const rawSubRef = subRefCol.index >= 0 ? String(row[subRefCol.index] ?? '').trim() : '';
+    const rawSubRef = getCellTextWithMerge(rIdx, subRefCol.index);
     const rawDwgNo = dwgNoCol.index >= 0 ? String(row[dwgNoCol.index] ?? '').trim() : '';
-    const rawRev = revCol.index >= 0 ? String(row[revCol.index] ?? '').trim() : '';
-    const rawDateSent = dateSentCol.index >= 0 ? String(row[dateSentCol.index] ?? '').trim() : '';
-    const rawDateReturn = dateReturnCol.index >= 0 ? String(row[dateReturnCol.index] ?? '').trim() : '';
-    const rawCode = codeCol.index >= 0 ? String(row[codeCol.index] ?? '').trim() : '';
+    const rawRev = getCellTextWithMerge(rIdx, revCol.index);
+    const rawDateSent = getCellTextWithMerge(rIdx, dateSentCol.index);
+    const rawDateReturn = getCellTextWithMerge(rIdx, dateReturnCol.index);
+    const rawCode = getCellTextWithMerge(rIdx, codeCol.index);
     const rawStatus = statusCol.index >= 0 ? String(row[statusCol.index] ?? '').trim() : '';
     const drawingTitle = titleCol.index >= 0 ? String(row[titleCol.index] ?? '').trim() : '';
 
@@ -1051,8 +1580,8 @@ function inspectAndParseWorksheet(
       continue;
     }
 
-    const dateSent = formatDate(row[dateSentCol.index]);
-    const dateReturn = dateReturnCol.index >= 0 ? formatDate(row[dateReturnCol.index]) : '';
+    const dateSent = extractCellDateAt(rIdx, dateSentCol.index);
+    const dateReturn = extractCellDateAt(rIdx, dateReturnCol.index);
     const validRev = isValidRevision(rawRev);
     const rev0Flag = isRevision0(rawRev);
     const revWeight = getRevisionWeight(rawRev);
@@ -1433,18 +1962,22 @@ export function compileEILogFromEvidenceRows(
         new Set(latestRevRows.map(r => r.dateReturn).filter(Boolean))
       ).sort();
       const blankReturnRows = latestRevRows.filter(r => !r.dateReturn);
+      // A blank-return row is only genuinely unreturned (Under Review) if it lacks a completed disposition code (A/B/C/D)
+      const genuinelyUnreturnedRows = blankReturnRows.filter(
+        r => !r.normalizedCode || r.normalizedCode === 'UR'
+      );
       const distinctCodes = Array.from(
         new Set(latestRevRows.map(r => r.normalizedCode).filter(Boolean))
       );
 
       const hasPartialReturn =
-        distinctReturnDates.length > 0 && blankReturnRows.length > 0;
+        distinctReturnDates.length > 0 && genuinelyUnreturnedRows.length > 0;
       const hasMultipleReturnDates = distinctReturnDates.length > 1;
       const hasMultipleCodes = distinctCodes.length > 1;
 
       if (hasPartialReturn) {
         conflictTypes.push('PARTIAL_RETURN_IN_LAST_REV');
-        const detailEn = `In Last Rev. (${lastRev}) of '${displaySubRef}', ${latestRevRows.length - blankReturnRows.length} drawing(s) have Date Return [${distinctReturnDates.join(', ')}] while ${blankReturnRows.length} drawing(s) have no Date Return`;
+        const detailEn = `In Last Rev. (${lastRev}) of '${displaySubRef}', ${latestRevRows.length - genuinelyUnreturnedRows.length} drawing(s) have Date Return [${distinctReturnDates.join(', ')}] while ${genuinelyUnreturnedRows.length} drawing(s) are still Under Review without Date Return`;
         conflictDetails.push(detailEn);
         validationIssues.push({
           id: nextIssueId(),
@@ -1513,27 +2046,37 @@ export function compileEILogFromEvidenceRows(
         resolutionNotes.push('Held for manual conflict review (HOLD_ON_CONFLICT mode)');
       } else if (resolutionMode === 'EXCEL_FIRST_MATCH') {
         const firstLatest = latestRevRows[0];
-        dateReturn = firstLatest.dateReturn || '';
+        const fallbackDate =
+          firstLatest.normalizedCode && firstLatest.normalizedCode !== 'UR'
+            ? distinctReturnDates[0] || ''
+            : '';
+        dateReturn = firstLatest.dateReturn || fallbackDate;
         code1 = firstLatest.normalizedCode || (dateReturn ? '' : 'UR');
         resolutionNotes.push(
           `Resolved via Excel First-Row Lookup (Sheet ${firstLatest.sheetName}!R${firstLatest.excelRowNumber})`
         );
       } else if (resolutionMode === 'EXCEL_LAST_MATCH') {
         const lastLatest = latestRevRows[latestRevRows.length - 1];
-        dateReturn = lastLatest.dateReturn || '';
+        const fallbackDate =
+          lastLatest.normalizedCode && lastLatest.normalizedCode !== 'UR'
+            ? distinctReturnDates[distinctReturnDates.length - 1] || ''
+            : '';
+        dateReturn = lastLatest.dateReturn || fallbackDate;
         code1 = lastLatest.normalizedCode || (dateReturn ? '' : 'UR');
         resolutionNotes.push(
           `Resolved via Excel Last-Row Lookup (Sheet ${lastLatest.sheetName}!R${lastLatest.excelRowNumber})`
         );
       } else {
         // GOVERNING_EI_RULE (Default Certified Engineering Rule):
-        // 1. If any sheet in Last Rev. is still Under Review (UR / no return date), package is Under Review ('UR', Date Return = '').
+        // 1. If any sheet in Last Rev. is still Under Review (UR / no return date and no completed code), package is Under Review ('UR', Date Return = '').
         // 2. Otherwise, governing status code is the most restrictive code among Last Rev. sheets (D > C > B > A),
         //    and Date Return is the latest completion return date (MAX Date Return) of the Last Rev. package.
         const sortedBySeverity = [...latestRevRows].sort((a, b) => {
+          const aHasReturn = Boolean(a.dateReturn) || (Boolean(a.normalizedCode) && a.normalizedCode !== 'UR' && distinctReturnDates.length > 0);
+          const bHasReturn = Boolean(b.dateReturn) || (Boolean(b.normalizedCode) && b.normalizedCode !== 'UR' && distinctReturnDates.length > 0);
           const sevDiff =
-            getEICodeGoverningSeverity(b.normalizedCode, Boolean(b.dateReturn)) -
-            getEICodeGoverningSeverity(a.normalizedCode, Boolean(a.dateReturn));
+            getEICodeGoverningSeverity(b.normalizedCode, bHasReturn) -
+            getEICodeGoverningSeverity(a.normalizedCode, aHasReturn);
           if (sevDiff !== 0) return sevDiff;
           return (b.dateReturn || '').localeCompare(a.dateReturn || '');
         });
@@ -1762,6 +2305,7 @@ export function generateEILogFromExcelBuffer(
   const wb = XLSX.read(buffer, {
     type: 'buffer',
     cellDates: true,
+    dateNF: 'yyyy-mm-dd',
     cellFormula: true,
     cellNF: true
   });
@@ -1787,16 +2331,42 @@ export function generateEILogFromSubmittalRows(
     );
   });
 
+  // Build return-date recovery map from cached raw workbook buffer if available
+  // (protects against main parser.ts dropping "Date Return" when header is not in its fixed alias list)
+  const cachedReturnBySubAndRev = new Map<string, string>();
+  const cachedReturnBySubRef = new Map<string, string>();
+  const cachedWb = getPlatformWorkbookBuffer();
+  if (cachedWb) {
+    try {
+      const wbRes = generateEILogFromExcelBuffer(cachedWb.buffer, cachedWb.fileName, { resolutionMode });
+      for (const rec of wbRes.records) {
+        const normSub = rec.subRef.toUpperCase().replace(/\s+/g, ' ').trim();
+        if (rec.dateReturn && rec.dateReturn !== 'CONFLICT') {
+          cachedReturnBySubRef.set(normSub, rec.dateReturn);
+        }
+        for (const ev of rec.sourceRowTrace) {
+          if (ev.dateReturn) {
+            cachedReturnBySubAndRev.set(`${normSub}|${ev.normalizedRev}`, ev.dateReturn);
+          }
+        }
+      }
+    } catch {
+      // ignore cached workbook recovery error
+    }
+  }
+
   const sheetMap = new Map<string, EISourceRowEvidence[]>();
   sdwRows.forEach((r, idx) => {
     const sheetName = r.sourceSheetName || r.disciplineSourceSheet || r.discipline || 'SDW';
     const discInfo = detectSheetDisciplineCode(r.discipline || sheetName);
-    const rawSubRef = (r.submissionRef || r.docNo || '').trim();
-    const rawDwgNo = (r.drawingNo || r.sheetNo || r.docNo || '').trim();
+    const rawSubRef = String(r.submissionRef || (r as any).submittalRef || r.docNo || '').trim();
+    const rawDwgNo = String(r.drawingNo || r.sheetNo || r.docNo || '').trim();
     const rawRev = String(r.rev ?? '').trim();
-    const dateSent = formatDate(r.submissionDate);
-    const dateReturn = formatDate(r.responseDate);
-    const rawCode = String(r.code ?? '').trim();
+    const dateSent = parseEIDateValue(r.submissionDate);
+    let dateReturn = parseEIDateValue(
+      r.responseDate || (r as any).dateReturn || (r as any).returnDate || (r as any).consultantReturnDate
+    );
+    const rawCode = String(r.code ?? (r as any).rawCode ?? '').trim();
     const rawStatus = String(r.recordStatus || r.status || '').trim();
 
     if (!rawSubRef) return;
@@ -1805,6 +2375,15 @@ export function generateEILogFromSubmittalRows(
     const rev0Flag = isRevision0(rawRev, r.isRev0);
     const revWeight = getRevisionWeight(rawRev);
     const normalizedRev = formatCanonicalEIRevision(rawRev, rev0Flag);
+    const normalizedSubRef = rawSubRef.toUpperCase().replace(/\s+/g, ' ').trim();
+
+    if (!dateReturn) {
+      dateReturn =
+        cachedReturnBySubAndRev.get(`${normalizedSubRef}|${normalizedRev}`) ||
+        cachedReturnBySubRef.get(normalizedSubRef) ||
+        '';
+    }
+
     const normalizedCode = normalizeEICode(rawCode, rawStatus, dateReturn);
 
     let list = sheetMap.get(sheetName);
@@ -1816,9 +2395,9 @@ export function generateEILogFromSubmittalRows(
     list.push({
       sheetName,
       discipline: discInfo.code,
-      excelRowNumber: idx + 2,
+      excelRowNumber: r.sourceRowIndex || idx + 2,
       rawSubRef,
-      normalizedSubRef: rawSubRef.toUpperCase().replace(/\s+/g, ' ').trim(),
+      normalizedSubRef,
       rawDwgNo,
       normalizedDwgNo: rawDwgNo.toUpperCase().replace(/\s+/g, ' ').trim(),
       rawRev,
@@ -1891,6 +2470,7 @@ export function parseReferenceEILogBuffer(
   const wb = XLSX.read(buffer, {
     type: 'buffer',
     cellDates: true,
+    dateNF: 'yyyy-mm-dd',
     cellFormula: true,
     cellNF: true
   });

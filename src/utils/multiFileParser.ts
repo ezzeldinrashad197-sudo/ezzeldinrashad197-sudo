@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { parseExcelFile } from './parser';
 import { SubmittalRow } from '../types';
+import { registerPlatformWorkbookBuffer } from '../analytics/ei/eiLogEngine';
 
 export const processMultiUpload = async (files: FileList | File[]): Promise<SubmittalRow[]> => {
     const fileArray = Array.from(files);
@@ -29,6 +30,12 @@ export const processMultiUpload = async (files: FileList | File[]): Promise<Subm
                             const extractedFile = new File([blob], zipEntry.name, {
                                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                             });
+                            try {
+                                const rawBuf = await extractedFile.arrayBuffer();
+                                registerPlatformWorkbookBuffer(rawBuf, extractedFile.name);
+                            } catch {
+                                // ignore buffer cache error
+                            }
                             const rows = await parseExcelFile(extractedFile);
                             for (let i = 0; i < rows.length; i++) {
                                 const r = rows[i];
@@ -50,6 +57,12 @@ export const processMultiUpload = async (files: FileList | File[]): Promise<Subm
                 }
                 return zipFlat;
             } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+                try {
+                    const rawBuf = await file.arrayBuffer();
+                    registerPlatformWorkbookBuffer(rawBuf, file.name);
+                } catch {
+                    // ignore buffer cache error
+                }
                 const rows = await parseExcelFile(file);
                 for (let i = 0; i < rows.length; i++) {
                     const r = rows[i];

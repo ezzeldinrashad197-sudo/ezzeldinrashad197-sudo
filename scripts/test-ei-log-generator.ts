@@ -4,6 +4,9 @@ import {
   buildBenchmarkCumulativeSDWWorkbook,
   generateEILogFromExcelBuffer,
   generateEILogFromWorkbook,
+  generateEILogFromSubmittalRows,
+  registerPlatformWorkbookBuffer,
+  parseEIDateValue,
   compareWithReferenceEILog,
   buildEILogExportWorkbook
 } from '../src/analytics/ei/eiLogEngine';
@@ -241,6 +244,105 @@ function runEILogGeneratorSuite() {
       exportedWb.SheetNames.includes('Reference Parity'),
     'TEST-05.2 Exported Workbook Completeness',
     `Exported ${exportedRows.length - 1} data rows across sheets: [${exportedWb.SheetNames.join(', ')}]`
+  );
+
+  // --------------------------------------------------------------------------
+  // TEST 6: Date Return Extraction Resilience (INN-ACE-1.03B-SDW-STR Scenarios)
+  // --------------------------------------------------------------------------
+  console.log('\n--- 6. Date Return Extraction Resilience (Two-Row Headers, Merged Cells, Formats & Platform Buffer) ---');
+
+  // 6.1 Regional Date Formats (DD/MM/YY, DD-MMM-YY, DD.MM.YYYY, Arabic digits)
+  assert(
+    parseEIDateValue('25/11/25') === '2025-11-25' &&
+      parseEIDateValue('12-Nov-25') === '2025-11-12' &&
+      parseEIDateValue('31.12.2025') === '2025-12-31' &&
+      parseEIDateValue('٢٠٢٥/١١/٢٥') === '2025-11-25',
+    'TEST-06.1 Regional & Arabic Date Format Parsing',
+    `25/11/25 -> ${parseEIDateValue('25/11/25')}, 12-Nov-25 -> ${parseEIDateValue('12-Nov-25')}, Arabic -> ${parseEIDateValue('٢٠٢٥/١١/٢٥')}`
+  );
+
+  // 6.2 Two-Row Grouped Headers + Single-Row Return Date in Multi-Drawing Revision Package
+  // Simulates INN-ACE-1.03B-SDW-STR-0001 where parent header row has "Submittal" / "Consultant"
+  // and child header row has "Date" / "Date" / "Code", and Date Return is entered once on the first drawing of Rev 05.
+  const twoRowHeaderWb = XLSX.utils.book_new();
+  const strTwoRowAoa = [
+    ['Project: INN-ACE-1.03B Cumulative Shop Drawing Register', '', '', '', '', ''],
+    ['Submittal Details', '', '', 'Submittal', 'Consultant Response', ''],
+    ['SUB Ref.', 'DWG No.', 'Rev.', 'Date', 'Date', 'Code'],
+    // Rev 00 (6 distinct drawings)
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-001', '00', '12/11/25', '25/11/25', 'C'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-002', '00', '12/11/25', '', 'C'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-003', '00', '12/11/25', '', 'C'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-004', '00', '12/11/25', '', 'C'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-005', '00', '12/11/25', '', 'C'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-006', '00', '12/11/25', '', 'C'],
+    // Rev 05 (6 drawings, all have Code B, Date Return entered on first drawing row of Rev 05)
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-001', '05', '10/01/26', '22/01/26', 'B'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-002', '05', '10/01/26', '', 'B'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-003', '05', '10/01/26', '', 'B'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-004', '05', '10/01/26', '', 'B'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-005', '05', '10/01/26', '', 'B'],
+    ['INN-ACE-1.03B-SDW-STR-0001', 'STR-006', '05', '10/01/26', '', 'B']
+  ];
+  XLSX.utils.book_append_sheet(twoRowHeaderWb, XLSX.utils.aoa_to_sheet(strTwoRowAoa), 'STR');
+  const twoRowBuf = XLSX.write(twoRowHeaderWb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  const twoRowRes = generateEILogFromExcelBuffer(twoRowBuf, 'INN-ACE-1.03B-SDW.xlsx');
+  const strRec = twoRowRes.records.find(r => r.subRef === 'INN-ACE-1.03B-SDW-STR-0001');
+
+  assert(
+    Boolean(
+      strRec &&
+        strRec.rev00DateSent === '2025-11-12' &&
+        strRec.dateReturn === '2026-01-22' &&
+        strRec.lastRev === '05' &&
+        strRec.rev00TotalSheets === 6 &&
+        strRec.code1 === 'B' &&
+        !strRec.hasConflict
+    ),
+    'TEST-06.2 Two-Row Grouped Header & Single-Row Return Date Propagation in Rev 05',
+    `INN-ACE-1.03B-SDW-STR-0001 -> Rev00.DateSent=${strRec?.rev00DateSent}, DateReturn=${strRec?.dateReturn}, LastRev=${strRec?.lastRev}, Sheets=${strRec?.rev00TotalSheets}, Code.1=${strRec?.code1}`
+  );
+
+  // 6.3 Platform SubmittalRow[] Cross-Reference Recovery when parser.ts dropped responseDate
+  registerPlatformWorkbookBuffer(twoRowBuf, 'INN-ACE-1.03B-SDW.xlsx');
+  const platformRowsWithEmptyResponseDate: any[] = [
+    {
+      id: '1',
+      submittalRef: 'INN-ACE-1.03B-SDW-STR-0001',
+      drawingNo: 'STR-001',
+      rev: '00',
+      submissionDate: '2025-11-12',
+      responseDate: '',
+      status: 'C',
+      rawCode: 'C',
+      discipline: 'STR',
+      sourceSheetName: 'STR',
+      sourceRowIndex: 4
+    },
+    {
+      id: '2',
+      submittalRef: 'INN-ACE-1.03B-SDW-STR-0001',
+      drawingNo: 'STR-001',
+      rev: '05',
+      submissionDate: '2026-01-10',
+      responseDate: '', // dropped by main parser
+      status: 'B',
+      rawCode: 'B',
+      discipline: 'STR',
+      sourceSheetName: 'STR',
+      sourceRowIndex: 10
+    }
+  ];
+  const recoveredRes = generateEILogFromSubmittalRows(
+    platformRowsWithEmptyResponseDate,
+    'Active Platform Register Dataset'
+  );
+  const recoveredRec = recoveredRes.records.find(r => r.subRef === 'INN-ACE-1.03B-SDW-STR-0001');
+
+  assert(
+    Boolean(recoveredRec && recoveredRec.dateReturn === '2026-01-22' && recoveredRec.code1 === 'B'),
+    'TEST-06.3 Platform SubmittalRow[] Automatic Return Date Recovery from Cached Workbook',
+    `Recovered DateReturn=${recoveredRec?.dateReturn} even when SubmittalRow.responseDate was empty`
   );
 
   console.log('\n================================================================================');
