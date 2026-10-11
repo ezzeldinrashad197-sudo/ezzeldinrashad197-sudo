@@ -37,6 +37,7 @@ const translations: TranslationDictionary = {
   'tab_portfolio': { en: 'Portfolio Center', ar: 'مركز المحفظة' },
   'tab_enterprise_dashboard': { en: 'Enterprise Dashboard', ar: 'لوحة التحكم الرئيسية' },
   'tab_master_register': { en: 'Master Document Register', ar: 'السجل الرئيسي للوثائق' },
+  'tab_ei_log': { en: 'EI Log Generator', ar: 'مولّد سجل EI الموحد' },
   'tab_validation': { en: 'Global Data Validation', ar: 'التحقق من صحة البيانات' },
   'tab_aging': { en: 'Advanced Aging Analysis', ar: 'التحليل المتقدم للأعمار الزمنية' },
   'tab_sla': { en: 'SLA Compliance Monitoring', ar: 'مراقبة الامتثال لاتفاقية مستوى الخدمة' },
