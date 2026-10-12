@@ -122,19 +122,21 @@ The five files modified during earlier development sessions were audited indepen
 
 ---
 
-## 4. Formal Closure Mandates & Final Recommendation
+## 4. Formal Closure Mandates & 4-Pillar Acceptance Standard
 
 In accordance with the technical review, the release is placed under the following strict governance protocols:
 
-1. **Preservation of Disk State:** The physical file at `src/test-datasets/16- Non-Conformance Report (NCR).xlsx` is preserved as-is without any further writes or fabrication, and is officially categorized as a **3-row historical test artifact**, NOT the authentic 484-row workbook.
-2. **Dedicated Test Fixture Enforcement:** All current and future forensic identity tests run exclusively against `src/test-datasets/fixtures/ncr-source-identity-synthetic-fixture.xlsx`.
-3. **Formal Archive Restoration Gate:** When the genuine 484-row workbook is retrieved from the PMC/client archive:
-   - Its file origin, size, and physical SHA-256 checksum will be verified and recorded.
-   - The NCR analysis pipeline will be executed directly against the real workbook buffer.
-4. **Strict Architectural Bifurcation:**
-   - **Calculation Engine & State Machine:** 🟢 **VERIFIED** (103 Open / 1 Under Review / 335 Closed / 104 Total Active partition verified via `ER-036` in-memory regression suite with zero synthetic identity generation).
-   - **Physical Population on Disk:** 🟡 **OPEN / PENDING ARCHIVE RESTORATION** (Cannot be certified until the authentic 484-row workbook is supplied).
-5. **Locked Baseline Gate:** The baseline gate in `scripts/test-authentication-regression.ts` **remains 100% LOCKED** against `BRR-2026-10-07`. The 4 hash failures are maintained intentionally.
+### A. Core Findings & Provenance Boundary
+- **ER-036 Scope Limitation:** Test results from `ER-036` prove the correctness of the mathematical calculation logic and state machine across the tested in-memory data structures (`103 Open / 1 Under Review / 335 Closed / 104 Total Active`), but **do not prove that these numbers represent the contents of the customer's authentic workbook**.
+- **Preservation of Disk State:** The physical file at `src/test-datasets/16- Non-Conformance Report (NCR).xlsx` is preserved as-is without any further writes or fabrication, and is officially categorized as a **3-row historical test artifact**, NOT the authentic 484-row workbook.
+- **Dedicated Test Fixture Enforcement:** All current and future forensic identity tests run exclusively against `src/test-datasets/fixtures/ncr-source-identity-synthetic-fixture.xlsx`.
 
-**Final Engineering Recommendation:** 🟡 **PENDING APPROVAL — BASELINE GATE LOCKED** (No release certification issued until the archive restoration gate is satisfied and formal authorization is granted).
+### B. Formal 4-Pillar Final Closure Standard (معيار الإغلاق النهائي المعتمد)
+1. **Test Protection (حماية الاختبار):** An independent assertion verifies that the physical source file path is strictly immutable during test execution, while the test continues to ingest exclusively from the isolated fixture.
+2. **Source Restoration (استعادة المصدر):** Retrieval of an authentic, verified copy of the 484-row workbook from the official PMC / client project archive, with formal logging of its provenance and SHA-256 fingerprint.
+3. **Reverification (إعادة التحقق):** Execution of the full NCR analytics engine directly against the restored genuine file buffer, comparing extracted metrics against established baselines.
+4. **Baseline Authorization (اعتماد الـ Baseline):** Retention of existing baseline hashes in `scripts/test-authentication-regression.ts` without modification until formal administrative approval, followed by hash updates strictly governed by an authorized BRR amendment.
+
+**Current Release Classification:** 🟡 **PENDING APPROVAL — BASELINE GATE LOCKED**  
+*No production certification is issued until all four pillars of the closure standard are formally satisfied.*
 
