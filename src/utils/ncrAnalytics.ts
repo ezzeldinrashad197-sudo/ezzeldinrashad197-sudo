@@ -11,6 +11,8 @@ export interface NCRStats {
   ncrRaised: number;
   ncrClosed: number;
   ncrOpen: number;
+  ncrUnderReview: number;
+  ncrTotalActive: number;
   ncrOverdue: number;
   avgClosureTime: number;
 
@@ -64,7 +66,11 @@ const parseRootCause = (subject: string): string => {
   return 'other';
 };
 
-export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCRStats => {
+export const calculateNCRStats = (
+  data: SubmittalRow[],
+  targetMonth?: Date,
+  cutoffDate?: string | Date
+): NCRStats => {
   const ncrData = normalizeNCRData(data);
   const ncrMap = groupNCRByReference(ncrData);
 
@@ -72,6 +78,8 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
     ncrRaised: 0,
     ncrClosed: 0,
     ncrOpen: 0,
+    ncrUnderReview: 0,
+    ncrTotalActive: 0,
     ncrOverdue: 0,
     avgClosureTime: 0,
     statusBreakdown: { open: 0, underInvestigation: 0, correctiveActionSubmitted: 0, underReview: 0, closed: 0 },
@@ -81,22 +89,36 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
     trackingTable: []
   };
 
+  let cutoffEndOfDayMs: number | undefined = undefined;
+  if (cutoffDate) {
+    const rawMs = typeof cutoffDate === 'string' ? new Date(cutoffDate).getTime() : cutoffDate.getTime();
+    if (!isNaN(rawMs)) {
+      const cd = new Date(rawMs);
+      cutoffEndOfDayMs = new Date(cd.getFullYear(), cd.getMonth(), cd.getDate(), 23, 59, 59, 999).getTime();
+    }
+  }
+
   const targetMonthStr = targetMonth ? getMonthStr(targetMonth) : '';
   let totalClosureDays = 0;
   let closureCount = 0;
 
   Array.from(ncrMap.values()).forEach(rawHistory => {
-    const history = normalizeNcrRevisionHistory(rawHistory);
-    if (!history.length) return;
+    const fullHistory = normalizeNcrRevisionHistory(rawHistory);
+    if (!fullHistory.length) return;
 
-    const firstSubmission = history[0];
-    const latestSubmission = history[history.length - 1];
-
-    const issueDateStr = firstSubmission.submissionDate || latestSubmission.submissionDate;
+    const firstSubmission = fullHistory[0];
+    const issueDateStr = firstSubmission.submissionDate || fullHistory[fullHistory.length - 1].submissionDate;
     const issueDateMs = issueDateStr ? new Date(issueDateStr).getTime() : null;
     const validIssueMs = issueDateMs !== null && !isNaN(issueDateMs) ? issueDateMs : null;
 
-    const state = evaluateNcrRevisionState(latestSubmission, validIssueMs, undefined);
+    if (cutoffEndOfDayMs !== undefined && validIssueMs !== null && validIssueMs > cutoffEndOfDayMs) {
+      return;
+    }
+
+    const history = fullHistory;
+    const latestSubmission = history[history.length - 1];
+
+    const state = evaluateNcrRevisionState(latestSubmission, validIssueMs, cutoffEndOfDayMs);
     const closureDateStr = state.receivedCorrectiveStr || latestSubmission.responseDate;
 
     const isClosed = state.isApprovedClosed;
@@ -109,7 +131,13 @@ export const calculateNCRStats = (data: SubmittalRow[], targetMonth?: Date): NCR
     const closureMonth = getMonthStr(closureDateStr);
 
     if (!isClosed) {
+      stats.ncrTotalActive++;
+    }
+    if (isUnderInvestigation || isCorrectiveAction) {
       stats.ncrOpen++;
+    }
+    if (isUnderReview) {
+      stats.ncrUnderReview++;
     }
 
     if (!targetMonthStr || issueMonth === targetMonthStr) {

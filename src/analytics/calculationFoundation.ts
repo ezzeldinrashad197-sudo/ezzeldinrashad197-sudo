@@ -2644,7 +2644,8 @@ export function resolveRowDiscipline(
 
 export function calculateNCRStats(
   data: SubmittalRow[],
-  fullDataset?: SubmittalRow[] | boolean
+  fullDataset?: SubmittalRow[] | boolean,
+  cutoffDate?: string | Date
 ): any {
   const rawList = Array.isArray(data) ? data : [];
   const scopesWithExplicit = new Set<string>();
@@ -2680,22 +2681,46 @@ export function calculateNCRStats(
       ? fullDataset
       : undefined;
 
+  const asOfDateStr =
+    typeof cutoffDate === 'string'
+      ? cutoffDate
+      : cutoffDate instanceof Date
+        ? cutoffDate.toISOString().split('T')[0]
+        : undefined;
+
   const kpi =
     calculateCanonicalKPIs(
       filteredNcrData,
-      dataset
+      dataset,
+      asOfDateStr
     );
 
-  const ncrSnapshot = calculateCumulativeSnapshot(filteredNcrData);
+  const ncrSnapshot = calculateCumulativeSnapshot(filteredNcrData, cutoffDate);
   const cum = ncrSnapshot.cumulativeKPIs;
   const rev0Sum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.rev0 || 0), 0);
   const revHighSum = ncrSnapshot.cumulative.reduce((acc, c) => acc + (c.revHigh || 0), 0);
   const overdueCount = ncrSnapshot.cumulativeEvidence.filter(e => e.isOverdue).length;
+  const totalActive = (cum.open || 0) + (cum.underReview || 0);
+  const canonicalApprovalRate = cum.totalUnique > 0 ? (cum.approvedClosed / cum.totalUnique) * 100 : 0;
 
   return {
     ...kpi,
 
     discipline: ncrSnapshot.cumulative.length === 1 ? ncrSnapshot.cumulative[0].discipline : '',
+
+    totalSubmittedSheets: cum.totalRows || kpi.totalSubmittedSheets,
+    totalRows: cum.totalRows || kpi.totalRows,
+    totalSheetsRev0: cum.rev0Rows ?? kpi.totalSheetsRev0,
+    totalSheetsFurtherRev: cum.furtherRevRows ?? kpi.totalSheetsFurtherRev,
+    totalDrawingsRev0: cum.rev0Rows ?? kpi.totalDrawingsRev0,
+    totalDrawingsFurtherRev: cum.furtherRevRows ?? kpi.totalDrawingsFurtherRev,
+
+    totalUniqueSubmittals: cum.totalUnique,
+    uniqueSubmittals: cum.totalUnique,
+    totalSubmittalsRev0: rev0Sum,
+    rev0Submittals: rev0Sum,
+    totalSubmittalsFurtherRev: revHighSum,
+    furtherRevSubmittals: revHighSum,
 
     totalUnique: cum.totalUnique,
     totalUniqueDrawings: cum.totalUnique,
@@ -2713,6 +2738,17 @@ export function calculateNCRStats(
 
     closed: cum.closed,
 
+    totalActive,
+    activeItems: totalActive,
+    activeCurrentItems: totalActive,
+
+    currentApproved: cum.approvedClosed,
+    currentRejectedOpen: cum.rejectedOpen,
+    currentRejectedClosed: 0,
+    currentPending: cum.underReview,
+    currentOpen: cum.open,
+    currentClosed: cum.closed,
+
     approved: cum.approved,
 
     rejected: cum.rejected,
@@ -2725,7 +2761,9 @@ export function calculateNCRStats(
 
     revHigh: revHighSum,
 
-    overdue: overdueCount
+    overdue: overdueCount,
+
+    approvalRate: canonicalApprovalRate
   };
 }
 

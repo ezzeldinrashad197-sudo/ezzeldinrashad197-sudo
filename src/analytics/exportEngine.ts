@@ -74,10 +74,11 @@ export const generatePptxReport = async (
     }
 
     const isArabic = !!options?.arabicEnabled;
+    const cutoffDate = options?.monthlyEnd || options?.endDate || options?.cutoffDate;
 
     // Compile Executive Dashboard Data for Monthly and Cumulative scopes
-    const monthlyDashboard = calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en');
-    const cumulativeDashboard = calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en');
+    const monthlyDashboard = calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en', cutoffDate);
+    const cumulativeDashboard = calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en', cutoffDate);
 
     const typeMap: Record<string, string> = {
       'SHD': 'SHOP DRAWINGS',
@@ -970,12 +971,30 @@ export const generatePptxReport = async (
         addDividerSlide(pres, isArabic ? "فريق مراقبة وجودة الوثائق" : "Document Control Team", isArabic ? "شكراً لكم" : "Thanks", projectInfo, logoUrl, options);
     }
 
-    // Slice slide ranges if custom range is requested
+    // Ensure at least one slide is present even if all sections were deselected
+    if ((pres as any).slides && (pres as any).slides.length === 0) {
+        addDividerSlide(pres, reportTitleMain, reportSubtitle, projectInfo, logoUrl, options);
+    }
+
+    // Slice slide ranges if custom range is requested (mutate internal _slides / splice since pres.slides is getter-only in PptxGenJS v4)
     if (options?.slideRangeStart !== undefined || options?.slideRangeEnd !== undefined) {
-        const startIdx = Math.max(1, options.slideRangeStart || 1) - 1;
-        const endIdx = Math.min((pres as any).slides.length, options.slideRangeEnd || (pres as any).slides.length);
-        if (startIdx < endIdx) {
-            (pres as any).slides = (pres as any).slides.slice(startIdx, endIdx);
+        const slidesArr: any[] = (pres as any)._slides || (pres as any).slides;
+        if (Array.isArray(slidesArr) && slidesArr.length > 0) {
+            const startIdx = Math.max(0, Math.min(slidesArr.length - 1, (options.slideRangeStart || 1) - 1));
+            const endIdx = Math.max(startIdx + 1, Math.min(slidesArr.length, options.slideRangeEnd || slidesArr.length));
+            const sliced = slidesArr.slice(startIdx, endIdx);
+            if (sliced.length > 0) {
+                sliced.forEach((s: any, idx: number) => {
+                    s._slideNum = idx + 1;
+                    s._slideId = idx + 256;
+                    s._rId = idx + 2;
+                });
+                if (Array.isArray((pres as any)._slides)) {
+                    (pres as any)._slides = sliced;
+                } else {
+                    slidesArr.splice(0, slidesArr.length, ...sliced);
+                }
+            }
         }
     }
 

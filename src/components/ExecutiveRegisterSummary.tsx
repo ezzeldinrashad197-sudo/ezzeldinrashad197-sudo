@@ -90,7 +90,7 @@ export const ExecutiveRegisterSummary: React.FC<ExecutiveRegisterSummaryProps> =
             </thead>
             <tbody className="divide-y divide-slate-100">
               {byDocType.map((row, idx) => {
-                const activeCount = row.stats.pending + row.stats.rejectedOpen;
+                const activeCount = (row.stats as any).totalActive ?? (row.stats.pending + row.stats.rejectedOpen);
                 const health = getRegisterHealth(row.stats);
                 return (
                   <tr 

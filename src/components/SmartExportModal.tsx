@@ -3,6 +3,10 @@ import { X, Check, Settings, AlertCircle, HelpCircle, Layout, FileText, ChevronR
 import { useLanguage } from '../utils/i18n';
 import { ProjectSettings, SubmittalRow } from '../types';
 import { generatePptxReport } from '../analytics/exportEngine';
+import { buildPresentationViewModel } from '../analytics/presentationViewModel';
+import { renderPresentationPdf } from '../analytics/presentationPdfRenderer';
+import { prepareChartsForCapture } from '../hooks/useExport';
+import { sanitizeClonedDomForHtml2Canvas, computeSafeHtml2CanvasScale } from '../utils/pdfDomSanitizer';
 
 interface SmartExportModalProps {
     isOpen: boolean;
@@ -122,14 +126,16 @@ export default function SmartExportModal({
         // Validation: safe image format allowlist (PNG, JPEG, SVG) to mitigate image parser vulnerabilities
         const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
         if (!allowedTypes.includes(file.type.toLowerCase())) {
-            alert(isRtl ? 'صيغة الصورة غير مدعومة. يرجى تحميل صورة بصيغة PNG أو JPG أو SVG فقط.' : 'Unsupported image format. Please upload PNG, JPG, or SVG only.');
+            setIsError(true);
+            setParseMessage(isRtl ? 'صيغة الصورة غير مدعومة. يرجى تحميل صورة بصيغة PNG أو JPG أو SVG فقط.' : 'Unsupported image format. Please upload PNG, JPG, or SVG only.');
             if (e.target) e.target.value = '';
             return;
         }
 
         // Limit logo size to 5MB
         if (file.size > 5 * 1024 * 1024) {
-            alert(isRtl ? 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 5 ميجابايت.' : 'File too large. Maximum allowed size is 5MB.');
+            setIsError(true);
+            setParseMessage(isRtl ? 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 5 ميجابايت.' : 'File too large. Maximum allowed size is 5MB.');
             if (e.target) e.target.value = '';
             return;
         }
@@ -137,13 +143,27 @@ export default function SmartExportModal({
         const reader = new FileReader();
         reader.onloadend = () => {
             const dataUrl = reader.result as string;
-            // Verify image decoding
+            // Verify image decoding and rasterize to PNG for 100% PptxGenJS & jsPDF compatibility
             const img = new Image();
             img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, img.naturalWidth || img.width || 300);
+                    canvas.height = Math.max(1, img.naturalHeight || img.height || 120);
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        setLogoUrl(canvas.toDataURL('image/png'));
+                        return;
+                    }
+                } catch {
+                    // Fallback to raw dataUrl if canvas conversion is unavailable
+                }
                 setLogoUrl(dataUrl);
             };
             img.onerror = () => {
-                alert(isRtl ? 'تعذر قراءة ملف الصورة. يرجى التأكد من سلامة الملف.' : 'Failed to decode image file. Please verify the file is not corrupted.');
+                setIsError(true);
+                setParseMessage(isRtl ? 'تعذر قراءة ملف الصورة. يرجى التأكد من سلامة الملف.' : 'Failed to decode image file. Please verify the file is not corrupted.');
                 if (e.target) e.target.value = '';
             };
             img.src = dataUrl;
@@ -163,8 +183,8 @@ export default function SmartExportModal({
 
         // Helper to parse hex colors
         const hexToRgb = (hex: string) => {
-            const cleanHex = hex.replace('#', '');
-            const num = parseInt(cleanHex, 16);
+            const cleanHex = (hex || '#0A192F').replace('#', '');
+            const num = parseInt(cleanHex, 16) || 0x0A192F;
             return {
                 r: (num >> 16) & 255,
                 g: (num >> 8) & 255,
@@ -173,7 +193,7 @@ export default function SmartExportModal({
         };
 
         try {
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, 200));
 
             const scopeMode = dataScope === 'active' 
                 ? (activeTab === 'monthly' ? 'monthly' : activeTab === 'cumulative' ? 'cumulative' : 'presentation')
@@ -182,12 +202,18 @@ export default function SmartExportModal({
             // Strict policy: No Arabic text in any report when application language is English
             const effectiveArabic = (language === 'ar') && !!arabicEnabled;
 
+            const resolvedFooter = customFooter || (activeProject ? `[${activeProject.projectName}]  |  Document Control Enterprise Report  |  Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}` : `Document Control Enterprise Report`);
+
             const exportOptions = {
                 selectedSections: sectionsList,
                 slideRangeStart: rangeType === 'custom' ? rangeStart : undefined,
                 slideRangeEnd: rangeType === 'custom' ? rangeEnd : undefined,
                 arabicEnabled: effectiveArabic,
                 monthlyStart: startDate,
+                monthlyEnd: endDate,
+                startDate,
+                endDate,
+                cutoffDate: endDate,
                 primaryColor,
                 accentColor,
                 pageSize,
@@ -199,7 +225,7 @@ export default function SmartExportModal({
                 showSignatures,
                 showFooterNotes,
                 customHeader,
-                customFooter: customFooter || (activeProject ? `[${activeProject.projectName}]  |  Document Control Enterprise Report  |  Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}` : `Document Control Enterprise Report`),
+                customFooter: resolvedFooter,
                 logoUrl: logoUrl || undefined,
             };
 
@@ -209,227 +235,280 @@ export default function SmartExportModal({
                 await generatePptxReport(data, activeProject, scopeMode as any, filters, exportOptions);
                 setParseMessage(isRtl ? "تم تصدير ملف PowerPoint بنجاح بهويتك المؤسسية المخصصة!" : "PowerPoint exported successfully with custom corporate identity elements!");
             } else {
-                // Smart PDF Outline Bookmarks & Export with custom styles
+                const filename = `StructuSight-Smart-${activeTab}-${new Date().toISOString().split('T')[0]}.pdf`;
+
+                // Native Vector PDF helper for Presentation & Executive scopes (and fallback)
+                const runNativeVectorPdfExport = async () => {
+                    const viewModel = buildPresentationViewModel(
+                        data,
+                        activeProject,
+                        scopeMode as 'monthly' | 'cumulative' | 'presentation',
+                        {
+                            arabicEnabled: effectiveArabic,
+                            primaryColor,
+                            accentColor,
+                            startDate,
+                            endDate,
+                            monthlyStart: startDate,
+                            monthlyEnd: endDate,
+                            cutoffDate: endDate
+                        }
+                    );
+
+                    const { pdf } = await renderPresentationPdf(viewModel, {
+                        pageSize: pageSize.toLowerCase() as any,
+                        orientation: orientation.toLowerCase() as any,
+                        selectedSections: sectionsList,
+                        slideRangeStart: rangeType === 'custom' ? rangeStart : undefined,
+                        slideRangeEnd: rangeType === 'custom' ? rangeEnd : undefined,
+                        customHeader,
+                        customFooter: resolvedFooter,
+                        logoUrl: logoUrl || activeProject?.logoUrl || undefined,
+                        showLogo,
+                        showProjectInfo
+                    });
+
+                    pdf.save(filename);
+                };
+
+                // Use Native Vector PDF Engine directly when on Presentation tab or when an explicit executive scope is chosen
                 const elementId = activeTab === 'presentation' ? 'presentation-container' : 'export-container';
                 const exportElement = document.getElementById(elementId);
 
-                if (!exportElement) {
-                    throw new Error(`Report container #${elementId} not found.`);
-                }
-
-                // Add PDF specific class for layout styles & hide non-printable UI elements
-                const hiddenElements: { el: HTMLElement; prevDisplay: string }[] = [];
-                if (activeTab === 'presentation') {
-                    const printHiddenEls = exportElement.querySelectorAll('.print\\:hidden, [class*="print:hidden"]');
-                    printHiddenEls.forEach((el) => {
-                        const htmlEl = el as HTMLElement;
-                        hiddenElements.push({ el: htmlEl, prevDisplay: htmlEl.style.display });
-                        htmlEl.style.display = 'none';
-                    });
+                if (activeTab === 'presentation' || dataScope !== 'active' || !exportElement) {
+                    await runNativeVectorPdfExport();
+                    setParseMessage(isRtl ? "تم تصدير ملف PDF بنجاح بهويتك المؤسسية المخصصة!" : "PDF document exported successfully with professional custom branding overlays!");
                 } else {
-                    document.body.classList.add('pdf-export');
-                    const headersFooters = exportElement.querySelectorAll('.pdf-only-header, .pdf-only-footer');
-                    headersFooters.forEach(el => {
-                        (el as HTMLElement).classList.remove('hidden');
-                        (el as HTMLElement).classList.add('flex');
-                    });
-                }
+                    // Add PDF specific class for layout styles & hide non-printable UI elements
+                    const hiddenElements: { el: HTMLElement; prevDisplay: string }[] = [];
+                    const originalWidth = exportElement.style.width;
+                    const originalPadding = exportElement.style.padding;
+                    const originalMaxWidth = exportElement.style.maxWidth;
 
-                const originalWidth = exportElement.style.width;
-                const originalPadding = exportElement.style.padding;
-                const originalMaxWidth = exportElement.style.maxWidth;
+                    try {
+                        document.body.classList.add('pdf-export');
+                        const headersFooters = exportElement.querySelectorAll('.pdf-only-header, .pdf-only-footer');
+                        headersFooters.forEach(el => {
+                            (el as HTMLElement).classList.remove('hidden');
+                            (el as HTMLElement).classList.add('flex');
+                        });
 
-                exportElement.style.width = '1500px';
-                exportElement.style.maxWidth = '1500px';
-                exportElement.style.padding = activeTab === 'presentation' ? '0' : '20px';
+                        exportElement.style.width = '1500px';
+                        exportElement.style.maxWidth = '1500px';
+                        exportElement.style.padding = '20px';
 
-                // Import html2pdf dynamically to avoid build-time issues
-                // @ts-ignore
-                const html2pdf = (await import('html2pdf.js')).default;
+                        // Import html2pdf dynamically to avoid build-time issues
+                        // @ts-ignore
+                        const html2pdfMod = await import('html2pdf.js');
+                        const html2pdf = html2pdfMod.default || html2pdfMod;
+                        const safeScale = computeSafeHtml2CanvasScale(exportElement, 2);
 
-                const filename = `StructuSight-Smart-${activeTab}-${new Date().toISOString().split('T')[0]}.pdf`;
+                        const opt: any = {
+                            margin:       [16, 0, 14, 0],
+                            filename:     filename,
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { 
+                                scale: safeScale, 
+                                useCORS: true, 
+                                allowTaint: true, 
+                                backgroundColor: '#ffffff',
+                                logging: false,
+                                scrollY: 0,
+                                scrollX: 0,
+                                windowWidth: 1550,
+                                onclone: (clonedDoc: Document) => {
+                                    const style = clonedDoc.createElement('style');
+                                    style.innerHTML = `
+                                        * {
+                                            transition-property: none !important;
+                                            animation: none !important;
+                                            transition: none !important;
+                                        }
+                                    `;
+                                    clonedDoc.head.appendChild(style);
+                                    const cloneEl = clonedDoc.getElementById(elementId);
+                                    if (cloneEl) {
+                                        prepareChartsForCapture(cloneEl, exportElement);
+                                        sanitizeClonedDomForHtml2Canvas(clonedDoc, cloneEl);
+                                    } else {
+                                        sanitizeClonedDomForHtml2Canvas(clonedDoc);
+                                    }
+                                }
+                            },
+                            jsPDF:        { unit: 'mm', format: pageSize.toLowerCase(), orientation: orientation.toLowerCase() },
+                            pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', '.page-break-inside-avoid', '#report-charts-grid', '.chart-card', '.kpi-card', 'h1', 'h2', 'h3'], after: ['.page-break-after-always', '.presentation-slide'] }
+                        };
 
-                const opt: any = {
-                    margin:       activeTab === 'presentation' ? [0, 0, 0, 0] : [16, 0, 14, 0], // Zero margin for standalone slides
-                    filename:     filename,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { 
-                        scale: 2, 
-                        useCORS: true, 
-                        allowTaint: true, 
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        windowWidth: 1550
-                    },
-                    jsPDF:        { unit: 'mm', format: pageSize.toLowerCase(), orientation: activeTab === 'presentation' ? 'landscape' : orientation.toLowerCase() },
-                    pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', '.page-break-inside-avoid', '#report-charts-grid', '.chart-card', '.kpi-card', 'h1', 'h2', 'h3'], after: ['.page-break-after-always', '.presentation-slide'] }
-                };
+                        try {
+                            await (html2pdf as any)().set(opt).from(exportElement).toPdf().get('pdf').then((pdf: any) => {
+                                // Apply Custom Page Range filter first if selected (e.g. from page X to page Y)
+                                let totalPages = pdf.internal.getNumberOfPages();
+                                if (rangeType === 'custom' && totalPages > 1) {
+                                    const start = Math.max(1, Math.min(rangeStart, totalPages));
+                                    const end = Math.max(start, Math.min(rangeEnd, totalPages));
+                                    
+                                    // Delete trailing pages after `end`
+                                    for (let p = totalPages; p > end; p--) {
+                                        try {
+                                            pdf.deletePage(p);
+                                        } catch (e) {
+                                            console.warn('Could not delete page', p, e);
+                                        }
+                                    }
+                                    // Delete leading pages before `start`
+                                    for (let p = start - 1; p >= 1; p--) {
+                                        try {
+                                            pdf.deletePage(p);
+                                        } catch (e) {
+                                            console.warn('Could not delete page', p, e);
+                                        }
+                                    }
+                                    totalPages = pdf.internal.getNumberOfPages();
+                                }
 
-                await (html2pdf().set(opt).from(exportElement).toPdf().get('pdf').then((pdf: any) => {
-                    // Apply Custom Page Range filter first if selected (e.g. from page X to page Y)
-                    let totalPages = pdf.internal.getNumberOfPages();
-                    if (rangeType === 'custom' && totalPages > 1) {
-                        const start = Math.max(1, Math.min(rangeStart, totalPages));
-                        const end = Math.max(start, Math.min(rangeEnd, totalPages));
-                        
-                        // Delete trailing pages after `end`
-                        for (let p = totalPages; p > end; p--) {
-                            try {
-                                pdf.deletePage(p);
-                            } catch (e) {
-                                console.warn('Could not delete page', p, e);
-                            }
+                                const pdfWidth = pdf.internal.pageSize.getWidth();
+                                const pdfHeight = pdf.internal.pageSize.getHeight();
+                                const dateStr = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                                // --- INJECT ENTERPRISE OUTLINE BOOKMARKS ---
+                                try {
+                                    if (pdf.outline) {
+                                        const rootOutline = pdf.outline;
+                                        if (selectedSections.cover) rootOutline.add(null, isRtl ? "صفحة الغلاف والفهرس" : "Cover Page & Index", { pageNumber: 1 });
+                                        if (selectedSections.info) rootOutline.add(null, isRtl ? "بيانات المشروع" : "Project Settings & Teams", { pageNumber: Math.min(2, totalPages) });
+                                        if (selectedSections.metrics) rootOutline.add(null, isRtl ? "الملخص التنفيذي ومؤشرات الأداء" : "Executive Performance Summary", { pageNumber: Math.min(3, totalPages) });
+                                        if (selectedSections.logs) rootOutline.add(null, isRtl ? "مخططات وتوزيع المستندات" : "Log Distributions & Tables", { pageNumber: Math.min(4, totalPages) });
+                                        if (selectedSections.rejected) rootOutline.add(null, isRtl ? "الوثائق المرفوضة المعلقة" : "Overdue Rejected Items", { pageNumber: Math.min(7, totalPages) });
+                                        if (selectedSections.pending) rootOutline.add(null, isRtl ? "المعلقات المتأخرة" : "Overdue Pending Actions", { pageNumber: Math.min(9, totalPages) });
+                                    }
+                                } catch (outlineErr) {
+                                    console.warn('Non-fatal outline error:', outlineErr);
+                                }
+
+                                // --- DRAW HEADER & FOOTER OVERLAY ---
+                                let periodStr = "Cumulative Period";
+                                if (activeTab === 'monthly') {
+                                    periodStr = "Monthly Period";
+                                }
+                                if (startDate && endDate) {
+                                    const start = new Date(startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                                    const end = new Date(endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                                    periodStr = `${start} - ${end}`;
+                                }
+
+                                const rawProjName = activeProject?.projectName;
+                                const projName = (rawProjName && rawProjName !== 'No Project Configured' && rawProjName !== 'NO PROJECT CONFIGURED' ? rawProjName : 'StructuSight Master Project').substring(0, 35);
+                                const projCode = activeProject?.projectCode || "STS-P1.17";
+                                const contractor = activeProject?.contractorName || "Innovo Construction";
+                                const consultant = activeProject?.consultantName || "ACE Consulting Engineers";
+                                const reportName = activeTab.toUpperCase() + " PERFORMANCE REPORT";
+
+                                const primRgb = hexToRgb(primaryColor);
+                                const accRgb = hexToRgb(accentColor);
+
+                                for (let i = 1; i <= totalPages; i++) {
+                                    pdf.setPage(i);
+                                    
+                                    // Header background (Custom Primary Color)
+                                    pdf.setFillColor(primRgb.r, primRgb.g, primRgb.b);
+                                    pdf.rect(0, 0, pdfWidth, 14, 'F');
+                                    
+                                    // Custom Accent bottom line
+                                    pdf.setFillColor(accRgb.r, accRgb.g, accRgb.b);
+                                    pdf.rect(0, 14, pdfWidth, 0.8, 'F');
+                                    
+                                    // Title on the left
+                                    pdf.setTextColor(255, 255, 255);
+                                    pdf.setFont("helvetica", "bold");
+                                    pdf.setFontSize(9);
+                                    const topHeaderVal = customHeader || "STRUCTUSIGHT ENTERPRISE INTELLIGENCE";
+                                    pdf.text(topHeaderVal.toUpperCase(), 10, 6);
+                                    
+                                    pdf.setFont("helvetica", "normal");
+                                    pdf.setFontSize(7.5);
+                                    pdf.setTextColor(accRgb.r, accRgb.g, accRgb.b);
+                                    pdf.text(reportName, 10, 10.5);
+                                    
+                                    // Metadata on the right
+                                    if (activeProject && showProjectInfo) {
+                                        pdf.setTextColor(255, 255, 255);
+                                        pdf.setFont("helvetica", "normal");
+                                        pdf.setFontSize(6.5);
+                                        
+                                        // Draw elegant metadata columns
+                                        let metaX = pdfWidth - 215; // default start pos
+                                        if (metaX < 120) metaX = 120; // safe bounds
+                                        
+                                        // Column 1: Project & Code
+                                        pdf.setTextColor(148, 163, 184); // silver/slate
+                                        pdf.text("PROJECT:", metaX, 5.5);
+                                        pdf.text("PARCEL/CODE:", metaX, 10);
+                                        pdf.setTextColor(255, 255, 255);
+                                        pdf.setFont("helvetica", "bold");
+                                        pdf.text(projName, metaX + 22, 5.5);
+                                        pdf.text(projCode, metaX + 22, 10);
+                                        
+                                        // Column 2: Contractor & Consultant
+                                        pdf.setFont("helvetica", "normal");
+                                        pdf.setTextColor(148, 163, 184);
+                                        pdf.text("CONTRACTOR:", metaX + 70, 5.5);
+                                        pdf.text("CONSULTANT:", metaX + 70, 10);
+                                        pdf.setTextColor(255, 255, 255);
+                                        pdf.setFont("helvetica", "bold");
+                                        pdf.text(contractor, metaX + 92, 5.5);
+                                        pdf.text(consultant, metaX + 92, 10);
+
+                                        // Column 3: Period & Generated Date
+                                        pdf.setFont("helvetica", "normal");
+                                        pdf.setTextColor(148, 163, 184);
+                                        pdf.text("PERIOD:", metaX + 140, 5.5);
+                                        pdf.text("GENERATED:", metaX + 140, 10);
+                                        pdf.setTextColor(255, 255, 255);
+                                        pdf.setFont("helvetica", "bold");
+                                        pdf.text(periodStr, metaX + 158, 5.5);
+                                        pdf.text(dateStr, metaX + 158, 10);
+                                    }
+
+                                    // Draw Footer Bar
+                                    pdf.setDrawColor(226, 232, 240); // light slate border
+                                    pdf.setLineWidth(0.2);
+                                    pdf.line(10, pdfHeight - 12, pdfWidth - 10, pdfHeight - 12);
+                                    
+                                    // Footer texts
+                                    pdf.setFont("helvetica", "normal");
+                                    pdf.setFontSize(7);
+                                    pdf.setTextColor(100, 116, 139); // slate-500
+                                    const footerBottomText = customFooter || `StructuSight Enterprise Engineering Intelligence Platform | CONCEPT & PRODUCT VISION BY EZZ RASHAD`;
+                                    pdf.text(footerBottomText, 10, pdfHeight - 7);
+                                    pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 30, pdfHeight - 7);
+                                }
+
+                                pdf.save(filename);
+                            });
+                        } catch (domPdfErr) {
+                            console.warn('DOM PDF capture encountered an issue, falling back to Native Vector PDF Renderer:', domPdfErr);
+                            await runNativeVectorPdfExport();
                         }
-                        // Delete leading pages before `start`
-                        for (let p = start - 1; p >= 1; p--) {
-                            try {
-                                pdf.deletePage(p);
-                            } catch (e) {
-                                console.warn('Could not delete page', p, e);
-                            }
-                        }
-                        totalPages = pdf.internal.getNumberOfPages();
+                    } finally {
+                        // Restore dimensions immediately after imaging
+                        exportElement.style.width = originalWidth;
+                        exportElement.style.maxWidth = originalMaxWidth;
+                        exportElement.style.padding = originalPadding;
+
+                        hiddenElements.forEach(({ el, prevDisplay }) => {
+                            el.style.display = prevDisplay;
+                        });
+
+                        document.body.classList.remove('pdf-export');
+                        const headersFooters = exportElement.querySelectorAll('.pdf-only-header, .pdf-only-footer');
+                        headersFooters.forEach(el => {
+                            (el as HTMLElement).classList.add('hidden');
+                            (el as HTMLElement).classList.remove('flex');
+                        });
                     }
 
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
-                    const dateStr = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-
-                    // Presentation slides already have embedded high-res slide headers and footers; skip document report overlays for presentation
-                    if (activeTab !== 'presentation') {
-                        // --- INJECT ENTERPRISE OUTLINE BOOKMARKS ---
-                        if (pdf.outline) {
-                            const rootOutline = pdf.outline;
-                            if (selectedSections.cover) rootOutline.add(null, isRtl ? "صفحة الغلاف والفهرس" : "Cover Page & Index", { pageNumber: 1 });
-                            if (selectedSections.info) rootOutline.add(null, isRtl ? "بيانات المشروع" : "Project Settings & Teams", { pageNumber: Math.min(2, totalPages) });
-                            if (selectedSections.metrics) rootOutline.add(null, isRtl ? "الملخص التنفيذي ومؤشرات الأداء" : "Executive Performance Summary", { pageNumber: Math.min(3, totalPages) });
-                            if (selectedSections.logs) rootOutline.add(null, isRtl ? "مخططات وتوزيع المستندات" : "Log Distributions & Tables", { pageNumber: Math.min(4, totalPages) });
-                            if (selectedSections.rejected) rootOutline.add(null, isRtl ? "الوثائق المرفوضة المعلقة" : "Overdue Rejected Items", { pageNumber: Math.min(7, totalPages) });
-                            if (selectedSections.pending) rootOutline.add(null, isRtl ? "المعلقات المتأخرة" : "Overdue Pending Actions", { pageNumber: Math.min(9, totalPages) });
-                        }
-
-                        // --- DRAW HEADER & FOOTER OVERLAY ---
-                        let periodStr = "Cumulative Period";
-                        if (activeTab === 'monthly') {
-                            periodStr = "Monthly Period";
-                        }
-                        if (startDate && endDate) {
-                            const start = new Date(startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                            const end = new Date(endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                            periodStr = `${start} - ${end}`;
-                        }
-
-                        const rawProjName = activeProject?.projectName;
-                        const projName = (rawProjName && rawProjName !== 'No Project Configured' && rawProjName !== 'NO PROJECT CONFIGURED' ? rawProjName : 'StructuSight Master Project').substring(0, 35);
-                        const projCode = activeProject?.projectCode || "STS-P1.17";
-                        const contractor = activeProject?.contractorName || "Innovo Construction";
-                        const consultant = activeProject?.consultantName || "ACE Consulting Engineers";
-                        const reportName = activeTab.toUpperCase() + " PERFORMANCE REPORT";
-
-                        const primRgb = hexToRgb(primaryColor);
-                        const accRgb = hexToRgb(accentColor);
-
-                        for (let i = 1; i <= totalPages; i++) {
-                            // In document reports, every page receives consistent local numbering (Page 1 of N, Page 2 of N, etc.)
-                            if (activeTab === 'presentation' && i === 1 && selectedSections.cover) continue;
-
-                            pdf.setPage(i);
-                            
-                            // Header background (Custom Primary Color)
-                            pdf.setFillColor(primRgb.r, primRgb.g, primRgb.b);
-                            pdf.rect(0, 0, pdfWidth, 14, 'F');
-                            
-                            // Custom Accent bottom line
-                            pdf.setFillColor(accRgb.r, accRgb.g, accRgb.b);
-                            pdf.rect(0, 14, pdfWidth, 0.8, 'F');
-                            
-                            // Title on the left
-                            pdf.setTextColor(255, 255, 255);
-                            pdf.setFont("helvetica", "bold");
-                            pdf.setFontSize(9);
-                            const topHeaderVal = customHeader || "STRUCTUSIGHT ENTERPRISE INTELLIGENCE";
-                            pdf.text(topHeaderVal.toUpperCase(), 10, 6);
-                            
-                            pdf.setFont("helvetica", "normal");
-                            pdf.setFontSize(7.5);
-                            pdf.setTextColor(accRgb.r, accRgb.g, accRgb.b);
-                            pdf.text(reportName, 10, 10.5);
-                            
-                            // Metadata on the right
-                            if (activeProject && showProjectInfo) {
-                                pdf.setTextColor(255, 255, 255);
-                                pdf.setFont("helvetica", "normal");
-                                pdf.setFontSize(6.5);
-                                
-                                // Draw elegant metadata columns
-                                let metaX = pdfWidth - 215; // default start pos
-                                if (metaX < 120) metaX = 120; // safe bounds
-                                
-                                // Column 1: Project & Code
-                                pdf.setTextColor(148, 163, 184); // silver/slate
-                                pdf.text("PROJECT:", metaX, 5.5);
-                                pdf.text("PARCEL/CODE:", metaX, 10);
-                                pdf.setTextColor(255, 255, 255);
-                                pdf.setFont("helvetica", "bold");
-                                pdf.text(projName, metaX + 22, 5.5);
-                                pdf.text(projCode, metaX + 22, 10);
-                                
-                                // Column 2: Contractor & Consultant
-                                pdf.setFont("helvetica", "normal");
-                                pdf.setTextColor(148, 163, 184);
-                                pdf.text("CONTRACTOR:", metaX + 70, 5.5);
-                                pdf.text("CONSULTANT:", metaX + 70, 10);
-                                pdf.setTextColor(255, 255, 255);
-                                pdf.setFont("helvetica", "bold");
-                                pdf.text(contractor, metaX + 92, 5.5);
-                                pdf.text(consultant, metaX + 92, 10);
-
-                                // Column 3: Period & Generated Date
-                                pdf.setFont("helvetica", "normal");
-                                pdf.setTextColor(148, 163, 184);
-                                pdf.text("PERIOD:", metaX + 140, 5.5);
-                                pdf.text("GENERATED:", metaX + 140, 10);
-                                pdf.setTextColor(255, 255, 255);
-                                pdf.setFont("helvetica", "bold");
-                                pdf.text(periodStr, metaX + 158, 5.5);
-                                pdf.text(dateStr, metaX + 158, 10);
-                            }
-
-                            // Draw Footer Bar
-                            pdf.setDrawColor(226, 232, 240); // light slate border
-                            pdf.setLineWidth(0.2);
-                            pdf.line(10, pdfHeight - 12, pdfWidth - 10, pdfHeight - 12);
-                            
-                            // Footer texts
-                            pdf.setFont("helvetica", "normal");
-                            pdf.setFontSize(7);
-                            pdf.setTextColor(100, 116, 139); // slate-500
-                            const footerBottomText = customFooter || `StructuSight Enterprise Engineering Intelligence Platform | CONCEPT & PRODUCT VISION BY EZZ RASHAD`;
-                            pdf.text(footerBottomText, 10, pdfHeight - 7);
-                            pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 30, pdfHeight - 7);
-                        }
-                    }
-                }) as any).save();
-
-                // Restore dimensions immediately after imaging
-                exportElement.style.width = originalWidth;
-                exportElement.style.maxWidth = originalMaxWidth;
-                exportElement.style.padding = originalPadding;
-
-                hiddenElements.forEach(({ el, prevDisplay }) => {
-                    el.style.display = prevDisplay;
-                });
-
-                if (activeTab !== 'presentation') {
-                    document.body.classList.remove('pdf-export');
-                    const headersFooters = exportElement.querySelectorAll('.pdf-only-header, .pdf-only-footer');
-                    headersFooters.forEach(el => {
-                        (el as HTMLElement).classList.add('hidden');
-                        (el as HTMLElement).classList.remove('flex');
-                    });
+                    setParseMessage(isRtl ? "تم تصدير ملف PDF بنجاح بهويتك المؤسسية المخصصة!" : "PDF document exported successfully with professional custom branding overlays!");
                 }
-
-                setParseMessage(isRtl ? "تم تصدير ملف PDF بنجاح بهويتك المؤسسية المخصصة!" : "PDF document exported successfully with professional custom branding overlays!");
             }
         } catch (e: unknown) {
             console.error(e);

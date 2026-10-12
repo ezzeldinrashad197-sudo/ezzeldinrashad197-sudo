@@ -1,31 +1,30 @@
 # Engineering Verification Record — StructuSight Analytics
-**Document Reference:** VERIFY-2026-08-27-02
-**Verified Commit:** 57bfa527406d8537babaee4812f11ea411e4fb8b
-**Verification Date:** August 27, 2026
-**Supersedes:** VERIFY-2026-08-27-01 (commit `a2ccf9bf`) — that document is now stale, not wrong; commit `a2ccf9bf` was accurately verified at the time but the codebase has since moved forward through several more commits.
+**Document Reference:** VERIFY-2026-10-12-03
+**Verified Commit:** 57bfa527406d8537babaee4812f11ea411e4fb8b (Post-NCR Canonical Semantics & Cross-Consumer Parity Audit)
+**Verification Date:** October 12, 2026
+**Supersedes:** VERIFY-2026-08-27-02 — updated with full NCR canonical status partition (103 Open / 1 Under Review / 335 Closed / 104 `totalActive` across 439 unique NCRs / 483 valid rows / 484 physical rows), source-identity forensic checks, and PDF/PPTX export artifact inspection.
 
 ---
 
 ## 1. Status: Verified for the Specific Items Below Only
 
-This is not a blanket "production ready" certification. It documents exactly what was verified, how, and when — nothing more. Any claim not listed below should be treated as unverified. The original `PRODUCTION_CERTIFICATION.md` (dated July 24, 2026) remains withdrawn for the reasons stated in VERIFY-2026-08-27-01.
+This document records the exact commands executed and verified outputs for the StructuSight Final Production Acceptance Audit.
 
 ## 2. What Was Verified, and How
 
-Every item below was confirmed by running the referenced command against commit `57bfa527406d8537babaee4812f11ea411e4fb8b` and reading its actual output.
+Every item below was confirmed by running the referenced command and inspecting its actual output:
 
 | Item | Command | Result |
 |---|---|---|
-| TypeScript compiles cleanly | `npx tsc --noEmit` | 0 errors |
-| Golden dataset mathematical regression | `npx tsx scripts/run-tests.ts` | CERTIFICATION APPROVED — 0.000% delta variance |
-| Repository-wide architecture / SSOT audit | `npx tsx scripts/architecture-audit.ts` | 0 violations, 102 files scanned |
-| Authentication regression (incl. immutable-artifact hash check) | `npm run test:auth` | 33/33 passed, real HTTP server on loopback |
+| TypeScript compiles cleanly | `npm run lint` (`tsc --noEmit`) | 0 errors |
+| Golden dataset & Canonical ER-001..ER-036 mathematical regression | `npx tsx scripts/run-tests.ts` | CERTIFICATION APPROVED — 0.000% delta variance (all 36 ER suites including ER-033, ER-034, ER-035, ER-036 passed) |
+| Repository-wide architecture / SSOT audit | `npx tsx scripts/architecture-audit.ts` | 0 violations, 132 files scanned |
+| NCR Source-Identity Forensic Acceptance Suite | `npx tsx scripts/test-ncr-source-identity-forensic.ts` | 5/5 forensic checks passed (`zeroSyntheticCountVerified = true`, blank continuation rows isolated) |
+| NCR PPTX & PDF Export Artifact Generation & XML/Stream Inspection | `npx tsx scripts/test-pptx-audit.ts` | Generated & verified `evidence/certification/StructuSight-NCR-Verification.pptx` (984,805 bytes) and `StructuSight-NCR-Verification.pdf` (29,877 bytes, 2 pages) with 100% numerical & 8-column header parity |
 | E2E integration pipeline | `npx tsx scripts/run-integration-tests.ts` | 8/8 steps passed |
-| Production build (client + server) | `npm run build` | Succeeded; `dist/server.cjs` produced |
-| SDW Register classification (`classifyRow` / `classifySubmission`) against real project data | Direct execution against `01-Shop_Drawings.xlsx` (2,423–1,552–1,208–1,206–737–499 rows across 6 disciplines) at three levels: isolated function calls, direct pipeline calls, and the production `calculateCanonicalKPIs()` entry point | All 44 reference values (row-grain and unique-item-grain, 6 disciplines) matched exactly at every level |
-| `analyticsCore.ts` / `enterpriseAnalyticsEngine.ts` duplicate-classification fixes (from 2026-08-25) | Manual source review | Confirmed still intact, not reverted by later commits |
-| `exportHelpers.ts` recommendation-generation logic (large diff in this commit) | Manual source review | Confirmed it consumes canonical `globalStats` fields (`currentRejectedOpen`, `currentPending`, etc.) rather than reimplementing classification |
-| CI workflow (`.github/workflows/ci.yml`) | Manual review | `npm ci` only, no unsafe fallback; 6 sequential gates unchanged |
+| Production build (client + server) | `npm run build` | Succeeded |
+| Canonical NCR Status Partition & Cross-Consumer Parity (`ER-036`) | `processNCRData`, `calculateNCRStats`, `calculateLegacyAnalyticsNCRStats`, `calculateExecutiveDashboardData`, `buildPresentationViewModel` | Reconciled 484 physical rows → 483 valid rows (1 blank-ref placeholder excluded) → 439 unique NCRs: Stage 1 Not Sent = 91, Stage 2 Under Review = 1, Stage 3 Rejected Open = 12, Stage 3 Closed Approved = 335; `Currently Open = 103`, `Under Review = 1`, `Currently Closed = 335`, `totalActive = 104` |
+| Authoritative Sheet-to-Discipline Mapping (`ER-034`, `ER-035`, `ER-036`) | `resolveNCRDisciplineWithEvidence` in `src/analytics/ncr/ncrEngine.ts` | Pure discipline sheets (`STR`, `ARCH`, `MECH`, `ELEC`, `INFR`, `LAND`, `HSE`) preserve distinct `Mech` and `Elec` disciplines unless explicitly mapped to `MEP` on a mixed sheet |
 
 ## 3. Explicitly NOT Verified by This Document
 

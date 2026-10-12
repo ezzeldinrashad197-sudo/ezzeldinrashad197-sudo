@@ -347,8 +347,9 @@ export interface NCRStats {
   underReview: number;    // Stage 2: Sent Date exists, Received Corrective blank (Waiting Consultant)
   rejectedOpen: number;   // Stage 3: Received Corrective exists, Rejected (Contractor Action Needed)
   approvedClosed: number; // Stage 3: Received Corrective exists, Approved (Closed)
-  open: number;           // Cumulative open (= notSent + rejectedOpen)
-  closed: number;         // Cumulative closed (= approvedClosed)
+  open: number;           // Cumulative Currently Open (= notSent + rejectedOpen)
+  closed: number;         // Cumulative Currently Closed (= approvedClosed)
+  totalActive?: number;   // Combined non-closed population (= notSent + underReview + rejectedOpen = open + underReview); never presented as Currently Open
   approved: number;       // Legacy compatibility (= approvedClosed)
   rejected: number;       // Legacy compatibility (= rejectedOpen)
   rev0: number;
@@ -1329,6 +1330,7 @@ export const calculateCumulativeSnapshot = (
         approvedClosed: 0,
         open: 0,
         closed: 0,
+        totalActive: 0,
         approved: 0,
         rejected: 0,
         rev0: 0,
@@ -1360,9 +1362,11 @@ export const calculateCumulativeSnapshot = (
     if (state.isNotSent) {
       cumSt.notSent++;
       cumSt.open++;
+      cumSt.totalActive = (cumSt.totalActive || 0) + 1;
     } else if (state.isUnderReview) {
       cumSt.underReview++;
       cumSt.waiting++;
+      cumSt.totalActive = (cumSt.totalActive || 0) + 1;
     } else if (state.isApprovedClosed) {
       cumSt.approvedClosed++;
       cumSt.closed++;
@@ -1371,6 +1375,7 @@ export const calculateCumulativeSnapshot = (
       cumSt.rejectedOpen++;
       cumSt.open++;
       cumSt.rejected++;
+      cumSt.totalActive = (cumSt.totalActive || 0) + 1;
     }
 
     const isLatestFurther = isFurtherRevision(latestOverall.rev, latestOverall.isRev0);
@@ -1408,6 +1413,7 @@ export const calculateCumulativeSnapshot = (
     approvedClosed: cumArr.reduce((a, c) => a + (c.approvedClosed || 0), 0),
     open: cumArr.reduce((a, c) => a + c.open, 0),
     closed: cumArr.reduce((a, c) => a + c.closed, 0),
+    totalActive: cumArr.reduce((a, c) => a + (c.totalActive ?? (c.open + c.underReview)), 0),
     approved: cumArr.reduce((a, c) => a + c.approved, 0),
     rejected: cumArr.reduce((a, c) => a + c.rejected, 0),
     waiting: cumArr.reduce((a, c) => a + (c.underReview || 0), 0),

@@ -2344,7 +2344,7 @@ export function generateEILogFromSubmittalRows(
         if (rec.dateReturn && rec.dateReturn !== 'CONFLICT') {
           cachedReturnBySubRef.set(normSub, rec.dateReturn);
         }
-        for (const ev of rec.sourceRowTrace) {
+        for (const ev of (rec as any).sourceRowTrace || []) {
           if (ev.dateReturn) {
             cachedReturnBySubAndRev.set(`${normSub}|${ev.normalizedRev}`, ev.dateReturn);
           }
@@ -2395,7 +2395,7 @@ export function generateEILogFromSubmittalRows(
     list.push({
       sheetName,
       discipline: discInfo.code,
-      excelRowNumber: r.sourceRowIndex || idx + 2,
+      excelRowNumber: (r as any).sourceRowIndex || idx + 2,
       rawSubRef,
       normalizedSubRef,
       rawDwgNo,

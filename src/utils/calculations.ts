@@ -90,8 +90,8 @@ export const calculateStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[
   return calcStatsFoundation(rows, fullDataset);
 };
 
-export const calculateNCRStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[] | boolean): any => {
-  return calcNCRStatsFoundation(rows, fullDataset);
+export const calculateNCRStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[] | boolean, cutoffDate?: string | Date): any => {
+  return calcNCRStatsFoundation(rows, fullDataset, cutoffDate);
 };
 
 export const calculateSORStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[] | boolean): any => {

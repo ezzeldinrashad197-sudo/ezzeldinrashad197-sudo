@@ -2217,5 +2217,327 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     }
   });
 
+  // =========================================================================
+  // ER-036: 484 PHYSICAL ROWS / 483 VALID ROWS / 439 UNIQUE NCRs PARTITION
+  //         (103 CURRENTLY OPEN / 1 UNDER REVIEW / 335 CURRENTLY CLOSED / 104 TOTAL ACTIVE)
+  //         & CROSS-CONSUMER + NON-NCR ISOLATION VERIFICATION
+  // =========================================================================
+  test('ER-036: 439 Unique NCR Partition (91 Stage 1 + 1 Stage 2 + 12 Stage 3 Rej + 335 Stage 3 Closed -> 103 Open / 1 Under Review / 335 Closed / 104 totalActive across 483 valid rows + 1 excluded placeholder row)', () => {
+    const rows: SubmittalRow[] = [];
+
+    // Helper to push NCR revision rows
+    const addNcrEntity = (
+      ref: string,
+      sheetName: string,
+      rawTrade: string,
+      stage: 'STAGE1' | 'STAGE2' | 'STAGE3_REJ' | 'STAGE3_APP',
+      hasPriorRejectedRev0: boolean
+    ) => {
+      if (hasPriorRejectedRev0) {
+        rows.push({
+          id: `${ref}-R0`,
+          registerIdentity: 'NCR',
+          documentType: `NCR-${sheetName}`,
+          logType: 'NCR',
+          ncrRef: ref,
+          docNo: ref,
+          rev: '00',
+          isRev0: true,
+          isLatestRev: false,
+          ncrLastRev: 'No',
+          sourceWorkbookName: '16- Non-Conformance Report (NCR).xlsx',
+          sourceFile: '16- Non-Conformance Report (NCR).xlsx',
+          sourceSheetName: sheetName,
+          disciplineSourceSheet: sheetName,
+          rawTrade,
+          trade: rawTrade,
+          discipline: rawTrade,
+          submissionDate: '2026-05-10',
+          ncrSentDateCorrectiveAction: '2026-05-14',
+          responseDate: '2026-05-18',
+          ncrAction: 'Rejected',
+          ncrStatus: 'Open'
+        } as SubmittalRow);
+      }
+
+      const revStr = hasPriorRejectedRev0 ? '01' : '00';
+      let sentDate = '';
+      let respDate = '';
+      let action = '';
+      let status = 'Open';
+
+      if (stage === 'STAGE1') {
+        sentDate = '';
+        respDate = '';
+        action = '';
+        status = 'Open';
+      } else if (stage === 'STAGE2') {
+        sentDate = '2026-07-06';
+        respDate = '';
+        action = 'Under Review';
+        status = 'Waiting';
+      } else if (stage === 'STAGE3_REJ') {
+        sentDate = '2026-06-12';
+        respDate = '2026-06-19';
+        action = 'Rejected';
+        status = 'Open';
+      } else {
+        sentDate = '2026-06-10';
+        respDate = '2026-06-16';
+        action = 'Approved';
+        status = 'Closed';
+      }
+
+      rows.push({
+        id: `${ref}-R${revStr}`,
+        registerIdentity: 'NCR',
+        documentType: `NCR-${sheetName}`,
+        logType: 'NCR',
+        ncrRef: ref,
+        docNo: ref,
+        rev: revStr,
+        isRev0: !hasPriorRejectedRev0,
+        isLatestRev: true,
+        ncrLastRev: 'Yes',
+        sourceWorkbookName: '16- Non-Conformance Report (NCR).xlsx',
+        sourceFile: '16- Non-Conformance Report (NCR).xlsx',
+        sourceSheetName: sheetName,
+        disciplineSourceSheet: sheetName,
+        rawTrade,
+        trade: rawTrade,
+        discipline: rawTrade,
+        submissionDate: '2026-05-23',
+        ncrSentDateCorrectiveAction: sentDate,
+        responseDate: respDate,
+        ncrAction: action,
+        ncrStatus: status
+      } as SubmittalRow);
+    };
+
+    // Build exact 439 unique NCRs across 483 valid source rows (44 entities have 2 revisions: Rev.00 + Rev.01 -> 439 + 44 = 483 valid rows)
+    // Partition:
+    // - Stage 1 (Not Sent Yet): 91
+    // - Stage 2 (Under Review): 1 (ACE-INN-P1.03B-NCR-0001 on STR sheet)
+    // - Stage 3 (Rejected Open): 12
+    // - Stage 3 (Closed Approved): 335
+    // Discipline sheets: STR, ARCH, MECH, ELEC, INFR, HSE
+    const dist = [
+      { sheet: 'STR', rawTrade: 'STR', s1: 31, s2: 1, s3Rej: 5, s3App: 145, multiRevCount: 18 },
+      { sheet: 'ARCH', rawTrade: 'ARCH', s1: 22, s2: 0, s3Rej: 3, s3App: 78, multiRevCount: 10 },
+      { sheet: 'MECH', rawTrade: 'MECH', s1: 12, s2: 0, s3Rej: 2, s3App: 41, multiRevCount: 6 },
+      { sheet: 'ELEC', rawTrade: 'ELEC', s1: 9, s2: 0, s3Rej: 1, s3App: 30, multiRevCount: 4 },
+      { sheet: 'INFR', rawTrade: 'INFRA', s1: 11, s2: 0, s3Rej: 1, s3App: 27, multiRevCount: 4 },
+      { sheet: 'HSE', rawTrade: 'HSE', s1: 6, s2: 0, s3Rej: 0, s3App: 14, multiRevCount: 2 }
+    ];
+
+    let seq = 1;
+    for (const d of dist) {
+      let multiLeft = d.multiRevCount;
+      for (let i = 0; i < d.s2; i++) {
+        const ref = seq === 1 ? 'ACE-INN-P1.03B-NCR-0001' : `ACE-INN-P1.03B-NCR-${String(seq).padStart(4, '0')}`;
+        seq++;
+        addNcrEntity(ref, d.sheet, d.rawTrade, 'STAGE2', false);
+      }
+      for (let i = 0; i < d.s1; i++) {
+        const ref = `ACE-INN-P1.03B-NCR-${String(seq++).padStart(4, '0')}`;
+        addNcrEntity(ref, d.sheet, d.rawTrade, 'STAGE1', false);
+      }
+      for (let i = 0; i < d.s3Rej; i++) {
+        const ref = `ACE-INN-P1.03B-NCR-${String(seq++).padStart(4, '0')}`;
+        const hasPrior = multiLeft > 0;
+        if (hasPrior) multiLeft--;
+        addNcrEntity(ref, d.sheet, d.rawTrade, 'STAGE3_REJ', hasPrior);
+      }
+      for (let i = 0; i < d.s3App; i++) {
+        const ref = `ACE-INN-P1.03B-NCR-${String(seq++).padStart(4, '0')}`;
+        const hasPrior = multiLeft > 0;
+        if (hasPrior) multiLeft--;
+        addNcrEntity(ref, d.sheet, d.rawTrade, 'STAGE3_APP', hasPrior);
+      }
+    }
+
+    // Add 1 blank-NCR-Ref continuation/placeholder row -> 483 + 1 = 484 physical rows
+    rows.push({
+      id: 'STR::16- NON-CONFORMANCE REPORT (NCR)::484',
+      registerIdentity: 'NCR',
+      documentType: 'NCR-STR',
+      logType: 'NCR',
+      ncrRef: '',
+      docNo: '',
+      rev: '',
+      sourceWorkbookName: '16- Non-Conformance Report (NCR).xlsx',
+      sourceFile: '16- Non-Conformance Report (NCR).xlsx',
+      sourceSheetName: 'STR',
+      disciplineSourceSheet: 'STR',
+      rawTrade: 'STR',
+      trade: 'STR',
+      discipline: 'STR',
+      submissionDate: '',
+      ncrAction: 'Under Review',
+      ncrStatus: 'Waiting',
+      remarks: 'Placeholder / continuation row with blank NCR Ref'
+    } as SubmittalRow);
+
+    // 1. Reconcile 484 physical rows, 483 valid rows, and 439 unique NCRs
+    if (rows.length !== 484) {
+      throw new Error(`Expected 484 physical rows, got ${rows.length}`);
+    }
+    const validNormalizedRows = normalizeNCRData(rows);
+    if (validNormalizedRows.length !== 483) {
+      throw new Error(`Expected 483 valid NCR rows after excluding 1 blank placeholder row, got ${validNormalizedRows.length}`);
+    }
+    const inventory = buildNCRForensicIdentityInventory(rows);
+    if (
+      inventory.uniqueNcrRefCount !== 439 ||
+      inventory.blankContinuationRows.length !== 1 ||
+      !inventory.zeroSyntheticCountVerified ||
+      !inventory.rejectedSyntheticIdentities.includes('STR::16- NON-CONFORMANCE REPORT (NCR)::484')
+    ) {
+      throw new Error(`Forensic population reconciliation failed: ${JSON.stringify({
+        uniqueNcrRefCount: inventory.uniqueNcrRefCount,
+        blankContinuationRows: inventory.blankContinuationRows.length,
+        zeroSyntheticCountVerified: inventory.zeroSyntheticCountVerified
+      })}`);
+    }
+
+    // 2. Verify canonical status semantics in processNCRData
+    const engineOut = processNCRData(rows, '2026-06-01');
+    const cum = engineOut.cumulativeKPIs;
+    if (
+      cum.totalUnique !== 439 ||
+      cum.totalRows !== 483 ||
+      cum.rev0 !== 395 ||
+      cum.revHigh !== 44 ||
+      cum.notSent !== 91 ||
+      cum.underReview !== 1 ||
+      cum.rejectedOpen !== 12 ||
+      cum.approvedClosed !== 335 ||
+      cum.open !== 103 ||
+      cum.closed !== 335 ||
+      cum.totalActive !== 104 ||
+      cum.open + cum.underReview + cum.closed !== 439 ||
+      !engineOut.integrityReport.passed
+    ) {
+      throw new Error(`Canonical NCR status semantics mismatch in processNCRData: ${JSON.stringify(cum)}`);
+    }
+
+    // Verify discipline separation: pure sheets MECH and ELEC remain 'Mech' (55) and 'Elec' (40), never merged unintentionally
+    const discMap = new Map(engineOut.cumulative.map((c) => [c.discipline, c]));
+    if (
+      discMap.get('STR')?.totalUnique !== 182 ||
+      discMap.get('Arch')?.totalUnique !== 103 ||
+      discMap.get('Mech')?.totalUnique !== 55 ||
+      discMap.get('Elec')?.totalUnique !== 40 ||
+      discMap.get('Infra')?.totalUnique !== 39 ||
+      discMap.get('HSE')?.totalUnique !== 20
+    ) {
+      throw new Error(`Discipline breakdown mismatch: ${JSON.stringify(engineOut.cumulative)}`);
+    }
+
+    // 3. Cross-consumer verification: calculateNCRStats, calculateLegacyAnalyticsNCRStats, calculateExecutiveDashboardData, PDF/PPTX ViewModel
+    const foundStats = calculateNCRStats(rows);
+    if (
+      foundStats.totalUnique !== 439 ||
+      foundStats.totalUniqueDrawings !== 439 ||
+      foundStats.totalRows !== 483 ||
+      foundStats.notSent !== 91 ||
+      foundStats.underReview !== 1 ||
+      foundStats.pending !== 1 ||
+      foundStats.currentPending !== 1 ||
+      foundStats.rejectedOpen !== 12 ||
+      foundStats.approvedClosed !== 335 ||
+      foundStats.open !== 103 ||
+      foundStats.currentOpen !== 103 ||
+      foundStats.closed !== 335 ||
+      foundStats.currentClosed !== 335 ||
+      foundStats.totalActive !== 104
+    ) {
+      throw new Error(`calculateNCRStats mismatch: ${JSON.stringify(foundStats)}`);
+    }
+
+    const legacyStats = calculateLegacyAnalyticsNCRStats(rows);
+    if (
+      legacyStats.ncrRaised !== 439 ||
+      legacyStats.ncrOpen !== 103 ||
+      legacyStats.ncrUnderReview !== 1 ||
+      legacyStats.ncrClosed !== 335 ||
+      legacyStats.ncrTotalActive !== 104 ||
+      legacyStats.statusBreakdown.underInvestigation !== 91 ||
+      legacyStats.statusBreakdown.underReview !== 1 ||
+      legacyStats.statusBreakdown.correctiveActionSubmitted !== 12 ||
+      legacyStats.statusBreakdown.closed !== 335
+    ) {
+      throw new Error(`calculateLegacyAnalyticsNCRStats mismatch: ${JSON.stringify(legacyStats)}`);
+    }
+
+    // Also include a non-NCR register row (SDW-STR) to prove non-NCR registers are completely unaffected
+    const nonNcrRow: SubmittalRow = {
+      id: 'SDW-STR-999-R0',
+      registerIdentity: 'SDW',
+      documentType: 'SDW-STR',
+      logType: 'SDW',
+      docNo: 'SDW-STR-0999',
+      submissionRef: 'SDW-STR-0999',
+      drawingNo: 'DWG-0999',
+      rev: '00',
+      isRev0: true,
+      isLatestRev: true,
+      discipline: 'STR',
+      trade: 'Structural',
+      status: 'A',
+      workflowStage: 'Approved',
+      submissionDate: '2026-06-05',
+      responseDate: '2026-06-10'
+    } as SubmittalRow;
+
+    const combinedDataset = [...rows, nonNcrRow];
+    const dashData = calculateExecutiveDashboardData(combinedDataset, combinedDataset, false, 'en');
+    // Global stats exclude NCR and reflect only non-NCR generalData (1 SDW item)
+    if (dashData.globalStats.totalUniqueDrawings !== 1 || dashData.globalStats.approved !== 1) {
+      throw new Error(`Non-NCR globalStats affected by NCR changes: ${JSON.stringify(dashData.globalStats)}`);
+    }
+
+    const ncrDocRows = dashData.byDocType.filter((r) => r.documentType.startsWith('NCR'));
+    const ncrDocSum = ncrDocRows.reduce(
+      (acc, r) => ({
+        unique: acc.unique + (r.stats.totalUniqueDrawings || 0),
+        rows: acc.rows + (r.stats.totalSubmittedSheets || 0),
+        curApp: acc.curApp + (r.stats.currentApproved || 0),
+        curRejOpen: acc.curRejOpen + (r.stats.currentRejectedOpen || 0),
+        curPending: acc.curPending + (r.stats.currentPending || 0),
+        open: acc.open + (r.stats.open || 0),
+        closed: acc.closed + (r.stats.closed || 0),
+        totalActive: acc.totalActive + (r.stats.totalActive || 0)
+      }),
+      { unique: 0, rows: 0, curApp: 0, curRejOpen: 0, curPending: 0, open: 0, closed: 0, totalActive: 0 }
+    );
+    if (
+      ncrDocSum.unique !== 439 ||
+      ncrDocSum.rows !== 483 ||
+      ncrDocSum.curApp !== 335 ||
+      ncrDocSum.curRejOpen !== 103 ||
+      ncrDocSum.curPending !== 1 ||
+      ncrDocSum.open !== 103 ||
+      ncrDocSum.closed !== 335 ||
+      ncrDocSum.totalActive !== 104 ||
+      ncrDocSum.curApp + ncrDocSum.curRejOpen + ncrDocSum.curPending !== 439
+    ) {
+      throw new Error(`calculateExecutiveDashboardData NCR summary mismatch: ${JSON.stringify(ncrDocSum)}`);
+    }
+
+    const vm = buildPresentationViewModel(combinedDataset, null, 'presentation');
+    const ncrVm = vm.registers.find((r) => r.baseType === 'NCR');
+    if (
+      !ncrVm ||
+      ncrVm.cumulativeStats.totalRow.CurrentUnique !== 439 ||
+      ncrVm.cumulativeStats.totalRow.TotalRows !== 483 ||
+      ncrVm.cumulativeStats.totalRow.Closed !== 335 ||
+      ncrVm.cumulativeStats.totalRow.Open !== 103 ||
+      ncrVm.cumulativeStats.totalRow.Pending !== 1
+    ) {
+      throw new Error(`PresentationViewModel (PDF/PPTX) NCR totalRow mismatch: ${JSON.stringify(ncrVm?.cumulativeStats.totalRow)}`);
+    }
+  });
+
   return testResults;
 }

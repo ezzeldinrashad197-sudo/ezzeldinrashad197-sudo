@@ -8,8 +8,9 @@ import { buildPresentationViewModel } from '../analytics/presentationViewModel';
 import { renderPresentationPdf } from '../analytics/presentationPdfRenderer';
 import { ProjectSettings, SubmittalRow } from '../types';
 import { useLanguage } from '../utils/i18n';
+import { sanitizeClonedDomForHtml2Canvas, computeSafeHtml2CanvasScale } from '../utils/pdfDomSanitizer';
 
-const prepareChartsForCapture = (clonedContainer: HTMLElement, originalContainer?: HTMLElement) => {
+export const prepareChartsForCapture = (clonedContainer: HTMLElement, originalContainer?: HTMLElement) => {
     const doc = clonedContainer.ownerDocument || document;
 
     // 1. Remove Recharts tooltips, portals, legends, and outer containers from the entire cloned document
@@ -363,10 +364,7 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
 
             } else {
                 // Standard html2pdf for other reports
-                let exportScale = 2;
-                if (exportElement.scrollHeight > 15000) {
-                    exportScale = 1; 
-                }
+                const exportScale = computeSafeHtml2CanvasScale(exportElement, 2);
 
                 const exportWidth = 1500;
 
@@ -383,7 +381,7 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                 const opt = {
                     margin:       [15, 10, 15, 10] as [number, number, number, number],
                     filename,
-                    image:        { type: 'jpeg' as const, quality: 1 },
+                    image:        { type: 'jpeg' as const, quality: 0.98 },
                     html2canvas:  { 
                         scale: exportScale, 
                         useCORS: true, 
@@ -428,7 +426,8 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                             
                             const cloneEl = doc.getElementById(elementId);
                             if (cloneEl) {
-                                prepareChartsForCapture(cloneEl);
+                                prepareChartsForCapture(cloneEl, exportElement);
+                                sanitizeClonedDomForHtml2Canvas(doc, cloneEl);
                                 
                                 totalCapturedCharts = cloneEl.querySelectorAll('.recharts-wrapper').length;
                                 totalCapturedSVGs = cloneEl.querySelectorAll('.recharts-wrapper svg').length;
@@ -436,6 +435,8 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
                                 if (totalRenderedCharts !== totalCapturedCharts || totalRenderedSVGs !== totalCapturedSVGs) {
                                     console.warn("[Export Validation Warn] Standard final count mismatch. Charts:", totalRenderedCharts, "captured:", totalCapturedCharts, "; SVGs:", totalRenderedSVGs, "captured:", totalCapturedSVGs);
                                 }
+                            } else {
+                                sanitizeClonedDomForHtml2Canvas(doc);
                             }
                         }
                     },

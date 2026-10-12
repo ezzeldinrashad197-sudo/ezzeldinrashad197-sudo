@@ -39,8 +39,8 @@ export default function NCRAnalytics({ data, monthlyStart, monthlyEnd }: Props) 
     { key: 'underReview', label: parse('Under Review (Stage 2) | قيد مراجعة الاستشاري'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.underReview > 0 ? "text-indigo-600 font-medium" : "text-slate-500"}>{val.underReview}</span> },
     { key: 'rejectedOpen', label: parse('Rejected (Stage 3) | مرفوض ومفتوح'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.rejectedOpen > 0 ? "text-rose-600 font-medium" : "text-slate-500"}>{val.rejectedOpen}</span> },
     { key: 'approvedClosed', label: parse('Closed Approved (Stage 3) | مغلق معتمد'), rightAlign: true, render: (val: Record<string, any>) => <span className={val.approvedClosed > 0 ? "text-emerald-600 font-medium" : "text-slate-500"}>{val.approvedClosed}</span> },
-    { key: 'open', label: parse('Currently Open | المفتوح حالياً'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-800">{val.open}</span> },
-    { key: 'closed', label: parse('Currently Closed | المغلق حالياً'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-800">{val.closed}</span> }
+    { key: 'open', label: parse('Currently Open (Stage 1 + 3 Rej) | المفتوح حالياً (للمقاول)'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-800" title="Stage 1 (Not Sent) + Stage 3 (Rejected Open)">{val.open}</span> },
+    { key: 'closed', label: parse('Currently Closed (Stage 3 App) | المغلق حالياً'), rightAlign: true, render: (val: Record<string, any>) => <span className="font-bold text-slate-800" title="Stage 3 (Closed Approved)">{val.closed}</span> }
   ], [language]);
 
   const monthlyCols = useMemo(() => [
@@ -226,7 +226,7 @@ export default function NCRAnalytics({ data, monthlyStart, monthlyEnd }: Props) 
 
       <DataTable 
         title={parse('Cumulative NCR Summary (Project to date) | ملخص تقارير عدم المطابقة التراكمي للمشروع')} 
-        description={parse('Counts each NCR Ref once, using the latest overall revision. | يحتسب مراجعة فريدة لكل رقم تقرير عدم مطابقة بناء على الحالة الأخيرة.')} 
+        description={parse('Counts each unique NCR Ref once (latest revision). Identity: Unique NCRs = Currently Open (Stage 1 Not Sent + Stage 3 Rejected) + Under Review (Stage 2 Waiting Consultant) + Currently Closed (Stage 3 Approved). | يحتسب كل رقم تقرير عدم مطابقة فريد مرة واحدة (آخر مراجعة): الإجمالي الفريد = المفتوح حالياً (لم ترسل + مرفوض) + قيد مراجعة الاستشاري (المرحلة 2) + المغلق حالياً (معتمد).')} 
         columns={cumulativeCols} 
         data={cumulative} 
         footerData={{

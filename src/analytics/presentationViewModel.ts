@@ -163,7 +163,7 @@ export function buildPresentationViewModel(
   const activeDataset = mode === 'monthly' ? monthlyData : cumulativeData;
 
   // 1. Executive Dashboard Data
-  const dashData = calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en');
+  const dashData = calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en', cutoffDate);
   const globalStats = dashData.globalStats;
 
   const totalHistoricalRows = globalStats.totalSubmittedSheets || activeDataset.length;

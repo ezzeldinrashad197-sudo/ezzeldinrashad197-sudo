@@ -13,11 +13,16 @@ import { getCanonicalHeader } from './presentationLayoutEngine';
 export async function renderPresentationPdf(
   viewModel: PresentationViewModel,
   options?: {
-    pageSize?: 'a4' | 'a3' | '16x9';
+    pageSize?: 'a4' | 'a3' | 'letter' | '16x9';
     orientation?: 'landscape' | 'portrait';
     selectedSections?: string[];
     slideRangeStart?: number;
     slideRangeEnd?: number;
+    customHeader?: string;
+    customFooter?: string;
+    logoUrl?: string;
+    showLogo?: boolean;
+    showProjectInfo?: boolean;
   }
 ): Promise<{ pdf: jsPDF; totalPages: number }> {
   const isArabic = viewModel.metadata.isArabic;
@@ -26,8 +31,8 @@ export async function renderPresentationPdf(
 
   // Convert hex colors to RGB
   const hexToRgb = (hex: string) => {
-    const clean = hex.replace('#', '');
-    const num = parseInt(clean, 16);
+    const clean = (hex || '#0A192F').replace('#', '');
+    const num = parseInt(clean, 16) || 0x0A192F;
     return {
       r: (num >> 16) & 255,
       g: (num >> 8) & 255,
@@ -48,6 +53,12 @@ export async function renderPresentationPdf(
 
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
+  const validLogoDataUrl =
+    options?.showLogo !== false &&
+    typeof options?.logoUrl === 'string' &&
+    /^data:image\/(png|jpe?g);base64,/i.test(options.logoUrl.trim())
+      ? options.logoUrl.trim()
+      : undefined;
 
   // Helper: Draw Slide Header and Footer
   const drawSlideChrome = (titleText: string, subtitleText?: string) => {
@@ -66,12 +77,24 @@ export async function renderPresentationPdf(
     pdf.text(titleText, 14, 13);
 
     // Subtitle / Project name on right
-    if (subtitleText || viewModel.metadata.projectName) {
+    const rightMargin = validLogoDataUrl ? pageW - 42 : pageW - 14;
+    if (options?.showProjectInfo !== false && (subtitleText || options?.customHeader || viewModel.metadata.projectName)) {
       pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(203, 213, 225);
-      const rightText = subtitleText || viewModel.metadata.projectName;
-      pdf.text(rightText, pageW - 14, 13, { align: 'right' });
+      const rightText = subtitleText || options?.customHeader || viewModel.metadata.projectName;
+      pdf.text(rightText, rightMargin, 13, { align: 'right' });
+    }
+
+    if (validLogoDataUrl) {
+      try {
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(pageW - 36, 3, 22, 14, 1.5, 1.5, 'F');
+        const imgFormat = validLogoDataUrl.toLowerCase().includes('image/png') ? 'PNG' : 'JPEG';
+        pdf.addImage(validLogoDataUrl, imgFormat, pageW - 34.5, 4, 19, 12);
+      } catch {
+        // Ignore logo embed error and keep clean header
+      }
     }
 
     // Footer Bar
@@ -82,7 +105,8 @@ export async function renderPresentationPdf(
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`[${viewModel.metadata.projectName}] | ${isArabic ? 'التحكم بالمستندات الهندسية' : 'Document Control'} | ${viewModel.metadata.dateStr}`, 14, pageH - 2.5);
+    const leftFooter = options?.customFooter || `[${viewModel.metadata.projectName}] | ${isArabic ? 'التحكم بالمستندات الهندسية' : 'Document Control'} | ${viewModel.metadata.dateStr}`;
+    pdf.text(leftFooter.substring(0, 95), 14, pageH - 2.5);
     pdf.setTextColor(203, 213, 225);
     pdf.text(isArabic ? 'نظام التدقيق الهندسي المستقل — دقة معيارية 100%' : 'INDEPENDENT AUDIT ENGINE — 100% RECONCILED', pageW / 2, pageH - 2.5, { align: 'center' });
     pdf.setTextColor(255, 255, 255);

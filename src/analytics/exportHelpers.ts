@@ -157,28 +157,34 @@ export const renderLuxeLogoBox = (
         line: { color: "E2E8F0", width: 1.5 }
     });
 
-    if (logoBase64) {
+    const isSupportedRasterBase64 = typeof logoBase64 === 'string' && /^data:image\/(png|jpe?g|gif|bmp);base64,[A-Za-z0-9+/=]+/i.test(logoBase64.trim());
+
+    if (isSupportedRasterBase64 && logoBase64) {
         const padX = w * 0.1;
         const padY = h * 0.1;
         const imgW = w - (padX * 2);
         const imgH = h - (padY * 2);
 
-        const isBase64 = logoBase64.startsWith("data:") || logoBase64.includes(";base64,");
         const imgConfig: any = {
             x: x + padX,
             y: y + padY,
             w: imgW,
             h: imgH,
+            data: logoBase64.trim(),
             sizing: { type: "contain", w: imgW, h: imgH }
         };
 
-        if (isBase64) {
-            imgConfig.data = logoBase64;
-        } else {
-            imgConfig.path = logoBase64;
+        try {
+            slide.addImage(imgConfig);
+        } catch {
+            const cNameFallback = projectInfo?.contractorName !== "N/A"
+                ? projectInfo?.contractorName
+                : (projectInfo?.projectName !== "NO PROJECT CONFIGURED" ? projectInfo?.projectName : "COMPANY");
+            slide.addText(cNameFallback || "COMPANY", {
+                x: x + 0.05, y: y + 0.05, w: w - 0.1, h: h - 0.1,
+                fontSize: 9, bold: true, color: "203864", align: "center", valign: "middle", fontFace: "Arial"
+            });
         }
-
-        slide.addImage(imgConfig);
     } else {
         const cName = projectInfo?.contractorName !== "N/A"
             ? projectInfo?.contractorName
@@ -234,6 +240,7 @@ export const defineStructusightSlideMaster = (
     // Add Logo Box if visible
     const showLogo = options?.showLogo !== false;
     const logoUrl = options?.logoUrl || projectInfo?.logoUrl;
+    const isSupportedMasterLogo = typeof logoUrl === 'string' && /^data:image\/(png|jpe?g|gif|bmp);base64,[A-Za-z0-9+/=]+/i.test(logoUrl.trim());
     if (showLogo) {
         // Since we can draw shapes/images in Master, we add a round rectangle and the image
         objects.push({ 
@@ -243,20 +250,15 @@ export const defineStructusightSlideMaster = (
                 line: { color: "E2E8F0", width: 1.5 } 
             } 
         });
-        if (logoUrl) {
-            const isBase64 = logoUrl.startsWith("data:") || logoUrl.includes(";base64,");
+        if (isSupportedMasterLogo && logoUrl) {
             const imgConfig: any = {
                 x: 8.8 + 0.09,
                 y: 0.1 + 0.06,
                 w: 0.9 - 0.18,
                 h: 0.6 - 0.12,
+                data: logoUrl.trim(),
                 sizing: { type: "contain", w: 0.9 - 0.18, h: 0.6 - 0.12 }
             };
-            if (isBase64) {
-                imgConfig.data = logoUrl;
-            } else {
-                imgConfig.path = logoUrl;
-            }
             objects.push({ image: imgConfig });
         } else {
             const cName = projectInfo?.contractorName !== "N/A"
@@ -485,7 +487,8 @@ export const calculateExecutiveDashboardData = (
     filteredData: SubmittalRow[],
     rawDataset: SubmittalRow[],
     isMonthly: boolean,
-    language: 'ar' | 'en' = 'en'
+    language: 'ar' | 'en' = 'en',
+    cutoffDate?: string | Date
 ): ExecutiveDashboardData => {
     const baseOrder = ['ABD', 'SDW', 'SHD', 'MAR', 'QS', 'DOC', 'WIR', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR', 'PQ', 'PRQ', 'TRS'];
     const discOrder = ['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'LANDSCAPE', 'LAND', 'LND', 'SURVEY', 'SUR', 'GEN'];
@@ -509,9 +512,21 @@ export const calculateExecutiveDashboardData = (
     });
 
     const byDocType = Array.from(map.entries()).map(([documentType, rows]) => {
-        const stats = calculateStats(rows, rawDataset || filteredData);
+        const isNcrDoc = documentType === 'NCR' || documentType.startsWith('NCR-');
+        const stats = isNcrDoc
+            ? calculateNCRStats(rows, rawDataset || filteredData, cutoffDate)
+            : calculateStats(rows, rawDataset || filteredData);
+        if (isNcrDoc) {
+            stats.currentApproved = stats.approvedClosed ?? stats.approved ?? 0;
+            stats.currentRejectedOpen = stats.open ?? ((stats.notSent || 0) + (stats.rejectedOpen || 0));
+            stats.currentRejectedClosed = 0;
+            stats.currentPending = stats.underReview ?? stats.pending ?? 0;
+            stats.currentOpen = stats.open ?? ((stats.notSent || 0) + (stats.rejectedOpen || 0));
+            stats.currentClosed = stats.closed ?? stats.approvedClosed ?? 0;
+            stats.totalActive = stats.totalActive ?? ((stats.open || 0) + (stats.underReview || 0));
+        }
         const criticalCount = rows.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).length;
-        return { documentType, stats, count: rows.length, criticalCount };
+        return { documentType, stats, count: isNcrDoc ? (stats.totalSubmittedSheets || rows.length) : rows.length, criticalCount };
     }).sort((a, b) => {
         const getBase = (type: string) => type.split('-')[0].trim();
         const getDisc = (type: string) => {
