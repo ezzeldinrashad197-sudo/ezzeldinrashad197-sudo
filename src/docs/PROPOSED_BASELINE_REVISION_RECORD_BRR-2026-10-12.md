@@ -17,11 +17,9 @@ This proposed Baseline Revision Record documents the mathematical and architectu
    - **Mathematical Partition Invariant:** `open (103) + underReview (1) + closed (335) = totalUnique (439)`.
    - **Total Active Invariant:** `totalActive = 104` is retained as the combined non-closed population (`open + underReview` = 103 + 1 = 104) and is strictly never presented as `Currently Open`.
 
-2. **Population Reconciliation:**
-   - Physical rows in raw source: `484`.
-   - Valid data rows: `483` (excluding 1 empty continuation row).
-   - Unique NCR entities: `439` (Rev 0 = 395, Further Revisions = 44).
-   - Discovered actual NCR references: 439 valid non-empty codes; 0 synthetic IDs generated.
+2. **Population Reconciliation & Provenance Boundary:**
+   - **Calculation Logic Status (VERIFIED):** The 484 physical rows / 483 valid rows / 439 unique NCR partition (`91 Stage 1 + 1 Stage 2 + 12 Stage 3 Rej + 335 Stage 3 Closed`) is verified algorithmically in `ER-036` via a deterministic in-memory regression suite.
+   - **Physical Disk Source Status (PENDING ARCHIVE RESTORATION):** The file currently residing at `src/test-datasets/16- Non-Conformance Report (NCR).xlsx` is a 3-row fixture left over from prior testing (`c2b15eaec196...`) and is **NOT** the authentic 484-row workbook. The 484-row physical population **cannot and must not be claimed as verified from the current disk file**. Full population certification remains explicitly gated until the authentic workbook is restored from the PMC/client archive and verified against its true SHA-256.
 
 3. **Discipline Integrity:**
    - Pure discipline sheets (`STR`, `ARCH`, `MECH`, `ELEC`, `INFR`, `LAND`, `HSE`) preserve distinct discipline allocations without unintentional merging. `MECH` (55) and `ELEC` (40) remain distinct disciplines unless explicitly part of a combined `MEP` register sheet.
