@@ -89,9 +89,12 @@ function runForensicAcceptanceTest() {
   console.log('================================================================================');
 
   if (!fs.existsSync(SOURCE_EXCEL_FILE_PATH)) {
-    throw new Error(`Physical source workbook missing at ${SOURCE_EXCEL_FILE_PATH}`);
+    throw new Error(`CRITICAL FAILURE: Physical source workbook missing at ${SOURCE_EXCEL_FILE_PATH}. Test cannot proceed.`);
   }
   const sourceShaBefore = crypto.createHash('sha256').update(fs.readFileSync(SOURCE_EXCEL_FILE_PATH)).digest('hex');
+  console.log(`  Source File Path: ${SOURCE_EXCEL_FILE_PATH}`);
+  console.log(`  Source File SHA-256: ${sourceShaBefore}`);
+  console.log(`  Source File Governance Gate: Preserved on disk; pending official archive restoration check.`);
 
   const buffer = getSyntheticFixtureBuffer();
   const parsedRows = parseExcelBuffer(buffer, SOURCE_EXCEL_FILE_NAME);
