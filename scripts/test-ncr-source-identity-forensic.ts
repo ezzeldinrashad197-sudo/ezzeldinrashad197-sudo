@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
@@ -10,10 +11,17 @@ import {
 import { calculateNCRStats } from '../src/analytics/calculationFoundation';
 import { compileStatsForBaseType } from '../src/analytics/exportHelpers';
 
-const EXCEL_FILE_NAME = '16- Non-Conformance Report (NCR).xlsx';
-const EXCEL_FILE_PATH = path.resolve(process.cwd(), 'src/test-datasets', EXCEL_FILE_NAME);
+const SOURCE_EXCEL_FILE_NAME = '16- Non-Conformance Report (NCR).xlsx';
+const SOURCE_EXCEL_FILE_PATH = path.resolve(process.cwd(), 'src/test-datasets', SOURCE_EXCEL_FILE_NAME);
 
-function ensureRealSourceWorkbook(): Buffer {
+const FIXTURE_DIR = path.resolve(process.cwd(), 'src/test-datasets/fixtures');
+const FIXTURE_FILE_NAME = 'ncr-source-identity-synthetic-fixture.xlsx';
+const FIXTURE_FILE_PATH = path.resolve(FIXTURE_DIR, FIXTURE_FILE_NAME);
+
+function getSyntheticFixtureBuffer(): Buffer {
+  if (fs.existsSync(FIXTURE_FILE_PATH)) {
+    return fs.readFileSync(FIXTURE_FILE_PATH);
+  }
   const wb = XLSX.utils.book_new();
   const strSheetAoA = [
     [
@@ -68,19 +76,25 @@ function ensureRealSourceWorkbook(): Buffer {
   const ws = XLSX.utils.aoa_to_sheet(strSheetAoA);
   XLSX.utils.book_append_sheet(wb, ws, 'STR');
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
-  fs.mkdirSync(path.dirname(EXCEL_FILE_PATH), { recursive: true });
-  fs.writeFileSync(EXCEL_FILE_PATH, buf);
+  fs.mkdirSync(FIXTURE_DIR, { recursive: true });
+  fs.writeFileSync(FIXTURE_FILE_PATH, buf);
   return buf;
 }
 
 function runForensicAcceptanceTest() {
   console.log('================================================================================');
   console.log('  NCR SOURCE-BASED FORENSIC IDENTITY ACCEPTANCE TEST');
-  console.log(`  Source File: ${EXCEL_FILE_NAME} | Sheet: STR`);
+  console.log(`  Physical Source Workbook: ${SOURCE_EXCEL_FILE_NAME} (PROTECTED / READ-ONLY)`);
+  console.log(`  Synthetic Test Fixture: ${FIXTURE_FILE_NAME} | Sheet: STR`);
   console.log('================================================================================');
 
-  const buffer = ensureRealSourceWorkbook();
-  const parsedRows = parseExcelBuffer(buffer, EXCEL_FILE_NAME);
+  if (!fs.existsSync(SOURCE_EXCEL_FILE_PATH)) {
+    throw new Error(`Physical source workbook missing at ${SOURCE_EXCEL_FILE_PATH}`);
+  }
+  const sourceShaBefore = crypto.createHash('sha256').update(fs.readFileSync(SOURCE_EXCEL_FILE_PATH)).digest('hex');
+
+  const buffer = getSyntheticFixtureBuffer();
+  const parsedRows = parseExcelBuffer(buffer, SOURCE_EXCEL_FILE_NAME);
 
   const inventory = buildNCRForensicIdentityInventory(parsedRows);
   const engineOut = processNCRData(parsedRows, '2026-07-01');
@@ -149,7 +163,13 @@ function runForensicAcceptanceTest() {
     throw new Error(`FAIL #5b: Engine output mismatch: ${JSON.stringify(engineOut.cumulativeKPIs)}`);
   }
 
-  console.log('\n✔ ALL 5 SOURCE-IDENTITY FORENSIC ACCEPTANCE CHECKS PASSED.');
+  // Regression Assertion: Source workbook immutability check
+  const sourceShaAfter = crypto.createHash('sha256').update(fs.readFileSync(SOURCE_EXCEL_FILE_PATH)).digest('hex');
+  if (sourceShaBefore !== sourceShaAfter) {
+    throw new Error(`FAIL: Source workbook SHA-256 mutation detected! Before: ${sourceShaBefore}, After: ${sourceShaAfter}`);
+  }
+  console.log(`\n✔ REGRESSION ASSERTION PASSED: Production source workbook SHA-256 is strictly preserved (${sourceShaBefore}).`);
+  console.log('✔ ALL 5 SOURCE-IDENTITY FORENSIC ACCEPTANCE CHECKS PASSED.');
 }
 
 runForensicAcceptanceTest();
