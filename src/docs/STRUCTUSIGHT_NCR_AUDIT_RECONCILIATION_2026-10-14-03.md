@@ -159,8 +159,11 @@ Time Complexity Scaling  : O(N) - Perfect Linear Bounds
 ================================================================================
 - Invariants Contract Status : STABILIZED
 - Mathematical Delta Variance: 0.000%
-  CERTIFICATION APPROVED: ALL MATHEMATICAL CONTRACTS, REGRESSION CHECKS, AND STRESS BARRIERS PASSED SUCCESSFULLY.
+  LOCALIZED TEST PASSED: ALL MATHEMATICAL CONTRACTS, REGRESSION CHECKS, AND STRESS BARRIERS PASSED SUCCESSFULLY.
 ```
+
+> **ملاحظة تدقيقية وتزامن الأدلة (Audit Synchronization Note):**
+> تم تحديث مخرج الاختبار الموثق أعلاه ليتطابق تماماً مع النسخة المحدثة من سكربت scripts/run-tests.ts؛ حيث تم استبدال العبارة التاريخية السابقة (CERTIFICATION APPROVED) بالعبارة المحدثة (LOCALIZED TEST PASSED). هذا التعديل يوضح بما لا يدع مجالاً للشك أن نجاح الاختبارات يمثل اجتيازاً موضعياً للمصفوفة الحسابية واختبارات الإجهاد (Localized Test Pass)، ولا يعني بأي حال من الأحوال منح اعتماد الإنتاج الشامل، إذ يظل الاعتماد الإنتاجي محجوباً بالكامل تحت حالة: PENDING APPROVAL — BASELINE GATE LOCKED.
 
 ### ب. نتائج فحص الحوكمة والبصمات المشفرة (`npm run test:auth`)
 أكد الفحص الآلي للبصمات المشفرة استمرار إقفال البوابة وعدم العبث بالملفات المعتمدة:
@@ -185,6 +188,17 @@ Authentication Regression Test Results: 38 Passed, 4 Failed.
 ```
 - **التفسير الهندسي لرسائل الفشل الـ 4:**  
   هذا الفشل هو **صمام الأمان الهندسي المتوقع والمطلوب**؛ حيث يثبت أن بوابة خط الأساس مقفلة تقنياً وتمنع تمرير التعديلات البرمجية دون إصدار واعتماد وثيقة مراجعة خط أساس رسمية (`BRR-2026-10-14`).
+
+### ج. شفافية وحالة خط أنابيب التكامل المستمر والـ Git SHA (CI Pipeline & Commit Traceability)
+- **الالتزام البرمجي المفحوص (Git Commit):** `ee5b26b4e78c04e2bf0ac0e744adac80b627385e` (المطابق للنسخة المنشورة على الفرع المعتمد `main`).
+- **موقف خط الأنابيب المؤتمت (`.github/workflows/ci.yml`):**
+  * يشتمل خط أنابيب الـ CI على 20 بوابة تحقق إلزامية.
+  * **البوابات المنفذة بنجاح موضعي (Local Pass):** الفحص اللغوي والمفاهيمي (Gate 1)، التدقيق المعماري للواجهات (Gate 2)، مصفوفات الحسابات والانحدار الموضعي (Gate 3)، والبناء المصدري النهائي (Gate 20).
+  * **البوابات الموقوفة عمداً (Blocked / Locked Gates):**
+    1. **Gate 4 (`npm run test:auth`):** تتوقف وتفشل برمجياً بسبب بصمات الحسابات الـ 4 غير المطابقة لخط الأساس المعتمد (38 Passed, 4 Failed).
+    2. **Gate 5 (`test:firestore-runtime`):** معلقة لعدم تهيئة محاكي Firebase في الحاوية المعزولة.
+- **التقرير الرقابي الصريح:** **لا يوجد ادعاء بنجاح كامل (100% CI Clearance) لخط الأنابيب على GitHub Actions**؛ بل إن توقف خط أنابيب CI عند Gate 4 هو البرهان الميداني التقني على أن حالة النظام الحقيقية تظل محكومة بقرار الحوكمة:  
+  🟡 **PENDING APPROVAL — BASELINE GATE LOCKED**.
 
 ---
 

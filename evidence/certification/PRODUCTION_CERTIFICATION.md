@@ -17,7 +17,7 @@ Every item below was confirmed by running the referenced command and inspecting 
 | Item | Command | Result |
 |---|---|---|
 | TypeScript compiles cleanly | `npm run lint` (`tsc --noEmit`) | 0 errors |
-| Golden dataset & Canonical ER-001..ER-036 mathematical regression | `npx tsx scripts/run-tests.ts` | CERTIFICATION APPROVED — 0.000% delta variance (all 36 ER suites including ER-033, ER-034, ER-035, ER-036 passed) |
+| Golden dataset & Canonical ER-001..ER-036 mathematical regression | `npx tsx scripts/run-tests.ts` | LOCALIZED TEST PASSED — 0.000% delta variance (Baseline Gate remains Locked) (all 36 ER suites including ER-033, ER-034, ER-035, ER-036 passed) |
 | Repository-wide architecture / SSOT audit | `npx tsx scripts/architecture-audit.ts` | 0 violations, 132 files scanned |
 | NCR Source-Identity Forensic Acceptance Suite | `npx tsx scripts/test-ncr-source-identity-forensic.ts` | 5/5 forensic checks passed (`zeroSyntheticCountVerified = true`, blank continuation rows isolated) |
 | NCR PPTX & PDF Export Artifact Generation & XML/Stream Inspection | `npx tsx scripts/test-pptx-audit.ts` | Generated & verified `evidence/certification/StructuSight-NCR-Verification.pptx` (984,805 bytes) and `StructuSight-NCR-Verification.pdf` (29,877 bytes, 2 pages) with 100% numerical & 8-column header parity |
