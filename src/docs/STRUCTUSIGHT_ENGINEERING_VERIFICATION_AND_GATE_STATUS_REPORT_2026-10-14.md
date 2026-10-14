@@ -1,9 +1,9 @@
-# StructuSight — تقرير المراجعة الهندسية وحالة بوابات التحقق
+# StructuSight — تقرير المراجعة الهندسية وتدقيق بوابات التحقق
 **Document Reference:** `STRUCTUSIGHT-GATE-REVIEW-2026-10-14`  
 **تاريخ المراجعة:** 14 أكتوبر 2026  
-**المرجع البرمجي (Git Commit):** `fc782aa3` (تحديث بيانات التدقيق المعماري والأدلة المؤتمتة)  
+**المرجع البرمجي الأساسي (Git Commit):** `fc782aa3` (تحديث بيانات التدقيق المعماري والأدلة المؤتمتة)  
 **الحالة الفنية الرسمية للمنظومة:** 🟡 **PENDING APPROVAL — BASELINE GATE LOCKED**  
-**طبيعة الوثيقة:** تقرير مراجعة هندسية وتدقيق بوابات، وليست شهادة اعتماد إنتاجي نهائي (Engineering Verification & Gate Status Review, Not Final Production Certification).
+**طبيعة الوثيقة:** تقرير مراجعة فنية وتدقيق لبوابات التحقق الهندسية، وليست شهادة اعتماد إنتاجي نهائي (Engineering Verification & Gate Status Review, Not Final Production Certification).
 
 ---
 
@@ -27,20 +27,20 @@
 
 ### أ. تقرير الامتثال المعماري الآلي (`src/docs/AutomatedEvidenceReport.md`)
 * **النطاق:** فحص تدفق التبعيات الهرمي الصارم للطبقات (Strict Downward Directed Acyclic Graph - DAG).
-* **النتيجة:** رصد **6 مخالفات لتجاوز حدود الطبقات (Layer Boundary Warnings)** بنتيجة امتثال **70 / 100** (خصم 30 نقطة: $100 - (6 \times 5)$).
+* **النتيجة:** رصد **6 مخالفات لتجاوز حدود الطبقات (Layer Boundary Warnings)** بنتيجة امتثال **70 / 100** (خصم 30 نقطة وفق المعادلة: 100 ناقص (6 ضرب 5) = 70).
 * **تفصيل المخالفات الست:**
-  1. `src/analytics/__tests__/canonicalCalculations.test.ts` $\rightarrow$ `src/utils/parser.ts` (الطبقة 2 تستدعي الطبقة 3).
-  2. `src/analytics/calculationFoundation.ts` $\rightarrow$ `src/analytics/ncr/ncrEngine.ts` (الطبقة 1 تستدعي الطبقة 2).
-  3. `src/analytics/ei/eiLogEngine.ts` $\rightarrow$ `src/utils/parser.ts` (الطبقة 2 تستدعي الطبقة 3).
-  4. `src/analytics/ei/eiLogEngine.ts` $\rightarrow$ `src/utils/parentRegisterResolver.ts` (الطبقة 2 تستدعي الطبقة 3).
-  5. `src/analytics/ncr/ncrEngine.ts` $\rightarrow$ `src/utils/parentRegisterResolver.ts` (الطبقة 2 تستدعي الطبقة 3).
-  6. `src/utils/classificationEngine.ts` $\rightarrow$ `src/utils/parentRegisterResolver.ts` (الطبقة 1 تستدعي الطبقة 3).
-* **الملاحظة:** المخالفتان (4 و 5) أضيفتا لتأمين هوية السجل المعتمدة (`parentRegisterResolver`) ومنع خلط الشيتات.
+  1. `src/analytics/__tests__/canonicalCalculations.test.ts` استدعى `src/utils/parser.ts` (الطبقة 2 تستدعي الطبقة 3).
+  2. `src/analytics/calculationFoundation.ts` استدعى `src/analytics/ncr/ncrEngine.ts` (الطبقة 1 تستدعي الطبقة 2).
+  3. `src/analytics/ei/eiLogEngine.ts` استدعى `src/utils/parser.ts` (الطبقة 2 تستدعي الطبقة 3).
+  4. `src/analytics/ei/eiLogEngine.ts` استدعى `src/utils/parentRegisterResolver.ts` (الطبقة 2 تستدعي الطبقة 3).
+  5. `src/analytics/ncr/ncrEngine.ts` استدعى `src/utils/parentRegisterResolver.ts` (الطبقة 2 تستدعي الطبقة 3).
+  6. `src/utils/classificationEngine.ts` استدعى `src/utils/parentRegisterResolver.ts` (الطبقة 1 تستدعي الطبقة 3).
+* **الملاحظة الفنية:** المخالفتان (4 و 5) أضيفتا لتأمين هوية السجل المعتمدة (`parentRegisterResolver`) ومنع تداخل أسماء الشيتات الصرفة.
 
 ### ب. فاحص أنماط الهندسة المعمارية التراكمي (`scripts/architecture-audit.ts`)
 * **النطاق المحدد:** فحص خلو الواجهات ومكونات العرض (`src/components/`, `src/ReportTable.tsx`, `src/Presentation.tsx`) من إجراء أي حسابات رياضية مضمنة (Zero Inline Calculations)، وخلو الكود من استدعاءات مهجورة لمعرفات التصنيف القديمة.
 * **النتيجة:** **0 مخالفات ضمن هذا النطاق المحدد حصراً** عبر 132 ملفاً.
-* **الخلاصة:** نتيجة "صفر مخالفات" لا تعني خلو الهيكل المعماري ككل من الملاحظات، بل تؤكد حظر الحسابات في واجهة المستخدم، بينما يظل مؤشر الامتثال الهرمي عند 70/100 بوجود التحذيرات الستة.
+* **الخلاصة:** نتيجة "صفر مخالفات" تخص فاحص الحسابات المضمنة في الواجهة، بينما يظل الهيكل العام متضمناً 6 تحذيرات تجاوز طبقات بدرجة امتثال 70/100.
 
 ---
 
@@ -52,85 +52,111 @@
    * **Code A:** معتمد بالكامل (Approved).
    * **Code B:** معتمد بملاحظات (Approved as Noted).
 2. **الرفض المفتوح المتطلب لإعادة تقديم (Open Rejection):**
-   * **Code C:** مرفوض مع طلب مراجعة وإعادة تقديم (`Revise & Resubmit`). يُصنف كـ `Rejected Open` إذا لم تصدر له مراجعة لاحقة، وهو المسؤول عن توليد متأخرات المقاول.
+   * **Code C:** مرفوض مع طلب مراجعة وإعادة تقديم (Revise & Resubmit). يُصنف كـ `Rejected Open` إذا لم تصدر له مراجعة لاحقة، وهو المسؤول عن توليد متأخرات المقاول.
 3. **الإغلاق النهائي (Terminal Closure - Final Closed):**
-   * **Code D:** مرفوض رفضاً نهائياً غير مسموح بإعادة تقديمه (`Disapproved / Final Closed`).
+   * **Code D:** مرفوض رفضاً نهائياً غير مسموح بإعادة تقديمه (Disapproved / Final Closed - No Further Resubmission).
    * **القاعدة المعتمدة لمؤشرات الأداء:**
-     * يُعامل `Code D` كبند **مغلق نهائياً** (`Closed = true`)، وبالتالي لا يُحسب كمتأخرات على المقاول أو الاستشاري، ويُستبعد من عبء العمل المعلق.
-     * في تقارير الجودة الصارمة: يجب عدم تسميته «معتمداً فنياً»، بل يُعرض في تقارير المتابعة كحالة مستقلة `Final Closed`.
-     * **معادلة نسبة الاعتماد الفني الصرف (Pure Technical Approval Rate):**
-       $$\text{Technical Approval Rate \%} = \frac{\text{Unique Code A} + \text{Unique Code B}}{\text{Total Unique Documents}} \times 100\%$$
-     * **معادلة نسبة الإنجاز والإغلاق الإجمالي (Total Closeout Rate \%):**
-       $$\text{Closeout Rate \%} = \frac{(\text{Code A} + \text{Code B}) + \text{Code D}}{\text{Total Unique Documents}} \times 100\%$$
+     * يُعامل الكود D كبند **مغلق نهائياً** (Closed = true)، وبالتالي **لا يُحسب كمتأخرات على المقاول أو الاستشاري**، ويُستبعد من عبء العمل المعلق.
+     * في تقارير الجودة ومؤشرات الأداء، لا يُوصف بأنه اعتماد فني، بل يُعرض في تقارير المتابعة كحالة مستقلة `Final Closed`.
 
 ---
 
-## 4. نموذج الساعتين التعاقديتين لحساب المتأخرات (Dual Contractual Clocks)
+## 4. الصياغة الصريحة للمعادلات الرياضية والمقامات (Explicit Formulas)
 
-لتبرير التقسيم الرياضي للمتأخرات ($55 = 46 + 9$) من واقع السجلات الهندسية، تم فصل ساعتي الاحتساب التعاقديتين:
+### أ. مؤشر الاعتماد الفني الصرف (Pure Technical Approval Rate)
 
+الصيغة الحسابية المعتمدة:
 ```
-                          ┌──────────────────────────────────────────────┐
-                          │     تاريخ التقديم الأولي / submissionDate     │
-                          └──────────────────────┬───────────────────────┘
-                                                 │
-                                                 ▼
-                          ┌──────────────────────────────────────────────┐
-                          │   الساعة الأولى: مراجعة الاستشاري (Consultant) │
-                          │   المهلة القياسية: 14 يوماً تقويمياً         │
-                          └──────────────────────┬───────────────────────┘
-                                                 │
-                    ┌────────────────────────────┴────────────────────────────┐
-                    ▼                                                         ▼
-         [تم الرد بالاعتماد A/B أو D]                               [تم الرد بالرفض الكود C]
-                    │                                                         │
-                    ▼                                                         ▼
-        [إغلاق دورة العمل / محسوم]                        ┌──────────────────────────────────────────────┐
-                                                          │     تاريخ إخطار الرفض / rejectionDate        │
-                                                          └──────────────────────┬───────────────────────┘
-                                                                                 │
-                                                                                 ▼
-                                                          ┌──────────────────────────────────────────────┐
-                                                          │    الساعة الثانية: إعادة التقديم (Contractor) │
-                                                          │    المهلة القياسية: 14 يوماً تقويمياً        │
-                                                          └──────────────────────────────────────────────┘
+Technical Approval Rate (%) = [ (Unique Code A + Unique Code B) / Eligible Unique Documents ] * 100
 ```
 
-### أ. الساعة الأولى: تأخر مراجعة الاستشاري (Consultant Review Clock)
-* **مجتمع البيانات:** الوثائق قيد المراجعة المعلقة (`workflowStage === 'Pending'`) حيث `responseDate == null`.
-* **معادلة مدة التأخير:**
-  $$\text{Delay}_{\text{consultant}} = \text{asOfDate} - \text{submissionDate}$$
-* **شرط احتساب المتأخرات:** $\text{Delay}_{\text{consultant}} > 14\text{ Calendar Days}$.
+* **البسط (Numerator):** عدد الوثائق الفريدة المعتمدة فنياً (Code A + Code B) في أحدث مراجعة سارية.
+* **المقام (Denominator) - مجموعة الوثائق المؤهلة (Eligible Unique Documents):**
+  * **الخيار القياسي المعتمد في StructuSight (Decided/Evaluated Scope):**
+    يشمل فقط الوثائق الفريدة التي صدر بشأنها رد استشاري حاسم:
+    `Eligible Unique Documents = Code A + Code B + Code C (Open) + Code C (Closed) + Code D`
+    (الوثائق قيد المراجعة المعلقة التي لم تتلق رداً بعد لا تدخل في هذا المقام حتى لا تخفض نسبة الجودة ظلماً قبل انتهاء مدة دراستها).
+  * **خيار الحساب الشامل (Global Intake Scope):**
+    إذا طُلب احتساب النسبة من إجمالي ما تم تقديمه في المشروع، يُضاف المعلق للمقام:
+    `Global Eligible Documents = Unique Evaluated + Unique Pending Under Review`
+* **معاملة المراجعات المتعددة (Multiple Revisions):**
+  كل وثيقة فريدة (تُعرّف بالهوية: السجل + التخصص + الرقم المرجعي للتقديم) تُحسب **مرة واحدة فقط (Count = 1)** وفق حالتها في آخر مراجعة معتمدة (Latest Active Revision). المراجعات السابقة الملغاة (Superseded) تُستبعد بالكامل من البسط والمقام لمنع التكرار.
+
+### ب. مؤشر الإغلاق الإجمالي للمشروع (Total Closeout Rate)
+
+الصيغة الحسابية المعتمدة:
+```
+Total Closeout Rate (%) = [ Unique Closed Documents / Total Unique Documents ] * 100
+```
+حيث:
+```
+Unique Closed Documents = Code A + Code B + Code D + Code C (Closed by Resolution)
+Total Unique Documents  = Unique Closed Documents + Code C (Open) + Pending Under Review
+```
+* **ملاحظة حاسمة:** الكود D يدخل في بسط الإغلاق الإجمالي لأنه معاملة محسومة لا تتطلب أي إجراء إضافي، لكنه **لا يدخل إطلاقاً في بسط مؤشر الاعتماد الفني**.
+
+---
+
+## 5. نموذج الساعتين التعاقديتين لحساب المتأخرات الـ 55 (Dual Contractual Clocks)
+
+لتبرير توزيع المتأخرات الإجمالية الـ 55 (46 على المقاول + 9 على الاستشاري) من واقع السجلات الهندسية مباشرة:
+
+### أ. الساعة الأولى: ساعة مراجعة الاستشاري (Consultant Review Clock)
+* **مجتمع البيانات:** المعاملات المعلقة قيد المراجعة (workflowStage = 'Pending') دون رد مسجل (responseDate فارغ).
+* **تاريخ البداية (Start Date):** تاريخ استلام المعاملة من المقاول (submissionDate / receivedDate).
+* **المهلة التعاقدية (Consultant SLA):** **14 يوماً تقويمياً** (وفق عقد الإشراف القياسي).
+* **تاريخ الاستحقاق (Due Date):**
+  `Consultant Due Date = submissionDate + 14 Calendar Days`
+* **شرط احتساب التأخر (Overdue Condition):**
+  `asOfDate (Report Cutoff Date) > Consultant Due Date` مع عدم تسجيل تاريخ رد.
 * **العدد الفعلي المحسوب:** **9 معاملات متأخرة** على الاستشاري.
 
-### ب. الساعة الثانية: تأخر المقاول في إعادة التقديم (Contractor Resubmission Clock)
-* **مجتمع البيانات:** المعاملات المرفوضة بالكود C التي تنتظر مراجعة بديلة (`workflowStage === 'Rejected'` / `isRejectedOpen === true`).
-* **معادلة مدة التأخير:**
-  $$\text{Delay}_{\text{contractor}} = \text{asOfDate} - \text{responseDate / rejectionDate}$$
-* **شرط احتساب المتأخرات:** $\text{Delay}_{\text{contractor}} > 14\text{ Calendar Days}$.
+### ب. الساعة الثانية: ساعة إعادة التقديم للمقاول (Contractor Resubmission Clock)
+* **مجتمع البيانات:** المعاملات المرفوضة بالكود C والتي لم يُقدم لها مراجعة لاحقة حتى تاريخ التقرير (workflowStage = 'Rejected' / Rejected Open).
+* **تاريخ البداية (Start Date):** تاريخ إخطار المقاول بالرفض (responseDate / rejectionDate).
+* **المهلة المقررة للمقاول (Contractor Resubmission Window):**
+  * تُحدد تعاقدياً أو إجرائياً، والقيمة المعتمدة افتراضياً في نظام الاختبار هي **14 يوماً تقويمياً** من تاريخ الإخطار بالرفض (ملاحظة: هذه المهلة مدخل إجرائي قابل للضبط التعاقدي).
+* **تاريخ الاستحقاق لإعادة التقديم (Resubmission Due Date):**
+  `Contractor Resubmission Due Date = rejectionDate + Contractor Window (14 Days)`
+* **شرط احتساب التأخر (Overdue Condition):**
+  `asOfDate (Report Cutoff Date) > Contractor Resubmission Due Date` مع عدم وجود مراجعة بديلة مسجلة بالسجل.
 * **العدد الفعلي المحسوب:** **46 معاملة متأخرة** على المقاول في إعادة التقديم.
 
 ### ج. المعادلة التكاملية للمتأخرات (SSOT Invariant):
-$$\text{إجمالي المتأخرات النشطة (55)} = 46\text{ (ساعة المقاول)} + 9\text{ (ساعة الاستشاري)}$$
+```
+Total Active Overdue (55) = 46 (Contractor Overdue Clock) + 9 (Consultant Overdue Clock)
+```
 
 ---
 
-## 5. مخرجات التصدير المادية وملفات التحقق المحفوظة
+## 6. تفصيل البصمات الأربعة وسجل التغيير المقترح (The 4 Hashes Breakdown)
 
-تم توليد وحفظ مخرجات التصدير المادية في المستودع وتأكيد تطابقها الحسابي بنسبة 100%:
-1. `StructuSight-Presentation-2026-10-14.pptx` (984,805 بايت): العرض التقديمي التنفيذي الكامل شاملاً جداول الشهر والتراكمي ومصفوفة التخصصات دون أي تشويه للأعمدة.
-2. `evidence/certification/StructuSight-NCR-Verification.pdf` (29,877 بايت): تقرير PDF ذو صفحتين يطابق جداول العرض التقديمي بنسبة 100%.
-3. `evidence/certification/StructuSight-NCR-Verification.pptx` (984,805 بايت): نسخة الأرشيف المعتمدة للمقارنة الرقمية.
+الجدول التالي يوضح تفاصيل الملفات الأربعة التي أخفقت في اختبار البصمات `scripts/test-authentication-regression.ts`:
+
+| مسار الملف | البصمة المتوقعة في خط الأساس (BRR-2026-10-07) | البصمة الفعلية الحالية (BRR-2026-10-12 المقترح) | سبب الاختلاف البرمجي | حالة البوابة |
+|:---|:---|:---|:---|:---:|
+| `src/utils/calculations.ts` | `ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468` | `3fc729129957ca1c50654f1f39c4c60d47f96cb11167fc9b48df72b2312ee4ea` | إضافة فرع NCR في دالة `getClosedOpenByDocType` لربط المعتمد بالمغلق، والـ (Not Sent + Rej Open) بالمفتوح | **مقفل (LOCKED)** |
+| `src/analytics/calculationFoundation.ts` | `941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64` | `4da695157aca2414cf24c8af4ec9667917a81d4d71c0f84df46bdd7141b46e48` | تصدير الحقول الصريحة في `calculateNCRStats`: open=103, underReview=1, closed=335, totalActive=104 | **مقفل (LOCKED)** |
+| `src/analytics/ncr/ncrEngine.ts` | `008378a886fbeca72deda6d289b26d87b88a9541c63075adef39a70c25381e2b` | `b3c4dd991ef81a5fa1609bee3626a67a8990e2e01f4f339ff71f5328e967d6d4` | ضبط تفكيك الحالات التراكمية في `calculateCumulativeSnapshot` لعزل المفتوح عن تحت المراجعة | **مقفل (LOCKED)** |
+| `src/utils/ncrAnalytics.ts` | `1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c` | `622194e11b05533ca9af0d8ee4b7b43fe91a1f50f2a87946f518a190fc4f24c9` | مواءمة محول العرض القديم مع مخرجات محرك NCR الموحد الجديد | **مقفل (LOCKED)** |
+
+**التزام الحوكمة:** لن يتم تحديث هذه البصمات في ملف فحص الاختبار لمجرد جعله ينجح، وتظل البوابة مقفلة لحين صدور الاعتماد الإداري والفني الرسمي لوثيقة التغيير `BRR-2026-10-12`.
 
 ---
 
-## 6. القرار النهائي والتوصية الهندسية الملزمة
+## 7. مصفوفة قرار رفع القيد (Gate Release Decision Matrix)
 
-يظل القرار الهندسي للمنظومة:  
-🟡 **PENDING APPROVAL — BASELINE GATE LOCKED**
+| شرط الاعتماد | الوضع الحالي | الإجراء المطلوب لرفع القيد |
+|:---|:---:|:---|
+| **استعادة بيانات NCR الأصلية** | 🔴 **معلّق (BLOCKED)** | استعادة سجل NCR الأصلي (484 صفاً) من أرشيف الـ PMC وفحص بصمته المستقلة |
+| **حسم اختلافات البصمات الأربعة** | 🔴 **معلّق (BLOCKED)** | اعتماد وثيقة BRR-2026-10-12 رسمياً ثم تحديث قيم خط الأساس في الاختبار |
+| **نجاح اختبار Firestore Runtime** | 🔴 **غير مثبت (NOT PROVEN)** | تشغيل محاكي Firestore المحلي لتنفيذ فحص قواعد الأمان في بيئة عمل حقيقية |
+| **تسجيل التحذيرات المعمارية الستة** | 🟡 **مطلوب (DOCUMENTED)** | توثيق التحذيرات الستة وقبولها رسمياً كاستدعاءات ضرورية لقفل هوية السجلات |
+| **استكمال المعادلات وتحديد المقامات** | 🟢 **مكتمل ومثبت (COMPLETED)** | تم توثيق المعادلات بالتفصيل، وتحديد المقام، وفصل ساعتي المقاول والاستشاري |
 
-**خارطة الطريق الإلزامية لإغلاق البوابات:**
-1. **استعادة ملف NCR:** تزويد النظام بنسخة أصلية موثقة من أرشيف الـ PMC ذات الـ 484 صفاً، وتسجيل بصمتها المستقلة.
-2. **اعتماد خط الأساس:** صدور الموافقة الإدارية الصريحة على وثيقة `BRR-2026-10-12`، وعندها فقط تُحدث البصمات الأربعة في `scripts/test-authentication-regression.ts`.
-3. **تشغيل محاكي Firestore:** توفير بيئة تشغيل محلية للمحاكي لاجتياز اختبار `test:firestore-runtime` الحقيقي.
-4. **توثيق المخالفات المعمارية الست:** إما بإعادة هيكلة الاستدعاءات عبر وسيط واجهات (Interface Inversion) أو قبولها رسمياً كتحذيرات غير مانعة للإصدار.
+---
+
+## 8. الحكم النهائي والقرار التنفيذي الصريح (Formal Engineering Decision)
+
+**Engineering Decision:**  
+The engineering verification report is accepted as a record of the current verification status. Production approval remains withheld under **PENDING APPROVAL — BASELINE GATE LOCKED** until the original NCR source is restored and independently verified, the four baseline hash mismatches are resolved through approved change control, Firestore runtime verification passes, and all outstanding architectural and reporting-definition issues are formally resolved or accepted.

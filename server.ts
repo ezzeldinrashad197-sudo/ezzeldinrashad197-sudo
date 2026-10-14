@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import helmet from "helmet";
 import cors from "cors";
@@ -237,6 +238,16 @@ export async function createApp(opts?: { skipVite?: boolean }) {
       governedLimit: "50MB (Batch Datasets) | Standard API: 1MB",
       activeQueueCount: activeJobs.size
     });
+  });
+
+  app.get("/api/verification-report", (_req, res) => {
+    const reportPath = path.resolve(process.cwd(), "src/docs/STRUCTUSIGHT_ENGINEERING_VERIFICATION_AND_GATE_STATUS_REPORT_2026-10-14.md");
+    if (fs.existsSync(reportPath)) {
+      res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+      res.sendFile(reportPath);
+    } else {
+      res.status(404).send("Report not found");
+    }
   });
 
   // --- TOKEN VERIFICATION & RBAC MIDDLEWARE HELPERS ---
