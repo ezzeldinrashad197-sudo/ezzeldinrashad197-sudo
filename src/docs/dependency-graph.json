@@ -81,6 +81,10 @@
       "layer": 2
     },
     {
+      "id": "src/analytics/ei/eiLogEngine.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/exportEngine.ts",
       "layer": 2
     },
@@ -206,6 +210,10 @@
     },
     {
       "id": "src/components/DataValidationEngine.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/EILogGenerator.tsx",
       "layer": 3
     },
     {
@@ -346,6 +354,10 @@
     },
     {
       "id": "src/utils/parser.ts",
+      "layer": 3
+    },
+    {
+      "id": "src/utils/pdfDomSanitizer.ts",
       "layer": 3
     },
     {
@@ -517,6 +529,10 @@
     {
       "source": "src/App.tsx",
       "target": "src/components/UniversalRegisterEngine.tsx"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "src/components/EILogGenerator.tsx"
     },
     {
       "source": "src/App.tsx",
@@ -801,6 +817,22 @@
     {
       "source": "src/analytics/dataValidator.ts",
       "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/utils/parser.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
     },
     {
       "source": "src/analytics/exportEngine.ts",
@@ -1135,6 +1167,18 @@
       "target": "src/analytics/sequenceAuditEngine.ts"
     },
     {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/utils/i18n.tsx"
+    },
+    {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/analytics/ei/eiLogEngine.ts"
+    },
+    {
       "source": "src/components/EngineeringItemDatasetView.tsx",
       "target": "src/types.ts"
     },
@@ -1243,6 +1287,22 @@
       "target": "src/analytics/exportEngine.ts"
     },
     {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/analytics/presentationViewModel.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/analytics/presentationPdfRenderer.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/hooks/useExport.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/utils/pdfDomSanitizer.ts"
+    },
+    {
       "source": "src/components/TrendAndForecastEngine.tsx",
       "target": "src/types.ts"
     },
@@ -1317,6 +1377,10 @@
     {
       "source": "src/hooks/useExport.ts",
       "target": "src/utils/i18n.tsx"
+    },
+    {
+      "source": "src/hooks/useExport.ts",
+      "target": "src/utils/pdfDomSanitizer.ts"
     },
     {
       "source": "src/hooks/useFilters.ts",
@@ -1437,6 +1501,10 @@
     {
       "source": "src/utils/multiFileParser.ts",
       "target": "src/types.ts"
+    },
+    {
+      "source": "src/utils/multiFileParser.ts",
+      "target": "src/analytics/ei/eiLogEngine.ts"
     },
     {
       "source": "src/utils/ncrAnalytics.ts",

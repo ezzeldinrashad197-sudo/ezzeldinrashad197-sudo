@@ -11,9 +11,9 @@
     "functionName": "calculateNCRStats",
     "cyclomatic": 1,
     "loc": 3,
-    "halsteadVolume": 23.26,
-    "maintainabilityIndex": 152.63,
-    "normalizedMi": 89
+    "halsteadVolume": 41.21,
+    "maintainabilityIndex": 149.65,
+    "normalizedMi": 88
   },
   {
     "functionName": "calculateSORStats",

@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "generatedAt": "2026-10-11T14:04:22.581Z",
-    "totalFilesScanned": 92,
-    "architecturalViolations": 4,
-    "complianceScore": 80,
+    "generatedAt": "2026-10-14T09:58:39.703Z",
+    "totalFilesScanned": 95,
+    "architecturalViolations": 6,
+    "complianceScore": 70,
     "circularDependenciesCount": 1,
     "parserDescription": "TypeScript Compiler AST Parser with strict node visitor symbol-resolution"
   },
@@ -86,6 +86,10 @@
     },
     {
       "id": "src/analytics/dataValidator.ts",
+      "layer": 2
+    },
+    {
+      "id": "src/analytics/ei/eiLogEngine.ts",
       "layer": 2
     },
     {
@@ -214,6 +218,10 @@
     },
     {
       "id": "src/components/DataValidationEngine.tsx",
+      "layer": 3
+    },
+    {
+      "id": "src/components/EILogGenerator.tsx",
       "layer": 3
     },
     {
@@ -354,6 +362,10 @@
     },
     {
       "id": "src/utils/parser.ts",
+      "layer": 3
+    },
+    {
+      "id": "src/utils/pdfDomSanitizer.ts",
       "layer": 3
     },
     {
@@ -525,6 +537,10 @@
     {
       "source": "src/App.tsx",
       "target": "src/components/UniversalRegisterEngine.tsx"
+    },
+    {
+      "source": "src/App.tsx",
+      "target": "src/components/EILogGenerator.tsx"
     },
     {
       "source": "src/App.tsx",
@@ -809,6 +825,22 @@
     {
       "source": "src/analytics/dataValidator.ts",
       "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/utils/parser.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/analytics/revisionResolver.ts"
+    },
+    {
+      "source": "src/analytics/ei/eiLogEngine.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
     },
     {
       "source": "src/analytics/exportEngine.ts",
@@ -1143,6 +1175,18 @@
       "target": "src/analytics/sequenceAuditEngine.ts"
     },
     {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/utils/i18n.tsx"
+    },
+    {
+      "source": "src/components/EILogGenerator.tsx",
+      "target": "src/analytics/ei/eiLogEngine.ts"
+    },
+    {
       "source": "src/components/EngineeringItemDatasetView.tsx",
       "target": "src/types.ts"
     },
@@ -1251,6 +1295,22 @@
       "target": "src/analytics/exportEngine.ts"
     },
     {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/analytics/presentationViewModel.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/analytics/presentationPdfRenderer.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/hooks/useExport.ts"
+    },
+    {
+      "source": "src/components/SmartExportModal.tsx",
+      "target": "src/utils/pdfDomSanitizer.ts"
+    },
+    {
       "source": "src/components/TrendAndForecastEngine.tsx",
       "target": "src/types.ts"
     },
@@ -1325,6 +1385,10 @@
     {
       "source": "src/hooks/useExport.ts",
       "target": "src/utils/i18n.tsx"
+    },
+    {
+      "source": "src/hooks/useExport.ts",
+      "target": "src/utils/pdfDomSanitizer.ts"
     },
     {
       "source": "src/hooks/useFilters.ts",
@@ -1447,6 +1511,10 @@
       "target": "src/types.ts"
     },
     {
+      "source": "src/utils/multiFileParser.ts",
+      "target": "src/analytics/ei/eiLogEngine.ts"
+    },
+    {
       "source": "src/utils/ncrAnalytics.ts",
       "target": "src/types.ts"
     },
@@ -1531,49 +1599,49 @@
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 256,
+      "line": 257,
       "context": "useUpload(setData, setActiveTab as any, setStartDate, setEndDate)",
       "destination": "src/utils/calculations.ts::useUpload",
       "functionName": "useUpload"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 257,
+      "line": 258,
       "context": "useFilters(data, startDate, endDate)",
       "destination": "src/utils/calculations.ts::useFilters",
       "functionName": "useFilters"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 279,
+      "line": 280,
       "context": "calculateStats(generalData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 297,
+      "line": 298,
       "context": "calculateProjectPerformanceHealth(stats, language)",
       "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
       "functionName": "calculateProjectPerformanceHealth"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 299,
+      "line": 300,
       "context": "syncProjectStats(activeProjectId, {\n             totalDocs,\n             approvalRate,\n             overdueRate,\n             healthScore\n         })",
       "destination": "src/utils/calculations.ts::syncProjectStats",
       "functionName": "syncProjectStats"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 310,
+      "line": 311,
       "context": "useExport({\n      data,\n      activeTab,\n      filterMonthly,\n      filterCumulative,\n      activeProject,\n      setParseMessage,\n      setIsError,\n      startDate,\n      endDate\n  })",
       "destination": "src/utils/calculations.ts::useExport",
       "functionName": "useExport"
     },
     {
       "callerFile": "src/App.tsx",
-      "line": 741,
+      "line": 744,
       "context": "normalizeData(prev)",
       "destination": "src/utils/calculations.ts::normalizeData",
       "functionName": "normalizeData"
@@ -3525,6 +3593,48 @@
       "functionName": "buildPresentationViewModel"
     },
     {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2385,
+      "context": "normalizeNCRData(rows)",
+      "destination": "src/utils/calculations.ts::normalizeNCRData",
+      "functionName": "normalizeNCRData"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2389,
+      "context": "buildNCRForensicIdentityInventory(rows)",
+      "destination": "src/utils/calculations.ts::buildNCRForensicIdentityInventory",
+      "functionName": "buildNCRForensicIdentityInventory"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2404,
+      "context": "processNCRData(rows, '2026-06-01')",
+      "destination": "src/utils/calculations.ts::processNCRData",
+      "functionName": "processNCRData"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2438,
+      "context": "calculateNCRStats(rows)",
+      "destination": "src/utils/calculations.ts::calculateNCRStats",
+      "functionName": "calculateNCRStats"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2494,
+      "context": "calculateExecutiveDashboardData(combinedDataset, combinedDataset, false, 'en')",
+      "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
+      "functionName": "calculateExecutiveDashboardData"
+    },
+    {
+      "callerFile": "src/analytics/__tests__/canonicalCalculations.test.ts",
+      "line": 2528,
+      "context": "buildPresentationViewModel(combinedDataset, null, 'presentation')",
+      "destination": "src/utils/calculations.ts::buildPresentationViewModel",
+      "functionName": "buildPresentationViewModel"
+    },
+    {
       "callerFile": "src/analytics/analyticsCore.ts",
       "line": 42,
       "context": "getNormalizedStatus(row, projectId, settings)",
@@ -4114,49 +4224,49 @@
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2652,
+      "line": 2653,
       "context": "isValidNcrReference(r.ncrRef, r)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2675,
+      "line": 2676,
       "context": "resolveCanonicalNcrRef(r, scopesWithExplicit.has(scopeKey))",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrRef",
       "functionName": "resolveCanonicalNcrRef"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2684,
-      "context": "calculateCanonicalKPIs(\n      filteredNcrData,\n      dataset\n    )",
+      "line": 2692,
+      "context": "calculateCanonicalKPIs(\n      filteredNcrData,\n      dataset,\n      asOfDateStr\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2689,
-      "context": "calculateCumulativeSnapshot(filteredNcrData)",
+      "line": 2698,
+      "context": "calculateCumulativeSnapshot(filteredNcrData, cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateCumulativeSnapshot",
       "functionName": "calculateCumulativeSnapshot"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2742,
+      "line": 2780,
       "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2795,
+      "line": 2833,
       "context": "calculateCanonicalKPIs(\n      data,\n      dataset\n    )",
       "destination": "src/utils/calculations.ts::calculateCanonicalKPIs",
       "functionName": "calculateCanonicalKPIs"
     },
     {
       "callerFile": "src/analytics/calculationFoundation.ts",
-      "line": 2878,
+      "line": 2916,
       "context": "getPerformanceValidationRows(\n      rows\n    )",
       "destination": "src/utils/calculations.ts::getPerformanceValidationRows",
       "functionName": "getPerformanceValidationRows"
@@ -4176,338 +4286,674 @@
       "functionName": "getStatusCodeCategory"
     },
     {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 632,
+      "context": "formatDate(datePartOnly)",
+      "destination": "src/utils/calculations.ts::formatDate",
+      "functionName": "formatDate"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 647,
+      "context": "cleanSheetDisciplineToken(rawUpper)",
+      "destination": "src/utils/calculations.ts::cleanSheetDisciplineToken",
+      "functionName": "cleanSheetDisciplineToken"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 655,
+      "context": "isDisciplineSheet(token)",
+      "destination": "src/utils/calculations.ts::isDisciplineSheet",
+      "functionName": "isDisciplineSheet"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 656,
+      "context": "normalizeDisciplineName(token)",
+      "destination": "src/utils/calculations.ts::normalizeDisciplineName",
+      "functionName": "normalizeDisciplineName"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 785,
+      "context": "isRevision0(rawRev, isRev0Flag)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 788,
+      "context": "isValidRevision(rawRev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 791,
+      "context": "getNormalizedRevision(rawRev, isRev0Flag)",
+      "destination": "src/utils/calculations.ts::getNormalizedRevision",
+      "functionName": "getNormalizedRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1043,
+      "context": "parseEIDateValue(valRow[rev00DateMatch.index], row[rev00DateMatch.index], rev00DateCell)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1052,
+      "context": "parseEIDateValue(valRow[dateReturnMatch.index], row[dateReturnMatch.index], dateReturnCell)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1057,
+      "context": "formatCanonicalEIRevision(rawLastRev, isRevision0(rawLastRev))",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1057,
+      "context": "isRevision0(rawLastRev)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1062,
+      "context": "normalizeEICode(rawCode1, '', dateReturn)",
+      "destination": "src/utils/calculations.ts::normalizeEICode",
+      "functionName": "normalizeEICode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1109,
+      "context": "detectSheetDisciplineCode(sheetName)",
+      "destination": "src/utils/calculations.ts::detectSheetDisciplineCode",
+      "functionName": "detectSheetDisciplineCode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1130,
+      "context": "extractReferenceEISheetFromWorksheet(ws, sheetName)",
+      "destination": "src/utils/calculations.ts::extractReferenceEISheetFromWorksheet",
+      "functionName": "extractReferenceEISheetFromWorksheet"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1268,
+      "context": "parseEIDateValue(nextValRow[cIdx], cell, cellObj)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1362,
+      "context": "parseEIDateValue(rawValueRows[rIdx]?.[cIdx], rawRows[rIdx]?.[cIdx], directCell)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1368,
+      "context": "parseEIDateValue(rawValueRows[merged.r]?.[merged.c], rawRows[merged.r]?.[merged.c], mergedCell)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1585,
+      "context": "isValidRevision(rawRev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1586,
+      "context": "isRevision0(rawRev)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1587,
+      "context": "getRevisionWeight(rawRev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1588,
+      "context": "formatCanonicalEIRevision(rawRev, rev0Flag)",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1589,
+      "context": "normalizeEICode(rawCode, rawStatus, dateReturn)",
+      "destination": "src/utils/calculations.ts::normalizeEICode",
+      "functionName": "normalizeEICode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 1958,
+      "context": "formatCanonicalEIRevision(latestRevRows[0].rawRev, latestRevRows[0].isRev0)",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2108,
+      "context": "compareRevisionsCanonical(a, b)",
+      "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
+      "functionName": "compareRevisionsCanonical"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2226,
+      "context": "compareWithReferenceEILog(\n      records,\n      autoReferenceData.records,\n      autoReferenceData.sheetName,\n      autoReferenceData.inspectedFormulas\n    )",
+      "destination": "src/utils/calculations.ts::compareWithReferenceEILog",
+      "functionName": "compareWithReferenceEILog"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2286,
+      "context": "compileEILogFromEvidenceRows(\n    allValidRows,\n    discoveredSheets,\n    allUnprocessed,\n    fileName,\n    options?.resolutionMode ?? 'GOVERNING_EI_RULE',\n    options?.selectedSheetNames,\n    autoReferenceData\n  )",
+      "destination": "src/utils/calculations.ts::compileEILogFromEvidenceRows",
+      "functionName": "compileEILogFromEvidenceRows"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2312,
+      "context": "generateEILogFromWorkbook(wb, fileName, options)",
+      "destination": "src/utils/calculations.ts::generateEILogFromWorkbook",
+      "functionName": "generateEILogFromWorkbook"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2338,
+      "context": "getPlatformWorkbookBuffer()",
+      "destination": "src/utils/calculations.ts::getPlatformWorkbookBuffer",
+      "functionName": "getPlatformWorkbookBuffer"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2341,
+      "context": "generateEILogFromExcelBuffer(cachedWb.buffer, cachedWb.fileName, { resolutionMode })",
+      "destination": "src/utils/calculations.ts::generateEILogFromExcelBuffer",
+      "functionName": "generateEILogFromExcelBuffer"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2361,
+      "context": "detectSheetDisciplineCode(r.discipline || sheetName)",
+      "destination": "src/utils/calculations.ts::detectSheetDisciplineCode",
+      "functionName": "detectSheetDisciplineCode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2365,
+      "context": "parseEIDateValue(r.submissionDate)",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2366,
+      "context": "parseEIDateValue(\n      r.responseDate || (r as any).dateReturn || (r as any).returnDate || (r as any).consultantReturnDate\n    )",
+      "destination": "src/utils/calculations.ts::parseEIDateValue",
+      "functionName": "parseEIDateValue"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2374,
+      "context": "isValidRevision(rawRev)",
+      "destination": "src/utils/calculations.ts::isValidRevision",
+      "functionName": "isValidRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2375,
+      "context": "isRevision0(rawRev, r.isRev0)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2376,
+      "context": "getRevisionWeight(rawRev)",
+      "destination": "src/utils/calculations.ts::getRevisionWeight",
+      "functionName": "getRevisionWeight"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2377,
+      "context": "formatCanonicalEIRevision(rawRev, rev0Flag)",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2387,
+      "context": "normalizeEICode(rawCode, rawStatus, dateReturn)",
+      "destination": "src/utils/calculations.ts::normalizeEICode",
+      "functionName": "normalizeEICode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2422,
+      "context": "detectSheetDisciplineCode(sName)",
+      "destination": "src/utils/calculations.ts::detectSheetDisciplineCode",
+      "functionName": "detectSheetDisciplineCode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2449,
+      "context": "compileEILogFromEvidenceRows(\n    allValidRows,\n    discoveredSheets,\n    [],\n    fileName,\n    resolutionMode\n  )",
+      "destination": "src/utils/calculations.ts::compileEILogFromEvidenceRows",
+      "functionName": "compileEILogFromEvidenceRows"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2482,
+      "context": "extractReferenceEISheetFromWorksheet(ws, sName)",
+      "destination": "src/utils/calculations.ts::extractReferenceEISheetFromWorksheet",
+      "functionName": "extractReferenceEISheetFromWorksheet"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2582,
+      "context": "formatCanonicalEIRevision(genRec.lastRev, isRevision0(genRec.lastRev))",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2582,
+      "context": "isRevision0(genRec.lastRev)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2583,
+      "context": "formatCanonicalEIRevision(refRec.lastRev, isRevision0(refRec.lastRev))",
+      "destination": "src/utils/calculations.ts::formatCanonicalEIRevision",
+      "functionName": "formatCanonicalEIRevision"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2583,
+      "context": "isRevision0(refRec.lastRev)",
+      "destination": "src/utils/calculations.ts::isRevision0",
+      "functionName": "isRevision0"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2618,
+      "context": "normalizeEICode(genRec.code1, '', genRec.dateReturn)",
+      "destination": "src/utils/calculations.ts::normalizeEICode",
+      "functionName": "normalizeEICode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2619,
+      "context": "normalizeEICode(refRec.code1, '', refRec.dateReturn)",
+      "destination": "src/utils/calculations.ts::normalizeEICode",
+      "functionName": "normalizeEICode"
+    },
+    {
+      "callerFile": "src/analytics/ei/eiLogEngine.ts",
+      "line": 2916,
+      "context": "buildEILogExportWorkbook(result, referenceReport)",
+      "destination": "src/utils/calculations.ts::buildEILogExportWorkbook",
+      "functionName": "buildEILogExportWorkbook"
+    },
+    {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 65,
+      "line": 66,
       "context": "defineStructusightSlideMaster(pres, projectInfo, options)",
       "destination": "src/utils/calculations.ts::defineStructusightSlideMaster",
       "functionName": "defineStructusightSlideMaster"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 78,
-      "context": "calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en')",
+      "line": 80,
+      "context": "calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en', cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
       "functionName": "calculateExecutiveDashboardData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 79,
-      "context": "calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en')",
+      "line": 81,
+      "context": "calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en', cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
       "functionName": "calculateExecutiveDashboardData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 249,
+      "line": 251,
       "context": "renderLuxeLogoBox(pres, coverSlide, 7.5, 0.8, 2.1, 1.2, projectInfo, logoUrl)",
       "destination": "src/utils/calculations.ts::renderLuxeLogoBox",
       "functionName": "renderLuxeLogoBox"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 271,
+      "line": 273,
       "context": "renderLuxeLogoBox(pres, idxSlide, 8.2, 0.4, 1.4, 0.6, projectInfo, logoUrl)",
       "destination": "src/utils/calculations.ts::renderLuxeLogoBox",
       "functionName": "renderLuxeLogoBox"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 402,
+      "line": 404,
       "context": "addDividerSlide(pres, isArabic ? \"بيانات المشروع والشركاء وفريق العمل\" : \"Team Members & Project Details\", isArabic ? \"01 معلومات المشروع\" : \"01 PROJECT INFORMATION\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 404,
+      "line": 406,
       "context": "addHeaderAndFooter(pres, infoSlide, isArabic ? \"معلومات المشروع العامة\" : \"PROJECT INFORMATION\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 434,
+      "line": 436,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات الشهرية\" : \"Monthly Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء الشهري\" : \"02 MONTHLY PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 440,
+      "line": 442,
       "context": "addExecutiveOverviewSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 441,
+      "line": 443,
       "context": "addChartsAndBottlenecksSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 443,
+      "line": 445,
       "context": "addRegisterBreakdownSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 445,
+      "line": 447,
       "context": "addRecommendationsSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 447,
+      "line": 449,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات التراكمية\" : \"Cumulative Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء التراكمي\" : \"02 CUMULATIVE PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 453,
+      "line": 455,
       "context": "addExecutiveOverviewSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 454,
+      "line": 456,
       "context": "addChartsAndBottlenecksSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 456,
+      "line": 458,
       "context": "addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 458,
+      "line": 460,
       "context": "addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 461,
+      "line": 463,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات الشهرية\" : \"Monthly Executive Dashboard & KPIs\",\n                isArabic ? \"02 الأداء الشهري\" : \"02 MONTHLY PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 467,
+      "line": 469,
       "context": "addExecutiveOverviewSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 468,
+      "line": 470,
       "context": "addChartsAndBottlenecksSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 470,
+      "line": 472,
       "context": "addRegisterBreakdownSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 472,
+      "line": 474,
       "context": "addRecommendationsSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 474,
+      "line": 476,
       "context": "addDividerSlide(\n                pres,\n                isArabic ? \"ملخص مؤشرات الأداء والتحليلات التراكمية\" : \"Cumulative Executive Dashboard & KPIs\",\n                isArabic ? \"03 الأداء التراكمي\" : \"03 CUMULATIVE PERFORMANCE\",\n                projectInfo, logoUrl, options\n            )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 480,
+      "line": 482,
       "context": "addExecutiveOverviewSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addExecutiveOverviewSlide",
       "functionName": "addExecutiveOverviewSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 481,
+      "line": 483,
       "context": "addChartsAndBottlenecksSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addChartsAndBottlenecksSlide",
       "functionName": "addChartsAndBottlenecksSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 483,
+      "line": 485,
       "context": "addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRegisterBreakdownSlide",
       "functionName": "addRegisterBreakdownSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 485,
+      "line": 487,
       "context": "addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addRecommendationsSlide",
       "functionName": "addRecommendationsSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 497,
+      "line": 499,
       "context": "compileStatsForBaseType(monthlyWorkingData, bt, effectiveMonthlyStart, data, effectiveCutoffDate)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 498,
+      "line": 500,
       "context": "compileStatsForBaseType(cumulativeWorkingData, bt, undefined, data, effectiveCutoffDate)",
       "destination": "src/utils/calculations.ts::compileStatsForBaseType",
       "functionName": "compileStatsForBaseType"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 508,
+      "line": 510,
       "context": "addDividerSlide(pres, sectionSubtitle, sectionTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 574,
+      "line": 576,
       "context": "addHeaderAndFooter(pres, slideA, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 577,
+      "line": 579,
       "context": "calculateTableLayout(cols, 5.8, false, isArabic ? 'ar' : 'en')",
       "destination": "src/utils/calculations.ts::calculateTableLayout",
       "functionName": "calculateTableLayout"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 580,
+      "line": 582,
       "context": "buildTableData(statsData.stats, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 591,
+      "line": 593,
       "context": "buildTableData(firstChunk, null, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 604,
+      "line": 606,
       "context": "addHeaderAndFooter(pres, slideACont, contTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 606,
+      "line": 608,
       "context": "buildTableData(remainingRows, statsData.totalRow, cols, options?.fontFace, layout.headerFontSize, isArabic ? 'ar' : 'en', layout.bodyFontSize)",
       "destination": "src/utils/calculations.ts::buildTableData",
       "functionName": "buildTableData"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 647,
+      "line": 649,
       "context": "addHeaderAndFooter(pres, slideB, `${longName} (${bt}) ${periodHeaderTag}`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 766,
+      "line": 768,
       "context": "isEntityOverdue(a)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 767,
+      "line": 769,
       "context": "isEntityOverdue(b)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 781,
+      "line": 783,
       "context": "addDividerSlide(\n            pres,\n            isArabic ? \"الملف التحليلي وسجلات التدقيق التاريخية الشاملة\" : \"Detailed Analytics Dossier & Complete Historical Registers\",\n            isArabic ? \"القسم الثاني: الملف التحليلي التفصيلي\" : \"PART II: DETAILED ANALYTICS DOSSIER\",\n            projectInfo,\n            logoUrl,\n            options\n        )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 791,
+      "line": 793,
       "context": "addDividerSlide(\n            pres,\n            isArabic ? \"سجلات ووقائع الرفض التاريخية (إجراء المقاول)\" : \"Historical Rejection Events & Rows (Contractor Action)\",\n            `${String(sectionNumRejected).padStart(2, '0')} HISTORICAL REJECTION EVENTS / ROWS`,\n            projectInfo,\n            logoUrl,\n            options\n        )",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 802,
+      "line": 804,
       "context": "addHeaderAndFooter(pres, slide, \"HISTORICAL REJECTION EVENTS / ROWS\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 811,
+      "line": 813,
       "context": "addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 880,
+      "line": 882,
       "context": "isEntityOverdue(d)",
       "destination": "src/utils/calculations.ts::isEntityOverdue",
       "functionName": "isEntityOverdue"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 898,
+      "line": 900,
       "context": "addDividerSlide(pres, isArabic ? \"الوثائق تحت المراجعة المتأخرة (إجراء الاستشاري)\" : \"Items Requiring Response (Consultant Action)\", `${String(sectionNumPending).padStart(2, '0')} PENDING ITEMS`, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 902,
+      "line": 904,
       "context": "addHeaderAndFooter(pres, slide, \"PENDING ITEMS\", projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 911,
+      "line": 913,
       "context": "addHeaderAndFooter(pres, slide, slideHeaderTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportEngine.ts",
-      "line": 969,
+      "line": 971,
       "context": "addDividerSlide(pres, isArabic ? \"فريق مراقبة وجودة الوثائق\" : \"Document Control Team\", isArabic ? \"شكراً لكم\" : \"Thanks\", projectInfo, logoUrl, options)",
+      "destination": "src/utils/calculations.ts::addDividerSlide",
+      "functionName": "addDividerSlide"
+    },
+    {
+      "callerFile": "src/analytics/exportEngine.ts",
+      "line": 976,
+      "context": "addDividerSlide(pres, reportTitleMain, reportSubtitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addDividerSlide",
       "functionName": "addDividerSlide"
     },
@@ -4611,84 +5057,91 @@
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 369,
+      "line": 371,
       "context": "renderLuxeLogoBox(pres, slide, 8.3, 0.4, 1.3, 0.8, projectInfo, options?.logoUrl || logoBase64)",
       "destination": "src/utils/calculations.ts::renderLuxeLogoBox",
       "functionName": "renderLuxeLogoBox"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 395,
+      "line": 397,
       "context": "getCanonicalHeader(c.label, language)",
       "destination": "src/utils/calculations.ts::getCanonicalHeader",
       "functionName": "getCanonicalHeader"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 494,
+      "line": 497,
       "context": "resolveRowRegister(d)",
       "destination": "src/utils/calculations.ts::resolveRowRegister",
       "functionName": "resolveRowRegister"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 500,
+      "line": 503,
       "context": "resolveOfficialSubmittalRegister(d)",
       "destination": "src/utils/calculations.ts::resolveOfficialSubmittalRegister",
       "functionName": "resolveOfficialSubmittalRegister"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 505,
+      "line": 508,
       "context": "isExcludedRow(row)",
       "destination": "src/utils/calculations.ts::isExcludedRow",
       "functionName": "isExcludedRow"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 512,
+      "line": 517,
+      "context": "calculateNCRStats(rows, rawDataset || filteredData, cutoffDate)",
+      "destination": "src/utils/calculations.ts::calculateNCRStats",
+      "functionName": "calculateNCRStats"
+    },
+    {
+      "callerFile": "src/analytics/exportHelpers.ts",
+      "line": 518,
       "context": "calculateStats(rows, rawDataset || filteredData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 549,
+      "line": 564,
       "context": "calculateStats(generalData, rawDataset || filteredData)",
       "destination": "src/utils/calculations.ts::calculateStats",
       "functionName": "calculateStats"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 552,
+      "line": 567,
       "context": "calculateProjectPerformanceHealth(globalStats, language)",
       "destination": "src/utils/calculations.ts::calculateProjectPerformanceHealth",
       "functionName": "calculateProjectPerformanceHealth"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 732,
+      "line": 747,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 940,
+      "line": 955,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1181,
+      "line": 1196,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
     },
     {
       "callerFile": "src/analytics/exportHelpers.ts",
-      "line": 1225,
+      "line": 1240,
       "context": "addHeaderAndFooter(pres, slide, slideTitle, projectInfo, logoUrl, options)",
       "destination": "src/utils/calculations.ts::addHeaderAndFooter",
       "functionName": "addHeaderAndFooter"
@@ -5479,350 +5932,350 @@
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 540,
+      "line": 541,
       "context": "isPureDisciplineSheet(sourceSheet)",
       "destination": "src/utils/calculations.ts::isPureDisciplineSheet",
       "functionName": "isPureDisciplineSheet"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 541,
+      "line": 542,
       "context": "cleanSheetDisciplineToken(sourceSheet)",
       "destination": "src/utils/calculations.ts::cleanSheetDisciplineToken",
       "functionName": "cleanSheetDisciplineToken"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 590,
+      "line": 591,
       "context": "resolveCanonicalNcrDiscipline(row)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrDiscipline",
       "functionName": "resolveCanonicalNcrDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 766,
+      "line": 767,
       "context": "isValidNcrReference(rawNcrRef, r)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 790,
+      "line": 791,
       "context": "isValidNcrReference(explicitNcrRef, row)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 798,
+      "line": 799,
       "context": "isValidNcrReference(candidateDocNo, row)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 803,
+      "line": 804,
       "context": "isValidNcrReference(candidateSubRef, row)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 909,
+      "line": 910,
       "context": "resolveCanonicalNcrRef(r, scopeHasExplicit)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrRef",
       "functionName": "resolveCanonicalNcrRef"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 917,
+      "line": 918,
       "context": "resolveCanonicalNcrDiscipline(r)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrDiscipline",
       "functionName": "resolveCanonicalNcrDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 942,
+      "line": 943,
       "context": "normalizeDiscipline(r)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 953,
+      "line": 954,
       "context": "isValidNcrReference(ref)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 979,
+      "line": 980,
       "context": "resolveCanonicalNcrRef(d, scopeHasExplicit)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrRef",
       "functionName": "resolveCanonicalNcrRef"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 981,
+      "line": 982,
       "context": "resolveCanonicalNcrDiscipline(d)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrDiscipline",
       "functionName": "resolveCanonicalNcrDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1005,
+      "line": 1006,
       "context": "resolveCanonicalNcrRef(r, scopeHasExplicit)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrRef",
       "functionName": "resolveCanonicalNcrRef"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1019,
+      "line": 1020,
       "context": "classifyNcrStatus(row)",
       "destination": "src/utils/calculations.ts::classifyNcrStatus",
       "functionName": "classifyNcrStatus"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1262,
+      "line": 1263,
       "context": "groupNCRByReference(normalizedData)",
       "destination": "src/utils/calculations.ts::groupNCRByReference",
       "functionName": "groupNCRByReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1292,
+      "line": 1293,
       "context": "normalizeNcrRevisionHistory(rawHistory)",
       "destination": "src/utils/calculations.ts::normalizeNcrRevisionHistory",
       "functionName": "normalizeNcrRevisionHistory"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1306,
+      "line": 1307,
       "context": "getRevisionActivityDateMs(r, idx, fullHistory)",
       "destination": "src/utils/calculations.ts::getRevisionActivityDateMs",
       "functionName": "getRevisionActivityDateMs"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1319,
+      "line": 1320,
       "context": "resolveCanonicalNcrDiscipline(latestOverall)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrDiscipline",
       "functionName": "resolveCanonicalNcrDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1348,
+      "line": 1350,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1358,
+      "line": 1360,
       "context": "evaluateNcrRevisionState(latestOverall, originalIssueMs, cutoffEndOfDayMs)",
       "destination": "src/utils/calculations.ts::evaluateNcrRevisionState",
       "functionName": "evaluateNcrRevisionState"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1376,
+      "line": 1381,
       "context": "isFurtherRevision(latestOverall.rev, latestOverall.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1436,
+      "line": 1442,
       "context": "groupNCRByReference(normalizedData)",
       "destination": "src/utils/calculations.ts::groupNCRByReference",
       "functionName": "groupNCRByReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1518,
+      "line": 1524,
       "context": "normalizeNcrRevisionHistory(rawHistory)",
       "destination": "src/utils/calculations.ts::normalizeNcrRevisionHistory",
       "functionName": "normalizeNcrRevisionHistory"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1522,
+      "line": 1528,
       "context": "normalizeDiscipline(latestOverall)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1595,
+      "line": 1601,
       "context": "getNormalizedRevision(originRow.rev, originRow.isRev0)",
       "destination": "src/utils/calculations.ts::getNormalizedRevision",
       "functionName": "getNormalizedRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1627,
+      "line": 1633,
       "context": "getNormalizedRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::getNormalizedRevision",
       "functionName": "getNormalizedRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1632,
+      "line": 1638,
       "context": "isInheritedSentDate(r, idx, history)",
       "destination": "src/utils/calculations.ts::isInheritedSentDate",
       "functionName": "isInheritedSentDate"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1644,
+      "line": 1650,
       "context": "isRevision0(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isRevision0",
       "functionName": "isRevision0"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1645,
+      "line": 1651,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1697,
+      "line": 1703,
       "context": "isInheritedResponseDate(r, idx, history)",
       "destination": "src/utils/calculations.ts::isInheritedResponseDate",
       "functionName": "isInheritedResponseDate"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1751,
+      "line": 1757,
       "context": "getRevisionActivityDateMs(r, idx, history)",
       "destination": "src/utils/calculations.ts::getRevisionActivityDateMs",
       "functionName": "getRevisionActivityDateMs"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1762,
+      "line": 1768,
       "context": "getRevisionActivityDateMs(latestAtEnd, latestAtEndIdx, history)",
       "destination": "src/utils/calculations.ts::getRevisionActivityDateMs",
       "functionName": "getRevisionActivityDateMs"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1767,
+      "line": 1773,
       "context": "evaluateNcrRevisionState(latestAtEnd, originalIssueMs, endOfTargetMonthMs)",
       "destination": "src/utils/calculations.ts::evaluateNcrRevisionState",
       "functionName": "evaluateNcrRevisionState"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1798,
+      "line": 1804,
       "context": "isFurtherRevision(latestAtEnd.rev, latestAtEnd.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1807,
+      "line": 1813,
       "context": "isFurtherRevision(r.rev, r.isRev0)",
       "destination": "src/utils/calculations.ts::isFurtherRevision",
       "functionName": "isFurtherRevision"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1912,
+      "line": 1918,
       "context": "buildNCRForensicIdentityInventory(safeData)",
       "destination": "src/utils/calculations.ts::buildNCRForensicIdentityInventory",
       "functionName": "buildNCRForensicIdentityInventory"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1913,
+      "line": 1919,
       "context": "normalizeNCRData(safeData)",
       "destination": "src/utils/calculations.ts::normalizeNCRData",
       "functionName": "normalizeNCRData"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1914,
+      "line": 1920,
       "context": "groupNCRByReference(normalizedData)",
       "destination": "src/utils/calculations.ts::groupNCRByReference",
       "functionName": "groupNCRByReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1917,
+      "line": 1923,
       "context": "calculateCumulativeSnapshot(normalizedData, cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateCumulativeSnapshot",
       "functionName": "calculateCumulativeSnapshot"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1925,
+      "line": 1931,
       "context": "calculateMonthlyEvents(normalizedData, monthlyStart, cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateMonthlyEvents",
       "functionName": "calculateMonthlyEvents"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 1999,
+      "line": 2005,
       "context": "resolveCanonicalNcrDiscipline(r)",
       "destination": "src/utils/calculations.ts::resolveCanonicalNcrDiscipline",
       "functionName": "resolveCanonicalNcrDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2001,
+      "line": 2007,
       "context": "cleanSheetDisciplineToken(res.sourceSheet)",
       "destination": "src/utils/calculations.ts::cleanSheetDisciplineToken",
       "functionName": "cleanSheetDisciplineToken"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2011,
+      "line": 2017,
       "context": "normalizeDiscipline({ discipline: \"SURVEY\" } as SubmittalRow)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2012,
+      "line": 2018,
       "context": "normalizeDiscipline({ discipline: \"HSE\" } as SubmittalRow)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2013,
+      "line": 2019,
       "context": "normalizeDiscipline({\n      sourceSheetName: \"ARCH\",\n      discipline: \"Multi-Discipline\",\n      trade: \"WAREHOUSE\"\n    } as SubmittalRow)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2028,
+      "line": 2034,
       "context": "isValidNcrReference(k)",
       "destination": "src/utils/calculations.ts::isValidNcrReference",
       "functionName": "isValidNcrReference"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2077,
+      "line": 2083,
       "context": "recordAuditLog({\n    processName: \"NCR Dual Engine Validation\",\n    recordIdentifier: auditId,\n    action: \"DUAL_COMPARISON\",\n    ruleApplied: \"BR-0101\",\n    engineVersion: \"4.0.0-FORENSIC-CERTIFIED\",\n    executedBy: \"System QA Auditor\",\n    result: integrityReport.passed ? \"SUCCESS\" : \"WARNING\",\n    engineUsed: \"Dual Comparison\",\n    remarks: `Validation: ${integrityReport.passed ? \"PASS\" : \"FAIL\"} | Module: NCR Event-Driven Engine | Total: ${cumulativeKPIs.totalUnique} | Open Snapshot: ${cumulativeKPIs.open} | Closed Snapshot: ${cumulativeKPIs.closed} | Monthly Events - New: ${monthlyKPIs.newNcrReceived}, Submitted: ${monthlyKPIs.correctiveSubmitted}, Responses: ${monthlyKPIs.responsesReceived}, Overdue: ${monthlyKPIs.criticalDelays}`\n  })",
       "destination": "src/utils/calculations.ts::recordAuditLog",
       "functionName": "recordAuditLog"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2112,
+      "line": 2118,
       "context": "processNCRData(sourceData, monthlyStart, cutoffDate)",
       "destination": "src/utils/calculations.ts::processNCRData",
       "functionName": "processNCRData"
     },
     {
       "callerFile": "src/analytics/ncr/ncrEngine.ts",
-      "line": 2116,
+      "line": 2122,
       "context": "normalizeDiscipline({ discipline: (d || \"\").replace(/^NCR-/i, \"\") } as SubmittalRow)",
       "destination": "src/utils/calculations.ts::normalizeDiscipline",
       "functionName": "normalizeDiscipline"
@@ -5850,7 +6303,7 @@
     },
     {
       "callerFile": "src/analytics/presentationPdfRenderer.ts",
-      "line": 126,
+      "line": 150,
       "context": "getCanonicalHeader(h.label, isArabic ? 'ar' : 'en')",
       "destination": "src/utils/calculations.ts::getCanonicalHeader",
       "functionName": "getCanonicalHeader"
@@ -5858,7 +6311,7 @@
     {
       "callerFile": "src/analytics/presentationViewModel.ts",
       "line": 166,
-      "context": "calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en')",
+      "context": "calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en', cutoffDate)",
       "destination": "src/utils/calculations.ts::calculateExecutiveDashboardData",
       "functionName": "calculateExecutiveDashboardData"
     },
@@ -6675,6 +7128,83 @@
       "functionName": "getRevisionWeight"
     },
     {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 74,
+      "context": "generateEILogFromExcelBuffer(rawWorkbookBuffer, uploadedFileName || 'Uploaded_SDW_Register.xlsx', {\n          resolutionMode,\n          selectedSheetNames: selectedSheets.length > 0 ? selectedSheets : undefined\n        })",
+      "destination": "src/utils/calculations.ts::generateEILogFromExcelBuffer",
+      "functionName": "generateEILogFromExcelBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 79,
+      "context": "getPlatformWorkbookBuffer()",
+      "destination": "src/utils/calculations.ts::getPlatformWorkbookBuffer",
+      "functionName": "getPlatformWorkbookBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 81,
+      "context": "generateEILogFromExcelBuffer(platformWb.buffer, platformWb.fileName, {\n          resolutionMode,\n          selectedSheetNames: selectedSheets.length > 0 ? selectedSheets : undefined\n        })",
+      "destination": "src/utils/calculations.ts::generateEILogFromExcelBuffer",
+      "functionName": "generateEILogFromExcelBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 87,
+      "context": "generateEILogFromSubmittalRows(data, 'Active Platform Register Dataset', resolutionMode)",
+      "destination": "src/utils/calculations.ts::generateEILogFromSubmittalRows",
+      "functionName": "generateEILogFromSubmittalRows"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 100,
+      "context": "compareWithReferenceEILog(\n        generationResult.records,\n        customRefData.records,\n        customRefData.referenceName,\n        customRefData.inspectedFormulas\n      )",
+      "destination": "src/utils/calculations.ts::compareWithReferenceEILog",
+      "functionName": "compareWithReferenceEILog"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 117,
+      "context": "registerPlatformWorkbookBuffer(buf, file.name)",
+      "destination": "src/utils/calculations.ts::registerPlatformWorkbookBuffer",
+      "functionName": "registerPlatformWorkbookBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 118,
+      "context": "generateEILogFromExcelBuffer(buf, file.name, { resolutionMode })",
+      "destination": "src/utils/calculations.ts::generateEILogFromExcelBuffer",
+      "functionName": "generateEILogFromExcelBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 140,
+      "context": "parseReferenceEILogBuffer(buf, file.name)",
+      "destination": "src/utils/calculations.ts::parseReferenceEILogBuffer",
+      "functionName": "parseReferenceEILogBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 159,
+      "context": "buildBenchmarkCumulativeSDWWorkbook(withConflicts)",
+      "destination": "src/utils/calculations.ts::buildBenchmarkCumulativeSDWWorkbook",
+      "functionName": "buildBenchmarkCumulativeSDWWorkbook"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 163,
+      "context": "generateEILogFromExcelBuffer(buffer, fName, { resolutionMode })",
+      "destination": "src/utils/calculations.ts::generateEILogFromExcelBuffer",
+      "functionName": "generateEILogFromExcelBuffer"
+    },
+    {
+      "callerFile": "src/components/EILogGenerator.tsx",
+      "line": 286,
+      "context": "downloadEILogExcel(generationResult, activeReferenceReport)",
+      "destination": "src/utils/calculations.ts::downloadEILogExcel",
+      "functionName": "downloadEILogExcel"
+    },
+    {
       "callerFile": "src/components/EngineeringItemDatasetView.tsx",
       "line": 15,
       "context": "evaluateEngineeringItemClassification(data)",
@@ -6991,10 +7521,52 @@
     },
     {
       "callerFile": "src/components/SmartExportModal.tsx",
-      "line": 209,
+      "line": 235,
       "context": "generatePptxReport(data, activeProject, scopeMode as any, filters, exportOptions)",
       "destination": "src/utils/calculations.ts::generatePptxReport",
       "functionName": "generatePptxReport"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 242,
+      "context": "buildPresentationViewModel(\n                        data,\n                        activeProject,\n                        scopeMode as 'monthly' | 'cumulative' | 'presentation',\n                        {\n                            arabicEnabled: effectiveArabic,\n                            primaryColor,\n                            accentColor,\n                            startDate,\n                            endDate,\n                            monthlyStart: startDate,\n                            monthlyEnd: endDate,\n                            cutoffDate: endDate\n                        }\n                    )",
+      "destination": "src/utils/calculations.ts::buildPresentationViewModel",
+      "functionName": "buildPresentationViewModel"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 258,
+      "context": "renderPresentationPdf(viewModel, {\n                        pageSize: pageSize.toLowerCase() as any,\n                        orientation: orientation.toLowerCase() as any,\n                        selectedSections: sectionsList,\n                        slideRangeStart: rangeType === 'custom' ? rangeStart : undefined,\n                        slideRangeEnd: rangeType === 'custom' ? rangeEnd : undefined,\n                        customHeader,\n                        customFooter: resolvedFooter,\n                        logoUrl: logoUrl || activeProject?.logoUrl || undefined,\n                        showLogo,\n                        showProjectInfo\n                    })",
+      "destination": "src/utils/calculations.ts::renderPresentationPdf",
+      "functionName": "renderPresentationPdf"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 304,
+      "context": "computeSafeHtml2CanvasScale(exportElement, 2)",
+      "destination": "src/utils/calculations.ts::computeSafeHtml2CanvasScale",
+      "functionName": "computeSafeHtml2CanvasScale"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 331,
+      "context": "prepareChartsForCapture(cloneEl, exportElement)",
+      "destination": "src/utils/calculations.ts::prepareChartsForCapture",
+      "functionName": "prepareChartsForCapture"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 332,
+      "context": "sanitizeClonedDomForHtml2Canvas(clonedDoc, cloneEl)",
+      "destination": "src/utils/calculations.ts::sanitizeClonedDomForHtml2Canvas",
+      "functionName": "sanitizeClonedDomForHtml2Canvas"
+    },
+    {
+      "callerFile": "src/components/SmartExportModal.tsx",
+      "line": 334,
+      "context": "sanitizeClonedDomForHtml2Canvas(clonedDoc)",
+      "destination": "src/utils/calculations.ts::sanitizeClonedDomForHtml2Canvas",
+      "functionName": "sanitizeClonedDomForHtml2Canvas"
     },
     {
       "callerFile": "src/components/TrendAndForecastEngine.tsx",
@@ -7159,31 +7731,59 @@
     },
     {
       "callerFile": "src/hooks/useExport.ts",
-      "line": 271,
+      "line": 272,
       "context": "generatePptxReport(data, activeProject, 'presentation', { filterMonthly, filterCumulative }, mergedOptions)",
       "destination": "src/utils/calculations.ts::generatePptxReport",
       "functionName": "generatePptxReport"
     },
     {
       "callerFile": "src/hooks/useExport.ts",
-      "line": 275,
+      "line": 276,
       "context": "generatePptxReport(filteredData, activeProject, activeTab === 'monthly' ? 'monthly' : 'cumulative', undefined, mergedOptions)",
       "destination": "src/utils/calculations.ts::generatePptxReport",
       "functionName": "generatePptxReport"
     },
     {
       "callerFile": "src/hooks/useExport.ts",
-      "line": 343,
+      "line": 344,
       "context": "buildPresentationViewModel(data, activeProject, 'presentation', {\n                    ...options,\n                    arabicEnabled: isArabic,\n                    startDate,\n                    endDate,\n                    primaryColor: options?.primaryColor || (activeProject as any)?.primaryColor || '#203864',\n                    accentColor: options?.accentColor || (activeProject as any)?.accentColor || '#D4AF37'\n                })",
       "destination": "src/utils/calculations.ts::buildPresentationViewModel",
       "functionName": "buildPresentationViewModel"
     },
     {
       "callerFile": "src/hooks/useExport.ts",
-      "line": 352,
+      "line": 353,
       "context": "renderPresentationPdf(viewModel, {\n                    pageSize: options?.pageSize?.toLowerCase() || '16x9',\n                    orientation: options?.orientation?.toLowerCase() || 'landscape',\n                    selectedSections: options?.selectedSections,\n                    slideRangeStart: options?.slideRangeStart,\n                    slideRangeEnd: options?.slideRangeEnd\n                })",
       "destination": "src/utils/calculations.ts::renderPresentationPdf",
       "functionName": "renderPresentationPdf"
+    },
+    {
+      "callerFile": "src/hooks/useExport.ts",
+      "line": 367,
+      "context": "computeSafeHtml2CanvasScale(exportElement, 2)",
+      "destination": "src/utils/calculations.ts::computeSafeHtml2CanvasScale",
+      "functionName": "computeSafeHtml2CanvasScale"
+    },
+    {
+      "callerFile": "src/hooks/useExport.ts",
+      "line": 429,
+      "context": "prepareChartsForCapture(cloneEl, exportElement)",
+      "destination": "src/utils/calculations.ts::prepareChartsForCapture",
+      "functionName": "prepareChartsForCapture"
+    },
+    {
+      "callerFile": "src/hooks/useExport.ts",
+      "line": 430,
+      "context": "sanitizeClonedDomForHtml2Canvas(doc, cloneEl)",
+      "destination": "src/utils/calculations.ts::sanitizeClonedDomForHtml2Canvas",
+      "functionName": "sanitizeClonedDomForHtml2Canvas"
+    },
+    {
+      "callerFile": "src/hooks/useExport.ts",
+      "line": 439,
+      "context": "sanitizeClonedDomForHtml2Canvas(doc)",
+      "destination": "src/utils/calculations.ts::sanitizeClonedDomForHtml2Canvas",
+      "functionName": "sanitizeClonedDomForHtml2Canvas"
     },
     {
       "callerFile": "src/hooks/useUpload.ts",
@@ -7957,63 +8557,77 @@
     },
     {
       "callerFile": "src/utils/multiFileParser.ts",
-      "line": 32,
+      "line": 35,
+      "context": "registerPlatformWorkbookBuffer(rawBuf, extractedFile.name)",
+      "destination": "src/utils/calculations.ts::registerPlatformWorkbookBuffer",
+      "functionName": "registerPlatformWorkbookBuffer"
+    },
+    {
+      "callerFile": "src/utils/multiFileParser.ts",
+      "line": 39,
       "context": "parseExcelFile(extractedFile)",
       "destination": "src/utils/calculations.ts::parseExcelFile",
       "functionName": "parseExcelFile"
     },
     {
       "callerFile": "src/utils/multiFileParser.ts",
-      "line": 53,
+      "line": 62,
+      "context": "registerPlatformWorkbookBuffer(rawBuf, file.name)",
+      "destination": "src/utils/calculations.ts::registerPlatformWorkbookBuffer",
+      "functionName": "registerPlatformWorkbookBuffer"
+    },
+    {
+      "callerFile": "src/utils/multiFileParser.ts",
+      "line": 66,
       "context": "parseExcelFile(file)",
       "destination": "src/utils/calculations.ts::parseExcelFile",
       "functionName": "parseExcelFile"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 68,
+      "line": 74,
       "context": "normalizeNCRData(data)",
       "destination": "src/utils/calculations.ts::normalizeNCRData",
       "functionName": "normalizeNCRData"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 69,
+      "line": 75,
       "context": "groupNCRByReference(ncrData)",
       "destination": "src/utils/calculations.ts::groupNCRByReference",
       "functionName": "groupNCRByReference"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 84,
+      "line": 101,
       "context": "getMonthStr(targetMonth)",
       "destination": "src/utils/calculations.ts::getMonthStr",
       "functionName": "getMonthStr"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 89,
+      "line": 106,
       "context": "normalizeNcrRevisionHistory(rawHistory)",
       "destination": "src/utils/calculations.ts::normalizeNcrRevisionHistory",
       "functionName": "normalizeNcrRevisionHistory"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 99,
-      "context": "evaluateNcrRevisionState(latestSubmission, validIssueMs, undefined)",
+      "line": 121,
+      "context": "evaluateNcrRevisionState(latestSubmission, validIssueMs, cutoffEndOfDayMs)",
       "destination": "src/utils/calculations.ts::evaluateNcrRevisionState",
       "functionName": "evaluateNcrRevisionState"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 108,
+      "line": 130,
       "context": "getMonthStr(issueDateStr)",
       "destination": "src/utils/calculations.ts::getMonthStr",
       "functionName": "getMonthStr"
     },
     {
       "callerFile": "src/utils/ncrAnalytics.ts",
-      "line": 109,
+      "line": 131,
       "context": "getMonthStr(closureDateStr)",
       "destination": "src/utils/calculations.ts::getMonthStr",
       "functionName": "getMonthStr"
@@ -8187,6 +8801,48 @@
       "functionName": "parseExcelWorkbook"
     },
     {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 132,
+      "context": "resolveCssColorToRgb(fullExpr, 'rgb(100, 116, 139)')",
+      "destination": "src/utils/calculations.ts::resolveCssColorToRgb",
+      "functionName": "resolveCssColorToRgb"
+    },
+    {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 153,
+      "context": "replaceUnsupportedColorFunctionsInCssText(styleEl.textContent)",
+      "destination": "src/utils/calculations.ts::replaceUnsupportedColorFunctionsInCssText",
+      "functionName": "replaceUnsupportedColorFunctionsInCssText"
+    },
+    {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 174,
+      "context": "replaceUnsupportedColorFunctionsInCssText(inlineStyle)",
+      "destination": "src/utils/calculations.ts::replaceUnsupportedColorFunctionsInCssText",
+      "functionName": "replaceUnsupportedColorFunctionsInCssText"
+    },
+    {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 183,
+      "context": "resolveCssColorToRgb(val)",
+      "destination": "src/utils/calculations.ts::resolveCssColorToRgb",
+      "functionName": "resolveCssColorToRgb"
+    },
+    {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 193,
+      "context": "replaceUnsupportedColorFunctionsInCssText(val)",
+      "destination": "src/utils/calculations.ts::replaceUnsupportedColorFunctionsInCssText",
+      "functionName": "replaceUnsupportedColorFunctionsInCssText"
+    },
+    {
+      "callerFile": "src/utils/pdfDomSanitizer.ts",
+      "line": 200,
+      "context": "replaceUnsupportedColorFunctionsInCssText(val)",
+      "destination": "src/utils/calculations.ts::replaceUnsupportedColorFunctionsInCssText",
+      "functionName": "replaceUnsupportedColorFunctionsInCssText"
+    },
+    {
       "callerFile": "src/utils/rfiAnalytics.ts",
       "line": 74,
       "context": "getMonthStr(targetMonth)",
@@ -8284,9 +8940,9 @@
       "functionName": "calculateNCRStats",
       "cyclomatic": 1,
       "loc": 3,
-      "halsteadVolume": 23.26,
-      "maintainabilityIndex": 152.63,
-      "normalizedMi": 89
+      "halsteadVolume": 41.21,
+      "maintainabilityIndex": 149.65,
+      "normalizedMi": 88
     },
     {
       "functionName": "calculateSORStats",
@@ -8657,6 +9313,166 @@
         "type": "Function",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'validateDataset' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EILogColumnHeader",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EILogColumnHeader' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIConflictType",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIConflictType' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EISourceRowEvidence",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EISourceRowEvidence' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EILogRecord",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EILogRecord' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIValidationIssue",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIValidationIssue' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIUnprocessedRecord",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIUnprocessedRecord' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIColumnMappingStatus",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIColumnMappingStatus' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIDiscoveredSheet",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIDiscoveredSheet' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIInspectedFormulaPattern",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIInspectedFormulaPattern' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIReferenceRecord",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIReferenceRecord' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIReferenceDiscrepancy",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIReferenceDiscrepancy' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "EIVerificationSummary",
+        "type": "Type/Interface",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'EIVerificationSummary' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "parseEIDateValue",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'parseEIDateValue' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "detectSheetDisciplineCode",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'detectSheetDisciplineCode' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "formatCanonicalEIRevision",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'formatCanonicalEIRevision' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "normalizeEICode",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'normalizeEICode' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "extractReferenceEISheetFromWorksheet",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'extractReferenceEISheetFromWorksheet' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "compileEILogFromEvidenceRows",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'compileEILogFromEvidenceRows' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "generateEILogFromWorkbook",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'generateEILogFromWorkbook' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/analytics/ei/eiLogEngine.ts",
+        "exportName": "buildEILogExportWorkbook",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'buildEILogExportWorkbook' detected in any active source modules.",
         "referencedBy": []
       },
       {
@@ -9989,18 +10805,26 @@
       },
       {
         "file": "src/utils/parser.ts",
-        "exportName": "formatDate",
-        "type": "Function",
-        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-        "reason": "No incoming imports of 'formatDate' detected in any active source modules.",
-        "referencedBy": []
-      },
-      {
-        "file": "src/utils/parser.ts",
         "exportName": "parseExcelWorkbook",
         "type": "Function",
         "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
         "reason": "No incoming imports of 'parseExcelWorkbook' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/pdfDomSanitizer.ts",
+        "exportName": "resolveCssColorToRgb",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'resolveCssColorToRgb' detected in any active source modules.",
+        "referencedBy": []
+      },
+      {
+        "file": "src/utils/pdfDomSanitizer.ts",
+        "exportName": "replaceUnsupportedColorFunctionsInCssText",
+        "type": "Function",
+        "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+        "reason": "No incoming imports of 'replaceUnsupportedColorFunctionsInCssText' detected in any active source modules.",
         "referencedBy": []
       },
       {

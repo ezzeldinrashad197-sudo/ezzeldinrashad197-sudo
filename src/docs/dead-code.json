@@ -345,6 +345,166 @@
       "referencedBy": []
     },
     {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EILogColumnHeader",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EILogColumnHeader' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIConflictType",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIConflictType' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EISourceRowEvidence",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EISourceRowEvidence' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EILogRecord",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EILogRecord' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIValidationIssue",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIValidationIssue' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIUnprocessedRecord",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIUnprocessedRecord' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIColumnMappingStatus",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIColumnMappingStatus' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIDiscoveredSheet",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIDiscoveredSheet' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIInspectedFormulaPattern",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIInspectedFormulaPattern' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIReferenceRecord",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIReferenceRecord' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIReferenceDiscrepancy",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIReferenceDiscrepancy' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "EIVerificationSummary",
+      "type": "Type/Interface",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'EIVerificationSummary' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "parseEIDateValue",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'parseEIDateValue' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "detectSheetDisciplineCode",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'detectSheetDisciplineCode' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "formatCanonicalEIRevision",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'formatCanonicalEIRevision' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "normalizeEICode",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'normalizeEICode' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "extractReferenceEISheetFromWorksheet",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'extractReferenceEISheetFromWorksheet' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "compileEILogFromEvidenceRows",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'compileEILogFromEvidenceRows' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "generateEILogFromWorkbook",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'generateEILogFromWorkbook' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/ei/eiLogEngine.ts",
+      "exportName": "buildEILogExportWorkbook",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'buildEILogExportWorkbook' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
       "file": "src/analytics/exportHelpers.ts",
       "exportName": "ExecutiveDashboardData",
       "type": "Type/Interface",
@@ -1674,18 +1834,26 @@
     },
     {
       "file": "src/utils/parser.ts",
-      "exportName": "formatDate",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'formatDate' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/parser.ts",
       "exportName": "parseExcelWorkbook",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'parseExcelWorkbook' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/pdfDomSanitizer.ts",
+      "exportName": "resolveCssColorToRgb",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveCssColorToRgb' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/pdfDomSanitizer.ts",
+      "exportName": "replaceUnsupportedColorFunctionsInCssText",
+      "type": "Function",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'replaceUnsupportedColorFunctionsInCssText' detected in any active source modules.",
       "referencedBy": []
     },
     {

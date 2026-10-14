@@ -27,6 +27,7 @@ digraph DependencyGraph {
     "src/components/CalculationAuditCenter.tsx" [fillcolor=white];
     "src/components/CommercialValidationGateCenter.tsx" [fillcolor=white];
     "src/components/DataValidationEngine.tsx" [fillcolor=white];
+    "src/components/EILogGenerator.tsx" [fillcolor=white];
     "src/components/EngineeringItemDatasetView.tsx" [fillcolor=white];
     "src/components/EnterpriseHardeningView.tsx" [fillcolor=white];
     "src/components/EnterpriseMonitoringDashboard.tsx" [fillcolor=white];
@@ -55,6 +56,7 @@ digraph DependencyGraph {
     "src/utils/multiFileParser.ts" [fillcolor=white];
     "src/utils/parentRegisterResolver.ts" [fillcolor=white];
     "src/utils/parser.ts" [fillcolor=white];
+    "src/utils/pdfDomSanitizer.ts" [fillcolor=white];
     "src/utils/securityRegressionSuite.ts" [fillcolor=white];
     "src/utils/universalRegisterSchema.ts" [fillcolor=white];
   }
@@ -65,6 +67,7 @@ digraph DependencyGraph {
     "src/analytics/__tests__/canonicalCalculations.test.ts" [fillcolor=lightgreen];
     "src/analytics/analyticsService.ts" [fillcolor=lightgreen];
     "src/analytics/dataValidator.ts" [fillcolor=lightgreen];
+    "src/analytics/ei/eiLogEngine.ts" [fillcolor=lightgreen];
     "src/analytics/exportEngine.ts" [fillcolor=lightgreen];
     "src/analytics/exportHelpers.ts" [fillcolor=lightgreen];
     "src/analytics/exportTelemetryTestSuite.ts" [fillcolor=lightgreen];
@@ -150,6 +153,7 @@ digraph DependencyGraph {
   "src/App.tsx" -> "src/components/WorkflowMappingCenter.tsx";
   "src/App.tsx" -> "src/components/CalculationAuditCenter.tsx";
   "src/App.tsx" -> "src/components/UniversalRegisterEngine.tsx";
+  "src/App.tsx" -> "src/components/EILogGenerator.tsx";
   "src/App.tsx" -> "src/utils/calculations.ts";
   "src/CorrespondenceAnalytics.tsx" -> "src/types.ts";
   "src/DelayAnalysis.tsx" -> "src/types.ts";
@@ -221,6 +225,10 @@ digraph DependencyGraph {
   "src/analytics/dataValidator.ts" -> "src/analytics/models.ts";
   "src/analytics/dataValidator.ts" -> "src/utils/calculations.ts";
   "src/analytics/dataValidator.ts" -> "src/analytics/revisionResolver.ts";
+  "src/analytics/ei/eiLogEngine.ts" -> "src/types.ts";
+  "src/analytics/ei/eiLogEngine.ts" -> "src/utils/parser.ts";
+  "src/analytics/ei/eiLogEngine.ts" -> "src/analytics/revisionResolver.ts";
+  "src/analytics/ei/eiLogEngine.ts" -> "src/utils/parentRegisterResolver.ts";
   "src/analytics/exportEngine.ts" -> "src/types.ts";
   "src/analytics/exportEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/exportEngine.ts" -> "src/analytics/calculationFoundation.ts";
@@ -304,6 +312,9 @@ digraph DependencyGraph {
   "src/components/DataValidationEngine.tsx" -> "src/analytics/analyticsCore.ts";
   "src/components/DataValidationEngine.tsx" -> "src/analytics/revisionResolver.ts";
   "src/components/DataValidationEngine.tsx" -> "src/analytics/sequenceAuditEngine.ts";
+  "src/components/EILogGenerator.tsx" -> "src/types.ts";
+  "src/components/EILogGenerator.tsx" -> "src/utils/i18n.tsx";
+  "src/components/EILogGenerator.tsx" -> "src/analytics/ei/eiLogEngine.ts";
   "src/components/EngineeringItemDatasetView.tsx" -> "src/types.ts";
   "src/components/EngineeringItemDatasetView.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/components/EnterpriseHardeningView.tsx" -> "src/analytics/revisionResolver.ts";
@@ -331,6 +342,10 @@ digraph DependencyGraph {
   "src/components/SmartExportModal.tsx" -> "src/utils/i18n.tsx";
   "src/components/SmartExportModal.tsx" -> "src/types.ts";
   "src/components/SmartExportModal.tsx" -> "src/analytics/exportEngine.ts";
+  "src/components/SmartExportModal.tsx" -> "src/analytics/presentationViewModel.ts";
+  "src/components/SmartExportModal.tsx" -> "src/analytics/presentationPdfRenderer.ts";
+  "src/components/SmartExportModal.tsx" -> "src/hooks/useExport.ts";
+  "src/components/SmartExportModal.tsx" -> "src/utils/pdfDomSanitizer.ts";
   "src/components/TrendAndForecastEngine.tsx" -> "src/types.ts";
   "src/components/TrendAndForecastEngine.tsx" -> "src/utils/calculations.ts";
   "src/components/UniversalRegisterEngine.tsx" -> "src/components/CommercialValidationGateCenter.tsx";
@@ -350,6 +365,7 @@ digraph DependencyGraph {
   "src/hooks/useExport.ts" -> "src/analytics/presentationPdfRenderer.ts";
   "src/hooks/useExport.ts" -> "src/types.ts";
   "src/hooks/useExport.ts" -> "src/utils/i18n.tsx";
+  "src/hooks/useExport.ts" -> "src/utils/pdfDomSanitizer.ts";
   "src/hooks/useFilters.ts" -> "src/types.ts";
   "src/hooks/useFilters.ts" -> "src/firebase.ts";
   "src/hooks/useUpload.ts" -> "src/types.ts";
@@ -380,6 +396,7 @@ digraph DependencyGraph {
   "src/utils/excelParser.worker.ts" -> "src/utils/parser.ts";
   "src/utils/multiFileParser.ts" -> "src/utils/parser.ts";
   "src/utils/multiFileParser.ts" -> "src/types.ts";
+  "src/utils/multiFileParser.ts" -> "src/analytics/ei/eiLogEngine.ts";
   "src/utils/ncrAnalytics.ts" -> "src/types.ts";
   "src/utils/ncrAnalytics.ts" -> "src/utils/rfiAnalytics.ts";
   "src/utils/ncrAnalytics.ts" -> "src/analytics/ncr/ncrEngine.ts";
