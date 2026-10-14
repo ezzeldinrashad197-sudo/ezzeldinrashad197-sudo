@@ -918,7 +918,7 @@ console.log(`- Mathematical Delta Variance: ${totalFailures === 0 ? colors.green
 cleanup();
 
 if (totalFailures === 0) {
-  console.log(`\n${colors.bgGreen}${colors.white}${colors.bright}  CERTIFICATION APPROVED: ALL MATHEMATICAL CONTRACTS, REGRESSION CHECKS, AND STRESS BARRIERS PASSED SUCCESSFULLY.  ${colors.reset}\n`);
+  console.log(`\n${colors.bgGreen}${colors.white}${colors.bright}  LOCALIZED TEST PASSED: ALL MATHEMATICAL CONTRACTS, REGRESSION CHECKS, AND STRESS BARRIERS PASSED SUCCESSFULLY.  ${colors.reset}\n`);
   process.exit(0);
 } else {
   console.log(`\n${colors.bgRed}${colors.white}${colors.bright}  CERTIFICATION DECLINED: ${totalFailures} UNRESOLVED CORE CONTRACT OR STRESS BARRIER ERRORS PRESENT.  ${colors.reset}\n`);
