@@ -223,7 +223,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
      }[] = [];
      rowsByDocTypeLabel.forEach((matchingRows, typeLabel) => {
          const scopedContext = getScopedContextForRows(matchingRows);
-         const stats = calculateStats(matchingRows, scopedContext);
+         const stats = calculateStats(matchingRows, scopedContext, undefined, projectInfo);
          const submittalStats = resolveUniqueSubmittalStats(matchingRows, scopedContext);
          let criticalCount = 0;
          for (let i = 0; i < matchingRows.length; i++) {
@@ -305,7 +305,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   const globalStats = useMemo(() => {
     if (precomputedGlobalStats) return precomputedGlobalStats;
     const scopedGlobalContext = getScopedContextForRows(nonNcrFilteredData);
-    return calculateStats(nonNcrFilteredData, scopedGlobalContext);
+    return calculateStats(nonNcrFilteredData, scopedGlobalContext, undefined, projectInfo);
   }, [precomputedGlobalStats, nonNcrFilteredData, getScopedContextForRows]);
 
   const hasAnyMissingSequences = useMemo(() => {
@@ -505,7 +505,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
               break;
           }
           if (cat === 'PENDING' || cat === 'REJECTED_OPEN') {
-            if (isEntityOverdue(latest, 0)) {
+            if (isEntityOverdue(latest, 0, projectInfo)) {
               overdueCurrent++;
             }
           }
@@ -542,7 +542,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
   // Top 5 Oldest Pending Overdue Items
   const topOverdueItems = useMemo(() => {
      return [...filteredData]
-        .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+        .filter(d => isEntityOverdue(d, undefined, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
         .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
         .slice(0, 5);
   }, [filteredData]);
@@ -844,7 +844,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         exactOverdueDaysReported: runtimeDelayDays,
         trueAsOfMinusDueDateDays: trueAsOfMinusDueDays,
         trueTargetMinusDueDateDays: trueEndMinusDueDays,
-        isEntityOverdueFlag: isEntityOverdue(r),
+        isEntityOverdueFlag: isEntityOverdue(r, nowTimeMs, projectInfo),
         isCurrentLatestRevision: isWinningLatestRev,
         currentEntityWinningRevision: winningLatestRevStr,
         currentEntityResolvedStatus: currentEntityStatus,
@@ -881,8 +881,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
         return true;
       })
       .sort((a, b) => {
-        const aOverdue = isEntityOverdue(a) ? 1 : 0;
-        const bOverdue = isEntityOverdue(b) ? 1 : 0;
+        const aOverdue = isEntityOverdue(a, undefined, projectInfo) ? 1 : 0;
+        const bOverdue = isEntityOverdue(b, undefined, projectInfo) ? 1 : 0;
         if (bOverdue !== aOverdue) return bOverdue - aOverdue;
         return (b.delayDays || 0) - (a.delayDays || 0);
       });
@@ -927,7 +927,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       const group = revisionMap.get(key);
       if (!group) return;
       const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
-      const isOverdue = isEntityOverdue(group.latest);
+      const isOverdue = isEntityOverdue(group.latest, undefined, projectInfo);
       if (isOverdue) {
         if (cat === 'REJECTED_OPEN') {
           overdueRejectedOpen++;
@@ -1158,7 +1158,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           if (!group) return;
           const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
           if (cat === 'PENDING' || cat === 'REJECTED_OPEN') {
-            if (isEntityOverdue(group.latest)) {
+            if (isEntityOverdue(group.latest, undefined, projectInfo)) {
               const revs = group.all.map(x => x.rev || '00');
               extracted.push(mapToDrillDownItem(group.latest, true, revs));
             }
@@ -1171,7 +1171,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           const group = revisionMap.get(key);
           if (!group) return;
           const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
-          if (cat === 'REJECTED_OPEN' && isEntityOverdue(group.latest)) {
+          if (cat === 'REJECTED_OPEN' && isEntityOverdue(group.latest, undefined, projectInfo)) {
             const revs = group.all.map(x => x.rev || '00');
             extracted.push(mapToDrillDownItem(group.latest, true, revs));
           }
@@ -1183,7 +1183,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
           const group = revisionMap.get(key);
           if (!group) return;
           const cat = group.resolvedStatus || getStatusCodeCategory(group.latest);
-          if ((cat === 'PENDING' || cat === 'UNCLASSIFIED') && isEntityOverdue(group.latest)) {
+          if ((cat === 'PENDING' || cat === 'UNCLASSIFIED') && isEntityOverdue(group.latest, undefined, projectInfo)) {
             const revs = group.all.map(x => x.rev || '00');
             extracted.push(mapToDrillDownItem(group.latest, true, revs));
           }

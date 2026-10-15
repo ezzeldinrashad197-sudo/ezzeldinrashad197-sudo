@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileSpreadsheet, FileUp, LayoutDashboard, CalendarDays, Clock, Database, CheckCircle2, AlertCircle, Printer, Presentation as PresentationIcon, Filter, Settings, Bot, ChevronLeft, ChevronRight, BarChart, Loader2, FileText, CheckSquare, ShieldAlert, ShieldCheck, Network, Hexagon, LogOut, Globe, Cpu, Layers } from 'lucide-react';
-import { SubmittalRow, ProjectSettings } from './types';
+import { SubmittalRow, ProjectSettings, DEFAULT_SLA_SETTINGS } from './types';
 import MasterRegister from './components/MasterRegister';
 import ReportTable from './ReportTable';
 import DelayAnalysis from './DelayAnalysis';
@@ -186,7 +186,10 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map(p => ({
+            ...p,
+            slaDays: p.slaDays ? { ...DEFAULT_SLA_SETTINGS, ...p.slaDays } : { ...DEFAULT_SLA_SETTINGS }
+          }));
         }
       }
     } catch (e) {
@@ -203,7 +206,8 @@ export default function App() {
         projectManager: 'Eng. Project Director',
         documentControlManager: 'Eng. Ezz Rashad',
         reviewPeriodDays: 14,
-        workingDaysPerWeek: 6
+        workingDaysPerWeek: 6,
+        slaDays: { ...DEFAULT_SLA_SETTINGS }
       }
     ];
   });
@@ -271,16 +275,16 @@ export default function App() {
     [generalData, filterCumulative]
   );
 
-  const generalStatsCacheRef = React.useRef<{ data: SubmittalRow[]; stats: ReturnType<typeof calculateStats> } | null>(null);
+  const generalStatsCacheRef = React.useRef<{ data: SubmittalRow[]; activeProject: ProjectSettings | null; stats: ReturnType<typeof calculateStats> } | null>(null);
   const getGeneralStats = React.useCallback(() => {
     if (generalData.length === 0) return null;
-    if (generalStatsCacheRef.current && generalStatsCacheRef.current.data === generalData) {
+    if (generalStatsCacheRef.current && generalStatsCacheRef.current.data === generalData && generalStatsCacheRef.current.activeProject === activeProject) {
       return generalStatsCacheRef.current.stats;
     }
-    const stats = calculateStats(generalData);
-    generalStatsCacheRef.current = { data: generalData, stats };
+    const stats = calculateStats(generalData, undefined, undefined, activeProject);
+    generalStatsCacheRef.current = { data: generalData, activeProject, stats };
     return stats;
-  }, [generalData]);
+  }, [generalData, activeProject]);
 
   useEffect(() => {
     if (generalData.length > 0 && activeProjectId) {

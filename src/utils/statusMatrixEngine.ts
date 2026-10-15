@@ -1,4 +1,5 @@
 import { SubmittalRow, ProjectSettings } from '../types';
+import { isEntityOverdue } from '../analytics/slaEngine';
 import { getStatusCategory as getCanonicalStatusCategory } from '../analytics/statusResolver';
 
 export interface StatusMapConfig {
@@ -53,43 +54,5 @@ export const checkIfOverdueDynamically = (
   projectSettings?: ProjectSettings | null,
   contextAsOfDate?: string
 ): boolean => {
-  const hasResponse = !!row.responseDate;
-  if (hasResponse) {
-    if (row.dueDate && row.responseDate > row.dueDate) {
-      return true;
-    }
-    return false;
-  }
-  
-  // Dynamic as-of reporting date from CalculationContext, defaulting to current date
-  const todayStr = contextAsOfDate && /^\d{4}-\d{2}-\d{2}$/.test(contextAsOfDate) 
-    ? contextAsOfDate 
-    : new Date().toISOString().substring(0, 10);
-  
-  let finalDueDate = row.dueDate;
-  if (!finalDueDate && row.submissionDate && projectSettings?.slaDays) {
-    const sla = projectSettings.slaDays;
-    const docType = (row.documentType || '').toUpperCase();
-    let days = sla.default || 14;
-    
-    if (docType.includes('RFI')) days = sla.rfi;
-    else if (docType.includes('NCR')) days = sla.ncr;
-    else if (docType.includes('SOR')) days = sla.sor;
-    else if (docType.includes('WIR')) days = sla.wir ?? sla.default ?? 14;
-    else if (docType.includes('MIR')) days = sla.mir ?? sla.default ?? 14;
-    else if (docType.includes('SHD') || docType.includes('SHOP')) days = sla.shopDrawings;
-    else if (docType.includes('MAR') || docType.includes('MATERIAL')) days = sla.materialSubmittals;
-    else if (docType.includes('LET') || docType.includes('LETTER')) days = sla.letters;
-    
-    const subDate = new Date(row.submissionDate);
-    if (!isNaN(subDate.getTime())) {
-      subDate.setDate(subDate.getDate() + days);
-      finalDueDate = subDate.toISOString().substring(0, 10);
-    }
-  }
-  
-  if (finalDueDate && todayStr > finalDueDate) {
-    return true;
-  }
-  return !!row.overdue;
+  return isEntityOverdue(row, contextAsOfDate, projectSettings);
 };

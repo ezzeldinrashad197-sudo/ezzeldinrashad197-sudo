@@ -1,3 +1,23 @@
+import {
+  isEntityOverdue as isEntityOverdueCore,
+  resolveDocumentSLACategory,
+  resolveSLAThresholdDays,
+  calculateRecordDeadline,
+  normalizeSLASettings,
+  DEFAULT_SLA_SETTINGS,
+  SLACategory,
+  CalculatedDeadline
+} from "./slaEngine";
+import { SLASettings, ProjectSettings } from "../types";
+
+export {
+  resolveDocumentSLACategory,
+  resolveSLAThresholdDays,
+  calculateRecordDeadline,
+  normalizeSLASettings,
+  DEFAULT_SLA_SETTINGS
+};
+export type { SLACategory, CalculatedDeadline };
 
 import { SubmittalRow, KPIStats, RegisterSequenceAudit } from '../types';
 import {
@@ -783,47 +803,11 @@ export function processRevisionEngine(
  */
 export const isEntityOverdue = (
   latest?: SubmittalRow | null,
-  cutoffTime?: number
+  cutoffTime?: number | string | Date | null,
+  slaSettings?: Partial<SLASettings> | ProjectSettings | null,
+  options?: { forceSlaRecalculation?: boolean }
 ): boolean => {
-  if (!latest) {
-    return false;
-  }
-
-  const cat = getStatusCodeCategory(latest);
-  if (cat !== 'PENDING' && cat !== 'REJECTED_OPEN') {
-    return false;
-  }
-
-  const nowTime =
-    cutoffTime && cutoffTime > 0
-      ? cutoffTime
-      : Date.now();
-
-  if (latest.dueDate) {
-    const dueTime = parseDateTimestamp(latest.dueDate);
-
-    if (
-      dueTime > 0 &&
-      nowTime > dueTime
-    ) {
-      return true;
-    }
-  } else if (latest.submissionDate) {
-    const subTime =
-      parseDateTimestamp(latest.submissionDate);
-
-    if (subTime > 0) {
-      const diffDays =
-        (nowTime - subTime) /
-        (1000 * 3600 * 24);
-
-      if (diffDays > 14) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return isEntityOverdueCore(latest, cutoffTime, slaSettings, options);
 };
 
 /**
@@ -848,7 +832,8 @@ export const isEntityOverdue = (
 export function calculateCanonicalKPIs(
   data: SubmittalRow[],
   fullDataset?: SubmittalRow[],
-  asOfDate?: string
+  asOfDate?: string,
+  slaSettings?: Partial<SLASettings> | ProjectSettings | null
 ): CanonicalKPIResult {
   const rowsToUse = data || [];
   const cutoffTime = parseDateTimestamp(asOfDate);
@@ -1247,7 +1232,8 @@ export function calculateCanonicalKPIs(
         const isItemOverdue =
           isEntityOverdue(
             latest,
-            cutoffTime
+            cutoffTime,
+            slaSettings
           );
 
         if (isItemOverdue) {
@@ -1647,13 +1633,17 @@ export function calculateCanonicalKPIs(
  */
 export function calculateStats(
   data: SubmittalRow[],
-  fullDataset?: SubmittalRow[]
+  fullDataset?: SubmittalRow[],
+  asOfDate?: string,
+  slaSettings?: Partial<SLASettings> | ProjectSettings | null
 ): KPIStats & {
   totalUniqueDrawings: number;
 } {
   return calculateCanonicalKPIs(
     data,
-    fullDataset
+    fullDataset,
+    asOfDate,
+    slaSettings
   );
 }
 

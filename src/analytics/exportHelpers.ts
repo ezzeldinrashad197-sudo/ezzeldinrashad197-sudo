@@ -1,6 +1,6 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType } from "../utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType, isEntityOverdue } from "../utils/calculations";
 import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, resolveRowRegister, isExcludedRow } from "./managementReportOutput";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
@@ -488,8 +488,10 @@ export const calculateExecutiveDashboardData = (
     rawDataset: SubmittalRow[],
     isMonthly: boolean,
     language: 'ar' | 'en' = 'en',
-    cutoffDate?: string | Date
+    cutoffDate?: string | Date,
+    projectInfo?: ProjectSettings | null
 ): ExecutiveDashboardData => {
+    const cutoffDateStr = typeof cutoffDate === 'string' ? cutoffDate : (cutoffDate instanceof Date ? cutoffDate.toISOString().split('T')[0] : undefined);
     const baseOrder = ['ABD', 'SDW', 'SHD', 'MAR', 'QS', 'DOC', 'WIR', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR', 'PQ', 'PRQ', 'TRS'];
     const discOrder = ['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'LANDSCAPE', 'LAND', 'LND', 'SURVEY', 'SUR', 'GEN'];
 
@@ -515,7 +517,7 @@ export const calculateExecutiveDashboardData = (
         const isNcrDoc = documentType === 'NCR' || documentType.startsWith('NCR-');
         const stats = isNcrDoc
             ? calculateNCRStats(rows, rawDataset || filteredData, cutoffDate)
-            : calculateStats(rows, rawDataset || filteredData);
+            : calculateStats(rows, rawDataset || filteredData, cutoffDateStr, projectInfo);
         if (isNcrDoc) {
             stats.currentApproved = stats.approvedClosed ?? stats.approved ?? 0;
             stats.currentRejectedOpen = stats.open ?? ((stats.notSent || 0) + (stats.rejectedOpen || 0));
@@ -561,7 +563,7 @@ export const calculateExecutiveDashboardData = (
     });
 
     const generalData = filteredData.filter(d => !(d.documentType || 'DOC').startsWith('NCR-') && (d.documentType || 'DOC') !== 'NCR');
-    const globalStats = calculateStats(generalData, rawDataset || filteredData);
+    const globalStats = calculateStats(generalData, rawDataset || filteredData, cutoffDateStr, projectInfo);
     const globalCriticalCount = generalData.filter(d => d.priority === 'CRITICAL' || (d.remarks || '').toUpperCase().includes('CRITICAL')).length;
 
     const healthData = calculateProjectPerformanceHealth(globalStats, language);
@@ -626,7 +628,7 @@ export const calculateExecutiveDashboardData = (
     }));
 
     const topOverdueItems = [...filteredData]
-        .filter(d => d.overdue && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+        .filter(d => isEntityOverdue(d, cutoffDateStr, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
         .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
         .slice(0, 5);
 

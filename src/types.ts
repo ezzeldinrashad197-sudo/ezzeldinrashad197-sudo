@@ -11,6 +11,18 @@ export interface SLASettings {
   default: number;
 }
 
+export const DEFAULT_SLA_SETTINGS: SLASettings = {
+  shopDrawings: 10,
+  materialSubmittals: 10,
+  rfi: 10,
+  ncr: 3,
+  sor: 3,
+  letters: 3,
+  wir: 2,
+  mir: 2,
+  default: 14,
+};
+
 export interface ProjectSettings {
   id: string;
   projectName: string;

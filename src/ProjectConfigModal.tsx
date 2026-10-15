@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ProjectSettings, SLASettings } from './types';
+import { ProjectSettings, SLASettings, DEFAULT_SLA_SETTINGS } from './types';
 import { Settings, Plus, Trash2, Edit2, Check, X, Clock } from 'lucide-react';
 
 interface ProjectConfigModalProps {
@@ -10,17 +10,7 @@ interface ProjectConfigModalProps {
   isEmbedded?: boolean;
 }
 
-const defaultSLA: SLASettings = {
-  shopDrawings: 14,
-  materialSubmittals: 14,
-  rfi: 7,
-  ncr: 7,
-  sor: 7,
-  letters: 3,
-  wir: 7,
-  mir: 14,
-  default: 14
-};
+const defaultSLA: SLASettings = { ...DEFAULT_SLA_SETTINGS };
 
 const defaultProject: ProjectSettings = {
   id: '',
@@ -208,39 +198,39 @@ export default function ProjectConfigModal({ projects, activeProjectId, onSave, 
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                            <div className="flex flex-col gap-1">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">Shop Drawings</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.shopDrawings || 14} onChange={e => handleSlaChange(project.id, 'shopDrawings', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.shopDrawings ?? DEFAULT_SLA_SETTINGS.shopDrawings} onChange={e => handleSlaChange(project.id, 'shopDrawings', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">Materials</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.materialSubmittals || 14} onChange={e => handleSlaChange(project.id, 'materialSubmittals', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.materialSubmittals ?? DEFAULT_SLA_SETTINGS.materialSubmittals} onChange={e => handleSlaChange(project.id, 'materialSubmittals', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">RFIs</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.rfi || 7} onChange={e => handleSlaChange(project.id, 'rfi', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.rfi ?? DEFAULT_SLA_SETTINGS.rfi} onChange={e => handleSlaChange(project.id, 'rfi', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">NCRs</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.ncr || 7} onChange={e => handleSlaChange(project.id, 'ncr', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.ncr ?? DEFAULT_SLA_SETTINGS.ncr} onChange={e => handleSlaChange(project.id, 'ncr', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1 mt-2">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">SORs</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.sor || 7} onChange={e => handleSlaChange(project.id, 'sor', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.sor ?? DEFAULT_SLA_SETTINGS.sor} onChange={e => handleSlaChange(project.id, 'sor', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1 mt-2">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">Letters</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.letters || 3} onChange={e => handleSlaChange(project.id, 'letters', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.letters ?? DEFAULT_SLA_SETTINGS.letters} onChange={e => handleSlaChange(project.id, 'letters', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1 mt-2">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">WIR (Works)</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.wir ?? 7} onChange={e => handleSlaChange(project.id, 'wir', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.wir ?? DEFAULT_SLA_SETTINGS.wir} onChange={e => handleSlaChange(project.id, 'wir', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1 mt-2">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">MIR (Materials)</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.mir ?? 14} onChange={e => handleSlaChange(project.id, 'mir', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.mir ?? DEFAULT_SLA_SETTINGS.mir} onChange={e => handleSlaChange(project.id, 'mir', e.target.value)} />
                            </div>
                            <div className="flex flex-col gap-1 mt-2">
                                <label className="text-xs font-bold text-[#64748b] uppercase tracking-widest">Default/Other</label>
-                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.default || 14} onChange={e => handleSlaChange(project.id, 'default', e.target.value)} />
+                               <input type="number" className="bg-[#f8fafc] border border-[#e2e8f0] rounded px-3 py-2 text-[#1e293b] focus:border-[#D4AF37] outline-none" value={project.slaDays?.default ?? DEFAULT_SLA_SETTINGS.default} onChange={e => handleSlaChange(project.id, 'default', e.target.value)} />
                            </div>
                        </div>
                     </div>

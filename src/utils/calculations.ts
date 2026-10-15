@@ -18,7 +18,12 @@ import {
   resolveCanonicalTrade,
   auditRegisterSequence,
   runComprehensiveSequenceAudit,
-  generateForensicLifecycleLedger
+  generateForensicLifecycleLedger,
+  isEntityOverdue,
+  resolveDocumentSLACategory,
+  resolveSLAThresholdDays,
+  calculateRecordDeadline,
+  DEFAULT_SLA_SETTINGS
 } from "../analytics/calculationFoundation";
 export { 
   parseDateTimestamp, 
@@ -34,7 +39,12 @@ export {
   resolveCanonicalTrade, 
   auditRegisterSequence, 
   runComprehensiveSequenceAudit, 
-  generateForensicLifecycleLedger 
+  generateForensicLifecycleLedger,
+  isEntityOverdue,
+  resolveDocumentSLACategory,
+  resolveSLAThresholdDays,
+  calculateRecordDeadline,
+  DEFAULT_SLA_SETTINGS
 };
 import { compareRevisions } from "../analytics/analyticsCore";
 import { compareRevisionsCanonical, getRevisionWeight, isRevision0 } from "../analytics/revisionResolver";
@@ -86,8 +96,13 @@ export const getUniqueNCRs = (rows: SubmittalRow[]): SubmittalRow[] => {
   return result;
 };
 
-export const calculateStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[]): KPIStats & { totalUniqueDrawings: number } => {
-  return calcStatsFoundation(rows, fullDataset);
+export const calculateStats = (
+  rows: SubmittalRow[],
+  fullDataset?: SubmittalRow[],
+  asOfDate?: string,
+  slaSettings?: Partial<any> | null
+): KPIStats & { totalUniqueDrawings: number } => {
+  return calcStatsFoundation(rows, fullDataset, asOfDate, slaSettings);
 };
 
 export const calculateNCRStats = (rows: SubmittalRow[], fullDataset?: SubmittalRow[] | boolean, cutoffDate?: string | Date): any => {
@@ -244,7 +259,7 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const dueDate = r.dueDate || '';
     const delayDays = r.delayDays || getDelayDays(submissionDate, responseDate, dueDate);
     const isStatusActive = cat === 'PENDING' || cat === 'REJECTED_OPEN';
-    const computedOverdue = isStatusActive && (dueDate ? (parseDateTimestamp(dueDate) > 0 && Date.now() > parseDateTimestamp(dueDate)) : checkIfOverdueDynamically(submissionDate, responseDate, 14));
+    const computedOverdue = isStatusActive && isEntityOverdue(r);
     const overdue = isStatusActive ? computedOverdue : false;
 
     const rawSource = String(r.rawSourceIdentity || r.sourceFile || '').toUpperCase().trim();
@@ -402,9 +417,17 @@ export const calculateProjectPerformanceHealth = (
   };
 };
 
-export const checkIfOverdueDynamically = (submission: string, response: string, thresholdDays = 14): boolean => {
-  const days = getDelayDays(submission, response, '');
-  return days > thresholdDays;
+export const checkIfOverdueDynamically = (
+  rowOrSubmission: SubmittalRow | string,
+  responseOrSettings?: string | any | null,
+  thresholdOrCutoff?: number | string
+): boolean => {
+  if (typeof rowOrSubmission === 'object' && rowOrSubmission !== null) {
+    return isEntityOverdue(rowOrSubmission, thresholdOrCutoff as any, responseOrSettings as any);
+  }
+  const days = getDelayDays(rowOrSubmission as string, typeof responseOrSettings === 'string' ? responseOrSettings : '', '');
+  const limit = typeof thresholdOrCutoff === 'number' ? thresholdOrCutoff : 14;
+  return days > limit;
 };
 export const getClosedOpenByDocType = (
   docType: string,

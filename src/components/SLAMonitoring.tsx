@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { SubmittalRow, ProjectSettings, SLASettings } from '../types';
+import { SubmittalRow, ProjectSettings, SLASettings, DEFAULT_SLA_SETTINGS } from '../types';
+import { resolveDocumentSLACategory, resolveSLAThresholdDays } from '../analytics/slaEngine';
 import { getStatusCodeCategory } from '../utils/calculations';
 import { Settings2, Clock, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -11,17 +12,7 @@ interface Props {
 
 export default function SLAMonitoring({ data, projectInfo }: Props) {
     const slas = useMemo<SLASettings>(() => {
-        return projectInfo?.slaDays || {
-            shopDrawings: 14,
-            materialSubmittals: 14,
-            rfi: 7,
-            ncr: 7,
-            sor: 7,
-            letters: 3,
-            wir: 7,
-            mir: 14,
-            default: 14
-        };
+        return projectInfo?.slaDays ? { ...DEFAULT_SLA_SETTINGS, ...projectInfo.slaDays } : { ...DEFAULT_SLA_SETTINGS };
     }, [projectInfo]);
 
     const { summary, registerStats } = useMemo(() => {

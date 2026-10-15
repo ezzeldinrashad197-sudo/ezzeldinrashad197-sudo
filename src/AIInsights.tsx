@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SubmittalRow, ProjectSettings } from './types';
-import { calculateStats, getStatusCodeCategory } from './utils/calculations';
+import { calculateStats, getStatusCodeCategory, isEntityOverdue } from './utils/calculations';
 import { Sparkles, Loader2, Bot, AlertTriangle, TrendingUp, Lightbulb, TrendingDown, Target, Clock, Users, Flame } from 'lucide-react';
 import Markdown from 'react-markdown';
 
@@ -17,7 +17,7 @@ export default function AIInsights({ data, projectInfo }: AIInsightsProps) {
   const [insights, setInsights] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  const stats = calculateStats(data);
+  const stats = calculateStats(data, undefined, undefined, projectInfo);
   const enterpriseData = useMemo(() => runExecutiveAnalytics(data), [data]);
 
   const localInsights = useMemo(() => {
@@ -33,18 +33,14 @@ export default function AIInsights({ data, projectInfo }: AIInsightsProps) {
           typeMap[type].push(d);
 
           const disc = (d.discipline || 'Unknown').trim();
-          // Delay by discipline
-          if (d.submissionDate && !d.responseDate) {
-              const subD = new Date(d.submissionDate).getTime();
-              const days = (Date.now() - subD) / (1000*3600*24);
-              if (days > 14) { // Assume 14 overdue
-                  discMap[disc] = (discMap[disc] || 0) + 1;
-              }
+          // Delay by discipline using centralized SSOT
+          if (isEntityOverdue(d, undefined, projectInfo)) {
+              discMap[disc] = (discMap[disc] || 0) + 1;
           }
       });
 
       const typesStats = Object.entries(typeMap).map(([type, rows]) => {
-          const s = calculateStats(rows);
+          const s = calculateStats(rows, undefined, undefined, projectInfo);
           return { type, stats: s };
       }).filter(t => t.stats.totalSubmittedSheets > 5);
 

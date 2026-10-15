@@ -365,7 +365,7 @@ export default function Presentation({
   }, [monthlyData, data]);
 
     const overallMonthlyStats = useMemo(() => {
-    const s = calculateStats(monthlyData, monthlyReferenceData);
+    const s = calculateStats(monthlyData, monthlyReferenceData, endDate, projectInfo);
     const respondedItems = monthlyData.filter(d => d.responseDate && d.submissionDate);
     const slaMet = respondedItems.filter(d => d.delayDays <= 0).length;
     const slaCompliance = respondedItems.length > 0 ? (slaMet / respondedItems.length) * 100 : null;
@@ -395,7 +395,7 @@ export default function Presentation({
   }, [monthlyData, data]);
 
     const overallCumulativeStats = useMemo(() => {
-    const s = calculateStats(cumulativeData, data);
+    const s = calculateStats(cumulativeData, data, endDate, projectInfo);
     const respondedItems = cumulativeData.filter(d => d.responseDate && d.submissionDate);
     const slaMet = respondedItems.filter(d => d.delayDays <= 0).length;
     const slaCompliance = respondedItems.length > 0 ? (slaMet / respondedItems.length) * 100 : null;
@@ -494,7 +494,7 @@ export default function Presentation({
         return rDisc === disc;
       });
 
-      const s = family === 'NCR' ? calculateNCRStats(dData, false) : (family === 'SOR' ? calculateSORStats(dData, false) : (family === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
+      const s = family === 'NCR' ? calculateNCRStats(dData, false) : (family === 'SOR' ? calculateSORStats(dData, false) : (family === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset, endDate, projectInfo)));
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = family === 'SDW' || family === 'SHD' || family === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
@@ -811,7 +811,7 @@ export default function Presentation({
   const pendingItems = useMemo(() => {
     const seen = new Set<string>();
     return cumulativeData
-      .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+      .filter(d => isEntityOverdue(d, endDate, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
       .filter(d => {
         const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
         if (seen.has(refKey)) return false;
@@ -832,8 +832,8 @@ export default function Presentation({
         return true;
       })
       .sort((a, b) => {
-        const aOverdue = isEntityOverdue(a) ? 1 : 0;
-        const bOverdue = isEntityOverdue(b) ? 1 : 0;
+        const aOverdue = isEntityOverdue(a, endDate, projectInfo) ? 1 : 0;
+        const bOverdue = isEntityOverdue(b, endDate, projectInfo) ? 1 : 0;
         if (bOverdue !== aOverdue) return bOverdue - aOverdue;
         return (b.delayDays || 0) - (a.delayDays || 0);
       });
@@ -1330,7 +1330,7 @@ export default function Presentation({
           const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
           return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
         });
-        const s = calculateStats(tRows, monthlyData);
+        const s = calculateStats(tRows, monthlyData, endDate, projectInfo);
         return {
           trade,
           uniqueRev00: s.totalSubmittalsRev0 || 0,
@@ -1890,7 +1890,7 @@ export default function Presentation({
           const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
           return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
         });
-        const s = calculateStats(tRows, cumulativeData);
+        const s = calculateStats(tRows, cumulativeData, endDate, projectInfo);
         return {
           trade,
           uniqueRev00: s.totalSubmittalsRev0 || 0,

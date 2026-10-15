@@ -765,8 +765,8 @@ export const generatePptxReport = async (
                 return true;
             })
             .sort((a, b) => {
-                const aOverdue = isEntityOverdue(a) ? 1 : 0;
-                const bOverdue = isEntityOverdue(b) ? 1 : 0;
+                const aOverdue = isEntityOverdue(a, undefined, projectInfo) ? 1 : 0;
+                const bOverdue = isEntityOverdue(b, undefined, projectInfo) ? 1 : 0;
                 if (bOverdue !== aOverdue) return bOverdue - aOverdue;
                 return (b.delayDays || 0) - (a.delayDays || 0);
             });
@@ -879,7 +879,7 @@ export const generatePptxReport = async (
         const seenPendingRefs = new Set<string>();
         const targetPendingDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
         const presPendingItems = targetPendingDataset
-            .filter(d => isEntityOverdue(d) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+            .filter(d => isEntityOverdue(d, undefined, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
             .filter(d => {
                 const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
                 if (seenPendingRefs.has(refKey)) return false;
