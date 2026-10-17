@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-17T11:56:34.278Z",
+  "timestamp": "2026-10-17T12:50:15.673Z",
   "engineVersion": "2.1.0-ENTERPRISE-SSOT",
   "coverageType": "Business Rule & Decision Branch Verification SSOT Coverage",
   "expectedValuesOrigin": "Independent Golden Reference Baseline (Manual Spreadsheet & Specification Audit)",
@@ -20,9 +20,9 @@
   "branchCoveragePct": 100,
   "functionCoveragePct": 100,
   "performanceMetrics": {
-    "pureEngineBenchmark10kMs": 2632.83,
-    "pureEngineBenchmark50kMs": 12430.35,
-    "throughput50kRecPerSec": 4022,
-    "fullRegressionSuiteDurationMs": 15582
+    "pureEngineBenchmark10kMs": 2687.78,
+    "pureEngineBenchmark50kMs": 12778.45,
+    "throughput50kRecPerSec": 3913,
+    "fullRegressionSuiteDurationMs": 16035
   }
 }

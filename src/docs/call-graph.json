@@ -6462,98 +6462,98 @@
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 61,
+    "line": 62,
     "context": "getSubmissionIdentityKey(r)",
     "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
     "functionName": "getSubmissionIdentityKey"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 69,
+    "line": 70,
     "context": "compareRevisionsCanonical(a.rev, b.rev)",
     "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
     "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 78,
+    "line": 79,
     "context": "getSubmissionIdentityKey(r)",
     "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
     "functionName": "getSubmissionIdentityKey"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 94,
+    "line": 95,
     "context": "compareRevisionsCanonical(a.rev, b.rev)",
     "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
     "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 201,
+    "line": 202,
     "context": "compareRevisionsCanonical(b, a)",
     "destination": "src/utils/calculations.ts::compareRevisionsCanonical",
     "functionName": "compareRevisionsCanonical"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 207,
+    "line": 208,
     "context": "resolveCanonicalTrade(r)",
     "destination": "src/utils/calculations.ts::resolveCanonicalTrade",
     "functionName": "resolveCanonicalTrade"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 245,
+    "line": 246,
     "context": "getRevisionWeight(revUpper)",
     "destination": "src/utils/calculations.ts::getRevisionWeight",
     "functionName": "getRevisionWeight"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 246,
+    "line": 247,
     "context": "isRevision0(revUpper, r.isRev0)",
     "destination": "src/utils/calculations.ts::isRevision0",
     "functionName": "isRevision0"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 249,
+    "line": 250,
     "context": "getStatusCodeCategory(r)",
     "destination": "src/utils/calculations.ts::getStatusCodeCategory",
     "functionName": "getStatusCodeCategory"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 261,
+    "line": 262,
     "context": "getDelayDays(submissionDate, responseDate, dueDate)",
     "destination": "src/utils/calculations.ts::getDelayDays",
     "functionName": "getDelayDays"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 263,
+    "line": 264,
     "context": "isEntityOverdue(r)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 297,
+    "line": 298,
     "context": "getSubmissionIdentityKey(r)",
     "destination": "src/utils/calculations.ts::getSubmissionIdentityKey",
     "functionName": "getSubmissionIdentityKey"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 427,
+    "line": 428,
     "context": "isEntityOverdue(rowOrSubmission, thresholdOrCutoff as any, responseOrSettings as any)",
     "destination": "src/utils/calculations.ts::isEntityOverdue",
     "functionName": "isEntityOverdue"
   },
   {
     "callerFile": "src/utils/calculations.ts",
-    "line": 429,
+    "line": 430,
     "context": "getDelayDays(rowOrSubmission as string, typeof responseOrSettings === 'string' ? responseOrSettings : '', '')",
     "destination": "src/utils/calculations.ts::getDelayDays",
     "functionName": "getDelayDays"

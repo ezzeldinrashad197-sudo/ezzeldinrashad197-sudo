@@ -226,14 +226,6 @@
     },
     {
       "file": "src/analytics/calculationFoundation.ts",
-      "exportName": "isContractualDeadline",
-      "type": "Constant/Enum/Class",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'isContractualDeadline' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/calculationFoundation.ts",
       "exportName": "normalizeSLASettings",
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",

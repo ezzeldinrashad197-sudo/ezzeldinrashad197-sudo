@@ -20,6 +20,7 @@ import {
   runComprehensiveSequenceAudit,
   generateForensicLifecycleLedger,
   isEntityOverdue,
+  isContractualDeadline,
   resolveDocumentSLACategory,
   resolveSLAThresholdDays,
   calculateRecordDeadline,
