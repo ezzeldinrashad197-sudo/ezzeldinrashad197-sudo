@@ -49,7 +49,8 @@ export function classifyRow(code?: string, status?: string): CanonicalStatus {
 
    // Code C -> "revise & resubmit". Status determines whether Open or Closed
   if (cleanCode === 'C' || cleanCode === 'REJECTED' || cleanCode === 'RETURNED' || cleanCode === 'REJ') {
-    return (sUpper === 'OPEN' || s === 'Open') ? 'REJECTED_OPEN' : 'REJECTED_CLOSED';
+    const isExplicitlyClosed = sUpper === 'CLOSED' || sUpper === 'CLOSE' || sUpper === 'FINAL_CLOSED' || sUpper === 'FINAL CLOSED' || sUpper === 'RESOLVED' || sUpper === 'COMPLETED';
+    return isExplicitlyClosed ? 'REJECTED_CLOSED' : 'REJECTED_OPEN';
   }
 
   // Code A or Code B or Code D -> Approved (Code D = Disapproved / Final Closed = No Further Submission)
@@ -167,7 +168,7 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
     const checkStr = rawCode || rawStatusCombined;
     const normalized = checkStr.replace(/["':\-\s]+/g, ' ').trim();
     const hasWord = (word: string) => new RegExp(`(?:^| )${word}(?: |$)`).test(normalized);
-    const isClosed = recordStatus === 'CLOSED' || recordStatus === 'CLOSE' || workflowStage === 'CLOSED' || action === 'CLOSED' || hasWord('CLOSED') || hasWord('CLOSE');
+    const isClosed = recordStatus === 'CLOSED' || recordStatus === 'CLOSE' || workflowStage === 'CLOSED' || action === 'CLOSED' || hasWord('CLOSED') || hasWord('CLOSE') || rawStatusCombined.includes('CLOSED');
     const isCodeD = normalized === 'D' || normalized === 'CODE D' || normalized.startsWith('D ') || normalized.endsWith(' D') || normalized.includes('CODE D') || normalized.includes('DISAPPROVED');
 
     // In WIR, Code A, B, and D are Approved

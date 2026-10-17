@@ -5,38 +5,14 @@ export { DEFAULT_SLA_SETTINGS };
 
 export type SLACategory = keyof SLASettings;
 
-export function resolveDocumentSLACategory(
-  recordOrType?: SubmittalRow | string | null
-): SLACategory {
-  if (!recordOrType) {
-    return "default";
-  }
-
-  let docType = "";
-  let logType = "";
-  let regIdentity = "";
-  let workflowFamily = "";
-
-  if (typeof recordOrType === "string") {
-    docType = recordOrType;
-  } else {
-    docType = recordOrType.documentType || "";
-    logType = recordOrType.logType || "";
-    regIdentity =
-      recordOrType.registerIdentity ||
-      recordOrType.sourceRegisterIdentity ||
-      "";
-    workflowFamily = recordOrType.workflowFamily || "";
-  }
-
-  const combinedTokens = [
-    docType,
-    logType,
-    regIdentity,
-    workflowFamily,
-  ]
+function matchTokensToCategory(tokens: string[]): SLACategory {
+  const combinedTokens = tokens
     .map(t => String(t || "").toUpperCase().trim())
     .filter(Boolean);
+
+  if (combinedTokens.length === 0) {
+    return "default";
+  }
 
   const rawCombined = combinedTokens.join(" ");
   const normalized = rawCombined.replace(/[^A-Z0-9]/g, "");
@@ -165,9 +141,13 @@ export function resolveDocumentSLACategory(
       t =>
         t === "RFI" ||
         t.startsWith("RFI-") ||
-        t.includes("REQUEST FOR INFORMATION")
+        t.startsWith("RFI_") ||
+        t.includes("REQUEST FOR INFORMATION") ||
+        t.includes("REQUESTS FOR INFORMATION") ||
+        (t.includes("REQUEST") && t.includes("INFORMATION"))
     ) ||
     normalized.includes("REQUESTFORINFORMATION") ||
+    normalized.includes("REQUESTSFORINFORMATION") ||
     normalized.startsWith("RFI");
 
   if (hasRFI) {
@@ -175,6 +155,34 @@ export function resolveDocumentSLACategory(
   }
 
   return "default";
+}
+
+export function resolveDocumentSLACategory(
+  recordOrType?: SubmittalRow | string | null
+): SLACategory {
+  if (!recordOrType) {
+    return "default";
+  }
+
+  if (typeof recordOrType === "string") {
+    return matchTokensToCategory([recordOrType]);
+  }
+
+  if (recordOrType.documentType) {
+    const docCat = matchTokensToCategory([recordOrType.documentType]);
+    if (docCat !== "default") {
+      return docCat;
+    }
+  }
+
+  const fallbackTokens = [
+    recordOrType.logType,
+    recordOrType.registerIdentity,
+    recordOrType.sourceRegisterIdentity,
+    recordOrType.workflowFamily,
+  ].filter(Boolean) as string[];
+
+  return matchTokensToCategory(fallbackTokens);
 }
 
 export function normalizeSLASettings(

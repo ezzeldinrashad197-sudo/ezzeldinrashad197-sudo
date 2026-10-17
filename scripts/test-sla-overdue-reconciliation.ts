@@ -29,13 +29,25 @@ function assert(condition: boolean, testName: string, detail?: string) {
 
 // Helper to construct a typed SubmittalRow
 function makeRow(overrides: Partial<SubmittalRow>): SubmittalRow {
+  const docType = overrides.documentType || "SDW";
+  const defaultLogType =
+    docType === "MAR" ? "Material Submittal Register" :
+    docType === "RFI" ? "RFI Register" :
+    docType === "WIR" ? "WIR Register" :
+    docType === "MIR" ? "MIR Register" :
+    docType === "NCR" ? "NCR Register" :
+    docType === "SOR" ? "SOR Register" :
+    docType === "LTR" ? "Letters Register" :
+    docType === "DOC" ? "General Submittals Register" :
+    "Shop Drawing Register";
+
   return {
     id: overrides.id || "ROW-1",
     docNo: overrides.docNo || "DOC-001",
     rev: overrides.rev || "00",
     sheetNo: overrides.sheetNo || "",
-    logType: overrides.logType || "Shop Drawing Register",
-    documentType: overrides.documentType || "SDW",
+    logType: overrides.logType || defaultLogType,
+    documentType: docType,
     discipline: overrides.discipline || "Structural",
     trade: overrides.trade || "STR",
     workflowStage: overrides.workflowStage || "Pending",
@@ -47,6 +59,11 @@ function makeRow(overrides: Partial<SubmittalRow>): SubmittalRow {
     isRev0: overrides.isRev0 !== undefined ? overrides.isRev0 : true,
     delayDays: overrides.delayDays !== undefined ? overrides.delayDays : 0,
     overdue: Boolean(overrides.overdue),
+    contractor: overrides.contractor || "Innovo",
+    consultant: overrides.consultant || "ACE",
+    remarks: overrides.remarks || "",
+    area: overrides.area || "Zone A",
+    tradeSystem: overrides.tradeSystem || "Concrete",
     ...overrides
   };
 }
