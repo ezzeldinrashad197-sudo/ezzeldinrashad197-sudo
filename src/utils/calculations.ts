@@ -41,6 +41,7 @@ export {
   runComprehensiveSequenceAudit, 
   generateForensicLifecycleLedger,
   isEntityOverdue,
+  isContractualDeadline,
   resolveDocumentSLACategory,
   resolveSLAThresholdDays,
   calculateRecordDeadline,

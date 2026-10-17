@@ -177,6 +177,10 @@
       "layer": 1
     },
     {
+      "id": "src/analytics/slaEngine.ts",
+      "layer": 2
+    },
+    {
       "id": "src/analytics/sor/sorEngine.ts",
       "layer": 2
     },
@@ -788,6 +792,14 @@
     },
     {
       "source": "src/analytics/calculationFoundation.ts",
+      "target": "src/analytics/slaEngine.ts"
+    },
+    {
+      "source": "src/analytics/calculationFoundation.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/calculationFoundation.ts",
       "target": "src/types.ts"
     },
     {
@@ -1075,6 +1087,14 @@
       "target": "src/analytics/statusResolver.ts"
     },
     {
+      "source": "src/analytics/slaEngine.ts",
+      "target": "src/types.ts"
+    },
+    {
+      "source": "src/analytics/slaEngine.ts",
+      "target": "src/analytics/statusResolver.ts"
+    },
+    {
       "source": "src/analytics/sor/sorEngine.ts",
       "target": "src/types.ts"
     },
@@ -1269,6 +1289,10 @@
     {
       "source": "src/components/SLAMonitoring.tsx",
       "target": "src/types.ts"
+    },
+    {
+      "source": "src/components/SLAMonitoring.tsx",
+      "target": "src/analytics/slaEngine.ts"
     },
     {
       "source": "src/components/SLAMonitoring.tsx",
@@ -1561,6 +1585,10 @@
     {
       "source": "src/utils/statusMatrixEngine.ts",
       "target": "src/types.ts"
+    },
+    {
+      "source": "src/utils/statusMatrixEngine.ts",
+      "target": "src/analytics/slaEngine.ts"
     },
     {
       "source": "src/utils/statusMatrixEngine.ts",

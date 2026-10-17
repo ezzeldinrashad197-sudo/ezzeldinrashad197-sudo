@@ -1,5 +1,6 @@
 import {
   isEntityOverdue as isEntityOverdueCore,
+  isContractualDeadline,
   resolveDocumentSLACategory,
   resolveSLAThresholdDays,
   calculateRecordDeadline,
@@ -11,6 +12,7 @@ import {
 import { SLASettings, ProjectSettings } from "../types";
 
 export {
+  isContractualDeadline,
   resolveDocumentSLACategory,
   resolveSLAThresholdDays,
   calculateRecordDeadline,

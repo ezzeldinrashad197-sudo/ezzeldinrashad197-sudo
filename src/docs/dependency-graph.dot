@@ -89,6 +89,7 @@ digraph DependencyGraph {
     "src/analytics/reconciliationEngine.ts" [fillcolor=lightgreen];
     "src/analytics/recordTransformer.ts" [fillcolor=lightgreen];
     "src/analytics/revisionEngine.ts" [fillcolor=lightgreen];
+    "src/analytics/slaEngine.ts" [fillcolor=lightgreen];
     "src/analytics/sor/sorEngine.ts" [fillcolor=lightgreen];
     "src/utils/ncrAnalytics.ts" [fillcolor=lightgreen];
     "src/utils/rfiAnalytics.ts" [fillcolor=lightgreen];
@@ -217,6 +218,8 @@ digraph DependencyGraph {
   "src/analytics/analyticsCore.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/analyticsCore.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/analyticsService.ts" -> "src/analytics/models.ts";
+  "src/analytics/calculationFoundation.ts" -> "src/analytics/slaEngine.ts";
+  "src/analytics/calculationFoundation.ts" -> "src/types.ts";
   "src/analytics/calculationFoundation.ts" -> "src/types.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/calculationFoundation.ts" -> "src/analytics/statusResolver.ts";
@@ -289,6 +292,8 @@ digraph DependencyGraph {
   "src/analytics/sequenceAuditEngine.ts" -> "src/types.ts";
   "src/analytics/sequenceAuditEngine.ts" -> "src/analytics/revisionResolver.ts";
   "src/analytics/sequenceAuditEngine.ts" -> "src/analytics/statusResolver.ts";
+  "src/analytics/slaEngine.ts" -> "src/types.ts";
+  "src/analytics/slaEngine.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/types.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/utils/calculations.ts";
   "src/analytics/sor/sorEngine.ts" -> "src/analytics/revisionResolver.ts";
@@ -338,6 +343,7 @@ digraph DependencyGraph {
   "src/components/MasterRegister.tsx" -> "src/analytics/calculationFoundation.ts";
   "src/components/MasterRegister.tsx" -> "src/analytics/revisionResolver.ts";
   "src/components/SLAMonitoring.tsx" -> "src/types.ts";
+  "src/components/SLAMonitoring.tsx" -> "src/analytics/slaEngine.ts";
   "src/components/SLAMonitoring.tsx" -> "src/utils/calculations.ts";
   "src/components/SmartExportModal.tsx" -> "src/utils/i18n.tsx";
   "src/components/SmartExportModal.tsx" -> "src/types.ts";
@@ -411,5 +417,6 @@ digraph DependencyGraph {
   "src/utils/rfiAnalytics.ts" -> "src/utils/statusMatrixEngine.ts";
   "src/utils/securityRegressionSuite.ts" -> "src/types.ts";
   "src/utils/statusMatrixEngine.ts" -> "src/types.ts";
+  "src/utils/statusMatrixEngine.ts" -> "src/analytics/slaEngine.ts";
   "src/utils/statusMatrixEngine.ts" -> "src/analytics/statusResolver.ts";
 }

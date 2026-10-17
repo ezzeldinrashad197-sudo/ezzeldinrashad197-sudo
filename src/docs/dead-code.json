@@ -226,6 +226,38 @@
     },
     {
       "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "isContractualDeadline",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isContractualDeadline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "normalizeSLASettings",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'normalizeSLASettings' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "SLACategory",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'SLACategory' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
+      "exportName": "CalculatedDeadline",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'CalculatedDeadline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/analytics/calculationFoundation.ts",
       "exportName": "classifyNcrStatus",
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
@@ -1526,6 +1558,46 @@
       "type": "Constant/Enum/Class",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
       "reason": "No incoming imports of 'generateForensicLifecycleLedger' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "isContractualDeadline",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'isContractualDeadline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "resolveDocumentSLACategory",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveDocumentSLACategory' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "resolveSLAThresholdDays",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'resolveSLAThresholdDays' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "calculateRecordDeadline",
+      "type": "Constant/Enum/Class",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'calculateRecordDeadline' detected in any active source modules.",
+      "referencedBy": []
+    },
+    {
+      "file": "src/utils/calculations.ts",
+      "exportName": "DEFAULT_SLA_SETTINGS",
+      "type": "Component",
+      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
+      "reason": "No incoming imports of 'DEFAULT_SLA_SETTINGS' detected in any active source modules.",
       "referencedBy": []
     },
     {

@@ -189,24 +189,51 @@ Authentication Regression Test Results: 38 Passed, 4 Failed.
 - **التفسير الهندسي لرسائل الفشل الـ 4:**  
   هذا الفشل هو **صمام الأمان الهندسي المتوقع والمطلوب**؛ حيث يثبت أن بوابة خط الأساس مقفلة تقنياً وتمنع تمرير التعديلات البرمجية دون إصدار واعتماد وثيقة مراجعة خط أساس رسمية (`BRR-2026-10-14`).
 
-### ج. شفافية وحالة خط أنابيب التكامل المستمر والـ Git SHA (CI Pipeline & Commit Traceability)
-- **الالتزام البرمجي المفحوص في CI (Git Commit):** `2a8c722f2b62b8ee24c6d01d01757f9f3d52492a` (الالتزام المنشور والمرتبط بتشغيل GitHub Actions رقم 134 على الفرع المعتمد `main`).
-  * *سلسلة التتبع التاريخية (Commit Lineage):* الالتزام الحالي `2a8c722f2b62b8ee24c6d01d01757f9f3d52492a` (CI Run #134) يعقب الالتزام `450d89a0e8bad523fd134832167ee245347e8113` (CI Run #133) ونقطة التوثيق السابقة `ee5b26b4e78c04e2bf0ac0e744adac80b627385e`.
-- **موقف خط الأنابيب المؤتمت (`.github/workflows/ci.yml` - Run #134):**
-  * يشتمل خط أنابيب الـ CI على 20 بوابة تحقق إلزامية في بيئة التنفيذ المعزولة (Ubuntu Latest).
-  * **البوابات المنفذة بنجاح كامل في CI Run #134:**
-    1. **Gate 1 (`npm run lint`):** اجتاز بنجاح (Passed - 0 errors).
-    2. **Gate 2 (`npm run architecture-audit`):** اجتاز بنجاح (Passed - 0 violations عبر 133 ملفاً).
-    3. **Gate 3 (`npm run test`):** اجتاز بنجاح (Passed - جميع المتتاليات الحسابية ER-001 إلى ER-036 واختبارات الإجهاد بنسبة تباين 0.000%).
-  * **بوابة الحوكمة الموقفة لخط الأنابيب (Gate 4 Failure):**
-    * **Gate 4 (`npm run test:auth`):** انتهت بالنتيجة **38 ناجح و4 فاشل** (38 Passed, 4 Failed). جميع اختبارات المصادقة الصفرية (Zero-Trust)، والعزل بين المشاريع (Tenant Isolation)، وسياسات الأمان الـ 38 نجحت بالكامل. وتوقف الفحص حصرياً عند فحص البصمات المشفرة لملفات الحسابات الأربعة التي طرأ عليها تعديل مسودة الأرقام المقترحة (`calculations.ts`, `calculationFoundation.ts`, `ncrEngine.ts`, `ncrAnalytics.ts`).
-  * **البوابات اللاحقة غير المنفذة (Fast-Fail Skipped):**
-    * **Gate 5 (`test:firestore-runtime`) وحتى Gate 20:** تم تخطيها تلقائياً نظراً لتوقف الأنابيب عند Gate 4؛ ولا يجوز اعتبارها ناجحة أو فاشلة استناداً إلى هذا التشغيل.
+### ج. تقرير التحقق المباشر لخط أنابيب التكامل المستمر (CI Run #137) ونتائج البوابات الـ 20 الفعلية
+- **الالتزام البرمجي المفحوص في CI (Git Commit):** الالتزام المرتبط بتشغيل **GitHub Actions CI Run #137** على الفرع المعتمد `main`.
+  * *سلسلة التتبع التاريخية (Commit Lineage):* التشغيل الحالي `CI Run #137` يعقب التشغيلات السابقة `CI Run #134` (`2a8c722f2b62b8ee24c6d01d01757f9f3d52492a`) و`CI Run #133` (`450d89a0e8bad523fd134832167ee245347e8113`).
+- **الموقف الفعلي المفصل للبوابات العشرين (Actual Status of All 20 CI Gates):**
+  1. **Gate 1 — Type Integrity & Syntax Lint (`npm run lint`):** **ناجح (PASSED)** — 0 أخطاء بناء أو مطابقة أنماط.
+  2. **Gate 2 — Architecture & SSOT Compliance Audit (`npm run architecture-audit`):** **ناجح (PASSED)** — 0 مخالفات معمارية عبر 136 ملفاً في المستودع.
+  3. **Gate 3 — Unit Tests, Mathematical Invariants & Stress Benchmarks (`npm run test`):** **ناجح (PASSED)** — اجتياز كافة متتاليات التدقيق الحسابي ER-001 إلى ER-036 واختبارات الإجهاد بنسبة تباين 0.000% (LOCALIZED TEST PASSED).
+  4. **Gate 4 — Zero-Trust Authentication, Tenant Isolation & Negative Auth Tests (`npm run test:auth`):** **فشل مؤكد (FAILED)** — النتيجة الفعلية: **38 ناجح و4 فاشل**. كافة اختبارات المصادقة الصفرية وسياسات العزل الـ 38 نجحت بالكامل؛ وتوقف الفحص عمداً عند حاجز الانحراف المشفر لحماية بصمات ملفات الحسابات الأربعة غير المعتمدة من الـ PMC.
+  5. **Gate 5 — Real Firestore Security Rules Runtime Verification (`test:firestore-runtime`):** **تم تخطيها (SKIPPED / FAST-FAIL)** — لم تُنفذ نظراً لتوقف الأنابيب التلقائي عند فشل Gate 4.
+  6. **Gate 6 — Sequence Population Integrity & Observation-Only Audit (`test:sequence`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  7. **Gate 7 — Cross-Layer Overdue Calculations Audit (`test:overdue`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  8. **Gate 8 — RFI Invariant Total Regression Suite (`test:rfi`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  9. **Gate 9 — Universal Source Identity & Ingestion Classification Audit (`test:usi`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  10. **Gate 10 — Structural & Trade Classification Matrix Invariants (`test:str-matrix`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  11. **Gate 11 — WIR-STR Real-World Registry E2E Verification (`test:wir-str`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  12. **Gate 12 — L99 Identity Equality & Independent Provenance Audits (`test:l99`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  13. **Gate 13 — Lifecycle Provenance & History Traceability Suite (`test:lifecycle`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  14. **Gate 14 — Presentation & Export Matrix Audit (PPTX) (`test:pptx`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  15. **Gate 15 — Chapter 16 / ER-013 Backend Metrics Calculation Engine (`test:er013`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  16. **Gate 16 — End-to-End Integration & Golden Dataset Parity (`run-integration-tests`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  17. **Gate 17 — Forensic E2E Regression & Revision Invariance Suite (`test:forensic`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  18. **Gate 18 — Comprehensive Production Benchmark Regression Harness (`test:regression-suite`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  19. **Gate 19 — Generate Authoritative Audit Evidence Report (`generate-evidence-report`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+  20. **Gate 20 — Production Build & Asset Verification (`npm run build`):** **تم تخطيها (SKIPPED / FAST-FAIL)**.
+
 - **التحليل الرقابي لـ Gate 4 وحاجز الانحراف المشفر (Cryptographic Drift Barrier):**
   * توقف وفشل Gate 4 يثبت فاعلية حاجز الانحراف المشفر طالما بقيت الملفات الحسابية تختلف عن خط الأساس المعتمد.
   * **قاعدة الحوكمة الصارمة:** لا يجوز ولا يُسمح بتعديل البصمات المشفرة في السكربت لمجرد جعل الـ CI أخضر اللون؛ فأي تعديل للبصمات يتطلب دورة حوكمة كاملة، ومصنفاً ميدانياً أصلياً معتمداً، وأدلة تدقيق مستقلة، وإصدار وثيقة BRR رسمية وموقعة.
-- **التقرير الرقابي الصريح:** **لا يوجد اعتماد إنتاجي مثبت (No Production Certification) من تشغيل CI رقم 134**؛ بل إن توقف خط الأنابيب عند Gate 4 يؤكد أن حالة النظام الحقيقية تظل محكومة بقرار الحوكمة الصارم:
+- **التقرير الرقابي الصريح:** **لا يوجد اعتماد إنتاجي مثبت (No Production Certification) من تشغيل CI رقم 137**؛ بل إن توقف خط الأنابيب عند Gate 4 يؤكد أن حالة النظام الحقيقية تظل محكومة بقرار الحوكمة الصارم:
   🟡 **PENDING APPROVAL — BASELINE GATE LOCKED**.
+
+### د. حوكمة معالجة الـ SLA والمهل الزمنية وأصل المواعيد (SLA Remediation & Provenance Governance)
+1. **معيار الحساب الزمني (Calendar-Day Arithmetic Standard):**
+   - اعتمد النظام رسمياً الحساب الزمني القائم على الأيام التقويمية المتصلة (Continuous Calendar-Day Arithmetic: 86,400,000 مللي ثانية لكل يوم SLA).
+   - المهل الزمنية تُحسب بشكل مستمر من تاريخ التقديم/الرد دون خصم الإجازات أو عطلات نهاية الأسبوع، لضمان اتساق المعادلات الحسابية وتطابقها عبر كافة التقارير (100% Deterministic Invariant).
+2. **حوكمة أصل الموعد (Explicit Provenance: Contractual vs SLA-Derived):**
+   - لا يُعتبر أي موعد نهائي (`dueDate`) موعداً تعاقدياً ملزماً بمجرد وجود قيمة مسجلة في الحقل.
+   - يتطلب تصنيف الموعد كـ "تعاقدي" (`isContractual: true`) وجود دليل مصدري صريح وموثق (`isContractualDueDate: true` أو `dueDateProvenance: 'CONTRACTUAL'`).
+   - **سلوك النظام عند تعديل إعدادات الـ SLA:**
+     * المواعيد التعاقدية الصريحة تظل ثابتة ومحمية من التغيير، ولا تتأثر بتعديل إعدادات الـ SLA للمشروع.
+     * المواعيد المشتقة من الـ SLA السابقة يُعاد احتساب موقفها الزمني ومؤشرات تأخيرها ديناميكياً وفق إعدادات الـ SLA المحدثة.
+3. **تطابق الطبقات السبع (Cross-Layer SSOT Consistency):**
+   - تم التحقق من اعتماد واستهلاك إعدادات الـ SLA المحددة للمشروع (`projectSettings.slaDays`) بالتطابق التام عبر: بطاقات المؤشرات (KPI Cards)، ملخصات السجلات (Register Summaries)، جداول التحليل والتفصيل (Drilldowns)، التقارير التنفيذية الشهرية والتراكمية، وقوالب التصدير لـ PDF وPowerPoint (PPTX).
+4. **حزمة اختبارات الـ SLA المعتمدة (`npm run test:sla`):**
+   - اجتياز **92 فحصاً واختباراً مؤكداً بنسبة نجاح 100% (92 / 92 Passed)** تشمل عزل الفئات، وإعادة الحساب الديناميكي، والمواعيد الحدية، وفصل المواعيد التعاقدية عن المشتقة.
 
 ---
 

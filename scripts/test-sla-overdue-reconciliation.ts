@@ -238,22 +238,62 @@ assert(!isEntityOverdue(approvedRow, "2026-01-20"), "D.3: Approved / Closed reco
 const lateClosedRow = makeRow({ workflowStage: "Approved", status: "A", submissionDate: "2025-01-01", responseDate: "2025-03-01", dueDate: "2025-01-15" });
 assert(!isEntityOverdue(lateClosedRow, "2026-01-20"), "D.4: Closed record with historical response delay MUST NOT appear in active overdue");
 
-// D.5: Explicit contractual due date governs when present
+// D.5: Explicit contractual due date governs when present with explicit provenance
 const contractualRow = makeRow({ 
   documentType: "SDW", 
   submissionDate: "2026-01-01", 
-  dueDate: "2026-01-25" // Explicit contractual deadline beyond standard 10 days
+  dueDate: "2026-01-25", // Explicit contractual deadline beyond standard 10 days
+  isContractualDueDate: true
 });
 assert(!isEntityOverdue(contractualRow, "2026-01-15", { shopDrawings: 10 }), "D.5: Record with explicit contractual due date is NOT overdue on day 15");
 assert(isEntityOverdue(contractualRow, "2026-01-26", { shopDrawings: 10 }), "D.6: Record with explicit contractual due date becomes OVERDUE after contractual deadline");
 
-// D.6: Multiple revisions of same document (Historical vs Current State)
+// D.7: Contractual vs SLA-derived provenance distinction (Do NOT infer contractual merely because dueDate is populated)
+const slaDerivedRow = makeRow({
+  documentType: "SDW",
+  submissionDate: "2026-06-01",
+  dueDate: "2026-06-11", // Previously calculated under 10-day default SLA
+  isContractualDueDate: false
+});
+const dlSlaDerived = calculateRecordDeadline(slaDerivedRow);
+assert(!dlSlaDerived.isContractual, "D.7: calculateRecordDeadline for row with dueDate but NO contractual flag returns isContractual === false");
+
+const dlContractual = calculateRecordDeadline(contractualRow);
+assert(dlContractual.isContractual, "D.8: calculateRecordDeadline for row with isContractualDueDate === true returns isContractual === true");
+
+const contractualByProvenanceRow = makeRow({
+  documentType: "SDW",
+  submissionDate: "2026-01-01",
+  dueDate: "2026-01-25",
+  dueDateProvenance: "CONTRACTUAL"
+});
+const dlContractualByProv = calculateRecordDeadline(contractualByProvenanceRow);
+assert(dlContractualByProv.isContractual, "D.9: calculateRecordDeadline for row with dueDateProvenance === 'CONTRACTUAL' returns isContractual === true");
+
+// D.10: SLA change when row has previously calculated dueDate (SLA-derived)
+// At test cutoff 2026-06-08 (7 days elapsed): under 10 days it is NOT overdue
+assert(!isEntityOverdue(slaDerivedRow, "2026-06-08", { shopDrawings: 10 }), "D.10: Row with previously calculated dueDate is NOT overdue at 10-day SLA");
+// When SLA changes to 5 days, non-contractual row MUST dynamically recalculate to OVERDUE
+assert(isEntityOverdue(slaDerivedRow, "2026-06-08", { shopDrawings: 5 }), "D.11: Changing SLA to 5 days dynamically recalculates previously-calculated SLA-derived row to OVERDUE on day 7");
+
+// D.12: SLA change when row has explicit CONTRACTUAL dueDate (Contractual protection)
+// When SLA changes to 5 days, contractual row MUST remain NOT overdue because contractual date 2026-01-25 governs
+assert(!isEntityOverdue(contractualRow, "2026-01-15", { shopDrawings: 5 }), "D.12: Changing SLA to 5 days does NOT override explicit contractual dueDate on day 15");
+
+// D.13: Calendar-Day arithmetic invariant (86,400,000 ms per SLA day continuous)
+const calStart = "2026-03-01";
+const calRow = makeRow({ documentType: "SDW", submissionDate: calStart });
+const calDeadline = calculateRecordDeadline(calRow, { shopDrawings: 10 });
+assert(calDeadline.deadlineDate === "2026-03-11", "D.13: 10-day SLA from 2026-03-01 calculates exact calendar-day deadline 2026-03-11");
+assert(calDeadline.deadlineMs === new Date("2026-03-01").getTime() + 10 * 86400000, "D.14: Deadline timestamp strictly matches startMs + 10 * 86400000 ms (Calendar days)");
+
+// D.15: Multiple revisions of same document (Historical vs Current State)
 const multiRevRows: SubmittalRow[] = [
   makeRow({ id: "DOC-1-R0", docNo: "BUR-SDW-001", rev: "00", status: "Code C", workflowStage: "Rejected", submissionDate: "2026-01-01", responseDate: "2026-01-05", isLatestRev: false }),
   makeRow({ id: "DOC-1-R1", docNo: "BUR-SDW-001", rev: "01", status: "Code A", workflowStage: "Approved", submissionDate: "2026-01-10", responseDate: "2026-01-15", isLatestRev: true })
 ];
 const multiStats = calculateStats(multiRevRows, undefined, "2026-01-20");
-assert(multiStats.overdue === 0, "D.7: Document whose latest revision is Approved is NOT in active overdue, despite historical rejection");
+assert(multiStats.overdue === 0, "D.15: Document whose latest revision is Approved is NOT in active overdue, despite historical rejection");
 
 // -----------------------------------------------------------------------------
 // SECTION E: CROSS-LAYER RECONCILIATION TESTS

@@ -1,5 +1,29 @@
 import { SubmittalRow, ProjectSettings, SLASettings, DEFAULT_SLA_SETTINGS } from "../types";
-import { parseDateTimestamp, getStatusCodeCategory } from "./calculationFoundation";
+import { getStatusCodeCategory } from "./statusResolver";
+
+function parseDateTimestamp(dateStr?: string | number | Date | null): number {
+  if (!dateStr) return 0;
+  if (dateStr instanceof Date) {
+    const t = dateStr.getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  if (typeof dateStr === "number") {
+    return isNaN(dateStr) ? 0 : dateStr;
+  }
+  const s = String(dateStr).trim();
+  if (!s) return 0;
+  const parsed = new Date(s).getTime();
+  if (!isNaN(parsed)) return parsed;
+  const parts = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (parts) {
+    const d = parseInt(parts[1], 10);
+    const m = parseInt(parts[2], 10) - 1;
+    const y = parseInt(parts[3], 10);
+    const dt = new Date(Date.UTC(y, m, d)).getTime();
+    if (!isNaN(dt)) return dt;
+  }
+  return 0;
+}
 
 export { DEFAULT_SLA_SETTINGS };
 
@@ -239,6 +263,23 @@ export interface CalculatedDeadline {
   startDateUsed: string;
 }
 
+export function isContractualDeadline(record?: SubmittalRow | null): boolean {
+  if (!record) return false;
+  return Boolean(
+    (record as any).isContractualDueDate ||
+    (record as any).dueDateProvenance === "CONTRACTUAL" ||
+    (record as any).dueDateType === "CONTRACTUAL"
+  );
+}
+
+/**
+ * Calculates deadline for a record.
+ * 
+ * Provenance Invariant:
+ * An explicit contractual deadline is recognized ONLY if the record has explicit contractual
+ * provenance (`isContractualDueDate: true`, `dueDateProvenance: 'CONTRACTUAL'`, or `dueDateType: 'CONTRACTUAL'`).
+ * Merely having `dueDate` populated does NOT confer contractual status (`isContractual: false`).
+ */
 export function calculateRecordDeadline(
   record: SubmittalRow,
   slaSettings?: Partial<SLASettings> | ProjectSettings | null,
@@ -246,11 +287,11 @@ export function calculateRecordDeadline(
 ): CalculatedDeadline {
   const category = resolveDocumentSLACategory(record);
   const slaDays = resolveSLAThresholdDays(record, slaSettings);
-
-  const hasContractualFlag = Boolean((record as any).isContractualDueDate);
+  const isContractual = isContractualDeadline(record);
   const hasExplicitDueDate = Boolean(record.dueDate && String(record.dueDate).trim());
 
-  if (!options?.forceSlaRecalculation && (hasContractualFlag || hasExplicitDueDate)) {
+  // Explicit contractual deadline: always governs unless forceSlaRecalculation is requested
+  if (isContractual && !options?.forceSlaRecalculation && hasExplicitDueDate) {
     const explicitDueMs = parseDateTimestamp(record.dueDate);
     if (explicitDueMs > 0) {
       const explicitDateStr = new Date(explicitDueMs).toISOString().split("T")[0];
@@ -265,6 +306,23 @@ export function calculateRecordDeadline(
     }
   }
 
+  // If not contractual, but row already has an explicit dueDate and no custom SLA settings are overriding it:
+  if (!isContractual && !slaSettings && !options?.forceSlaRecalculation && hasExplicitDueDate) {
+    const explicitDueMs = parseDateTimestamp(record.dueDate);
+    if (explicitDueMs > 0) {
+      const explicitDateStr = new Date(explicitDueMs).toISOString().split("T")[0];
+      return {
+        deadlineDate: explicitDateStr,
+        deadlineMs: explicitDueMs,
+        isContractual: false, // Provenance: SLA-derived / non-contractual
+        slaDaysUsed: slaDays,
+        slaCategory: category,
+        startDateUsed: record.submissionDate || "",
+      };
+    }
+  }
+
+  // Calculate deadline from submission/response date + SLA days (calendar-day arithmetic)
   const cat = getStatusCodeCategory(record);
   let startStr = record.submissionDate || "";
   if (!startStr && cat === "REJECTED_OPEN" && record.responseDate) {
@@ -296,6 +354,23 @@ export function calculateRecordDeadline(
   };
 }
 
+/**
+ * StructuSight Master Canonical Overdue Engine
+ * 
+ * SLA Arithmetic Standard:
+ * CALENDAR-DAY ARITHMETIC (86,400,000 ms / 24 continuous hours per day).
+ * SLA durations are calculated continuously from start date to cutoff/response.
+ * Working-day / weekend exclusions are not applied, ensuring deterministic,
+ * reproducible mathematical invariants across all project registers and reports.
+ * 
+ * Contractual vs SLA-Derived Due Date Provenance:
+ * 1. Contractual Due Dates: Require explicit provenance (`isContractualDueDate: true`,
+ *    `dueDateProvenance: 'CONTRACTUAL'`, or `dueDateType: 'CONTRACTUAL'`).
+ *    Contractual due dates always govern and are NOT altered by project SLA configuration changes.
+ * 2. SLA-Derived Due Dates: Merely having `dueDate` populated does NOT confer contractual status.
+ *    When project SLA settings change or dynamic SLA recalculation is performed,
+ *    SLA-derived items are dynamically evaluated against the active configured SLA days.
+ */
 export function isEntityOverdue(
   latest?: SubmittalRow | null,
   cutoffTimeOrDate?: number | string | Date | null,
@@ -323,16 +398,50 @@ export function isEntityOverdue(
     nowTime = Date.now();
   }
 
-  if (!options?.forceSlaRecalculation && latest.dueDate && String(latest.dueDate).trim()) {
+  const isContractual = isContractualDeadline(latest);
+  const hasExplicitDueDate = Boolean(latest.dueDate && String(latest.dueDate).trim());
+
+  // 1. Explicit Contractual Deadline: Governs when present unless forceSlaRecalculation
+  if (isContractual && !options?.forceSlaRecalculation && hasExplicitDueDate) {
     const dueTime = parseDateTimestamp(latest.dueDate);
     if (dueTime > 0) {
-      // Date-boundary rule: an item due on YYYY-MM-DD is exactly at its deadline during that day.
-      // It becomes overdue only after the deadline day has fully elapsed (nowTime >= dueTime + 86400000).
       const endOfDueDateMs = dueTime + 86400000;
       return nowTime >= endOfDueDateMs;
     }
   }
 
+  // 2. Dynamic SLA configuration passed or forceSlaRecalculation:
+  // When SLA settings are explicitly passed (or recalculation forced), non-contractual
+  // items dynamically resolve against the configured SLA days from start date.
+  if (slaSettings || options?.forceSlaRecalculation) {
+    let startStr = latest.submissionDate || "";
+    if (!startStr && cat === "REJECTED_OPEN" && latest.responseDate) {
+      startStr = latest.responseDate;
+    }
+
+    if (startStr) {
+      const startMs = parseDateTimestamp(startStr);
+      if (startMs > 0) {
+        if (nowTime < startMs) {
+          return false;
+        }
+        const slaDays = resolveSLAThresholdDays(latest, slaSettings);
+        const diffDays = (nowTime - startMs) / 86400000;
+        return diffDays > slaDays;
+      }
+    }
+  }
+
+  // 3. Fallback to existing dueDate for non-contractual rows if no custom SLA settings passed
+  if (hasExplicitDueDate) {
+    const dueTime = parseDateTimestamp(latest.dueDate);
+    if (dueTime > 0) {
+      const endOfDueDateMs = dueTime + 86400000;
+      return nowTime >= endOfDueDateMs;
+    }
+  }
+
+  // 4. Default SLA calculation from start date
   let startStr = latest.submissionDate || "";
   if (!startStr && cat === "REJECTED_OPEN" && latest.responseDate) {
     startStr = latest.responseDate;
@@ -343,11 +452,7 @@ export function isEntityOverdue(
   }
 
   const startMs = parseDateTimestamp(startStr);
-  if (startMs <= 0) {
-    return false;
-  }
-
-  if (nowTime < startMs) {
+  if (startMs <= 0 || nowTime < startMs) {
     return false;
   }
 

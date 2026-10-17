@@ -67,6 +67,8 @@ export interface SubmittalRow {
   consultant: string;
   submissionDate: string; // YYYY-MM-DD
   dueDate: string;        // YYYY-MM-DD
+  isContractualDueDate?: boolean; // Explicit provenance: true if deadline is legally/contractually fixed
+  dueDateProvenance?: 'CONTRACTUAL' | 'SLA_CALCULATED' | 'USER_OVERRIDE' | string;
   responseDate: string;   // YYYY-MM-DD
   status: string;         // Raw code A, B, C...
   code?: string;           // Explicit review outcome code (A, B, C, D, etc.)

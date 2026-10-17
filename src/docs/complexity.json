@@ -2,10 +2,10 @@
   {
     "functionName": "calculateStats",
     "cyclomatic": 1,
-    "loc": 3,
-    "halsteadVolume": 28.07,
-    "maintainabilityIndex": 151.65,
-    "normalizedMi": 89
+    "loc": 8,
+    "halsteadVolume": 66.61,
+    "maintainabilityIndex": 145.57,
+    "normalizedMi": 85
   },
   {
     "functionName": "calculateNCRStats",
