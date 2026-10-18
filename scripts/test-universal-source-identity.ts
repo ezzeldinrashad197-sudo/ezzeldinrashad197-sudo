@@ -1,6 +1,7 @@
 import { parseExcelFile, parseExcelBuffer } from "../src/utils/parser";
 import { normalizeData } from "../src/utils/calculations";
 import { classifyRegisterSheet, buildCompositeIdentity, getAuthoritativeSourceRegisterName } from "../src/utils/classificationEngine";
+import { resolveOfficialSubmittalRegister, buildManagementReportOutput } from "../src/analytics/managementReportOutput";
 import * as XLSX from "xlsx";
 
 function createExcelWorkbookBuffer(sheets: { sheetName: string; rows: any[][] }[]): Buffer {
@@ -84,6 +85,49 @@ assert(
 assert(
   normalizedGen[0].sourceRegisterIdentity === "GEN",
   "Row 1 sourceRegisterIdentity is strictly 'GEN'"
+);
+
+const officialRegistersGen = normalizedGen.map(r => resolveOfficialSubmittalRegister(r));
+assert(
+  officialRegistersGen.every(reg => reg === "GEN"),
+  "Rule A: resolveOfficialSubmittalRegister is strictly 'GEN' for all rows (no DOC-HSE or DOC-GENERAL)",
+  `Observed: ${officialRegistersGen.join(", ")}`
+);
+
+const genReport = buildManagementReportOutput(normalizedGen, normalizedGen, "ALL");
+assert(
+  genReport.availableRegisters.length === 1 && genReport.availableRegisters[0] === "GEN",
+  "Management Report contains strictly single register 'GEN' (0 rogue DOC-HSE registers)",
+  `Observed registers: ${genReport.availableRegisters.join(", ")}`
+);
+
+// -----------------------------------------------------------------------------
+// TEST CASE 1B: GEN Register Sheet inside DOC / Transmittal Workbook
+// -----------------------------------------------------------------------------
+console.log("\n--- [CASE 1B: GEN / HSE inside DOC_Transmittals.xlsx — Authoritative Preservation] ---");
+
+const docGenBuffer = createExcelWorkbookBuffer([{ sheetName: "GEN", rows: genRows }]);
+const parsedDocGen = parseExcelBuffer(docGenBuffer, "DOC_Transmittals_2026.xlsx");
+const normalizedDocGen = normalizeData(parsedDocGen);
+
+assert(
+  normalizedDocGen.every(r => r.documentType === "GEN"),
+  "Rule A: GEN sheet inside DOC workbook preserved strictly as GEN documentType",
+  `Observed types: ${normalizedDocGen.map(r => r.documentType).join(", ")}`
+);
+
+const officialRegistersDocGen = normalizedDocGen.map(r => resolveOfficialSubmittalRegister(r));
+assert(
+  officialRegistersDocGen.every(reg => reg === "GEN"),
+  "Rule A: resolveOfficialSubmittalRegister remains strictly 'GEN' even in DOC workbook context",
+  `Observed: ${officialRegistersDocGen.join(", ")}`
+);
+
+const docGenReport = buildManagementReportOutput(normalizedDocGen, normalizedDocGen, "ALL");
+assert(
+  !docGenReport.availableRegisters.includes("DOC-HSE") && !docGenReport.availableRegisters.includes("DOC-GENERAL"),
+  "Rule A: Zero extraction of DOC-HSE or DOC-GENERAL from source register GEN",
+  `Observed registers: ${docGenReport.availableRegisters.join(", ")}`
 );
 
 // -----------------------------------------------------------------------------

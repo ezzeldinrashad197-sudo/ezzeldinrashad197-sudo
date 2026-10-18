@@ -1208,7 +1208,7 @@ export const parseExcelWorkbook = (
         id: `${sheetName}::${cleanFileBase}::${idx}`,
 
         // Phase W Canonical Parent Register Identity
-        registerIdentity: parentRegister.identity,
+        registerIdentity: authoritativeSourceName || parentRegister.identity,
         registerDisplayName: parentRegister.displayNameEn,
         sourceWorkbookName: fileName,
         sourceFileName: fileName,

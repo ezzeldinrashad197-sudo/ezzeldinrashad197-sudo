@@ -169,6 +169,16 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     return KNOWN_PARENT_REGISTERS[upperSheet].identity;
   }
 
+  // 2b. Explicit GEN / GENERAL register identity (Rule A: Authoritative source register name)
+  if (upperSheet === 'GEN' || upperSheet === 'GENERAL') {
+    return 'GEN';
+  }
+
+  // 2c. Explicit HSE / SAFETY register identity
+  if (upperSheet === 'HSE' || upperSheet === 'SAFETY') {
+    return 'HSE';
+  }
+
   // 3. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN)
   if (isDisciplineSheet(cleanSheet)) {
     // Resolve parent register from workbook/filename context if available
@@ -178,9 +188,18 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     }
     // If workbook filename is generic (e.g. Project_Registers.xlsx), the sheet name itself is the authoritative register
     const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
+    const upperFileBase = fileBase.toUpperCase();
     const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*|Project_Registers?)$/i.test(fileBase);
-    if (isGenericFile) {
-      return cleanSheet;
+    if (
+      isGenericFile ||
+      upperFileBase === upperSheet ||
+      upperSheet === 'GEN' ||
+      upperSheet === 'GENERAL' ||
+      upperFileBase === 'GEN' ||
+      upperFileBase === 'GENERAL' ||
+      (upperSheet === 'HSE' && (isGenericFile || upperFileBase === 'HSE'))
+    ) {
+      return (upperSheet === 'GENERAL' || upperFileBase === 'GENERAL') ? 'GEN' : cleanSheet;
     }
     return null;
   }
@@ -201,6 +220,13 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     }
     if (isKnownRegisterName(fileBase)) {
       return fileBase;
+    }
+    const upperFileBase = fileBase.toUpperCase();
+    if (upperFileBase === 'GEN' || upperFileBase === 'GENERAL') {
+      return 'GEN';
+    }
+    if (upperFileBase === 'HSE' || upperFileBase === 'SAFETY') {
+      return 'HSE';
     }
   }
 
@@ -249,6 +275,10 @@ export function buildCompositeIdentity(
       resolvedFamily = parts[0] === 'LETTER' ? 'LTR' : parts[0];
     } else if (knownFamilies.includes(upperAuth)) {
       resolvedFamily = upperAuth === 'LETTER' ? 'LTR' : upperAuth;
+    } else if (upperAuth === 'GEN' || upperAuth === 'GENERAL') {
+      resolvedFamily = 'GEN';
+    } else if (upperAuth === 'HSE' || upperAuth === 'SAFETY') {
+      resolvedFamily = 'HSE';
     } else if (resolvedFamily === 'SDW' && !upperAuth.startsWith('SDW')) {
       resolvedFamily = upperAuth;
     }
@@ -522,8 +552,13 @@ export function classifyRegisterSheet(params: {
       LETTER: 'LETTER',
       LTR: 'LETTER',
       DOC: 'DOC',
+      GEN: 'GEN' as any,
+      HSE: 'HSE' as any,
     };
-    const detectedFamily: WorkflowFamily = knownFamilies[compositeIdentity.family] || 'DOC';
+    const detectedFamily: WorkflowFamily =
+      compositeIdentity.family === 'GEN' || compositeIdentity.family === 'HSE'
+        ? (compositeIdentity.family as any)
+        : (knownFamilies[compositeIdentity.family] || 'DOC');
     return {
       detectedFamily,
       confidence: 1.0,

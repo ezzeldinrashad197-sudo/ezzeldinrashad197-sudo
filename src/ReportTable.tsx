@@ -188,6 +188,8 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
 
   const rowToLabel = useCallback((d: SubmittalRow) => {
     const reg = rowToRegisterIdentity(d);
+    if (reg === 'GEN') return 'GEN';
+    if (reg === 'HSE') return 'HSE';
     if (breakdownDimension === 'discipline') {
       const disc = resolveRowDiscipline(d, reg) || 'GEN';
       return disc.toUpperCase();

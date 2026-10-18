@@ -83,6 +83,23 @@ export function resolveRegisterFamilyFromKey(regKey: string, sampleRow?: Submitt
 export function resolveRowRegisterFamily(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
 
+  const sheetUpper = (d.sourceSheetName || '').trim().toUpperCase();
+  const srcRegUpper = (
+    (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) ||
+    d.sourceRegisterIdentity ||
+    d.registerIdentity ||
+    ''
+  ).trim().toUpperCase();
+
+  if (sheetUpper === 'GEN' || sheetUpper === 'GENERAL' || srcRegUpper === 'GEN' || srcRegUpper === 'GENERAL') return 'GEN';
+  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
+
+  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
+    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
+    if (auth === 'GEN' || auth === 'GENERAL') return 'GEN';
+    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
+  }
+
   // 1. Direct canonical registerIdentity
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
     const reg = d.registerIdentity.trim().toUpperCase();
@@ -197,6 +214,23 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
 
 export function resolveRowRegister(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
+
+  const sheetUpper = (d.sourceSheetName || '').trim().toUpperCase();
+  const srcRegUpper = (
+    (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) ||
+    d.sourceRegisterIdentity ||
+    d.registerIdentity ||
+    ''
+  ).trim().toUpperCase();
+
+  if (sheetUpper === 'GEN' || sheetUpper === 'GENERAL' || srcRegUpper === 'GEN' || srcRegUpper === 'GENERAL') return 'GEN';
+  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
+
+  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
+    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
+    if (auth === 'GEN' || auth === 'GENERAL') return 'GEN';
+    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
+  }
 
   // 1. SSOT: Check authoritative canonical registerIdentity first!
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {

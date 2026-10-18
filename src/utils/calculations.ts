@@ -209,8 +209,8 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
     const trade = resolved.trade || r.trade;
     const tradeShort = resolved.tradeShort || (r as any).tradeShort || '';
     const logType = (
-      r.registerIdentity ||
       (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity) ||
+      (r.registerIdentity && r.registerIdentity !== 'UNCLASSIFIED' ? r.registerIdentity : '') ||
       r.logType ||
       (r as any).compositeIdentity?.family ||
       'UNCLASSIFIED'
@@ -284,7 +284,13 @@ export const normalizeData = (rows: SubmittalRow[]): SubmittalRow[] => {
         String(r.compositeIdentity?.family).toUpperCase() !== 'RFI'
       );
 
-    const regIdentity = (r.registerIdentity || (basePrefix !== 'UNCLASSIFIED' ? basePrefix : '') || r.sourceRegisterIdentity || 'UNCLASSIFIED').trim().toUpperCase();
+    const regIdentity = (
+      (r.hasAuthoritativeSourceIdentity && r.sourceRegisterIdentity) ||
+      (r.registerIdentity && r.registerIdentity !== 'UNCLASSIFIED' ? r.registerIdentity : '') ||
+      (basePrefix !== 'UNCLASSIFIED' ? basePrefix : '') ||
+      r.sourceRegisterIdentity ||
+      'UNCLASSIFIED'
+    ).trim().toUpperCase();
 
     return {
       ...r,
