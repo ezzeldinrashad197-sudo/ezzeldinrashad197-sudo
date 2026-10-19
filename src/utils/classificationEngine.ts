@@ -169,22 +169,16 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     return KNOWN_PARENT_REGISTERS[upperSheet].identity;
   }
 
-  // 2b. Explicit GEN / GENERAL register identity (Rule A: Authoritative source register name)
-  if (upperSheet === 'GEN' || upperSheet === 'GENERAL') {
-    return 'GEN';
-  }
-
-  // 2c. Explicit HSE / SAFETY register identity
-  if (upperSheet === 'HSE' || upperSheet === 'SAFETY') {
-    return 'HSE';
-  }
-
-  // 3. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN)
+  // 3. If sheet name is a pure discipline (e.g. STR, Arch, Mech, Elec, Infra, LND, GEN, HSE)
   if (isDisciplineSheet(cleanSheet)) {
     // Resolve parent register from workbook/filename context if available
     const resolved = resolveParentRegister({ fileName });
     if (resolved && resolved.identity !== 'UNCLASSIFIED') {
       return resolved.identity;
+    }
+    // Disciplines like GEN and HSE are never registers. In submittal contexts, default to DOC
+    if (cleanSheet === 'GEN' || cleanSheet === 'GENERAL') {
+      return 'DOC';
     }
     // If workbook filename is generic (e.g. Project_Registers.xlsx), the sheet name itself is the authoritative register
     const fileBase = (fileName || '').replace(/\.[^/.]+$/, '').trim();
@@ -192,19 +186,14 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
     const isGenericFile = !fileBase || /^(Sheet\s*\d*|Book\s*\d*|Untitled\s*\d*|Export\s*\d*|Data\s*\d*|Registers?\s*\d*|Log\s*\d*|Submittals?\s*\d*|Default\s*\d*|Master\s*\d*|Project_Registers?)$/i.test(fileBase);
     if (
       isGenericFile ||
-      upperFileBase === upperSheet ||
-      upperSheet === 'GEN' ||
-      upperSheet === 'GENERAL' ||
-      upperFileBase === 'GEN' ||
-      upperFileBase === 'GENERAL' ||
-      (upperSheet === 'HSE' && (isGenericFile || upperFileBase === 'HSE'))
+      upperFileBase === upperSheet
     ) {
-      return (upperSheet === 'GENERAL' || upperFileBase === 'GENERAL') ? 'GEN' : cleanSheet;
+      return cleanSheet;
     }
     return null;
   }
 
-  // 4. Non-generic sheet names (e.g. COMMISSIONING, GEN) are authoritative registers
+  // 4. Non-generic sheet names (e.g. COMMISSIONING) are authoritative registers
   if (!isGenericSheet) {
     return cleanSheet;
   }
@@ -276,9 +265,9 @@ export function buildCompositeIdentity(
     } else if (knownFamilies.includes(upperAuth)) {
       resolvedFamily = upperAuth === 'LETTER' ? 'LTR' : upperAuth;
     } else if (upperAuth === 'GEN' || upperAuth === 'GENERAL') {
-      resolvedFamily = 'GEN';
+      resolvedFamily = 'DOC';
     } else if (upperAuth === 'HSE' || upperAuth === 'SAFETY') {
-      resolvedFamily = 'HSE';
+      resolvedFamily = family === 'NCR' ? 'NCR' : (knownFamilies.includes(family) ? family : 'DOC');
     } else if (resolvedFamily === 'SDW' && !upperAuth.startsWith('SDW')) {
       resolvedFamily = upperAuth;
     }
@@ -552,13 +541,9 @@ export function classifyRegisterSheet(params: {
       LETTER: 'LETTER',
       LTR: 'LETTER',
       DOC: 'DOC',
-      GEN: 'GEN' as any,
-      HSE: 'HSE' as any,
     };
     const detectedFamily: WorkflowFamily =
-      compositeIdentity.family === 'GEN' || compositeIdentity.family === 'HSE'
-        ? (compositeIdentity.family as any)
-        : (knownFamilies[compositeIdentity.family] || 'DOC');
+      knownFamilies[compositeIdentity.family] || 'DOC';
     return {
       detectedFamily,
       confidence: 1.0,

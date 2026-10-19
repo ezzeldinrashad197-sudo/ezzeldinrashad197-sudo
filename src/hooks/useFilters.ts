@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { SubmittalRow } from '../types';
 import { auth } from '../firebase';
+import { resolveRowRegister } from '../analytics/managementReportOutput';
+import { DISCIPLINE_SHEET_NAMES } from '../utils/parentRegisterResolver';
 
 export interface FilterState {
   registerIdentity: string;
@@ -133,8 +135,8 @@ export function useFilters(data: SubmittalRow[], startDate: string, endDate: str
 
      for (let i = 0; i < data.length; i++) {
          const d = data[i];
-         const reg = (d.registerIdentity || (d as any).sourceRegisterIdentity || '').trim().toUpperCase();
-         if (reg && reg !== 'UNCLASSIFIED') {
+         const reg = (resolveRowRegister(d) || d.registerIdentity || (d as any).sourceRegisterIdentity || '').trim().toUpperCase();
+         if (reg && reg !== 'UNCLASSIFIED' && reg !== 'UNKNOWN' && !DISCIPLINE_SHEET_NAMES.has(reg)) {
              registerIdentitySet.add(reg);
          }
 

@@ -45,9 +45,9 @@ const headers = [
 ];
 
 // -----------------------------------------------------------------------------
-// TEST CASE 1: GEN Register with HSE Content
+// TEST CASE 1: GEN Register Sheet — Integration under Parent Register DOC
 // -----------------------------------------------------------------------------
-console.log("\n--- [CASE 1: GEN / HSE — Preservation of Authoritative GEN Register] ---");
+console.log("\n--- [CASE 1: GEN / HSE — Integration of GEN Sheet under DOC Submittals] ---");
 
 const genRows = [
   headers,
@@ -66,68 +66,52 @@ assert(
 );
 
 assert(
-  normalizedGen.every(r => r.documentType === "GEN"),
-  "Final Register Classification is strictly GEN for ALL rows (no split to HSE or GEN-HSE)",
-  `Observed types: ${normalizedGen.map(r => r.documentType).join(", ")}`
-);
-
-assert(
-  normalizedGen.every(r => r.logType === "GEN"),
-  "logType is preserved as GEN",
-  `Observed logTypes: ${normalizedGen.map(r => r.logType).join(", ")}`
-);
-
-assert(
-  normalizedGen[0].hasAuthoritativeSourceIdentity === true,
-  "Row 1 carries hasAuthoritativeSourceIdentity === true"
-);
-
-assert(
-  normalizedGen[0].sourceRegisterIdentity === "GEN",
-  "Row 1 sourceRegisterIdentity is strictly 'GEN'"
+  normalizedGen.every(r => r.registerIdentity === "DOC" || r.workflowFamily === "DOC"),
+  "Final Register Classification treats GEN as nested inside DOC (not a rogue standalone register)",
+  `Observed registerIdentities: ${normalizedGen.map(r => r.registerIdentity).join(", ")}`
 );
 
 const officialRegistersGen = normalizedGen.map(r => resolveOfficialSubmittalRegister(r));
 assert(
-  officialRegistersGen.every(reg => reg === "GEN"),
-  "Rule A: resolveOfficialSubmittalRegister is strictly 'GEN' for all rows (no DOC-HSE or DOC-GENERAL)",
+  officialRegistersGen.every(reg => reg.startsWith("DOC-") || reg === "DOC"),
+  "Rule: resolveOfficialSubmittalRegister resolves under DOC parent family",
   `Observed: ${officialRegistersGen.join(", ")}`
 );
 
 const genReport = buildManagementReportOutput(normalizedGen, normalizedGen, "ALL");
 assert(
-  genReport.availableRegisters.length === 1 && genReport.availableRegisters[0] === "GEN",
-  "Management Report contains strictly single register 'GEN' (0 rogue DOC-HSE registers)",
-  `Observed registers: ${genReport.availableRegisters.join(", ")}`
+  genReport.availableParentRegisters.length === 1 && genReport.availableParentRegisters[0] === "DOC",
+  "Management Report parent registers contains strictly 'DOC' (zero rogue standalone GEN registers)",
+  `Observed parent registers: ${genReport.availableParentRegisters.join(", ")}`
 );
 
 // -----------------------------------------------------------------------------
 // TEST CASE 1B: GEN Register Sheet inside DOC / Transmittal Workbook
 // -----------------------------------------------------------------------------
-console.log("\n--- [CASE 1B: GEN / HSE inside DOC_Transmittals.xlsx — Authoritative Preservation] ---");
+console.log("\n--- [CASE 1B: GEN / HSE inside DOC_Transmittals.xlsx — Parent Register DOC] ---");
 
 const docGenBuffer = createExcelWorkbookBuffer([{ sheetName: "GEN", rows: genRows }]);
 const parsedDocGen = parseExcelBuffer(docGenBuffer, "DOC_Transmittals_2026.xlsx");
 const normalizedDocGen = normalizeData(parsedDocGen);
 
 assert(
-  normalizedDocGen.every(r => r.documentType === "GEN"),
-  "Rule A: GEN sheet inside DOC workbook preserved strictly as GEN documentType",
-  `Observed types: ${normalizedDocGen.map(r => r.documentType).join(", ")}`
+  normalizedDocGen.every(r => r.registerIdentity === "DOC" || r.workflowFamily === "DOC"),
+  "Rule: GEN sheet inside DOC workbook preserved strictly as DOC parent register",
+  `Observed types: ${normalizedDocGen.map(r => r.registerIdentity).join(", ")}`
 );
 
 const officialRegistersDocGen = normalizedDocGen.map(r => resolveOfficialSubmittalRegister(r));
 assert(
-  officialRegistersDocGen.every(reg => reg === "GEN"),
-  "Rule A: resolveOfficialSubmittalRegister remains strictly 'GEN' even in DOC workbook context",
+  officialRegistersDocGen.every(reg => reg.startsWith("DOC-") || reg === "DOC"),
+  "Rule: resolveOfficialSubmittalRegister resolves under DOC parent register",
   `Observed: ${officialRegistersDocGen.join(", ")}`
 );
 
 const docGenReport = buildManagementReportOutput(normalizedDocGen, normalizedDocGen, "ALL");
 assert(
-  !docGenReport.availableRegisters.includes("DOC-HSE") && !docGenReport.availableRegisters.includes("DOC-GENERAL"),
-  "Rule A: Zero extraction of DOC-HSE or DOC-GENERAL from source register GEN",
-  `Observed registers: ${docGenReport.availableRegisters.join(", ")}`
+  docGenReport.availableParentRegisters.length === 1 && docGenReport.availableParentRegisters[0] === "DOC",
+  "Rule: Available parent registers strictly contains 'DOC' (zero leaked standalone GEN register)",
+  `Observed parent registers: ${docGenReport.availableParentRegisters.join(", ")}`
 );
 
 // -----------------------------------------------------------------------------

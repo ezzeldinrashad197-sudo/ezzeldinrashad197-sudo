@@ -119,11 +119,8 @@ export function resolveRowRegister(d: SubmittalRow): string {
     ''
   ).trim().toUpperCase();
 
-  if (srcRegUpper === 'GEN' || srcRegUpper === 'GENERAL' || (sheetUpper === 'GEN' && d.workflowFamily !== 'NCR' && d.registerIdentity !== 'NCR')) return 'GEN';
-
   if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
     const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'GEN' || auth === 'GENERAL') return 'GEN';
     if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
     const authBase = auth.includes('-') ? auth.split('-')[0].trim() : auth;
     if (authBase && !ignoredParents.has(authBase)) {
@@ -133,7 +130,6 @@ export function resolveRowRegister(d: SubmittalRow): string {
 
   if (d.registerIdentity) {
     const reg = d.registerIdentity.trim().toUpperCase();
-    if (reg === 'GEN' || reg === 'GENERAL') return 'GEN';
     if (reg === 'HSE' && d.hasAuthoritativeSourceIdentity) return 'HSE';
     const base = reg.includes('-') ? reg.split('-')[0].trim() : reg;
     if (base && !ignoredParents.has(base)) {
@@ -151,7 +147,6 @@ export function resolveRowRegister(d: SubmittalRow): string {
   if (srcId && !ignoredParents.has(srcId)) {
     const srcBase = srcId.includes('-') ? srcId.split('-')[0].trim() : srcId;
     if (srcBase && !ignoredParents.has(srcBase)) {
-      if (srcBase === 'GEN' || srcBase === 'GENERAL') return 'GEN';
       if (srcBase.startsWith('DOC') || srcId.includes('TECHNICAL') || srcId.includes('TRANSMITTAL') || srcId.includes('DOCUMENT')) return 'DOC';
       if (srcBase.startsWith('WIR') || srcId.includes('WORK INSP')) return 'WIR';
       if (srcBase.startsWith('MIR') || srcId.includes('MATERIAL INSP')) return 'MIR';
@@ -238,21 +233,7 @@ export function resolveOfficialSubmittalRegister(row: SubmittalRow): string {
     ''
   ).trim().toUpperCase();
 
-  // Rule A & Rule B: If the source register is GEN, all records remain under GEN.
-  // Do NOT split a general register solely because individual rows contain different trade indicators.
-  const isGenSource =
-    baseReg === 'GEN' ||
-    baseReg === 'GENERAL' ||
-    (row.sourceRegisterIdentity || '').trim().toUpperCase() === 'GEN' ||
-    (row.sourceRegisterIdentity || '').trim().toUpperCase() === 'GENERAL' ||
-    (row.registerIdentity || '').trim().toUpperCase() === 'GEN' ||
-    (row.registerIdentity || '').trim().toUpperCase() === 'GENERAL' ||
-    (row.sourceSheetName || '').trim().toUpperCase() === 'GEN' ||
-    (row.sourceSheetName || '').trim().toUpperCase() === 'GENERAL';
 
-  if (isGenSource) {
-    return 'GEN';
-  }
 
   // Independent explicit HSE register remains separate as HSE
   const isHseSource =

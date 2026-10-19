@@ -91,15 +91,6 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
     ''
   ).trim().toUpperCase();
 
-  if (sheetUpper === 'GEN' || sheetUpper === 'GENERAL' || srcRegUpper === 'GEN' || srcRegUpper === 'GENERAL') return 'GEN';
-  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
-
-  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
-    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'GEN' || auth === 'GENERAL') return 'GEN';
-    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
-  }
-
   // 1. Direct canonical registerIdentity
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
     const reg = d.registerIdentity.trim().toUpperCase();
@@ -113,6 +104,13 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
     if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
       return wf === 'SHD' ? 'SDW' : wf;
     }
+  }
+
+  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
+
+  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
+    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
+    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
   }
 
   // 3. Inspect sourceRegisterIdentity if not pure discipline
@@ -223,32 +221,25 @@ export function resolveRowRegister(d: SubmittalRow): string {
     ''
   ).trim().toUpperCase();
 
-  if (sheetUpper === 'GEN' || sheetUpper === 'GENERAL' || srcRegUpper === 'GEN' || srcRegUpper === 'GENERAL') return 'GEN';
-  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
-
-  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
-    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'GEN' || auth === 'GENERAL') return 'GEN';
-    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
-  }
-
   // 1. SSOT: Check authoritative canonical registerIdentity first!
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
     return d.registerIdentity.trim().toUpperCase();
   }
 
-  // 2. Check sourceRegisterIdentity if not pure discipline
-  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL']);
-  const srcId = (d.sourceRegisterIdentity || '').trim().toUpperCase();
-  if (srcId && !pureDisciplines.has(srcId) && srcId !== 'UNCLASSIFIED') {
-    return srcId;
-  }
-
-  // 3. Check workflowFamily
+  // 2. Check workflowFamily
   if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
     const wf = d.workflowFamily.toUpperCase().trim();
     if (wf === 'LETTER') return 'LTR';
-    return wf;
+    if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
+      return wf === 'SHD' ? 'SDW' : wf;
+    }
+  }
+
+  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
+
+  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
+    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
+    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
   }
 
   // 4. Fallback to resolving the workflow family
