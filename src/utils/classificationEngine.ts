@@ -177,7 +177,7 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
       return resolved.identity;
     }
     // Disciplines like GEN and HSE are never registers. In submittal contexts, default to DOC
-    if (cleanSheet === 'GEN' || cleanSheet === 'GENERAL') {
+    if (cleanSheet === 'GEN' || cleanSheet === 'GENERAL' || cleanSheet === 'HSE' || cleanSheet === 'SAFETY') {
       return 'DOC';
     }
     // If workbook filename is generic (e.g. Project_Registers.xlsx), the sheet name itself is the authoritative register
@@ -211,11 +211,8 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
       return fileBase;
     }
     const upperFileBase = fileBase.toUpperCase();
-    if (upperFileBase === 'GEN' || upperFileBase === 'GENERAL') {
-      return 'GEN';
-    }
-    if (upperFileBase === 'HSE' || upperFileBase === 'SAFETY') {
-      return 'HSE';
+    if (upperFileBase === 'GEN' || upperFileBase === 'GENERAL' || upperFileBase === 'HSE' || upperFileBase === 'SAFETY') {
+      return 'DOC';
     }
   }
 
@@ -280,10 +277,11 @@ export function buildCompositeIdentity(
     const discipline = authDisc ? authDisc.discipline : 'GEN';
     const isRegisterLocked = checkRegisterLock(resolvedFamily, discipline);
 
+    const isHseOrGenAuth = upperAuth === 'HSE' || upperAuth === 'SAFETY' || upperAuth === 'GEN' || upperAuth === 'GENERAL';
     return {
       family: resolvedFamily,
       discipline,
-      compositeCode: upperAuth,
+      compositeCode: isHseOrGenAuth ? resolvedFamily : upperAuth,
       rawSourceIdentity: `${fileName}::${sheetName}`,
       evidenceSource: 'authoritative_source_register',
       evidenceLevel: 'LEVEL_2_WORKSHEET_COMPOSITE',
@@ -294,7 +292,7 @@ export function buildCompositeIdentity(
       isRegisterLocked,
       disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'ROW_EXPLICIT',
       isAuthoritative: true,
-      authoritativeRegister: upperAuth
+      authoritativeRegister: isHseOrGenAuth ? resolvedFamily : upperAuth
     };
   }
 

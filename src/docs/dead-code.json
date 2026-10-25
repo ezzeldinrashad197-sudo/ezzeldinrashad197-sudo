@@ -1882,14 +1882,6 @@
     },
     {
       "file": "src/utils/parentRegisterResolver.ts",
-      "exportName": "DISCIPLINE_SHEET_NAMES",
-      "type": "Component",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'DISCIPLINE_SHEET_NAMES' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/utils/parentRegisterResolver.ts",
       "exportName": "getCanonicalRegisterTitle",
       "type": "Function",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",

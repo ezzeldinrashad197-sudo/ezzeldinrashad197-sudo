@@ -6,10 +6,6 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import NodeCache from "node-cache";
-import { 
-  buildCanonicalDataset, 
-  evaluatePerformanceLayer 
-} from "./src/analytics/calculationFoundation";
 
 // Initialize cache
 const cache = new NodeCache({ stdTTL: 600 }); // 10 minutes cache
@@ -96,7 +92,46 @@ interface ClientRateRecord {
 }
 const userRequestRegistry = new Map<string, ClientRateRecord>();
 
-export async function createApp(opts?: { skipVite?: boolean }) {
+export function resolveEnvironment(): { isDev: boolean; isProd: boolean } {
+  // 1. If executing from the compiled production bundle (*.cjs), always enforce production
+  if (
+    (typeof __filename !== "undefined" && __filename.endsWith(".cjs")) ||
+    (typeof process !== "undefined" && process.argv[1]?.endsWith("server.cjs")) ||
+    process.env.__STRUCTUSIGHT_COMPILED__ === "1"
+  ) {
+    return { isDev: false, isProd: true };
+  }
+
+  // 2. Explicit production environment
+  if (process.env.NODE_ENV === "production") {
+    return { isDev: false, isProd: true };
+  }
+
+  // 3. Cloud Run production/preview (K_SERVICE is present and not an ais-dev sandbox)
+  if (process.env.K_SERVICE && !process.env.K_SERVICE.startsWith("ais-dev-")) {
+    return { isDev: false, isProd: true };
+  }
+
+  // 4. Staging or unknown non-development environment fails closed to production
+  if (process.env.NODE_ENV && process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
+    return { isDev: false, isProd: true };
+  }
+
+  // 5. Explicit development environment
+  if (process.env.NODE_ENV === "development") {
+    return { isDev: true, isProd: false };
+  }
+
+  // 6. AI Studio development container
+  if (process.env.K_SERVICE && process.env.K_SERVICE.startsWith("ais-dev-")) {
+    return { isDev: true, isProd: false };
+  }
+
+  // 7. Default to development for local uncompiled developer workflow
+  return { isDev: true, isProd: false };
+}
+
+export async function createApp(opts?: { skipVite?: boolean; strictArtifacts?: boolean }) {
   // --- SECRETS & CONFIGURATION BOUNDS VALIDATION (Issue #9) ---
   if (!process.env.GEMINI_API_KEY) {
      console.warn("\n\x1b[43m\x1b[30m%s\x1b[0m", "  CONFIGURATION WARNING  ");
@@ -110,8 +145,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  const isProd = process.env.NODE_ENV === "production";
-  const isDev = !isProd;
+  const { isDev, isProd } = resolveEnvironment();
 
   // Track all incoming API requests (Issue #10)
   app.use((req, res, next) => {
@@ -231,7 +265,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
   }
 
     // API Routes
-  app.get("/api/health", (req, res) => {
+  app.get(["/healthz", "/api/health", "/_ah/health"], (req, res) => {
     res.json({ 
       status: "ok", 
       time: new Date().toISOString(),
@@ -558,7 +592,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
   });
 
   // --- CHAPTER 16 / ER-013 METRICS LAYER CALCULATION ENGINE ENDPOINT (SSOT Delegated & Authenticated) ---
-  app.post("/api/metrics/calculate", verifyAuthAndRole(), (req, res) => {
+  app.post("/api/metrics/calculate", verifyAuthAndRole(), async (req, res) => {
     try {
       const { filters, dataset } = req.body || {};
       const rawData = Array.isArray(dataset) ? dataset : [];
@@ -609,6 +643,7 @@ export async function createApp(opts?: { skipVite?: boolean }) {
       });
 
       // Delegate calculation directly to SSOT Canonical Foundation Engine
+      const { buildCanonicalDataset, evaluatePerformanceLayer } = await import("./src/analytics/calculationFoundation");
       const canonicalRecords = buildCanonicalDataset(filtered, rawData);
       const perfResult = evaluatePerformanceLayer(canonicalRecords);
 
@@ -1017,28 +1052,81 @@ Keep the report concise, professional, and use Markdown headings and bullet poin
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else if (!isDev) {
+  } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    const distIndex = path.join(distPath, 'index.html');
+    
+    // In production mode, strictly verify build artifacts exist and fail closed if missing
+    if (isProd && !fs.existsSync(distIndex)) {
+      const errorMsg = `[CRITICAL PRODUCTION ERROR] Required production artifact '${distIndex}' was not found. Please run 'npm run build' before starting in production mode.`;
+      console.error(errorMsg);
+      if (opts?.strictArtifacts !== false) {
+        throw new Error(errorMsg);
+      }
+    }
+
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+    }
     app.get('*all', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (fs.existsSync(distIndex)) {
+        res.sendFile(distIndex);
+      } else {
+        res.status(500).send("Application production bundle is missing. Run 'npm run build'.");
+      }
     });
   }
 
   return app;
 }
 
-export async function startServer() {
+let activeServerInstance: any = null;
+
+export async function startServer(portOverride?: number) {
+  if (activeServerInstance) {
+    return activeServerInstance;
+  }
   const app = await createApp();
-  const PORT = 3000;
-  return new Promise<any>((resolve) => {
-    const s = app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
-      resolve(s);
-    });
+  const PORT = portOverride || (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
+  return new Promise<any>((resolve, reject) => {
+    try {
+      const s = app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://0.0.0.0:${PORT}`);
+        activeServerInstance = s;
+        resolve(s);
+      });
+      s.on('error', (err) => {
+        console.error(`Server failed to bind on port ${PORT}:`, err);
+        reject(err);
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-if (process.env.NODE_ENV !== 'test' && !process.env.SKIP_SERVER_AUTOSTART) {
-  startServer();
+const isDirectEntrypoint = 
+  Boolean(process.argv[1] && (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.cjs')));
+
+if (isDirectEntrypoint && process.env.NODE_ENV !== 'test' && !process.env.SKIP_SERVER_AUTOSTART) {
+  const { isProd } = resolveEnvironment();
+  const distServerCjs = path.join(process.cwd(), "dist", "server.cjs");
+
+  // If executing unbundled server.ts directly with plain Node in production, delegate to compiled bundle
+  if (isProd && process.argv[1].endsWith('server.ts') && !process.env.__STRUCTUSIGHT_COMPILED__) {
+    if (!fs.existsSync(distServerCjs)) {
+      console.error(`[CRITICAL PRODUCTION ERROR] Compiled server entrypoint '${distServerCjs}' not found. Run 'npm run build' before starting in production mode.`);
+      process.exit(1);
+    }
+    process.env.__STRUCTUSIGHT_COMPILED__ = "1";
+    import(path.resolve(distServerCjs)).catch((err) => {
+      console.error("FATAL: Failed to execute compiled server bundle:", err);
+      process.exit(1);
+    });
+  } else {
+    startServer().catch((err) => {
+      console.error("FATAL: Server startup failed:", err);
+      process.exit(1);
+    });
+  }
 }

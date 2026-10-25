@@ -121,7 +121,6 @@ export function resolveRowRegister(d: SubmittalRow): string {
 
   if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
     const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
     const authBase = auth.includes('-') ? auth.split('-')[0].trim() : auth;
     if (authBase && !ignoredParents.has(authBase)) {
       return authBase === 'SHD' ? 'SDW' : authBase === 'LETTER' ? 'LTR' : authBase;
@@ -130,7 +129,6 @@ export function resolveRowRegister(d: SubmittalRow): string {
 
   if (d.registerIdentity) {
     const reg = d.registerIdentity.trim().toUpperCase();
-    if (reg === 'HSE' && d.hasAuthoritativeSourceIdentity) return 'HSE';
     const base = reg.includes('-') ? reg.split('-')[0].trim() : reg;
     if (base && !ignoredParents.has(base)) {
       return base === 'SHD' ? 'SDW' : base === 'LETTER' ? 'LTR' : base;
@@ -235,28 +233,15 @@ export function resolveOfficialSubmittalRegister(row: SubmittalRow): string {
 
 
 
-  // Independent explicit HSE register remains separate as HSE
-  const isHseSource =
-    baseReg === 'HSE' ||
-    baseReg === 'SAFETY' ||
-    rawReg === 'HSE' ||
-    rawReg === 'SAFETY' ||
-    (row.sourceRegisterIdentity || '').trim().toUpperCase() === 'HSE' ||
-    (row.sourceRegisterIdentity || '').trim().toUpperCase() === 'SAFETY' ||
-    (row.registerIdentity || '').trim().toUpperCase() === 'HSE' ||
-    (row.registerIdentity || '').trim().toUpperCase() === 'SAFETY' ||
-    (row.sourceSheetName || '').trim().toUpperCase() === 'HSE' ||
-    (row.sourceSheetName || '').trim().toUpperCase() === 'SAFETY';
-
-  if (isHseSource) {
-    return 'HSE';
-  }
-
   if (rawReg.includes('-') && (!resolvedDisc || resolvedDisc === 'GEN' || resolvedDisc === 'GENERAL')) {
     const suffix = rawReg.split('-').slice(1).join('-').trim();
     if (suffix && suffix !== 'UNCLASSIFIED' && suffix !== 'UNKNOWN') {
       return `${baseReg}-${suffix}`;
     }
+  }
+
+  if (baseReg === 'DOC' && (resolvedDisc === 'HSE' || resolvedDisc === 'SAFETY' || resolvedDisc === 'GEN' || resolvedDisc === 'GENERAL')) {
+    return 'DOC-GENERAL';
   }
 
   return `${baseReg}-${resolvedDisc}`;

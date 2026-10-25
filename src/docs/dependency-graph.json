@@ -1415,6 +1415,14 @@
       "target": "src/firebase.ts"
     },
     {
+      "source": "src/hooks/useFilters.ts",
+      "target": "src/analytics/managementReportOutput.ts"
+    },
+    {
+      "source": "src/hooks/useFilters.ts",
+      "target": "src/utils/parentRegisterResolver.ts"
+    },
+    {
       "source": "src/hooks/useUpload.ts",
       "target": "src/types.ts"
     },

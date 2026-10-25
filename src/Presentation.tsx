@@ -106,15 +106,8 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
     }
   }
 
-  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
-
-  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
-    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
-  }
-
   // 3. Inspect sourceRegisterIdentity if not pure discipline
-  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL']);
+  const pureDisciplines = new Set(['STR', 'ARCH', 'ARC', 'MECH', 'MEC', 'ELEC', 'ELE', 'INFRA', 'INF', 'LND', 'LAND', 'LANDSCAPE', 'GEN', 'GENERAL', 'HSE', 'SAFETY']);
   const srcId = (d.sourceRegisterIdentity || '').toUpperCase().trim();
   if (srcId && !pureDisciplines.has(srcId) && srcId !== 'UNCLASSIFIED') {
     if (srcId.startsWith('DOC') || srcId.includes('TECHNICAL') || srcId.includes('TRANSMITTAL') || srcId.includes('DOCUMENT')) return 'DOC';
@@ -233,13 +226,6 @@ export function resolveRowRegister(d: SubmittalRow): string {
     if (['SDW', 'SHD', 'ABD', 'MIR', 'WIR', 'MAR', 'QS', 'RFI', 'NCR', 'SOR', 'DOC', 'LTR'].includes(wf)) {
       return wf === 'SHD' ? 'SDW' : wf;
     }
-  }
-
-  if (sheetUpper === 'HSE' || sheetUpper === 'SAFETY' || srcRegUpper === 'HSE' || srcRegUpper === 'SAFETY') return 'HSE';
-
-  if (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) {
-    const auth = d.sourceRegisterIdentity.trim().toUpperCase();
-    if (auth === 'HSE' || auth === 'SAFETY') return 'HSE';
   }
 
   // 4. Fallback to resolving the workflow family

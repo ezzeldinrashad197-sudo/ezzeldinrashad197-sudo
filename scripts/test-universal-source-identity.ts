@@ -73,8 +73,8 @@ assert(
 
 const officialRegistersGen = normalizedGen.map(r => resolveOfficialSubmittalRegister(r));
 assert(
-  officialRegistersGen.every(reg => reg.startsWith("DOC-") || reg === "DOC"),
-  "Rule: resolveOfficialSubmittalRegister resolves under DOC parent family",
+  officialRegistersGen.every(reg => reg === "DOC-GENERAL"),
+  "Rule: resolveOfficialSubmittalRegister resolves strictly to DOC-GENERAL (zero DOC-HSE or standalone HSE registers)",
   `Observed: ${officialRegistersGen.join(", ")}`
 );
 
@@ -102,8 +102,8 @@ assert(
 
 const officialRegistersDocGen = normalizedDocGen.map(r => resolveOfficialSubmittalRegister(r));
 assert(
-  officialRegistersDocGen.every(reg => reg.startsWith("DOC-") || reg === "DOC"),
-  "Rule: resolveOfficialSubmittalRegister resolves under DOC parent register",
+  officialRegistersDocGen.every(reg => reg === "DOC-GENERAL"),
+  "Rule: resolveOfficialSubmittalRegister resolves strictly to DOC-GENERAL for all rows under GEN sheet",
   `Observed: ${officialRegistersDocGen.join(", ")}`
 );
 
@@ -112,6 +112,46 @@ assert(
   docGenReport.availableParentRegisters.length === 1 && docGenReport.availableParentRegisters[0] === "DOC",
   "Rule: Available parent registers strictly contains 'DOC' (zero leaked standalone GEN register)",
   `Observed parent registers: ${docGenReport.availableParentRegisters.join(", ")}`
+);
+
+// -----------------------------------------------------------------------------
+// TEST CASE 1C: HSE Sheet in Project_Registers.xlsx — Parent Register DOC
+// -----------------------------------------------------------------------------
+console.log("\n--- [CASE 1C: HSE Worksheet inside Project_Registers.xlsx — Parent Register DOC] ---");
+
+const hseRows = [
+  headers,
+  ["HSE-001", "00", "HSE", "2026-08-01", "2026-08-10", "2026-08-08", "A", "Site Safety Health & Environmental audit report", "HSE inspection passed"],
+  ["HSE-002", "00", "SAFETY", "2026-08-02", "2026-08-11", "2026-08-09", "A", "Job site safety hazard mitigation submittal", "Approved"]
+];
+
+const hseBuffer = createExcelWorkbookBuffer([{ sheetName: "HSE", rows: hseRows }]);
+const parsedHse = parseExcelBuffer(hseBuffer, "Project_Registers.xlsx");
+const normalizedHse = normalizeData(parsedHse);
+
+assert(
+  normalizedHse.length === 2,
+  "All 2 rows parsed from HSE sheet"
+);
+
+assert(
+  normalizedHse.every(r => r.registerIdentity === "DOC" || r.workflowFamily === "DOC"),
+  "Rule: HSE sheet inside generic workbook resolves to DOC parent register (never a rogue standalone HSE register)",
+  `Observed types: ${normalizedHse.map(r => r.registerIdentity).join(", ")}`
+);
+
+const officialRegistersHse = normalizedHse.map(r => resolveOfficialSubmittalRegister(r));
+assert(
+  officialRegistersHse.every(reg => reg === "DOC-GENERAL"),
+  "Rule: resolveOfficialSubmittalRegister resolves strictly to DOC-GENERAL (zero DOC-HSE or standalone HSE register)",
+  `Observed: ${officialRegistersHse.join(", ")}`
+);
+
+const hseReport = buildManagementReportOutput(normalizedHse, normalizedHse, "ALL");
+assert(
+  hseReport.availableParentRegisters.length === 1 && hseReport.availableParentRegisters[0] === "DOC",
+  "Rule: Management Report parent registers contains strictly 'DOC' (zero leaked standalone HSE register)",
+  `Observed parent registers: ${hseReport.availableParentRegisters.join(", ")}`
 );
 
 // -----------------------------------------------------------------------------

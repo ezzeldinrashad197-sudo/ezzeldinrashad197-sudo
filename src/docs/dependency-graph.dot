@@ -374,6 +374,8 @@ digraph DependencyGraph {
   "src/hooks/useExport.ts" -> "src/utils/pdfDomSanitizer.ts";
   "src/hooks/useFilters.ts" -> "src/types.ts";
   "src/hooks/useFilters.ts" -> "src/firebase.ts";
+  "src/hooks/useFilters.ts" -> "src/analytics/managementReportOutput.ts";
+  "src/hooks/useFilters.ts" -> "src/utils/parentRegisterResolver.ts";
   "src/hooks/useUpload.ts" -> "src/types.ts";
   "src/hooks/useUpload.ts" -> "src/utils/multiFileParser.ts";
   "src/hooks/useUpload.ts" -> "src/firebase.ts";
