@@ -161,6 +161,10 @@ export function getAuthoritativeSourceRegisterName(fileName: string, sheetName: 
   // 1. Compound sheet names like WIR-STR, DOC-GEN, SDW-INFRA are authoritative compound registers
   const parts = upperSheet.split(/[-_ ]+/);
   if (parts.length > 1 && KNOWN_PARENT_REGISTERS[parts[0]]) {
+    const suffix = parts.slice(1).join('-');
+    if (parts[0] === 'DOC' && (suffix === 'HSE' || suffix === 'SAFETY' || suffix === 'GEN' || suffix === 'GENERAL')) {
+      return 'DOC-GENERAL';
+    }
     return cleanSheet;
   }
 
@@ -278,10 +282,12 @@ export function buildCompositeIdentity(
     const isRegisterLocked = checkRegisterLock(resolvedFamily, discipline);
 
     const isHseOrGenAuth = upperAuth === 'HSE' || upperAuth === 'SAFETY' || upperAuth === 'GEN' || upperAuth === 'GENERAL';
+    const isDocHseOrGen = upperAuth === 'DOC-HSE' || upperAuth === 'DOC-SAFETY' || upperAuth === 'DOC-GEN';
+    const finalAuth = isDocHseOrGen ? 'DOC-GENERAL' : (isHseOrGenAuth ? resolvedFamily : upperAuth);
     return {
       family: resolvedFamily,
-      discipline,
-      compositeCode: isHseOrGenAuth ? resolvedFamily : upperAuth,
+      discipline: isDocHseOrGen ? 'GEN' : discipline,
+      compositeCode: finalAuth,
       rawSourceIdentity: `${fileName}::${sheetName}`,
       evidenceSource: 'authoritative_source_register',
       evidenceLevel: 'LEVEL_2_WORKSHEET_COMPOSITE',
@@ -292,7 +298,7 @@ export function buildCompositeIdentity(
       isRegisterLocked,
       disciplineEvidenceSource: isRegisterLocked ? 'REGISTER_LOCK' : 'ROW_EXPLICIT',
       isAuthoritative: true,
-      authoritativeRegister: isHseOrGenAuth ? resolvedFamily : upperAuth
+      authoritativeRegister: finalAuth
     };
   }
 

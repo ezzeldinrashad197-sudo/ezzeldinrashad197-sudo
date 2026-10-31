@@ -497,7 +497,7 @@ export const calculateExecutiveDashboardData = (
 
     const rowToLabel = (d: SubmittalRow): string => {
         const parentReg = resolveRowRegister(d);
-        if (parentReg === 'HSE') return 'HSE';
+        if (parentReg === 'HSE') return 'DOC-GENERAL';
         if (parentReg === 'NCR' || parentReg === 'SOR' || parentReg === 'LTR') {
             let t = (d.documentType || parentReg).toUpperCase().trim();
             if (t === 'HSE') t = 'NCR-HSE';

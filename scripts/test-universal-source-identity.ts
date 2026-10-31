@@ -2,6 +2,8 @@ import { parseExcelFile, parseExcelBuffer } from "../src/utils/parser";
 import { normalizeData } from "../src/utils/calculations";
 import { classifyRegisterSheet, buildCompositeIdentity, getAuthoritativeSourceRegisterName } from "../src/utils/classificationEngine";
 import { resolveOfficialSubmittalRegister, buildManagementReportOutput } from "../src/analytics/managementReportOutput";
+import { generateDisciplineReconciliationReport } from "../src/analytics/reconciliationEngine";
+import { resolveRowRegister as resolveRowRegisterPres } from "../src/Presentation";
 import * as XLSX from "xlsx";
 
 function createExcelWorkbookBuffer(sheets: { sheetName: string; rows: any[][] }[]): Buffer {
@@ -152,6 +154,121 @@ assert(
   hseReport.availableParentRegisters.length === 1 && hseReport.availableParentRegisters[0] === "DOC",
   "Rule: Management Report parent registers contains strictly 'DOC' (zero leaked standalone HSE register)",
   `Observed parent registers: ${hseReport.availableParentRegisters.join(", ")}`
+);
+
+// -----------------------------------------------------------------------------
+// TEST CASE 1D: Compound Worksheet DOC-HSE — Parity Between Report & Presentation
+// -----------------------------------------------------------------------------
+console.log("\n--- [CASE 1D: Compound Worksheet DOC-HSE — Strict DOC-GENERAL Parity] ---");
+
+const docHseRows = [
+  headers,
+  ["DOC-HSE-001", "00", "HSE", "2026-08-01", "2026-08-10", "2026-08-08", "A", "Health and Safety Audit Plan", "Approved"]
+];
+
+const docHseBuffer = createExcelWorkbookBuffer([{ sheetName: "DOC-HSE", rows: docHseRows }]);
+const parsedDocHse = parseExcelBuffer(docHseBuffer, "Project_Registers.xlsx");
+const normalizedDocHse = normalizeData(parsedDocHse);
+
+assert(
+  normalizedDocHse.length === 1,
+  "All 1 row parsed from compound sheet DOC-HSE"
+);
+
+assert(
+  normalizedDocHse.every(r => r.registerIdentity === "DOC-GENERAL" || r.workflowFamily === "DOC"),
+  "Rule: Compound DOC-HSE sheet resolves canonically to DOC-GENERAL (family DOC)",
+  `Observed registerIdentities: ${normalizedDocHse.map(r => r.registerIdentity).join(", ")}`
+);
+
+const officialRegistersDocHse = normalizedDocHse.map(r => resolveOfficialSubmittalRegister(r));
+assert(
+  officialRegistersDocHse.every(reg => reg === "DOC-GENERAL"),
+  "Rule: resolveOfficialSubmittalRegister resolves strictly to DOC-GENERAL for compound DOC-HSE worksheet",
+  `Observed: ${officialRegistersDocHse.join(", ")}`
+);
+
+const docHseReport = buildManagementReportOutput(normalizedDocHse, normalizedDocHse, "ALL");
+assert(
+  docHseReport.availableParentRegisters.length === 1 && docHseReport.availableParentRegisters[0] === "DOC",
+  "Rule: Management Report availableParentRegisters strictly contains 'DOC'",
+  `Observed: ${docHseReport.availableParentRegisters.join(", ")}`
+);
+
+// Full 146-row Reconciliation Audit: 1 DOC-HSE row + 145 DOC-GENERAL rows
+const docGen145Rows = [headers];
+for (let i = 1; i <= 145; i++) {
+  const docIdx = i <= 122 ? i : (i - 122);
+  const rev = i <= 122 ? "00" : "01";
+  docGen145Rows.push([
+    `DOC-GEN-${String(docIdx).padStart(4, "0")}`,
+    rev,
+    "General",
+    "2026-08-01",
+    "2026-08-10",
+    "2026-08-08",
+    "A",
+    `General technical document ${docIdx}`,
+    "Approved"
+  ]);
+}
+
+const combinedBuffer = createExcelWorkbookBuffer([
+  { sheetName: "DOC-HSE", rows: docHseRows },
+  { sheetName: "DOC-GENERAL", rows: docGen145Rows }
+]);
+const parsedCombined = parseExcelBuffer(combinedBuffer, "Project_Registers.xlsx");
+const normalizedCombined = normalizeData(parsedCombined);
+
+assert(
+  normalizedCombined.length === 146,
+  "Rule: Combined dataset has exactly 146 rows (1 HSE + 145 GEN)"
+);
+
+const authenticHseRow = normalizedCombined.find(r => r.docNo === "DOC-HSE-001");
+assert(
+  authenticHseRow?.discipline === "HSE",
+  "Rule: Authentic source row DOC-HSE-001 preserves raw discipline as 'HSE'",
+  `Observed discipline: ${authenticHseRow?.discipline}`
+);
+
+assert(
+  resolveOfficialSubmittalRegister(authenticHseRow!) === "DOC-GENERAL",
+  "Rule: Authentic source row DOC-HSE-001 resolves canonical register as 'DOC-GENERAL'",
+  `Observed: ${resolveOfficialSubmittalRegister(authenticHseRow!)}`
+);
+
+assert(
+  resolveRowRegisterPres(authenticHseRow!) === "DOC-GENERAL",
+  "Rule: Presentation resolveRowRegister resolves DOC-HSE-001 as 'DOC-GENERAL'",
+  `Observed: ${resolveRowRegisterPres(authenticHseRow!)}`
+);
+
+const reconCombined = generateDisciplineReconciliationReport(normalizedCombined);
+const docHseReconRecord = reconCombined.records.find(r => r.identityKey === "DOC-HSE");
+assert(
+  docHseReconRecord === undefined,
+  "Rule: DOC-HSE independent register count = 0 in Reconciliation Report",
+  `Found record: ${JSON.stringify(docHseReconRecord)}`
+);
+
+const docGenReconRecord = reconCombined.records.find(r => r.identityKey === "DOC-GENERAL");
+assert(
+  docGenReconRecord !== undefined && docGenReconRecord.grainA.totalRows === 146,
+  "Rule: Historical Rows under DOC-GENERAL = 146 in Reconciliation Report",
+  `Observed Historical Rows: ${docGenReconRecord?.grainA.totalRows}`
+);
+
+assert(
+  docGenReconRecord !== undefined && docGenReconRecord.grainC.totalCurrentUnique === 123,
+  "Rule: Current Unique under DOC-GENERAL = 123 in Reconciliation Report",
+  `Observed Current Unique: ${docGenReconRecord?.grainC.totalCurrentUnique}`
+);
+
+assert(
+  reconCombined.grandTotal.grainA.totalRows === 146 && reconCombined.grandTotal.grainC.totalCurrentUnique === 123,
+  "Rule: Overall totals remain unchanged (146 rows = 123 unique + 23 superseded)",
+  `Totals: ${reconCombined.grandTotal.grainA.totalRows} rows, ${reconCombined.grandTotal.grainC.totalCurrentUnique} unique`
 );
 
 // -----------------------------------------------------------------------------

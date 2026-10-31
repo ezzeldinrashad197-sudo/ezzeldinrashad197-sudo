@@ -2,6 +2,7 @@ import { SubmittalRow } from '../types';
 import { resolveRowDiscipline } from './calculationFoundation';
 import { getStatusCodeCategory } from './statusResolver';
 import { extractRevisionRaw, isRevision0, isFurtherRevision, compareRevisionsCanonical } from './revisionResolver';
+import { resolveOfficialSubmittalRegister, isOfficialSubmittalPopulationRow } from './managementReportOutput';
 
 export interface DisciplineReconciliationRecord {
   register: string;
@@ -92,6 +93,9 @@ export function getRowRegister(r: SubmittalRow): string {
     r.logType ||
     'DOC'
   ).trim().toUpperCase();
+  if (reg === 'HSE' || reg === 'DOC-HSE' || reg === 'DOC-GEN' || reg === 'GEN' || reg === 'DOC-GENERAL') {
+    return 'DOC';
+  }
   return reg;
 }
 
@@ -132,10 +136,20 @@ export function generateDisciplineReconciliationReport(
   const groupMap = new Map<string, { register: string; discipline: string; rows: SubmittalRow[] }>();
 
   rows.forEach(r => {
-    // Exclude NCR if handled separately or treat as its own register
-    const reg = getRowRegister(r);
-    const disc = (resolveRowDiscipline(r, reg) || 'GEN').toUpperCase();
-    const identityKey = `${reg}-${disc}`;
+    let identityKey: string;
+    let reg: string;
+    let disc: string;
+
+    if (isOfficialSubmittalPopulationRow(r)) {
+      identityKey = resolveOfficialSubmittalRegister(r);
+      const parts = identityKey.split('-');
+      reg = parts[0] || 'DOC';
+      disc = parts.slice(1).join('-') || 'GEN';
+    } else {
+      reg = getRowRegister(r);
+      disc = (resolveRowDiscipline(r, reg) || 'GEN').toUpperCase();
+      identityKey = `${reg}-${disc}`;
+    }
 
     let grp = groupMap.get(identityKey);
     if (!grp) {

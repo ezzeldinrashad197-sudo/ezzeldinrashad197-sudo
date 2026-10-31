@@ -4,7 +4,7 @@ import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats
 import { isEntityOverdue } from "./analytics/calculationFoundation";
 import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./analytics/revisionResolver";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./analytics/ncr/ncrEngine";
-import { resolveUniqueSubmittalStats } from "./analytics/managementReportOutput";
+import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, isOfficialSubmittalPopulationRow } from "./analytics/managementReportOutput";
 import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
 import { useLanguage } from "./utils/i18n";
 import {
@@ -94,7 +94,11 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
   // 1. Direct canonical registerIdentity
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
     const reg = d.registerIdentity.trim().toUpperCase();
-    return reg === 'SHD' ? 'SDW' : (reg === 'LETTER' ? 'LTR' : reg);
+    if (reg === 'HSE' || reg === 'DOC-HSE' || reg === 'DOC-GEN' || reg === 'GEN' || reg === 'DOC-GENERAL') {
+      return 'DOC';
+    }
+    const base = reg.includes('-') ? reg.split('-')[0].trim() : reg;
+    return base === 'SHD' ? 'SDW' : (base === 'LETTER' ? 'LTR' : base);
   }
 
   // 2. Check explicit workflowFamily if valid and not UNKNOWN
@@ -206,6 +210,10 @@ export function resolveRowRegisterFamily(d: SubmittalRow): string {
 export function resolveRowRegister(d: SubmittalRow): string {
   if (!d) return 'UNCLASSIFIED';
 
+  if (isOfficialSubmittalPopulationRow(d)) {
+    return resolveOfficialSubmittalRegister(d);
+  }
+
   const sheetUpper = (d.sourceSheetName || '').trim().toUpperCase();
   const srcRegUpper = (
     (d.hasAuthoritativeSourceIdentity && d.sourceRegisterIdentity) ||
@@ -216,7 +224,11 @@ export function resolveRowRegister(d: SubmittalRow): string {
 
   // 1. SSOT: Check authoritative canonical registerIdentity first!
   if (d.registerIdentity && d.registerIdentity !== 'UNCLASSIFIED') {
-    return d.registerIdentity.trim().toUpperCase();
+    const regUpper = d.registerIdentity.trim().toUpperCase();
+    if (regUpper === 'HSE' || regUpper === 'DOC-HSE' || regUpper === 'DOC-GEN' || regUpper === 'GEN') {
+      return 'DOC-GENERAL';
+    }
+    return regUpper;
   }
 
   // 2. Check workflowFamily
@@ -293,6 +305,48 @@ export function getRegisterTitle(bt: string, language: 'ar' | 'en', sampleRow?: 
       en: 'Document Submittals (DOC)',
       subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية',
       subtitleEn: 'Technical Documents & Transmittals'
+    },
+    'DOC-GENERAL': {
+      ar: 'الوثائق العامة والسلامة (General & Safety Documents)',
+      en: 'General & HSE Document Submittals (DOC-GENERAL)',
+      subtitleAr: 'سجل تقديمات الوثائق العامة وإجراءات السلامة والجودة',
+      subtitleEn: 'General Technical Submittals & HSE Documentation'
+    },
+    'DOC-MECH': {
+      ar: 'الوثائق الفنية الميكانيكية (Mechanical Documents)',
+      en: 'Mechanical Document Submittals (DOC-MECH)',
+      subtitleAr: 'سجل تقديمات الوثائق والبيانات الفنية للأعمال الميكانيكية',
+      subtitleEn: 'Mechanical Technical Submittals & Equipment Documentation'
+    },
+    'DOC-ELEC': {
+      ar: 'الوثائق الفنية الكهربائية (Electrical Documents)',
+      en: 'Electrical Document Submittals (DOC-ELEC)',
+      subtitleAr: 'سجل تقديمات الوثائق والبيانات الفنية للأعمال الكهربائية',
+      subtitleEn: 'Electrical Technical Submittals & Systems Documentation'
+    },
+    'WIR-STR': {
+      ar: 'طلبات الفحص الإنشائي (Structural Inspection Requests)',
+      en: 'Structural Work Inspection Requests (WIR-STR)',
+      subtitleAr: 'سجل استلام وفحص الأعمال الإنشائية بالموقع',
+      subtitleEn: 'Structural Works Site Inspection Requests'
+    },
+    'WIR-SURVEY': {
+      ar: 'طلبات الفحص المساحي (Survey Inspection Requests)',
+      en: 'Survey Work Inspection Requests (WIR-SURVEY)',
+      subtitleAr: 'سجل استلام وفحص الأعمال المساحية بالموقع',
+      subtitleEn: 'Surveying Site Inspection Requests'
+    },
+    'WIR-LANDSCAPE': {
+      ar: 'طلبات فحص تنسيق الموقع (Landscape Inspection Requests)',
+      en: 'Landscape Work Inspection Requests (WIR-LANDSCAPE)',
+      subtitleAr: 'سجل استلام وفحص أعمال تنسيق الموقع بالموقع',
+      subtitleEn: 'Landscape Site Inspection Requests'
+    },
+    'SDW-STR': {
+      ar: 'المخططات التنفيذية الإنشائية (Structural Shop Drawings)',
+      en: 'Structural Shop Drawings Register (SDW-STR)',
+      subtitleAr: 'سجل اعتمادات ومراجعات مخططات الورشة الإنشائية',
+      subtitleEn: 'Structural Shop Drawing Approvals'
     },
     QS: {
       ar: 'حصر الكميات (Quantity Surveying)',
