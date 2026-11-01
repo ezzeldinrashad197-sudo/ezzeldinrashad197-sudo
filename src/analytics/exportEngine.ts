@@ -511,7 +511,7 @@ export const generatePptxReport = async (
         
         // Columns variables (Official Management Table: Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending)
         let cols = [
-           { label: "Status", key: "discipline" },
+           { label: bt === 'DOC' ? (isArabic ? "السجل / التصنيف" : "Register") : (isArabic ? "التخصص الفني" : "Discipline"), key: "discipline" },
            { label: "Total Submittals", key: "TotalSubmittals" },
            { label: "Rev.00", key: "Rev00" },
            { label: "Further Rev.", key: "FurtherRev" },

@@ -4,7 +4,7 @@ import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats
 import { isEntityOverdue } from "./analytics/calculationFoundation";
 import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./analytics/revisionResolver";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./analytics/ncr/ncrEngine";
-import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, isOfficialSubmittalPopulationRow } from "./analytics/managementReportOutput";
+import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, isOfficialSubmittalPopulationRow, isExcludedRow } from "./analytics/managementReportOutput";
 import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
 import { useLanguage } from "./utils/i18n";
 import {
@@ -301,28 +301,58 @@ export function getRegisterTitle(bt: string, language: 'ar' | 'en', sampleRow?: 
       subtitleEn: 'Site Safety & Quality Observations'
     },
     DOC: {
-      ar: 'الوثائق والمستندات الفنية (Technical Submittals)',
+      ar: 'Document Submittals (DOC)',
       en: 'Document Submittals (DOC)',
       subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية',
       subtitleEn: 'Technical Documents & Transmittals'
     },
+    'DOC-ARCH': {
+      ar: 'DOC-ARCH',
+      en: 'DOC-ARCH',
+      subtitleAr: 'سجل تقديمات الوثائق والبيانات الفنية للأعمال المعمارية',
+      subtitleEn: 'Architectural Technical Submittals & Finishes Documentation'
+    },
     'DOC-GENERAL': {
-      ar: 'الوثائق العامة والسلامة (General & Safety Documents)',
-      en: 'General & HSE Document Submittals (DOC-GENERAL)',
+      ar: 'DOC-GEN',
+      en: 'DOC-GEN',
+      subtitleAr: 'سجل تقديمات الوثائق العامة وإجراءات السلامة والجودة',
+      subtitleEn: 'General Technical Submittals & HSE Documentation'
+    },
+    'DOC-GEN': {
+      ar: 'DOC-GEN',
+      en: 'DOC-GEN',
       subtitleAr: 'سجل تقديمات الوثائق العامة وإجراءات السلامة والجودة',
       subtitleEn: 'General Technical Submittals & HSE Documentation'
     },
     'DOC-MECH': {
-      ar: 'الوثائق الفنية الميكانيكية (Mechanical Documents)',
-      en: 'Mechanical Document Submittals (DOC-MECH)',
+      ar: 'DOC-MECH',
+      en: 'DOC-MECH',
       subtitleAr: 'سجل تقديمات الوثائق والبيانات الفنية للأعمال الميكانيكية',
       subtitleEn: 'Mechanical Technical Submittals & Equipment Documentation'
     },
     'DOC-ELEC': {
-      ar: 'الوثائق الفنية الكهربائية (Electrical Documents)',
-      en: 'Electrical Document Submittals (DOC-ELEC)',
+      ar: 'DOC-ELEC',
+      en: 'DOC-ELEC',
       subtitleAr: 'سجل تقديمات الوثائق والبيانات الفنية للأعمال الكهربائية',
       subtitleEn: 'Electrical Technical Submittals & Systems Documentation'
+    },
+    'DOC-STR': {
+      ar: 'DOC-STR',
+      en: 'DOC-STR',
+      subtitleAr: 'سجل تقديمات الوثائق الإنشائية',
+      subtitleEn: 'Structural Technical Submittals'
+    },
+    'DOC-LANDSCAPE': {
+      ar: 'DOC-LANDSCAPE',
+      en: 'DOC-LANDSCAPE',
+      subtitleAr: 'سجل تقديمات وثائق تنسيق الموقع',
+      subtitleEn: 'Landscape Technical Submittals'
+    },
+    'DOC-INFRA': {
+      ar: 'DOC-INFRA',
+      en: 'DOC-INFRA',
+      subtitleAr: 'سجل تقديمات وثائق البنية التحتية',
+      subtitleEn: 'Infrastructure Technical Submittals'
     },
     'WIR-STR': {
       ar: 'طلبات الفحص الإنشائي (Structural Inspection Requests)',
@@ -516,13 +546,95 @@ export default function Presentation({
 
   // Helper compiler
   const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
-    const typeData = dataset.filter(d => resolveRowRegister(d) === bt);
+    if (bt === 'DOC') {
+      const docRows = dataset.filter(d => {
+        if (isExcludedRow(d)) return false;
+        const fam = resolveRowRegisterFamily(d);
+        if (fam === 'DOC') return true;
+        const reg = resolveRowRegister(d);
+        return reg.startsWith('DOC');
+      });
+
+      const subRegOrder = ['DOC-ARCH', 'DOC-MECH', 'DOC-ELEC', 'DOC-GENERAL'];
+      const presentSubRegs = Array.from(new Set(docRows.map(d => resolveRowRegister(d)).filter(Boolean)));
+      const sortedSubRegs: string[] = [];
+      subRegOrder.forEach(sr => {
+        if (presentSubRegs.includes(sr)) sortedSubRegs.push(sr);
+      });
+      presentSubRegs.forEach(sr => {
+        if (!sortedSubRegs.includes(sr) && sr.startsWith('DOC')) sortedSubRegs.push(sr);
+      });
+
+      const stats = sortedSubRegs.map(subReg => {
+        const subData = docRows.filter(d => resolveRowRegister(d) === subReg);
+        const subStats = resolveUniqueSubmittalStats(subData, fullDataset || dataset);
+        const subTitle = getRegisterTitle(subReg, language);
+        const displayLabel = subReg === 'DOC-GENERAL' ? 'DOC-GEN' : subReg;
+        return {
+          discipline: displayLabel,
+          rawDiscipline: subReg,
+          label: subTitle.name || displayLabel,
+          TotalSubmittals: subStats.totalSubmittals,
+          CurrentUnique: subStats.totalSubmittals,
+          Items: subStats.totalSubmittals,
+          UniqueRev00: subStats.rev00,
+          UniqueFurtherRev: subStats.furtherRev,
+          Rev00: subStats.rev00,
+          FurtherRev: subStats.furtherRev,
+          TotalSheets: subStats.totalSheets,
+          Rev00Rows: subStats.rev00,
+          FurtherRevRows: subStats.furtherRev,
+          TotalRows: subStats.totalSheets,
+          Approved: subStats.approved,
+          RejectedOpen: subStats.rejectedOpen,
+          RejectedClosed: subStats.rejectedClosed,
+          Rejected: subStats.rejected,
+          Pending: subStats.pending,
+          Total: subStats.totalSheets,
+          Closed: subStats.approved + subStats.rejectedClosed,
+          Open: subStats.rejectedOpen + subStats.pending,
+        };
+      });
+
+      const totalRow = {
+        discipline: language === 'ar' ? "الإجمالي الكلي" : "TOTAL",
+        CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
+        Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
+        TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+        TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
+        UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || curr.Rev00 || 0), 0),
+        UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || curr.FurtherRev || 0), 0),
+        Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+        FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+        TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
+        Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
+        FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
+        Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
+        RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
+        RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
+        Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
+        Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
+        Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
+        Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
+        Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
+      };
+
+      return { stats, totalRow, hasData: totalRow.Total > 0 || docRows.length > 0 };
+    }
+
+    const typeData = dataset.filter(d => {
+      if (isExcludedRow(d)) return false;
+      const fam = resolveRowRegisterFamily(d);
+      if (fam === bt) return true;
+      const reg = resolveRowRegister(d);
+      return reg === bt || reg.startsWith(`${bt}-`);
+    });
     const sampleRow = typeData[0];
     const family = resolveRegisterFamilyFromKey(bt, sampleRow);
 
     if (family === 'NCR') {
       const ncrFullSource = data && data.length > 0 ? data : (fullDataset && fullDataset.length > 0 ? fullDataset : dataset);
-      const sourceData = bt === 'NCR' ? ncrFullSource : ncrFullSource.filter(d => resolveRowRegister(d) === bt);
+      const sourceData = bt === 'NCR' ? ncrFullSource : ncrFullSource.filter(d => resolveRowRegisterFamily(d) === 'NCR');
       const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, endDate);
       return { stats, totalRow, hasData };
     }
@@ -531,26 +643,20 @@ export default function Presentation({
     if (family === 'LTR') {
       disciplinesInThisType = Array.from(new Set(typeData.map(d => d.stakeholder || 'GENERAL')));
     } else {
-      const predefinedDisciplines = family === 'NCR'
-        ? ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE']
-        : ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape'];
+      const parsedDisciplines = Array.from(new Set(typeData.map(d => resolveRowDiscipline(d, family)).filter(Boolean)));
+      const activeDisciplines = parsedDisciplines.filter(d => d !== 'UNCLASSIFIED' && d !== 'UNKNOWN');
+      const discOrder = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY', 'HSE', 'GEN'];
 
-      const parsedDisciplines = typeData.map(d => resolveRowDiscipline(d, family));
-      const activeDisciplinesSet = new Set(parsedDisciplines);
-
-      let list: string[] = [...predefinedDisciplines];
-
-      if (activeDisciplinesSet.has('STR/SUR') && !list.includes('STR/SUR')) {
-        list.push('STR/SUR');
-      }
-
-      parsedDisciplines.forEach(p => {
-        if (p && !list.includes(p)) {
-          list.push(p);
-        }
+      activeDisciplines.sort((a, b) => {
+        const idxA = discOrder.findIndex(d => d.toLowerCase() === a.toLowerCase());
+        const idxB = discOrder.findIndex(d => d.toLowerCase() === b.toLowerCase());
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
       });
 
-      disciplinesInThisType = list;
+      disciplinesInThisType = activeDisciplines.length > 0 ? activeDisciplines : ['General'];
     }
 
     const stats = disciplinesInThisType.map((disc) => {
@@ -656,10 +762,10 @@ export default function Presentation({
     const registerList: string[] = [];
 
     data.forEach(d => {
-      const reg = resolveRowRegister(d);
-      if (reg && reg !== 'UNKNOWN' && reg !== 'UNCLASSIFIED' && !registerSet.has(reg)) {
-        registerSet.add(reg);
-        registerList.push(reg);
+      const fam = resolveRowRegisterFamily(d);
+      if (fam && fam !== 'UNKNOWN' && fam !== 'UNCLASSIFIED' && !registerSet.has(fam)) {
+        registerSet.add(fam);
+        registerList.push(fam);
       }
     });
 
@@ -668,10 +774,8 @@ export default function Presentation({
     };
 
     return registerList.sort((a, b) => {
-      const famA = resolveRegisterFamilyFromKey(a);
-      const famB = resolveRegisterFamilyFromKey(b);
-      const orderA = familyOrder[famA] ?? 99;
-      const orderB = familyOrder[famB] ?? 99;
+      const orderA = familyOrder[a] ?? 99;
+      const orderB = familyOrder[b] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
       return a.localeCompare(b);
     });
@@ -689,7 +793,7 @@ export default function Presentation({
         <thead>
           <tr style={{ backgroundColor: PRIMARY_BLUE, color: 'white' }}>
             <th className="p-1.5 border border-[#4472c4] font-bold text-xs whitespace-nowrap min-w-[82px]" colSpan={1}>
-              {language === 'ar' ? 'التخصص الفني' : 'Discipline'}
+              {cols[0]?.label || (language === 'ar' ? 'التخصص الفني' : 'Discipline')}
             </th>
             {hasUniqueMetrics ? (
               <>
@@ -729,7 +833,7 @@ export default function Presentation({
           {statsData.stats.map((s: Record<string, any>, index: number) => (
             <tr key={`${s.discipline}-${index}`} className="even:bg-[#f2f2f2] h-[34px]">
               <td className="p-1.5 border border-[#cbd5e1] font-medium text-xs whitespace-nowrap min-w-[82px]">
-                {getDiscName(s.discipline, language)}
+                {s.label || getDiscName(s.discipline, language)}
               </td>
               {cols.slice(1).map((c, i) => (
                 <td key={i} className={`p-1.5 border border-[#cbd5e1] text-xs whitespace-nowrap ${c.key === "Total" || c.key === "TotalRows" ? "font-bold" : ""}`}>
@@ -739,7 +843,7 @@ export default function Presentation({
             </tr>
           ))}
           <tr className="bg-[#ddebf7] h-[40px] font-bold text-xs" style={{ color: PRIMARY_BLUE }}>
-            <td className="p-1.5 border border-[#cbd5e1] whitespace-nowrap">{getDiscName(statsData.totalRow.discipline, language)}</td>
+            <td className="p-1.5 border border-[#cbd5e1] whitespace-nowrap">{statsData.totalRow.label || getDiscName(statsData.totalRow.discipline, language)}</td>
             {cols.slice(1).map((c, i) => (
               <td key={i} className="p-1.5 border border-[#cbd5e1] whitespace-nowrap">
                 {statsData.totalRow[c.key] !== undefined && statsData.totalRow[c.key] !== null ? statsData.totalRow[c.key] : 0}
@@ -757,7 +861,7 @@ export default function Presentation({
       <div className="w-[540px] h-[280px] flex items-center justify-center">
         <BarChart width={540} height={280} data={statsData.stats} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="discipline" tickFormatter={(d) => getDiscName(d, language)} tick={{ fontSize: 13, fill: '#333' }} />
+          <XAxis dataKey="discipline" tickFormatter={(d) => getRegisterTitle(d, language)?.name || getDiscName(d, language)} tick={{ fontSize: 11, fill: '#333' }} />
           <YAxis tick={{ fontSize: 13, fill: '#333' }} />
           <RechartsTooltip cursor={{ fill: '#F8FAFC' }} />
           <Legend wrapperStyle={{ fontSize: "12px", marginTop: "10px" }} />
@@ -1264,7 +1368,7 @@ export default function Presentation({
           <div className="p-12 flex h-full items-center justify-between">
             <div className="w-[48%] flex flex-col justify-center items-center h-full">
               <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'توزيع التقديمات حسب نوع السجل (شهري)' : 'Monthly Submittal Volume by Log Type'}</h3>
-              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: monthlyData.filter(d => resolveRowRegister(d) === bt).length }))}>
+              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: monthlyData.filter(d => resolveRowRegisterFamily(d) === bt).length }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -1824,7 +1928,7 @@ export default function Presentation({
           <div className="p-12 flex h-full items-center justify-between">
             <div className="w-[48%] flex flex-col justify-center items-center h-full">
               <h3 className="font-bold text-lg mb-6 text-center" style={{ color: primaryColor }}>{language === 'ar' ? 'تراكم إجمالي التقديمات عبر فترات المشروع' : 'Cumulative Submittal Volume by Log Type'}</h3>
-              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: cumulativeData.filter(d => resolveRowRegister(d) === bt).length }))}>
+              <BarChart width={560} height={320} data={baseTypes.map(bt => ({ name: bt, count: cumulativeData.filter(d => resolveRowRegisterFamily(d) === bt).length }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -2206,7 +2310,7 @@ export default function Presentation({
       // B: Monthly slides for Register
       if (selectedComposerSections.has('monthly_registers') && monthlyStats.hasData) {
         let monthlyCols = [
-          { label: "Status", key: "discipline" },
+          { label: regFamily === 'DOC' ? (language === 'ar' ? "السجل / التصنيف" : "Register") : (language === 'ar' ? "التخصص الفني" : "Discipline"), key: "discipline" },
           { label: "Total Submittals", key: "TotalSubmittals" },
           { label: "Rev.00", key: "Rev00" },
           { label: "Further Rev.", key: "FurtherRev" },
@@ -2303,7 +2407,7 @@ export default function Presentation({
       // C: Cumulative slides for Register
       if (selectedComposerSections.has('cumulative_registers') && cumulativeStats.hasData) {
         let cumulativeCols = [
-          { label: "Status", key: "discipline" },
+          { label: regFamily === 'DOC' ? (language === 'ar' ? "السجل / التصنيف" : "Register") : (language === 'ar' ? "التخصص الفني" : "Discipline"), key: "discipline" },
           { label: "Total Submittals", key: "TotalSubmittals" },
           { label: "Rev.00", key: "Rev00" },
           { label: "Further Rev.", key: "FurtherRev" },

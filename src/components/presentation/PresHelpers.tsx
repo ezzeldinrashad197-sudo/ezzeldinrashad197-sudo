@@ -4,7 +4,29 @@ import { SubmittalRow, ProjectSettings } from '../../types';
 export const PRIMARY_BLUE = "#203864";
 export const ACCENT_GOLD = "#eab308";
 
+export function getPresentationRegisterLabel(regOrDisc: string): string {
+  if (!regOrDisc) return '';
+  const upper = regOrDisc.toUpperCase().trim();
+  if (upper === 'DOC-GENERAL' || upper === 'DOC-GEN' || upper.includes('GENERAL & HSE') || upper.includes('GENERAL & SAFETY')) return 'DOC-GEN';
+  if (upper === 'DOC-ARCH' || upper.includes('ARCHITECTURAL DOCUMENT')) return 'DOC-ARCH';
+  if (upper === 'DOC-MECH' || upper.includes('MECHANICAL DOCUMENT')) return 'DOC-MECH';
+  if (upper === 'DOC-ELEC' || upper.includes('ELECTRICAL DOCUMENT')) return 'DOC-ELEC';
+  if (upper === 'DOC-STR' || upper.includes('STRUCTURAL DOCUMENT')) return 'DOC-STR';
+  if (upper === 'DOC-LANDSCAPE' || upper.includes('LANDSCAPE DOCUMENT')) return 'DOC-LANDSCAPE';
+  if (upper === 'DOC-INFRA' || upper.includes('INFRASTRUCTURE DOCUMENT')) return 'DOC-INFRA';
+  return regOrDisc;
+}
+
 export function getDiscName(d: string, language: 'ar' | 'en') {
+  const upper = (d || '').toUpperCase().trim();
+  if (upper === 'DOC-GENERAL' || upper === 'DOC-GEN' || upper.includes('GENERAL & HSE') || upper.includes('GENERAL & SAFETY')) return 'DOC-GEN';
+  if (upper === 'DOC-ARCH' || upper.includes('ARCHITECTURAL DOCUMENT')) return 'DOC-ARCH';
+  if (upper === 'DOC-MECH' || upper.includes('MECHANICAL DOCUMENT')) return 'DOC-MECH';
+  if (upper === 'DOC-ELEC' || upper.includes('ELECTRICAL DOCUMENT')) return 'DOC-ELEC';
+  if (upper === 'DOC-STR' || upper.includes('STRUCTURAL DOCUMENT')) return 'DOC-STR';
+  if (upper === 'DOC-LANDSCAPE' || upper.includes('LANDSCAPE DOCUMENT')) return 'DOC-LANDSCAPE';
+  if (upper === 'DOC-INFRA' || upper.includes('INFRASTRUCTURE DOCUMENT')) return 'DOC-INFRA';
+
   if (language !== 'ar') return d;
   const lower = d.toUpperCase().trim();
   if (lower === 'TOTAL' || lower === 'GRAND TOTAL') return 'الإجمالي';

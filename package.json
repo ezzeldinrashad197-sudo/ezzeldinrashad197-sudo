@@ -30,7 +30,8 @@
     "test:regression-suite": "tsx scripts/runRegressionSuite.ts",
     "test:deployment": "tsx scripts/test-deployment-regression-audit.ts",
     "generate-evidence-report": "tsx scripts/generate-evidence-report.ts",
-    "verify-all": "npm run lint && npm run test && npm run test:sequence && npm run test:auth && npm run test:forensic && npm run test:overdue && npm run test:rfi && npm run test:usi && npm run test:str-matrix && npm run test:wir-str && npm run test:l99 && npm run test:lifecycle && npm run test:pptx && npm run test:er013 && npm run test:regression-suite && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build && npm run test:deployment",
+    "test:presentation-hierarchy": "tsx scripts/test-presentation-aggregation-hierarchy.ts",
+    "verify-all": "npm run lint && npm run test && npm run test:sequence && npm run test:auth && npm run test:forensic && npm run test:overdue && npm run test:rfi && npm run test:usi && npm run test:presentation-hierarchy && npm run test:str-matrix && npm run test:wir-str && npm run test:l99 && npm run test:lifecycle && npm run test:pptx && npm run test:er013 && npm run test:regression-suite && npm run run-integration-tests && npm run generate-evidence-report && npm run architecture-audit && npm run build && npm run test:deployment",
     "remediation-audit": "node scripts/engineering-remediation-audit.mjs"
   },
   "dependencies": {

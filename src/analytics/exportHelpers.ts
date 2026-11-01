@@ -4,6 +4,7 @@ import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats
 import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, resolveRowRegister, isExcludedRow } from "./managementReportOutput";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
+import { getPresentationRegisterLabel } from "../components/presentation/PresHelpers";
 
 // Compile statistics logic extracted from exportEngine
 export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[], cutoffDate?: string | Date) => {
@@ -11,6 +12,81 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
         const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, cutoffDate);
         return { stats, totalRow, hasData };
+    }
+
+    if (bt === 'DOC') {
+        const docRows = dataset.filter(d => {
+            if (isExcludedRow(d)) return false;
+            const parentReg = resolveRowRegister(d);
+            if (parentReg === 'DOC') return true;
+            const docT = (d.documentType || 'GENERAL').toUpperCase();
+            return docT.startsWith('DOC-') || docT === 'DOC';
+        });
+
+        const subRegOrder = ['DOC-ARCH', 'DOC-MECH', 'DOC-ELEC', 'DOC-GENERAL'];
+        const presentSubRegs = Array.from(new Set(docRows.map(d => resolveOfficialSubmittalRegister(d)).filter(Boolean)));
+        const sortedSubRegs: string[] = [];
+        subRegOrder.forEach(sr => {
+            if (presentSubRegs.includes(sr)) sortedSubRegs.push(sr);
+        });
+        presentSubRegs.forEach(sr => {
+            if (!sortedSubRegs.includes(sr) && sr.startsWith('DOC')) sortedSubRegs.push(sr);
+        });
+
+        const stats = sortedSubRegs.map(subReg => {
+            const subData = docRows.filter(d => resolveOfficialSubmittalRegister(d) === subReg);
+            const subStats = resolveUniqueSubmittalStats(subData, fullDataset || dataset);
+            const tRows = subStats.totalSheets;
+            const curUniq = subStats.totalSubmittals;
+            const superRows = Math.max(0, tRows - curUniq);
+            const displayLabel = subReg === 'DOC-GENERAL' ? 'DOC-GEN' : subReg;
+            return {
+                discipline: displayLabel,
+                rawDiscipline: subReg,
+                label: displayLabel,
+                TotalSubmittals: curUniq,
+                CurrentUnique: curUniq,
+                UniqueItems: curUniq,
+                Rev00: subStats.rev00,
+                FurtherRev: subStats.furtherRev,
+                TotalSheets: tRows,
+                Rev00Rows: subStats.rev00,
+                FurtherRevRows: subStats.furtherRev,
+                TotalRows: tRows,
+                Superseded: superRows,
+                Approved: subStats.approved,
+                RejectedOpen: subStats.rejectedOpen,
+                RejectedClosed: subStats.rejectedClosed,
+                Rejected: subStats.rejected,
+                Pending: subStats.pending,
+                Total: tRows,
+                Closed: subStats.approved + subStats.rejectedClosed,
+                Open: subStats.rejectedOpen + subStats.pending
+            };
+        });
+
+        const totalRow = {
+            discipline: "TOTAL",
+            TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
+            TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
+            Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
+            FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
+            TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
+            Superseded: stats.reduce((acc, curr) => acc + Number(curr.Superseded || 0), 0),
+            CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
+            Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
+            FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
+            Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
+            RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
+            RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
+            Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
+            Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
+            Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
+            Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
+            Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
+        };
+
+        return { stats, totalRow, hasData: stats.reduce((acc, curr) => acc + Number(curr.Total), 0) > 0 || docRows.length > 0 };
     }
 
     const typeData = dataset.filter(d => {
@@ -25,23 +101,20 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
     if (bt === 'LTR') {
        disciplinesInThisType = Array.from(new Set(typeData.map(d => d.stakeholder || 'GENERAL')));
     } else {
-      const predefinedDisciplines = bt === 'NCR' ? ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'HSE'] : ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'];
-      const parsedDisciplines = typeData.map(d => resolveRowDiscipline(d, bt));
-      const activeDisciplinesSet = new Set(parsedDisciplines);
+      const parsedDisciplines = Array.from(new Set(typeData.map(d => resolveRowDiscipline(d, bt)).filter(Boolean)));
+      const activeDisciplines = parsedDisciplines.filter(d => d !== 'UNCLASSIFIED' && d !== 'UNKNOWN');
+      const discOrder = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY', 'HSE', 'GEN'];
 
-      let list: string[] = [];
-      predefinedDisciplines.forEach(b => {
-        list.push(b);
-        if (b === 'STR' && activeDisciplinesSet.has('STR/SUR')) {
-          list.push('STR/SUR');
-        }
+      activeDisciplines.sort((a, b) => {
+        const idxA = discOrder.findIndex(d => d.toLowerCase() === a.toLowerCase());
+        const idxB = discOrder.findIndex(d => d.toLowerCase() === b.toLowerCase());
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
       });
-      parsedDisciplines.forEach(p => {
-        if (p && !list.includes(p)) {
-          list.push(p);
-        }
-      });
-      disciplinesInThisType = list;
+
+      disciplinesInThisType = activeDisciplines.length > 0 ? activeDisciplines : ['General'];
     }
 
     const stats = disciplinesInThisType.map((disc) => {
@@ -54,7 +127,6 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
       const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
-      const totalSubmittals = s.totalUniqueSubmittals ?? (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : dData.length);
       const countForType = isSheetCountType || bt === 'RFI'
         ? totalWorkload
         : (isMonthlyReport
@@ -416,7 +488,10 @@ export const buildTableData = (
         
         cols.forEach((col, cIdx) => {
             const isFirst = cIdx === 0;
-            const textVal = String(s[col.key] !== undefined ? s[col.key] : "");
+            let textVal = String(s[col.key] !== undefined ? s[col.key] : "");
+            if (isFirst) {
+                textVal = getPresentationRegisterLabel(textVal);
+            }
             r.push({ 
                 text: textVal, 
                 options: { 
@@ -1315,7 +1390,15 @@ export function getRegisterTitle(bt: string, language: 'ar' | 'en' = 'en'): { na
         RFI: { ar: 'طلبات الاستفسار الفني (Requests for Information)', en: 'Requests for Information (RFI)', subtitleAr: 'سجل الاستفسارات الفنية والتوضيحات الهندسية', subtitleEn: 'Technical Requests & Clarifications' },
         NCR: { ar: 'تقارير عدم المطابقة (Non-Conformance Reports)', en: 'Non-Conformance Reports (NCR)', subtitleAr: 'سجل تقارير عدم المطابقة والإجراءات التصحيحية', subtitleEn: 'Quality Non-Conformance & Corrective Actions' },
         SOR: { ar: 'ملاحظات الموقع الميدانية (Site Observation Reports)', en: 'Site Observation Reports (SOR)', subtitleAr: 'سجل ملاحظات السلامة والجودة بالموقع', subtitleEn: 'Site Safety & Quality Observations' },
-        DOC: { ar: 'الوثائق والمستندات الفنية (Technical Submittals)', en: 'Document Submittals (DOC)', subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية', subtitleEn: 'Technical Documents & Transmittals' },
+        DOC: { ar: 'Document Submittals (DOC)', en: 'Document Submittals (DOC)', subtitleAr: 'سجل تقديمات الوثائق والخطابات الفنية', subtitleEn: 'Technical Documents & Transmittals' },
+        'DOC-ARCH': { ar: 'DOC-ARCH', en: 'DOC-ARCH', subtitleAr: 'سجل تقديمات الوثائق والمعاملات المعمارية', subtitleEn: 'Architectural Technical Submittals' },
+        'DOC-MECH': { ar: 'DOC-MECH', en: 'DOC-MECH', subtitleAr: 'سجل تقديمات الوثائق والمعاملات الميكانيكية', subtitleEn: 'Mechanical Technical Submittals' },
+        'DOC-ELEC': { ar: 'DOC-ELEC', en: 'DOC-ELEC', subtitleAr: 'سجل تقديمات الوثائق والمعاملات الكهربائية', subtitleEn: 'Electrical Technical Submittals' },
+        'DOC-GENERAL': { ar: 'DOC-GEN', en: 'DOC-GEN', subtitleAr: 'سجل تقديمات الوثائق العامة وإجراءات السلامة والجودة', subtitleEn: 'General Technical Submittals & HSE Documentation' },
+        'DOC-GEN': { ar: 'DOC-GEN', en: 'DOC-GEN', subtitleAr: 'سجل تقديمات الوثائق العامة وإجراءات السلامة والجودة', subtitleEn: 'General Technical Submittals & HSE Documentation' },
+        'DOC-STR': { ar: 'DOC-STR', en: 'DOC-STR', subtitleAr: 'سجل تقديمات الوثائق الإنشائية', subtitleEn: 'Structural Technical Submittals' },
+        'DOC-LANDSCAPE': { ar: 'DOC-LANDSCAPE', en: 'DOC-LANDSCAPE', subtitleAr: 'سجل تقديمات وثائق تنسيق الموقع', subtitleEn: 'Landscape Technical Submittals' },
+        'DOC-INFRA': { ar: 'DOC-INFRA', en: 'DOC-INFRA', subtitleAr: 'سجل تقديمات وثائق البنية التحتية', subtitleEn: 'Infrastructure Technical Submittals' },
         QS: { ar: 'حصر الكميات (Quantity Surveying)', en: 'Quantity Survey Submittals (QS)', subtitleAr: 'سجل حصر الكميات والمستخلصات', subtitleEn: 'Quantity Survey & BOQ Submittals' },
         LTR: { ar: 'المراسلات والخطابات الرسمية (Correspondence)', en: 'Project Correspondence (LTR)', subtitleAr: 'سجل الخطابات والمراسلات المتبادلة', subtitleEn: 'Project Letters & Communications' }
     };
