@@ -746,14 +746,6 @@
     },
     {
       "file": "src/analytics/managementReportOutput.ts",
-      "exportName": "isOfficialSubmittalPopulationRow",
-      "type": "Function",
-      "confidence": "100% (Strict Compiler-grade AST symbol resolution)",
-      "reason": "No incoming imports of 'isOfficialSubmittalPopulationRow' detected in any active source modules.",
-      "referencedBy": []
-    },
-    {
-      "file": "src/analytics/managementReportOutput.ts",
       "exportName": "ManagementReportRow",
       "type": "Type/Interface",
       "confidence": "100% (Strict Compiler-grade AST symbol resolution)",

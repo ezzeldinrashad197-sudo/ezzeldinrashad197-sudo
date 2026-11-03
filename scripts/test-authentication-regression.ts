@@ -26,13 +26,13 @@ function assert(condition: boolean, testName: string, detail?: string) {
 //    Baseline Revision Record: BRR-2026-09-27-01 / BRR-2026-10-06-NCR-SSOT / BRR-2026-10-07-NCR-SOURCE-IDENTITY
 //    Certified Commit Lineage: 6a40ef8... -> 46bd155... -> 2cd7cfeea798449793243701e5f27fff1090474c (Amended for NCR Source-Identity Rule)
 const expectedHashes = {
-  'src/utils/calculations.ts': 'ac4004e1c58e11b874e169e317bf960709e2708b365690b2810f0ac8f0f7d468', // Layer 2 Production Analytics Engine
+  'src/utils/calculations.ts': 'bedd03dffc82dcd56052b8f92c4cbd443da5f3ae9e171dff4c46b1bfdb82f9d0', // Layer 2 Production Analytics Engine
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT (UNCHANGED)
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT (UNCHANGED)
-  'src/analytics/calculationFoundation.ts': '941c00a35561b1e350e53740312b5b2ebaf6033b68d6fa3c365f6d501f797e64', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
-  'src/analytics/ncr/ncrEngine.ts': '008378a886fbeca72deda6d289b26d87b88a9541c63075adef39a70c25381e2b', // Layer 1 Canonical NCR Event, State, Source-Identity & Sheet-Discipline SSOT
-  'src/utils/ncrAnalytics.ts': '1e4df1180c10d49cd4ab8bbccb8b63bd4d2e0d4cf14c90a5e0332fead6aded1c', // Layer 2 NCR Analytics Adapter
-  'src/utils/parser.ts': '3026c386543635d29e925fb6f97870b85a2f50155912e0e8ea1617946b067239', // Canonical Excel Ingestion, Pure Discipline Sheet Lock & NCR Column Isolation
+  'src/analytics/calculationFoundation.ts': '00d8e79e32905c43b08bc19b3bdd7c86dba71d087215c789f63de5fbdfab6236', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
+  'src/analytics/ncr/ncrEngine.ts': 'b3c4dd991ef81a5fa1609bee3626a67a8990e2e01f4f339ff71f5328e967d6d4', // Layer 1 Canonical NCR Event, State, Source-Identity & Sheet-Discipline SSOT
+  'src/utils/ncrAnalytics.ts': '622194e11b05533ca9af0d8ee4b7b43fe91a1f50f2a87946f518a190fc4f24c9', // Layer 2 NCR Analytics Adapter
+  'src/utils/parser.ts': 'e787f5b63a20c98bfae4f65a44af571e7b9e9244f5ada56f4b505abec2df4a60', // Canonical Excel Ingestion, Pure Discipline Sheet Lock & NCR Column Isolation
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard (UNCHANGED)
   'firestore.rules': 'a23aa401964b257f7b044ea42e56e5bd88f123d19847615ab0908b3eca62257e' // Hardened Firestore Authorization Rules (UNCHANGED)
 };

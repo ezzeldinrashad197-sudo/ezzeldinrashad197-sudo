@@ -271,14 +271,10 @@ export default function SmartExportModal({
                     pdf.save(filename);
                 };
 
-                // Use Native Vector PDF Engine directly when on Presentation tab or when an explicit executive scope is chosen
-                const elementId = activeTab === 'presentation' ? 'presentation-container' : 'export-container';
-                const exportElement = document.getElementById(elementId);
-
-                if (activeTab === 'presentation' || dataScope !== 'active' || !exportElement) {
-                    await runNativeVectorPdfExport();
-                    setParseMessage(isRtl ? "تم تصدير ملف PDF بنجاح بهويتك المؤسسية المخصصة!" : "PDF document exported successfully with professional custom branding overlays!");
-                } else {
+                // Always use Native Vector PDF Engine to prevent html2canvas blank body (69 blank pages)
+                await runNativeVectorPdfExport();
+                setParseMessage(isRtl ? "تم تصدير ملف PDF بنجاح بهويتك المؤسسية المخصصة (محرك فيكتور عالي الدقة بدون صفحات فارغة)!" : "PDF document exported successfully with native vector rendering (100% crisp, zero blank pages)!");
+                return;
                     // Add PDF specific class for layout styles & hide non-printable UI elements
                     const hiddenElements: { el: HTMLElement; prevDisplay: string }[] = [];
                     const originalWidth = exportElement.style.width;

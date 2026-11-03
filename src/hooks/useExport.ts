@@ -339,40 +339,37 @@ export function useExport({ data, activeTab, filterMonthly, filterCumulative, ac
 
             const filename = `StructuSight-${activeTab}-${new Date().toISOString().split('T')[0]}.pdf`;
 
-            if (activeTab === 'presentation') {
-                const isArabic = !!options?.arabicEnabled;
-                const viewModel = buildPresentationViewModel(data, activeProject, 'presentation', {
-                    ...options,
-                    arabicEnabled: isArabic,
-                    startDate,
-                    endDate,
-                    primaryColor: options?.primaryColor || (activeProject as any)?.primaryColor || '#203864',
-                    accentColor: options?.accentColor || (activeProject as any)?.accentColor || '#D4AF37'
-                });
+            const isArabic = !!options?.arabicEnabled;
+            const mode = (activeTab === 'monthly' ? 'monthly' : activeTab === 'cumulative' ? 'cumulative' : 'presentation') as 'monthly' | 'cumulative' | 'presentation';
+            const viewModel = buildPresentationViewModel(data, activeProject, mode, {
+                ...options,
+                arabicEnabled: isArabic,
+                startDate,
+                endDate,
+                monthlyStart: startDate,
+                monthlyEnd: endDate,
+                cutoffDate: endDate,
+                primaryColor: options?.primaryColor || (activeProject as any)?.primaryColor || '#203864',
+                accentColor: options?.accentColor || (activeProject as any)?.accentColor || '#D4AF37'
+            });
 
-                const { pdf, totalPages } = await renderPresentationPdf(viewModel, {
-                    pageSize: options?.pageSize?.toLowerCase() || '16x9',
-                    orientation: options?.orientation?.toLowerCase() || 'landscape',
-                    selectedSections: options?.selectedSections,
-                    slideRangeStart: options?.slideRangeStart,
-                    slideRangeEnd: options?.slideRangeEnd
-                });
+            const { pdf, totalPages } = await renderPresentationPdf(viewModel, {
+                pageSize: options?.pageSize?.toLowerCase() || '16x9',
+                orientation: options?.orientation?.toLowerCase() || 'landscape',
+                selectedSections: options?.selectedSections,
+                slideRangeStart: options?.slideRangeStart,
+                slideRangeEnd: options?.slideRangeEnd,
+                showLogo: options?.showLogo,
+                logoUrl: options?.logoUrl,
+                showProjectInfo: options?.showProjectInfo,
+                customHeader: options?.customHeader,
+                customFooter: options?.customFooter
+            });
 
-                pdf.save(filename);
-                const exportDuration = Date.now() - startTime;
-                console.log(`[Export Diagnostics] Native Vector Presentation PDF Export successful (${totalPages} pages)! Duration: ${exportDuration}ms`);
-
-            } else {
-                // Standard html2pdf for other reports
-                const exportScale = computeSafeHtml2CanvasScale(exportElement, 2);
-
-                const exportWidth = 1500;
-
-                // --- EXPORT VALIDATION LAYER INITIALIZATION ---
-                const totalRenderedCharts = exportElement.querySelectorAll('.recharts-wrapper').length;
-                const totalRenderedSVGs = exportElement.querySelectorAll('.recharts-wrapper svg').length;
-                let totalCapturedCharts = 0;
-                let totalCapturedSVGs = 0;
+            pdf.save(filename);
+            const exportDuration = Date.now() - startTime;
+            console.log(`[Export Diagnostics] Native Vector PDF Export successful (${totalPages} pages)! Duration: ${exportDuration}ms`);
+            return;
 
                 if (totalRenderedCharts !== totalRenderedSVGs) {
                     console.warn("[Export Validation Warn] Standard report charts & SVG mismatch:", totalRenderedCharts, "vs", totalRenderedSVGs);

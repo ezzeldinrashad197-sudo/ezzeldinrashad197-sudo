@@ -242,6 +242,7 @@ digraph DependencyGraph {
   "src/analytics/exportHelpers.ts" -> "src/analytics/managementReportOutput.ts";
   "src/analytics/exportHelpers.ts" -> "src/analytics/ncr/ncrEngine.ts";
   "src/analytics/exportHelpers.ts" -> "src/analytics/presentationLayoutEngine.ts";
+  "src/analytics/exportHelpers.ts" -> "src/components/presentation/PresHelpers.tsx";
   "src/analytics/exportTelemetryTestSuite.ts" -> "src/analytics/exportHelpers.ts";
   "src/analytics/exportTelemetryTestSuite.ts" -> "src/types.ts";
   "src/analytics/governance/canonicalEngineAdapter.ts" -> "src/types.ts";
@@ -283,6 +284,7 @@ digraph DependencyGraph {
   "src/analytics/reconciliationEngine.ts" -> "src/analytics/calculationFoundation.ts";
   "src/analytics/reconciliationEngine.ts" -> "src/analytics/statusResolver.ts";
   "src/analytics/reconciliationEngine.ts" -> "src/analytics/revisionResolver.ts";
+  "src/analytics/reconciliationEngine.ts" -> "src/analytics/managementReportOutput.ts";
   "src/analytics/recordTransformer.ts" -> "src/types.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/models.ts";
   "src/analytics/recordTransformer.ts" -> "src/analytics/statusResolver.ts";

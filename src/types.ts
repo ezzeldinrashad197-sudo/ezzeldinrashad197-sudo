@@ -79,6 +79,7 @@ export interface SubmittalRow {
   priority?: 'CRITICAL' | 'NORMAL' | string;
 
   // NCR/SOR Specific fields
+  level?: string;
   ncrRef?: string;
   ncrLastRev?: string;
   ncrStatus?: string;

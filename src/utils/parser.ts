@@ -519,12 +519,29 @@ export const parseExcelWorkbook = (
     ]);
 
     // NCR & SOR Specific Columns
+    const colLevel = getColIdx([
+      "level",
+      "floor",
+      "flr",
+      "المستوى",
+      "الدور",
+    ]);
+
     const colNcrRef = getColIdx([
       "ncr ref",
+      "ncr ref.",
+      "ncr reference",
+      "ncr no",
+      "ncr no.",
+      "ncr #",
     ]);
 
     const colNcrLastRev = getColIdx([
       "last rev",
+      "last rev.",
+      "last revision",
+      "latest rev",
+      "latest revision",
     ]);
 
     const colNcrSentDateCorrectiveAction = getColIdx(
@@ -1233,7 +1250,10 @@ export const parseExcelWorkbook = (
         trade: resolvedDiscipline,
         discipline: resolvedDiscipline,
         workflowStage: "",
-        isLatestRev: false,
+        isLatestRev:
+          colNcrLastRev >= 0
+            ? String(r[colNcrLastRev] || "").trim().toUpperCase() === "YES" || String(r[colNcrLastRev] || "").trim().toUpperCase() === "Y"
+            : false,
         isRev0: isRevision0(
           colRev >= 0
             ? (typeof r[colRev] === "number" ? r[colRev] : String(r[colRev] ?? ""))
@@ -1249,7 +1269,9 @@ export const parseExcelWorkbook = (
         docNo:
           colDocNo >= 0
             ? String(r[colDocNo] || "").trim()
-            : parsedSubmissionRef,
+            : colNcrRef >= 0
+              ? String(r[colNcrRef] || "").trim()
+              : parsedSubmissionRef,
 
         rev:
           colRev >= 0
@@ -1322,6 +1344,11 @@ export const parseExcelWorkbook = (
             : "",
 
         // NCR & SOR Specific properties
+        level:
+          colLevel >= 0
+            ? String(r[colLevel] || "").trim()
+            : "",
+
         ncrRef:
           colNcrRef >= 0
             ? String(r[colNcrRef] || "").trim()

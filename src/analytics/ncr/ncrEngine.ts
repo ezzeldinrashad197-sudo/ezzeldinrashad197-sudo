@@ -297,9 +297,69 @@ export const normalizeNcrRevisionHistory = (rows: SubmittalRow[]): SubmittalRow[
   return deduped;
 };
 
+export interface NcrDataQualityException {
+  ncrRef: string;
+  discipline: string;
+  reason: string;
+  yesCount: number;
+  candidateRowsCount: number;
+}
+
+export interface NcrLatestRecordResolution {
+  latestRecord: SubmittalRow;
+  selectionMethod: "LAST_REV_YES" | "HIGHEST_REVISION_FALLBACK";
+  exception?: NcrDataQualityException;
+}
+
+/**
+ * Resolves the authoritative latest record for an NCR reference.
+ * Uses Last Rev. = Yes as the primary latest-revision marker.
+ * Validates that exactly one latest record exists. Where the source violates this
+ * condition (0 or >1 Yes markers), reports a data-quality exception instead of
+ * silently selecting an arbitrary row.
+ */
+export const resolveLatestNcrRecord = (
+  history: SubmittalRow[]
+): NcrLatestRecordResolution => {
+  if (!history || history.length === 0) {
+    throw new Error("Cannot resolve latest NCR record from empty history");
+  }
+  const yesRows = history.filter((r) => isYes(r.ncrLastRev ?? r.isLatestRev));
+  const sample = history[0];
+  const ref = (sample.ncrRef || sample.docNo || "UNKNOWN").trim().toUpperCase();
+  const disc = normalizeDiscipline(sample);
+
+  if (yesRows.length === 1) {
+    return {
+      latestRecord: yesRows[0],
+      selectionMethod: "LAST_REV_YES"
+    };
+  }
+
+  // If there are multiple Yes rows or zero Yes rows: report data quality exception
+  const sorted = normalizeNcrRevisionHistory(history);
+  const fallback = sorted[sorted.length - 1];
+  const reason =
+    yesRows.length > 1
+      ? `Multiple 'Last Rev. = Yes' markers found (${yesRows.length}) for NCR Reference ${ref} [${disc}]. Expected exactly 1.`
+      : `No 'Last Rev. = Yes' marker found for NCR Reference ${ref} [${disc}]. Expected exactly 1.`;
+
+  return {
+    latestRecord: fallback,
+    selectionMethod: "HIGHEST_REVISION_FALLBACK",
+    exception: {
+      ncrRef: ref,
+      discipline: disc,
+      reason,
+      yesCount: yesRows.length,
+      candidateRowsCount: history.length
+    }
+  };
+};
+
 /**
  * Selects the latest revision of an NCR, optionally constrained to `upToDate`.
- * Fixes NCR-007: Uses `getRevisionActivityDateMs` instead of raw inherited `submissionDate`.
+ * Uses Last Rev. = Yes as primary marker, and getRevisionActivityDateMs for temporal snapshots.
  */
 export const getLatestRev = (
   rows: SubmittalRow[],
@@ -310,14 +370,8 @@ export const getLatestRev = (
   if (!sortedHistory.length) return undefined;
 
   if (!upToDate) {
-    const explicitLatest = sortedHistory.find((r) => isYes(r.isLatestRev));
-    if (explicitLatest) {
-      const maxRevRow = sortedHistory[sortedHistory.length - 1];
-      if (compareRevisions(explicitLatest.rev, maxRevRow.rev) >= 0) {
-        return explicitLatest;
-      }
-    }
-    return sortedHistory[sortedHistory.length - 1];
+    const { latestRecord } = resolveLatestNcrRecord(sortedHistory);
+    return latestRecord;
   }
 
   const endOfMonthMs = new Date(
@@ -337,7 +391,8 @@ export const getLatestRev = (
   });
 
   if (!eligible.length) return undefined;
-  return eligible[eligible.length - 1];
+  const { latestRecord } = resolveLatestNcrRecord(eligible);
+  return latestRecord;
 };
 
 export interface NCRStats {
@@ -370,6 +425,8 @@ export interface NCRClassificationStats {
   waitingConsultant: number;    // Pending review at the end of the month
   waitingContractor: number;    // Pending action at the end of the month
   overdue: number;              // Unique NCRs open > 14 days at month-end (Single-counted)
+  newNcrApproved?: number;      // Monthly new NCRs that were approved by month end
+  newNcrOpen?: number;          // Monthly new NCRs that remain open at month end
 
   // Monthly Unique NCR Snapshot & Source Row Grain (reconciled at month-end cutoff)
   totalUnique?: number;
@@ -995,7 +1052,7 @@ export const normalizeNCRData = (safeData: SubmittalRow[]): SubmittalRow[] => {
   return result;
 };
 
-// Group by Unique Canonical NCR Reference No. (NEVER falls back to synthetic row.id)
+// Group by Canonical Identity: NCR Reference + Discipline (NEVER falls back to synthetic row.id)
 export const groupNCRByReference = (normalizedData: SubmittalRow[]): Map<string, SubmittalRow[]> => {
   const grouped = new Map<string, SubmittalRow[]>();
   if (!Array.isArray(normalizedData)) return grouped;
@@ -1003,8 +1060,10 @@ export const groupNCRByReference = (normalizedData: SubmittalRow[]): Map<string,
 
   normalizedData.forEach((r) => {
     const scopeHasExplicit = scopesWithExplicitNcrRef.has(getNcrSourceScopeKey(r));
-    const key = resolveCanonicalNcrRef(r, scopeHasExplicit);
-    if (!key) return;
+    const ref = resolveCanonicalNcrRef(r, scopeHasExplicit);
+    if (!ref) return;
+    const discRes = resolveCanonicalNcrDiscipline(r);
+    const key = `${ref}|${discRes.canonicalDiscipline.toUpperCase()}`;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(r);
   });
