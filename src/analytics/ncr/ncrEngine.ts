@@ -1348,9 +1348,11 @@ export const calculateCumulativeSnapshot = (
     }
   }
 
-  Array.from(grouped.entries()).forEach(([refKey, rawHistory]) => {
+  Array.from(grouped.entries()).forEach(([groupedKey, rawHistory]) => {
     const fullHistory = normalizeNcrRevisionHistory(rawHistory);
     if (!fullHistory.length) return;
+    const [cleanRef] = groupedKey.split("|");
+    const refKey = (rawHistory[0]?.ncrRef || cleanRef || "UNKNOWN").trim().toUpperCase();
 
     const firstRevision = fullHistory[0];
     const originalIssueStr =
@@ -1579,9 +1581,11 @@ export const calculateMonthlyEvents = (
   const distinctNewNcrRefsInMonth = new Set<string>();
   const distinctOverdueNcrRefsAtMonthEnd = new Set<string>();
 
-  Array.from(grouped.entries()).forEach(([refKey, rawHistory]) => {
+  Array.from(grouped.entries()).forEach(([groupedKey, rawHistory]) => {
     const history = normalizeNcrRevisionHistory(rawHistory);
     if (!history.length) return;
+    const [cleanRef] = groupedKey.split("|");
+    const refKey = (rawHistory[0]?.ncrRef || cleanRef || "UNKNOWN").trim().toUpperCase();
 
     const latestOverall = history[history.length - 1];
     const disc = normalizeDiscipline(latestOverall);
@@ -1833,6 +1837,14 @@ export const calculateMonthlyEvents = (
       monthEndRev = latestAtEnd.rev || "00";
       monthEndStage = stateAtEnd.stage;
 
+      // An NCR is active in the monthly reporting period if an event occurred in the month
+      // (issued, corrective submitted, or consultant response) or if it is actively pending consultant review.
+      const isActiveInMonthSnapshot =
+        isNew ||
+        isSubmitted ||
+        isResponded ||
+        stateAtEnd.isWaitingConsultant;
+
       if (stateAtEnd.isWaitingConsultant) {
         mSt.waitingConsultant++;
         mSt.pending++; // Legacy
@@ -1843,20 +1855,9 @@ export const calculateMonthlyEvents = (
         } else {
           mSt.currentMonthPending++;
         }
-      } else if (stateAtEnd.isWaitingContractor) {
+      } else if (stateAtEnd.isWaitingContractor && isActiveInMonthSnapshot) {
         mSt.waitingContractor++;
       }
-
-      // Monthly Unique NCR Snapshot & Source-Row Reconciliation:
-      // Any NCR active in the target month (event in month OR open/pending at month-end)
-      // is counted once in the monthly unique NCR population and partitioned into
-      // mutually exclusive month-end status categories (Closed + Open + Pending === Unique NCRs).
-      const isActiveInMonthSnapshot =
-        isNew ||
-        isSubmitted ||
-        isResponded ||
-        stateAtEnd.isWaitingConsultant ||
-        stateAtEnd.isWaitingContractor;
 
       if (isActiveInMonthSnapshot) {
         mSt.totalUnique = (mSt.totalUnique || 0) + 1;
@@ -1884,13 +1885,11 @@ export const calculateMonthlyEvents = (
         } else if (!stateAtEnd.isWaitingConsultant) {
           mSt.open = (mSt.open || 0) + 1;
         }
-      }
 
-      // Single-Count Month-End Overdue Rule (Fixes NCR-001):
-      // Critical Overdue = COUNT(DISTINCT NCR Ref) that were open at month-end AND daysOpen > 14
-      if (stateAtEnd.isOverdue) {
-        mSt.overdue++;
-        distinctOverdueNcrRefsAtMonthEnd.add(refKey);
+        if (stateAtEnd.isOverdue) {
+          mSt.overdue++;
+          distinctOverdueNcrRefsAtMonthEnd.add(refKey);
+        }
       }
     }
 
