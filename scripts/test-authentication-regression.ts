@@ -30,7 +30,7 @@ const expectedHashes = {
   'src/analytics/sequenceAuditEngine.ts': 'c824c5d5d0495c979a8be22ad07da4eebadc4280d47d61c3ddc2d87940beb1f4', // Layer 1 Sequence Discontinuity & Population SSOT (UNCHANGED)
   'src/analytics/revisionResolver.ts': 'dfac27649fa845bb2f48c983cdcbbe2f7cb436743bb6953604891005365c27f8', // Layer 1 Canonical Revision Hierarchy SSOT (UNCHANGED)
   'src/analytics/calculationFoundation.ts': '00d8e79e32905c43b08bc19b3bdd7c86dba71d087215c789f63de5fbdfab6236', // Layer 1 Universal Source Identity & Taxonic Lock (BRR-2026-10-07-NCR-SOURCE-IDENTITY)
-  'src/analytics/ncr/ncrEngine.ts': '8e867b2bfc7c819a21f4ecd640363a2315be2dd2a9dd2d8d1306a6921d0624f0', // Layer 1 Canonical NCR Event, State, Source-Identity & Sheet-Discipline SSOT
+  'src/analytics/ncr/ncrEngine.ts': '2532b8ec1fdc1e1a8c9630475ee7bdd942940dd73421e1b85eb9a3f633ca3404', // Layer 1 Canonical NCR Event, State, Source-Identity & Sheet-Discipline SSOT
   'src/utils/ncrAnalytics.ts': '622194e11b05533ca9af0d8ee4b7b43fe91a1f50f2a87946f518a190fc4f24c9', // Layer 2 NCR Analytics Adapter
   'src/utils/parser.ts': '095b842bd3b45e6f3a79c0e5b73cc2cfd6141f44f00f8906b3cc2d7ec040c85d', // Canonical Excel Ingestion, Pure Discipline Sheet Lock & NCR Column Isolation
   'src/test-datasets/GOLDEN_REGRESSION_BASELINE.json': 'cf28ee271e70d502e826f7da120b1a4a0aa583c7d37af23892bc9b2be9c72ade', // Empirical Benchmark Golden Standard (UNCHANGED)

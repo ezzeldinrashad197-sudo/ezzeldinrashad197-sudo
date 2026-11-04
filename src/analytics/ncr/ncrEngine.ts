@@ -501,7 +501,24 @@ const normalizeRawDisciplineToken = (rawInput: string): string => {
   ) {
     return "SURVEY";
   }
-  if (disc === "MECHANICAL" || disc === "MECH" || disc === "MEC" || disc.startsWith("MECH")) {
+  if (
+    disc === "MECHANICAL" ||
+    disc === "MECH" ||
+    disc === "MEC" ||
+    disc.startsWith("MECH") ||
+    disc === "PLUMBING" ||
+    disc === "DRAINAGE" ||
+    disc === "HVAC" ||
+    disc === "FIRE FIGHTING" ||
+    disc === "WATER SUPPLY" ||
+    disc === "FIRE" ||
+    disc === "FF" ||
+    disc.includes("PLUMB") ||
+    disc.includes("DRAIN") ||
+    disc.includes("HVAC") ||
+    disc.includes("FIRE FIGHTING") ||
+    disc.includes("WATER SUPPLY")
+  ) {
     return "Mech";
   }
   if (disc === "ELECTRICAL" || disc === "ELEC" || disc === "ELE" || disc.startsWith("ELEC")) {
@@ -1119,6 +1136,8 @@ export interface NCREvidence {
   ref: string;
   discipline: string;
   canonicalDiscipline?: string;
+  trade?: string;
+  workCategory?: string;
   sourceSheet?: string;
   rawTrade?: string;
   disciplineEvidenceSource?: string;
@@ -1226,11 +1245,21 @@ export const evaluateNcrRevisionState = (
       stage = "Stage 3: Approved Closed";
       explanation =
         "Corrective action was received and officially approved/closed by the consultant.";
-    } else {
+    } else if (cStatus.isRejectedOpen || cStatus.isRejected) {
       isRejectedOpen = true;
       stage = "Stage 3: Rejected Open";
       explanation =
         "Corrective action plan was reviewed but rejected. NCR remains open, awaiting contractor re-submission.";
+    } else if (cStatus.isUnderReview) {
+      isUnderReview = true;
+      stage = "Stage 2: Waiting Consultant";
+      explanation =
+        "Corrective plan is currently pending review by the consultant.";
+    } else {
+      isNotSent = true;
+      stage = "Stage 1: Waiting Contractor";
+      explanation =
+        "Consultant response status is unrecognized; default to Stage 1 waiting contractor action.";
     }
   } else if (hasSentByCutoff) {
     isUnderReview = true;
@@ -1450,6 +1479,8 @@ export const calculateCumulativeSnapshot = (
       ref: refKey || latestOverall.ncrRef || latestOverall.docNo || "UNKNOWN",
       discipline: disc,
       canonicalDiscipline: disc,
+      trade: disc,
+      workCategory: discRes.rawTrade || disc,
       sourceSheet: discRes.sourceSheet || "-",
       rawTrade: discRes.rawTrade || disc,
       disciplineEvidenceSource: discRes.disciplineEvidenceSource,

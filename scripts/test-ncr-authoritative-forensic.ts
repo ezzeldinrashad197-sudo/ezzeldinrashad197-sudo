@@ -195,5 +195,96 @@ if (exportMon.totalRow.Total !== 25 || exportMon.totalRow.Approved !== 2 || expo
   throw new Error(`ExportHelpers Monthly mismatch: ${JSON.stringify(exportMon.totalRow)}`);
 }
 
+// 9. Gate 11: Detailed Disclosure Inventory Consistency & MECH Invariants
+console.log('\n[GATE 11: DETAILED DISCLOSURE INVENTORY CONSISTENCY AUDIT]');
+const openEvidence = cumResult.evidenceList.filter(
+  e => e.stage === 'Stage 1: Waiting Contractor' || e.stage === 'Stage 3: Rejected Open' || e.stage === 'Stage 2: Waiting Consultant'
+);
+
+const stage1Count = openEvidence.filter(e => e.stage === 'Stage 1: Waiting Contractor').length;
+const stage2Count = openEvidence.filter(e => e.stage === 'Stage 2: Waiting Consultant').length;
+const stage3Count = openEvidence.filter(e => e.stage === 'Stage 3: Rejected Open').length;
+const totalOpenCount = cumKPIs.open;
+
+// Check 1: Total Open NCRs = Stage 1 + Stage 3 + Stage 2
+if (totalOpenCount !== stage1Count + stage3Count + stage2Count) {
+  throw new Error(`Total Open invariant failed: ${totalOpenCount} !== ${stage1Count} + ${stage3Count} + ${stage2Count}`);
+}
+console.log(`  ✔ Invariant 1 Passed: Total Open (${totalOpenCount}) === Stage 1 (${stage1Count}) + Stage 3 (${stage3Count}) + Stage 2 (${stage2Count})`);
+
+// Check 2: Detailed Inventory Count = Total Open NCRs
+if (openEvidence.length !== totalOpenCount) {
+  throw new Error(`Detailed Inventory Count mismatch: ${openEvidence.length} !== ${totalOpenCount}`);
+}
+console.log(`  ✔ Invariant 2 Passed: Detailed Inventory Count (${openEvidence.length}) === Total Open NCRs (${totalOpenCount})`);
+
+// Check 3: Every NCR Reference is unique and appears exactly once in open inventory
+const openRefCounts = new Map<string, number>();
+for (const e of openEvidence) {
+  openRefCounts.set(e.ref, (openRefCounts.get(e.ref) || 0) + 1);
+}
+for (const [ref, count] of openRefCounts.entries()) {
+  if (count !== 1) {
+    throw new Error(`Duplicate open NCR Reference discovered: ${ref} appears ${count} times`);
+  }
+}
+console.log(`  ✔ Invariant 3 Passed: All ${openRefCounts.size} open NCR References are unique (0 duplicates)`);
+
+// Check 4: Sum of Discipline Open Counts = Total Open NCRs
+let disciplineOpenSum = 0;
+for (const c of cumResult.cumulative) {
+  disciplineOpenSum += c.open;
+}
+if (disciplineOpenSum !== totalOpenCount) {
+  throw new Error(`Sum of Discipline Open Counts mismatch: ${disciplineOpenSum} !== ${totalOpenCount}`);
+}
+console.log(`  ✔ Invariant 4 Passed: Sum of Discipline Open Counts (${disciplineOpenSum}) === Total Open NCRs (${totalOpenCount})`);
+
+// Check 5: MECH Discipline Specific Verification
+const mechOpenItems = openEvidence.filter(e => e.discipline === 'Mech');
+if (mechOpenItems.length !== 30) {
+  throw new Error(`MECH Open items mismatch: ${mechOpenItems.length} !== 30`);
+}
+const mechStage1 = mechOpenItems.filter(e => e.stage === 'Stage 1: Waiting Contractor').length;
+const mechStage3 = mechOpenItems.filter(e => e.stage === 'Stage 3: Rejected Open').length;
+if (mechStage1 !== 15 || mechStage3 !== 15) {
+  throw new Error(`MECH Stage distribution mismatch: Stage 1=${mechStage1} (expected 15), Stage 3=${mechStage3} (expected 15)`);
+}
+
+// Ensure ACE-INN-P1.03B-NCR-MECH-0025 is Approved Closed
+const mech0025 = cumResult.evidenceList.find(e => e.ref === 'ACE-INN-P1.03B-NCR-MECH-0025');
+if (!mech0025 || mech0025.stage !== 'Stage 3: Approved Closed') {
+  throw new Error(`ACE-INN-P1.03B-NCR-MECH-0025 must be Approved Closed, got: ${mech0025?.stage}`);
+}
+// Ensure ACE-INN-P1.03B-NCR-MECH-0046 is Approved Closed
+const mech0046 = cumResult.evidenceList.find(e => e.ref === 'ACE-INN-P1.03B-NCR-MECH-0046');
+if (!mech0046 || mech0046.stage !== 'Stage 3: Approved Closed') {
+  throw new Error(`ACE-INN-P1.03B-NCR-MECH-0046 must be Approved Closed, got: ${mech0046?.stage}`);
+}
+console.log(`  ✔ Invariant 5 Passed: MECH Open = 30 (15 Stage 1 + 15 Stage 3); MECH-0025 and MECH-0046 verified Approved/Closed`);
+
+// Check 6: SSOT Discipline Classification Acceptance Test
+// All 56 Mechanical NCRs must appear under MECH in the cumulative discipline register.
+// No separate Plumbing, HVAC, Drainage, Fire Fighting or Water Supply discipline categories are permitted.
+const forbiddenDisciplineNames = new Set([
+  'PLUMBING', 'DRAINAGE', 'HVAC', 'FIRE FIGHTING', 'WATER SUPPLY', 'FIRE', 'FF', 'PLUMB', 'DRAIN'
+]);
+for (const c of cumResult.cumulative) {
+  if (forbiddenDisciplineNames.has(c.discipline.toUpperCase())) {
+    throw new Error(`Forbidden discipline category found in cumulative: ${c.discipline}`);
+  }
+}
+for (const m of monResult.monthly) {
+  if (forbiddenDisciplineNames.has(m.classification.toUpperCase())) {
+    throw new Error(`Forbidden discipline category found in monthly: ${m.classification}`);
+  }
+}
+const mechCumulativeRow = cumResult.cumulative.find(c => c.discipline === 'Mech');
+if (!mechCumulativeRow || mechCumulativeRow.totalUnique !== 56 || mechCumulativeRow.open !== 30 || mechCumulativeRow.approvedClosed !== 26) {
+  throw new Error(`MECH Acceptance Test failed in cumulative register: ${JSON.stringify(mechCumulativeRow)}`);
+}
+console.log(`  ✔ Invariant 6 Passed: All 56 Mechanical NCRs strictly unified under MECH (26 Approved, 30 Open; 0 separate Plumbing/HVAC/Drainage/FF categories)`);
+
 console.log('\n✔ CROSS-CONSUMER PARITY VERIFIED: processNCRData === compileCanonicalNCRPresentationStats === compileStatsForBaseType');
-console.log('✔ ALL 10 MANDATORY RECONCILIATION & AUDIT GATES PASSED (100% INVARIANTS PRESERVED).\n');
+console.log('✔ ALL 11 MANDATORY RECONCILIATION & AUDIT GATES PASSED (100% INVARIANTS PRESERVED).\n');
+

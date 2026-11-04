@@ -57,7 +57,8 @@ export default function NCRAnalytics({ data, monthlyStart, monthlyEnd }: Props) 
 
   const detailCols = useMemo(() => [
     { key: 'ref', label: parse('NCR Ref | رقم التقرير'), render: (val: Record<string, any>) => <span className="font-mono text-xs font-bold text-slate-900">{val.ref}</span> },
-    { key: 'trade', label: parse('Trade | التخصص'), render: (val: Record<string, any>) => <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">{val.trade}</span> },
+    { key: 'discipline', label: parse('Discipline | التخصص'), render: (val: Record<string, any>) => <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">{val.discipline || val.trade}</span> },
+    { key: 'workCategory', label: parse('Work Subcategory | فئة العمل الفرعية'), render: (val: Record<string, any>) => <span className="text-slate-600 text-xs">{val.workCategory || val.rawTrade || '-'}</span> },
     { key: 'rev', label: parse('Rev. | مراجعة'), render: (val: Record<string, any>) => <span className="font-medium">{val.rev || '0'}</span> },
     { key: 'sentDate', label: parse('Sent Date | تاريخ الإرسال'), render: (val: Record<string, any>) => <span className="text-slate-600">{val.sentDate || '-'}</span> },
     { key: 'action', label: parse('Action (Latest) | الإجراء (الأحدث)'), render: (val: Record<string, any>) => <span className="text-slate-700 font-medium">{val.action || '-'}</span> },
