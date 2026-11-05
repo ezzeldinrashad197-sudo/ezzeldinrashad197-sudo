@@ -1082,21 +1082,70 @@ Keep the report concise, professional, and use Markdown headings and bullet poin
 
 let activeServerInstance: any = null;
 
+export function parseCliArgs(): { port?: number; host?: string } {
+  const args = process.argv.slice(2);
+  let port: number | undefined;
+  let host: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--port' || arg === '-p') {
+      const val = args[i + 1];
+      if (val && !val.startsWith('-')) {
+        const p = parseInt(val, 10);
+        if (!isNaN(p) && p > 0) port = p;
+      }
+    } else if (arg.startsWith('--port=')) {
+      const p = parseInt(arg.substring(7), 10);
+      if (!isNaN(p) && p > 0) port = p;
+    } else if (arg === '--host' || arg === '-h') {
+      const val = args[i + 1];
+      if (val && !val.startsWith('-')) {
+        host = val;
+      }
+    } else if (arg.startsWith('--host=')) {
+      host = arg.substring(7);
+    }
+  }
+
+  return { port, host };
+}
+
 export async function startServer(portOverride?: number) {
   if (activeServerInstance) {
     return activeServerInstance;
   }
   const app = await createApp();
-  const PORT = portOverride || (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
+  const { isDev } = resolveEnvironment();
+  const cliArgs = parseCliArgs();
+
+  // Resolution order for port:
+  // 1. Explicit portOverride argument (e.g. from tests)
+  // 2. Command-line flag --port (e.g. "tsx server.ts --port 3000")
+  // 3. In dev mode: default to 3000 (per environment constraints: dev server must run on 3000)
+  // 4. In prod mode: process.env.PORT || 3000
+  let PORT: number;
+  if (portOverride !== undefined) {
+    PORT = portOverride;
+  } else if (cliArgs.port !== undefined) {
+    PORT = cliArgs.port;
+  } else if (isDev) {
+    PORT = 3000;
+  } else {
+    PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  }
+
+  const HOST = cliArgs.host || "0.0.0.0";
+
   return new Promise<any>((resolve, reject) => {
     try {
-      const s = app.listen(PORT, "0.0.0.0", () => {
-        console.log(`Server running on http://0.0.0.0:${PORT}`);
+      const s = app.listen(PORT, HOST, () => {
+        console.log(`Server running on http://${HOST}:${PORT}`);
         activeServerInstance = s;
         resolve(s);
       });
       s.on('error', (err) => {
-        console.error(`Server failed to bind on port ${PORT}:`, err);
+        console.error(`Server failed to bind on http://${HOST}:${PORT}:`, err);
         reject(err);
       });
     } catch (err) {
