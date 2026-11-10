@@ -200,9 +200,14 @@ if (elecStatsRow) {
   assert(elecStatsRow.Rev00 === 51, 'DOC-ELEC Rev.00 Rows', `Expected 51, got ${elecStatsRow.Rev00}`);
   assert(elecStatsRow.FurtherRev === 21, 'DOC-ELEC Further Rev.', `Expected 21, got ${elecStatsRow.FurtherRev}`);
   assert(elecStatsRow.TotalSheets === 72, 'DOC-ELEC Total Sheets', `Expected 72, got ${elecStatsRow.TotalSheets}`);
-  assert(elecStatsRow.Approved === 47, 'DOC-ELEC Approved', `Expected 47, got ${elecStatsRow.Approved}`);
-  assert(elecStatsRow.Rejected === 1, 'DOC-ELEC Rejected', `Expected 1, got ${elecStatsRow.Rejected}`);
-  assert(elecStatsRow.Pending === 0, 'DOC-ELEC Pending', `Expected 0, got ${elecStatsRow.Pending}`);
+  assert(elecStatsRow.Approved === 71, 'DOC-ELEC Approved Rows', `Expected 71, got ${elecStatsRow.Approved}`);
+  assert(elecStatsRow.Rejected === 1, 'DOC-ELEC Rejected Rows', `Expected 1, got ${elecStatsRow.Rejected}`);
+  assert(elecStatsRow.Pending === 0, 'DOC-ELEC Pending Rows', `Expected 0, got ${elecStatsRow.Pending}`);
+  assert(
+    elecStatsRow.Approved + elecStatsRow.Rejected + elecStatsRow.Pending === elecStatsRow.TotalSheets,
+    'DOC-ELEC Invariant: Approved + Rejected + Pending === TotalSheets',
+    `Expected ${elecStatsRow.TotalSheets}, got ${elecStatsRow.Approved + elecStatsRow.Rejected + elecStatsRow.Pending}`
+  );
 }
 
 const genStatsRow = docStats.stats.find(s => s.discipline === 'DOC-GEN');

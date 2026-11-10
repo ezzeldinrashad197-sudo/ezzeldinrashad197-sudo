@@ -477,10 +477,26 @@ export function resolveUniqueSubmittalStats(
   pending: number;
   rejectedOpen: number;
   rejectedClosed: number;
+  uniqueApproved: number;
+  uniqueRejected: number;
+  uniquePending: number;
+  uniqueRejectedOpen: number;
+  uniqueRejectedClosed: number;
+  rowApproved: number;
+  rowRejected: number;
+  rowPending: number;
+  rowRejectedOpen: number;
+  rowRejectedClosed: number;
 } {
   const validRows = (periodRows || []).filter(r => !isExcludedRow(r));
   let rev00 = 0;
   let furtherRev = 0;
+
+  let rowApproved = 0;
+  let rowRejected = 0;
+  let rowPending = 0;
+  let rowRejectedOpen = 0;
+  let rowRejectedClosed = 0;
 
   const targetSubKeys = new Set<string>();
   validRows.forEach(r => {
@@ -489,34 +505,47 @@ export function resolveUniqueSubmittalStats(
     const isFurther = !isRev0 && isFurtherRevision(rawRev, r.isRev0);
     if (isRev0) {
       rev00++;
-    } else if (isFurther) {
+    } else {
       furtherRev++;
     }
     targetSubKeys.add(getSubmissionIdentityKey(r));
+
+    const cat = getStatusCodeCategory(r);
+    if (cat === 'APPROVED' || cat === 'FINAL_CLOSED') {
+      rowApproved++;
+    } else if (cat === 'REJECTED_OPEN') {
+      rowRejectedOpen++;
+      rowRejected++;
+    } else if (cat === 'REJECTED_CLOSED') {
+      rowRejectedClosed++;
+      rowRejected++;
+    } else {
+      rowPending++;
+    }
   });
 
   const baseForRevisions =
     fullDataset && fullDataset.length > 0 ? fullDataset : validRows;
   const subMap = processUniqueSubmittalEngine(baseForRevisions);
 
-  let approved = 0;
-  let rejected = 0;
-  let pending = 0;
-  let rejectedOpen = 0;
-  let rejectedClosed = 0;
+  let uniqueApproved = 0;
+  let uniqueRejected = 0;
+  let uniquePending = 0;
+  let uniqueRejectedOpen = 0;
+  let uniqueRejectedClosed = 0;
 
   targetSubKeys.forEach(subKey => {
     const group = subMap.get(subKey);
     if (!group) return;
     if (group.managementStatus === 'REJECTED') {
-      rejected++;
-      rejectedOpen++;
+      uniqueRejected++;
+      uniqueRejectedOpen++;
     } else if (group.managementStatus === 'PENDING') {
-      pending++;
+      uniquePending++;
     } else {
-      approved++;
+      uniqueApproved++;
       if (group.hasHistoricalClosedRejectionAtLatest) {
-        rejectedClosed++;
+        uniqueRejectedClosed++;
       }
     }
   });
@@ -526,11 +555,21 @@ export function resolveUniqueSubmittalStats(
     rev00,
     furtherRev,
     totalSheets: rev00 + furtherRev,
-    approved,
-    rejected,
-    pending,
-    rejectedOpen,
-    rejectedClosed
+    approved: rowApproved,
+    rejected: rowRejected,
+    pending: rowPending,
+    rejectedOpen: rowRejectedOpen,
+    rejectedClosed: rowRejectedClosed,
+    uniqueApproved,
+    uniqueRejected,
+    uniquePending,
+    uniqueRejectedOpen,
+    uniqueRejectedClosed,
+    rowApproved,
+    rowRejected,
+    rowPending,
+    rowRejectedOpen,
+    rowRejectedClosed
   };
 }
 

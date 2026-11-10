@@ -139,6 +139,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
 
       if (bt !== 'NCR' && bt !== 'SOR' && bt !== 'LTR') {
         const subStats = resolveUniqueSubmittalStats(dData, fullDataset || dataset);
+        const isRfi = bt === 'RFI';
         return {
           discipline: disc,
           TotalSubmittals: subStats.totalSubmittals,
@@ -151,14 +152,14 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
           FurtherRevRows: subStats.furtherRev,
           TotalRows: subStats.totalSheets,
           Superseded: Math.max(0, subStats.totalSheets - subStats.totalSubmittals),
-          Approved: subStats.approved,
-          RejectedOpen: subStats.rejectedOpen,
-          RejectedClosed: subStats.rejectedClosed,
-          Rejected: subStats.rejected,
-          Pending: subStats.pending,
+          Approved: isRfi ? subStats.uniqueApproved : subStats.approved,
+          RejectedOpen: isRfi ? subStats.uniqueRejectedOpen : subStats.rejectedOpen,
+          RejectedClosed: isRfi ? subStats.uniqueRejectedClosed : subStats.rejectedClosed,
+          Rejected: isRfi ? subStats.uniqueRejected : subStats.rejected,
+          Pending: isRfi ? subStats.uniquePending : subStats.pending,
           Total: countForType,
-          Closed: getClosedOpenByDocType(bt, s).closed,
-          Open: getClosedOpenByDocType(bt, s).open,
+          Closed: isRfi ? getClosedOpenByDocType(bt, s).closed : (subStats.approved + subStats.rejectedClosed),
+          Open: isRfi ? getClosedOpenByDocType(bt, s).open : (subStats.rejectedOpen + subStats.pending),
         };
       }
 

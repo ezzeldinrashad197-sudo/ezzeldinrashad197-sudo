@@ -342,6 +342,11 @@ export function getStatusCodeCategory(codeOrRow?: string | SubmittalRow): Canoni
       } else {
         effectiveCode = 'OPEN';
       }
+    } else if (rawStatusCombined.includes('APPROV') || rawStatusCombined.includes('ACCEPT')) {
+      effectiveCode = 'A';
+    } else if (rawStatusCombined.includes('SUPERSEDED') || workflowStage.includes('SUPERSEDED')) {
+      effectiveCode = 'A';
+      effectiveStatus = 'CLOSED';
     } else {
       effectiveCode = rawStatusCombined;
     }

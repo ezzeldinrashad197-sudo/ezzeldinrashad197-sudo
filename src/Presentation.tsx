@@ -677,6 +677,7 @@ export default function Presentation({
 
       if (family !== 'NCR' && family !== 'SOR' && family !== 'LTR') {
         const subStats = resolveUniqueSubmittalStats(dData, fullDataset || dataset);
+        const isRfi = family === 'RFI';
         return {
           discipline: disc,
           // Official Management KPIs at Unique Submittal Grain (Total Submittals = Approved + Rejected + Pending):
@@ -692,14 +693,14 @@ export default function Presentation({
           Rev00Rows: subStats.rev00,
           FurtherRevRows: subStats.furtherRev,
           TotalRows: subStats.totalSheets,
-          Approved: subStats.approved,
-          RejectedOpen: subStats.rejectedOpen,
-          RejectedClosed: subStats.rejectedClosed,
-          Rejected: subStats.rejected,
-          Pending: subStats.pending,
+          Approved: isRfi ? subStats.uniqueApproved : subStats.approved,
+          RejectedOpen: isRfi ? subStats.uniqueRejectedOpen : subStats.rejectedOpen,
+          RejectedClosed: isRfi ? subStats.uniqueRejectedClosed : subStats.rejectedClosed,
+          Rejected: isRfi ? subStats.uniqueRejected : subStats.rejected,
+          Pending: isRfi ? subStats.uniquePending : subStats.pending,
           Total: countForType,
-          Closed: getClosedOpenByDocType(family, s).closed,
-          Open: getClosedOpenByDocType(family, s).open,
+          Closed: isRfi ? getClosedOpenByDocType(family, s).closed : (subStats.approved + subStats.rejectedClosed),
+          Open: isRfi ? getClosedOpenByDocType(family, s).open : (subStats.rejectedOpen + subStats.pending),
         };
       }
 
