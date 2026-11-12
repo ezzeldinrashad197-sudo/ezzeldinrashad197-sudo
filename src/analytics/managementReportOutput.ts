@@ -475,6 +475,7 @@ export function resolveUniqueSubmittalStats(
   approved: number;
   rejected: number;
   pending: number;
+  unclassified: number;
   rejectedOpen: number;
   rejectedClosed: number;
   uniqueApproved: number;
@@ -485,6 +486,7 @@ export function resolveUniqueSubmittalStats(
   rowApproved: number;
   rowRejected: number;
   rowPending: number;
+  rowUnclassified: number;
   rowRejectedOpen: number;
   rowRejectedClosed: number;
 } {
@@ -495,6 +497,7 @@ export function resolveUniqueSubmittalStats(
   let rowApproved = 0;
   let rowRejected = 0;
   let rowPending = 0;
+  let rowUnclassified = 0;
   let rowRejectedOpen = 0;
   let rowRejectedClosed = 0;
 
@@ -519,8 +522,10 @@ export function resolveUniqueSubmittalStats(
     } else if (cat === 'REJECTED_CLOSED') {
       rowRejectedClosed++;
       rowRejected++;
-    } else {
+    } else if (cat === 'PENDING') {
       rowPending++;
+    } else {
+      rowUnclassified++;
     }
   });
 
@@ -558,6 +563,7 @@ export function resolveUniqueSubmittalStats(
     approved: rowApproved,
     rejected: rowRejected,
     pending: rowPending,
+    unclassified: rowUnclassified,
     rejectedOpen: rowRejectedOpen,
     rejectedClosed: rowRejectedClosed,
     uniqueApproved,
@@ -568,6 +574,7 @@ export function resolveUniqueSubmittalStats(
     rowApproved,
     rowRejected,
     rowPending,
+    rowUnclassified,
     rowRejectedOpen,
     rowRejectedClosed
   };

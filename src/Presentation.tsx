@@ -698,6 +698,7 @@ export default function Presentation({
           RejectedClosed: isRfi ? subStats.uniqueRejectedClosed : subStats.rejectedClosed,
           Rejected: isRfi ? subStats.uniqueRejected : subStats.rejected,
           Pending: isRfi ? subStats.uniquePending : subStats.pending,
+          Unclassified: isRfi ? 0 : (subStats.unclassified || 0),
           Total: countForType,
           Closed: isRfi ? getClosedOpenByDocType(family, s).closed : (subStats.approved + subStats.rejectedClosed),
           Open: isRfi ? getClosedOpenByDocType(family, s).open : (subStats.rejectedOpen + subStats.pending),
@@ -726,6 +727,7 @@ export default function Presentation({
         RejectedClosed: s.rejectedClosed,
         Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
         Pending: s.pending,
+        Unclassified: 0,
         Total: countForType,
         Closed: getClosedOpenByDocType(family, s).closed,
         Open: getClosedOpenByDocType(family, s).open,
@@ -750,6 +752,7 @@ export default function Presentation({
       RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
       Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
       Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
+      Unclassified: stats.reduce((acc, curr) => acc + Number((curr as any).Unclassified || 0), 0),
       Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
       Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
       Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
@@ -1501,20 +1504,24 @@ export default function Presentation({
           return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
         });
         const s = calculateStats(tRows, monthlyData, endDate, projectInfo);
+        const subStats = resolveUniqueSubmittalStats(tRows, monthlyData);
         return {
           trade,
           uniqueRev00: s.totalSubmittalsRev0 || 0,
           uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
-          rev00Rows: s.totalSheetsRev0 || 0,
-          furtherRevRows: s.totalSheetsFurtherRev || 0,
-          totalRows: s.totalSubmittedSheets || 0,
-          approved: s.approved,
-          rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
-          pending: s.pending,
-          active: (s.rejectedOpen || 0) + s.pending,
+          rev00Rows: subStats.rev00,
+          furtherRevRows: subStats.furtherRev,
+          totalRows: subStats.totalSheets,
+          approved: subStats.approved,
+          rejected: subStats.rejected,
+          pending: subStats.pending,
+          unclassified: subStats.unclassified || 0,
+          active: subStats.rejectedOpen + subStats.pending,
           count: tRows.length
         };
       }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+
+      const hasMonthlyUnclassified = monthlyTrades.some(t => (t.unclassified || 0) > 0);
 
       slides.push({
         id: "monthly-trade-analysis",
@@ -1551,6 +1558,9 @@ export default function Presentation({
                       <th className="p-1.5 border border-slate-300 font-bold text-emerald-300">{language === 'ar' ? 'معتمد' : 'Appr.'}</th>
                       <th className="p-1.5 border border-slate-300 font-bold text-rose-300">{language === 'ar' ? 'مرفوض' : 'Rej.'}</th>
                       <th className="p-1.5 border border-slate-300 font-bold text-amber-300">{language === 'ar' ? 'معلق' : 'Pend.'}</th>
+                      {hasMonthlyUnclassified && (
+                        <th className="p-1.5 border border-slate-300 font-bold text-slate-300">{language === 'ar' ? 'غير مصنف' : 'Unclass.'}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -1565,6 +1575,9 @@ export default function Presentation({
                         <td className="p-1.5 border border-slate-200 font-bold text-emerald-700">{t.approved}</td>
                         <td className="p-1.5 border border-slate-200 font-bold text-rose-700">{t.rejected}</td>
                         <td className="p-1.5 border border-slate-200 font-bold text-amber-700">{t.pending}</td>
+                        {hasMonthlyUnclassified && (
+                          <td className="p-1.5 border border-slate-200 font-bold text-slate-500">{t.unclassified || 0}</td>
+                        )}
                       </tr>
                     ))}
                     <tr className="bg-[#ddebf7] font-bold text-slate-900 h-8">
@@ -1577,6 +1590,9 @@ export default function Presentation({
                       <td className="p-1.5 border border-slate-300 text-emerald-800">{monthlyTrades.reduce((a, b) => a + b.approved, 0)}</td>
                       <td className="p-1.5 border border-slate-300 text-rose-800">{monthlyTrades.reduce((a, b) => a + b.rejected, 0)}</td>
                       <td className="p-1.5 border border-slate-300 text-amber-800">{monthlyTrades.reduce((a, b) => a + b.pending, 0)}</td>
+                      {hasMonthlyUnclassified && (
+                        <td className="p-1.5 border border-slate-300 text-slate-700">{monthlyTrades.reduce((a, b) => a + (b.unclassified || 0), 0)}</td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
@@ -2061,20 +2077,24 @@ export default function Presentation({
           return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
         });
         const s = calculateStats(tRows, cumulativeData, endDate, projectInfo);
+        const subStats = resolveUniqueSubmittalStats(tRows, cumulativeData);
         return {
           trade,
           uniqueRev00: s.totalSubmittalsRev0 || 0,
           uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
-          rev00Rows: s.totalSheetsRev0 || 0,
-          furtherRevRows: s.totalSheetsFurtherRev || 0,
-          totalRows: s.totalSubmittedSheets || 0,
-          approved: s.approved,
-          rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
-          pending: s.pending,
-          active: (s.rejectedOpen || 0) + s.pending,
+          rev00Rows: subStats.rev00,
+          furtherRevRows: subStats.furtherRev,
+          totalRows: subStats.totalSheets,
+          approved: subStats.approved,
+          rejected: subStats.rejected,
+          pending: subStats.pending,
+          unclassified: subStats.unclassified || 0,
+          active: subStats.rejectedOpen + subStats.pending,
           count: tRows.length
         };
       }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+
+      const hasCumulativeUnclassified = cumulativeTrades.some(t => (t.unclassified || 0) > 0);
 
       slides.push({
         id: "cumulative-trade-analysis",
@@ -2111,6 +2131,9 @@ export default function Presentation({
                       <th className="p-1.5 border border-slate-300 font-bold text-emerald-300">{language === 'ar' ? 'معتمد' : 'Appr.'}</th>
                       <th className="p-1.5 border border-slate-300 font-bold text-rose-300">{language === 'ar' ? 'مرفوض' : 'Rej.'}</th>
                       <th className="p-1.5 border border-slate-300 font-bold text-amber-300">{language === 'ar' ? 'معلق' : 'Pend.'}</th>
+                      {hasCumulativeUnclassified && (
+                        <th className="p-1.5 border border-slate-300 font-bold text-slate-300">{language === 'ar' ? 'غير مصنف' : 'Unclass.'}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -2125,6 +2148,9 @@ export default function Presentation({
                         <td className="p-1.5 border border-slate-200 font-bold text-emerald-700">{t.approved}</td>
                         <td className="p-1.5 border border-slate-200 font-bold text-rose-700">{t.rejected}</td>
                         <td className="p-1.5 border border-slate-200 font-bold text-amber-700">{t.pending}</td>
+                        {hasCumulativeUnclassified && (
+                          <td className="p-1.5 border border-slate-200 font-bold text-slate-500">{t.unclassified || 0}</td>
+                        )}
                       </tr>
                     ))}
                     <tr className="bg-[#ddebf7] font-bold text-slate-900 h-8">
@@ -2137,6 +2163,9 @@ export default function Presentation({
                       <td className="p-1.5 border border-slate-300 text-emerald-800">{cumulativeTrades.reduce((a, b) => a + b.approved, 0)}</td>
                       <td className="p-1.5 border border-slate-300 text-rose-800">{cumulativeTrades.reduce((a, b) => a + b.rejected, 0)}</td>
                       <td className="p-1.5 border border-slate-300 text-amber-800">{cumulativeTrades.reduce((a, b) => a + b.pending, 0)}</td>
+                      {hasCumulativeUnclassified && (
+                        <td className="p-1.5 border border-slate-300 text-slate-700">{cumulativeTrades.reduce((a, b) => a + (b.unclassified || 0), 0)}</td>
+                      )}
                     </tr>
                   </tbody>
                 </table>

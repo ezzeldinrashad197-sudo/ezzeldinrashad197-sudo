@@ -192,6 +192,89 @@ assert(
 );
 
 // --------------------------------------------------------------------------------
+// 2. Lifetime Discipline Metrics & Workload Breakdown (cumulativeTrades) parity test
+// --------------------------------------------------------------------------------
+console.log('\n================================================================================');
+console.log('2. TESTING LIFETIME DISCIPLINE METRICS (cumulative_trade_analysis) PARITY');
+console.log('================================================================================\n');
+
+import { resolveRowDiscipline } from '../src/analytics/calculationFoundation';
+import { resolveRowRegister, resolveUniqueSubmittalStats } from '../src/analytics/managementReportOutput';
+import { calculateStats } from '../src/utils/calculations';
+
+const cumulativeTrades = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'].map(trade => {
+  const tRows = mockSdwDataset.filter(d => {
+    const reg = resolveRowRegister(d);
+    const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
+    return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
+  });
+  const s = calculateStats(tRows, mockSdwDataset);
+  const subStats = resolveUniqueSubmittalStats(tRows, mockSdwDataset);
+  return {
+    trade,
+    uniqueRev00: s.totalSubmittalsRev0 || 0,
+    uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+    rev00Rows: subStats.rev00,
+    furtherRevRows: subStats.furtherRev,
+    totalRows: subStats.totalSheets,
+    approved: subStats.approved,
+    rejected: subStats.rejected,
+    pending: subStats.pending,
+    unclassified: subStats.unclassified || 0,
+    active: subStats.rejectedOpen + subStats.pending,
+    count: tRows.length
+  };
+}).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+
+console.log('| Discipline | Unique Rev00 | Unique Further | Rev.00 Rows | Further Rows | Total Rows | Approved | Rejected | Pending | Unclassified | Reconciliation |');
+console.log('|------------|--------------|----------------|-------------|--------------|------------|----------|----------|---------|--------------|----------------|');
+
+cumulativeTrades.forEach(t => {
+  const sumStatus = t.approved + t.rejected + t.pending + t.unclassified;
+  const sumRevs = t.rev00Rows + t.furtherRevRows;
+  const reconciled = sumStatus === t.totalRows && sumRevs === t.totalRows;
+
+  console.log(
+    `| ${String(t.trade).padEnd(10)} | ${String(t.uniqueRev00).padStart(12)} | ${String(t.uniqueFurtherRev).padStart(14)} | ${String(t.rev00Rows).padStart(11)} | ${String(t.furtherRevRows).padStart(12)} | ${String(t.totalRows).padStart(10)} | ${String(t.approved).padStart(8)} | ${String(t.rejected).padStart(8)} | ${String(t.pending).padStart(7)} | ${String(t.unclassified).padStart(12)} | ${reconciled ? '✔ PASS' : '❌ FAIL'} |`
+  );
+
+  assert(
+    sumStatus === t.totalRows,
+    `${t.trade} Lifetime Metric: Total Rows (${t.totalRows}) === Approved (${t.approved}) + Rejected (${t.rejected}) + Pending (${t.pending}) + Unclassified (${t.unclassified})`,
+    `Status Sum = ${sumStatus}`
+  );
+  assert(
+    sumRevs === t.totalRows,
+    `${t.trade} Lifetime Metric: Total Rows (${t.totalRows}) === Rev.00 Rows (${t.rev00Rows}) + Further Rows (${t.furtherRevRows})`,
+    `Revision Sum = ${sumRevs}`
+  );
+});
+
+console.log('|------------|--------------|----------------|-------------|--------------|------------|----------|----------|---------|--------------|----------------|');
+
+const lifetimeTotUniqueRev00 = cumulativeTrades.reduce((a, b) => a + b.uniqueRev00, 0);
+const lifetimeTotUniqueFurther = cumulativeTrades.reduce((a, b) => a + b.uniqueFurtherRev, 0);
+const lifetimeTotRev00Rows = cumulativeTrades.reduce((a, b) => a + b.rev00Rows, 0);
+const lifetimeTotFurtherRows = cumulativeTrades.reduce((a, b) => a + b.furtherRevRows, 0);
+const lifetimeTotRows = cumulativeTrades.reduce((a, b) => a + b.totalRows, 0);
+const lifetimeTotApproved = cumulativeTrades.reduce((a, b) => a + b.approved, 0);
+const lifetimeTotRejected = cumulativeTrades.reduce((a, b) => a + b.rejected, 0);
+const lifetimeTotPending = cumulativeTrades.reduce((a, b) => a + b.pending, 0);
+const lifetimeTotUnclassified = cumulativeTrades.reduce((a, b) => a + b.unclassified, 0);
+
+console.log(
+  `| ${'TOTAL'.padEnd(10)} | ${String(lifetimeTotUniqueRev00).padStart(12)} | ${String(lifetimeTotUniqueFurther).padStart(14)} | ${String(lifetimeTotRev00Rows).padStart(11)} | ${String(lifetimeTotFurtherRows).padStart(12)} | ${String(lifetimeTotRows).padStart(10)} | ${String(lifetimeTotApproved).padStart(8)} | ${String(lifetimeTotRejected).padStart(8)} | ${String(lifetimeTotPending).padStart(7)} | ${String(lifetimeTotUnclassified).padStart(12)} | ✔ PASS |`
+);
+
+// Cross-Table Parity Assertions:
+assert(lifetimeTotRows === totalR.TotalSheets, 'Cross-Table Parity: Total Rows match', `Lifetime: ${lifetimeTotRows}, Cumulative: ${totalR.TotalSheets}`);
+assert(lifetimeTotApproved === totalR.Approved, 'Cross-Table Parity: Approved count match', `Lifetime: ${lifetimeTotApproved}, Cumulative: ${totalR.Approved}`);
+assert(lifetimeTotRejected === totalR.Rejected, 'Cross-Table Parity: Rejected count match', `Lifetime: ${lifetimeTotRejected}, Cumulative: ${totalR.Rejected}`);
+assert(lifetimeTotPending === totalR.Pending, 'Cross-Table Parity: Pending count match', `Lifetime: ${lifetimeTotPending}, Cumulative: ${totalR.Pending}`);
+assert(lifetimeTotUnclassified === 0, 'Cross-Table Parity: Zero unclassified rows in verified dataset', `Unclassified: ${lifetimeTotUnclassified}`);
+assert(lifetimeTotApproved + lifetimeTotRejected + lifetimeTotPending + lifetimeTotUnclassified === lifetimeTotRows, 'Lifetime Total Rows Reconciled Exactly', `Sum: ${lifetimeTotApproved + lifetimeTotRejected + lifetimeTotPending + lifetimeTotUnclassified} === ${lifetimeTotRows}`);
+
+// --------------------------------------------------------------------------------
 // Summary
 // --------------------------------------------------------------------------------
 console.log('\n================================================================================');
@@ -200,6 +283,6 @@ if (failedTests > 0) {
   console.error('VERDICT: RECONCILIATION AUDIT FAILED');
   process.exit(1);
 } else {
-  console.log('VERDICT: ALL ROW-BASED STATUS RECONCILIATION INVARIANTS VERIFIED (100% PARITY)');
+  console.log('VERDICT: ALL ROW-BASED STATUS RECONCILIATION INVARIANTS VERIFIED (100% PARITY ACROSS BOTH TABLES)');
   process.exit(0);
 }
