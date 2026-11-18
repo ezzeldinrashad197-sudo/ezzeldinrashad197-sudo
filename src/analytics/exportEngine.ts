@@ -1,9 +1,12 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline } from "../utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getDocumentIdentityKey, getStatusCodeCategory, processRevisionEngine } from "../utils/calculations";
 import { isEntityOverdue } from "./calculationFoundation";
+import { resolveSLAThresholdDays } from "./slaEngine";
+import { isExcludedRow } from "./managementReportOutput";
 import {
   compileStatsForBaseType,
+  computeTradeBreakdown,
   renderLuxeLogoBox,
   addHeaderAndFooter,
   addDividerSlide,
@@ -77,8 +80,105 @@ export const generatePptxReport = async (
     const cutoffDate = options?.monthlyEnd || options?.endDate || options?.cutoffDate;
 
     // Compile Executive Dashboard Data for Monthly and Cumulative scopes
-    const monthlyDashboard = calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en', cutoffDate);
-    const cumulativeDashboard = calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en', cutoffDate);
+    const monthlyDashboard = calculateExecutiveDashboardData(monthlyWorkingData, data, true, isArabic ? 'ar' : 'en', cutoffDate, projectInfo);
+    const cumulativeDashboard = calculateExecutiveDashboardData(cumulativeWorkingData, data, false, isArabic ? 'ar' : 'en', cutoffDate, projectInfo);
+
+    const addTradeBreakdownSlides = (scopeDataset: SubmittalRow[], isMonthlyScope: boolean) => {
+        const rows = computeTradeBreakdown(scopeDataset, data, cutoffDate, projectInfo);
+        if (rows.length === 0) return;
+        const hasUnclassified = rows.some(r => (r.unclassified || 0) > 0);
+        const pageSize = 12;
+        const chunks: typeof rows[] = [];
+        for (let i = 0; i < rows.length; i += pageSize) {
+            chunks.push(rows.slice(i, i + pageSize));
+        }
+
+        const totals = rows.reduce((acc, r) => ({
+            uniqueRev00: acc.uniqueRev00 + r.uniqueRev00,
+            uniqueFurtherRev: acc.uniqueFurtherRev + r.uniqueFurtherRev,
+            rev00Rows: acc.rev00Rows + r.rev00Rows,
+            furtherRevRows: acc.furtherRevRows + r.furtherRevRows,
+            totalRows: acc.totalRows + r.totalRows,
+            approved: acc.approved + r.approved,
+            rejected: acc.rejected + r.rejected,
+            pending: acc.pending + r.pending,
+            unclassified: acc.unclassified + (r.unclassified || 0)
+        }), { uniqueRev00: 0, uniqueFurtherRev: 0, rev00Rows: 0, furtherRevRows: 0, totalRows: 0, approved: 0, rejected: 0, pending: 0, unclassified: 0 });
+
+        chunks.forEach((chunk, cIdx) => {
+            const slide = pres.addSlide({ masterName: "STRUCTUSIGHT_MASTER" });
+            const baseTitle = isMonthlyScope
+                ? (isArabic ? "تحليل التخصصات الهندسية (شهري)" : "MONTHLY DISCIPLINE METRICS & WORKLOAD BREAKDOWN")
+                : (isArabic ? "تحليل التخصصات الهندسية التراكمي" : "LIFETIME DISCIPLINE METRICS & WORKLOAD BREAKDOWN");
+            const title = chunks.length > 1 ? `${baseTitle} (${cIdx + 1}/${chunks.length})` : baseTitle;
+            addHeaderAndFooter(pres, slide, title, projectInfo, logoUrl, options);
+
+            const headers: any[] = [
+                { text: isArabic ? "التخصص" : "Discipline", options: { bold: true, fill: "203864", color: "FFFFFF", align: "left", fontSize: 8.5 } },
+                { text: isArabic ? "فريدة\nR00" : "Unique\nRev.00", options: { bold: true, fill: "1E3A8A", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "فريدة\nلاحقة" : "Unique\nFurther", options: { bold: true, fill: "1E3A8A", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "صفوف\nR00" : "Rev.00\nRows", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "صفوف\nلاحقة" : "Further\nRows", options: { bold: true, fill: "334155", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "إجمالي\nالصفوف" : "Total\nRows", options: { bold: true, fill: "0F172A", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "معتمد" : "Approved", options: { bold: true, fill: "047857", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "مرفوض" : "Rejected", options: { bold: true, fill: "BE123C", color: "FFFFFF", align: "center", fontSize: 8.5 } },
+                { text: isArabic ? "معلق" : "Pending", options: { bold: true, fill: "D97706", color: "FFFFFF", align: "center", fontSize: 8.5 } }
+            ];
+            if (hasUnclassified) {
+                headers.push({ text: isArabic ? "غير مصنف" : "Unclass.", options: { bold: true, fill: "475569", color: "FFFFFF", align: "center", fontSize: 8.5 } });
+            }
+
+            const tRows: any[] = [headers];
+            chunk.forEach((r, idx) => {
+                const bg = idx % 2 === 1 ? "F8FAFC" : "FFFFFF";
+                const rowCells: any[] = [
+                    { text: r.trade, options: { fill: bg, align: "left", bold: true, color: "1E293B", fontSize: 8.5 } },
+                    { text: String(r.uniqueRev00), options: { fill: bg, align: "center", bold: true, color: "1E3A8A", fontSize: 8.5 } },
+                    { text: String(r.uniqueFurtherRev), options: { fill: bg, align: "center", bold: true, color: "1E3A8A", fontSize: 8.5 } },
+                    { text: String(r.rev00Rows), options: { fill: bg, align: "center", color: "334155", fontSize: 8.5 } },
+                    { text: String(r.furtherRevRows), options: { fill: bg, align: "center", color: "334155", fontSize: 8.5 } },
+                    { text: String(r.totalRows), options: { fill: bg, align: "center", bold: true, color: "0F172A", fontSize: 8.5 } },
+                    { text: String(r.approved), options: { fill: bg, align: "center", bold: true, color: "047857", fontSize: 8.5 } },
+                    { text: String(r.rejected), options: { fill: bg, align: "center", bold: true, color: "BE123C", fontSize: 8.5 } },
+                    { text: String(r.pending), options: { fill: bg, align: "center", bold: true, color: "D97706", fontSize: 8.5 } }
+                ];
+                if (hasUnclassified) {
+                    rowCells.push({ text: String(r.unclassified || 0), options: { fill: bg, align: "center", color: "475569", fontSize: 8.5 } });
+                }
+                tRows.push(rowCells);
+            });
+
+            if (cIdx === chunks.length - 1) {
+                const totCells: any[] = [
+                    { text: isArabic ? "الإجمالي" : "TOTAL", options: { fill: "DDEBF7", align: "left", bold: true, color: "203864", fontSize: 8.5 } },
+                    { text: String(totals.uniqueRev00), options: { fill: "DDEBF7", align: "center", bold: true, color: "1E3A8A", fontSize: 8.5 } },
+                    { text: String(totals.uniqueFurtherRev), options: { fill: "DDEBF7", align: "center", bold: true, color: "1E3A8A", fontSize: 8.5 } },
+                    { text: String(totals.rev00Rows), options: { fill: "DDEBF7", align: "center", bold: true, color: "203864", fontSize: 8.5 } },
+                    { text: String(totals.furtherRevRows), options: { fill: "DDEBF7", align: "center", bold: true, color: "203864", fontSize: 8.5 } },
+                    { text: String(totals.totalRows), options: { fill: "DDEBF7", align: "center", bold: true, color: "0F172A", fontSize: 8.5 } },
+                    { text: String(totals.approved), options: { fill: "DDEBF7", align: "center", bold: true, color: "047857", fontSize: 8.5 } },
+                    { text: String(totals.rejected), options: { fill: "DDEBF7", align: "center", bold: true, color: "BE123C", fontSize: 8.5 } },
+                    { text: String(totals.pending), options: { fill: "DDEBF7", align: "center", bold: true, color: "D97706", fontSize: 8.5 } }
+                ];
+                if (hasUnclassified) {
+                    totCells.push({ text: String(totals.unclassified), options: { fill: "DDEBF7", align: "center", bold: true, color: "475569", fontSize: 8.5 } });
+                }
+                tRows.push(totCells);
+            }
+
+            const colW = hasUnclassified
+                ? [1.5, 0.85, 0.85, 0.85, 0.85, 0.9, 0.85, 0.85, 0.85, 0.85]
+                : [1.7, 0.95, 0.95, 0.9, 0.9, 0.95, 0.95, 0.95, 0.95];
+
+            slide.addTable(tRows, {
+                x: 0.4, y: 1.05, w: 9.2,
+                colW,
+                margin: [2, 2, 2, 2],
+                fontFace: font,
+                border: { type: "solid", pt: 0.5, color: "CBD5E1" }
+            });
+        });
+    };
 
     const typeMap: Record<string, string> = {
       'SHD': 'SHOP DRAWINGS',
@@ -457,6 +557,7 @@ export const generatePptxReport = async (
             if (isSectionSelected('logs')) {
                 addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options);
             }
+            addTradeBreakdownSlides(cumulativeWorkingData, false);
             addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options);
         } else {
             // Presentation mode: Full Monthly section + Full Cumulative section
@@ -471,6 +572,7 @@ export const generatePptxReport = async (
             if (isSectionSelected('logs')) {
                 addRegisterBreakdownSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options);
             }
+            addTradeBreakdownSlides(monthlyWorkingData, true);
             addRecommendationsSlide(pres, monthlyDashboard, true, projectInfo, logoUrl, options);
 
             addDividerSlide(
@@ -484,6 +586,7 @@ export const generatePptxReport = async (
             if (isSectionSelected('logs')) {
                 addRegisterBreakdownSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options);
             }
+            addTradeBreakdownSlides(cumulativeWorkingData, false);
             addRecommendationsSlide(pres, cumulativeDashboard, false, projectInfo, logoUrl, options);
         }
     }
@@ -753,23 +856,27 @@ export const generatePptxReport = async (
         const showTradeCol = options?.showTradeCol !== false;
         const showRemarksCol = options?.showRemarksCol !== false;
 
-        // Deduplicate items strictly by docNo / id so that each submittal reference appears only once
+        // Deduplicate items strictly by docNo / id and sort strictly monotonically descending by delayDays
         const seenRejectedRefs = new Set<string>();
         const targetRejectedDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
+        const latestRejectedRevMap = processRevisionEngine(
+            targetRejectedDataset.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+            cutoffDate
+        );
         const presRejectedItems = targetRejectedDataset
-            .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+            .filter(d => !isExcludedRow(d) && d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
             .filter(d => {
                 const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
                 if (seenRejectedRefs.has(refKey)) return false;
                 seenRejectedRefs.add(refKey);
                 return true;
             })
-            .sort((a, b) => {
-                const aOverdue = isEntityOverdue(a, undefined, projectInfo) ? 1 : 0;
-                const bOverdue = isEntityOverdue(b, undefined, projectInfo) ? 1 : 0;
-                if (bOverdue !== aOverdue) return bOverdue - aOverdue;
-                return (b.delayDays || 0) - (a.delayDays || 0);
-            });
+            .map(d => {
+                const latestGroup = latestRejectedRevMap.get(getDocumentIdentityKey(d));
+                const latestCat = latestGroup ? getStatusCodeCategory(latestGroup.latest) : getStatusCodeCategory(d);
+                return Object.assign({}, d, { _isCurrentlyActiveOpen: latestCat === 'REJECTED_OPEN' });
+            })
+            .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
 
         const allRejectedPages: SubmittalRow[][] = [];
         for (let i = 0; i < presRejectedItems.length; i += presRejectedPageSize) {
@@ -843,7 +950,16 @@ export const generatePptxReport = async (
                     ];
                     if (showRefCol) bodyRow.push({ text: String(row.docNo || "-"), options: { fill: fillBg, align: "center" } });
                     if (showTradeCol) bodyRow.push({ text: String(row.trade || "-"), options: { fill: fillBg, align: "center" } });
-                    if (showRemarksCol) bodyRow.push({ text: row.delayDays ? (isArabic ? `متأخر منذ ${row.delayDays} يوم` : `Overdue ${row.delayDays} days`) : (isArabic ? "بانتظار إعادة التقديم" : "Pending Resubmission"), options: { fill: fillBg, align: "center", color: "C00000", bold: true } });
+                    if (showRemarksCol) {
+                        const isActive = Boolean((row as any)._isCurrentlyActiveOpen);
+                        const statusTag = isActive
+                            ? (isArabic ? "مرفوض مفتوح نشط" : "Active Open")
+                            : (isArabic ? "حدث تاريخي (مغلق/محدّث)" : "Historical (Later Resolved)");
+                        const remarkText = row.delayDays
+                            ? (isArabic ? `${statusTag} — ${row.delayDays} يوم` : `${statusTag} — ${row.delayDays}d`)
+                            : statusTag;
+                        bodyRow.push({ text: remarkText, options: { fill: fillBg, align: "center", color: isActive ? "C00000" : "475569", bold: isActive } });
+                    }
                     tableDataRows.push(bodyRow);
                 });
 
@@ -875,17 +991,15 @@ export const generatePptxReport = async (
         const showTradeCol = options?.showTradeCol !== false;
         const showRemarksCol = options?.showRemarksCol !== false;
 
-        // Deduplicate items strictly by docNo / id
-        const seenPendingRefs = new Set<string>();
+        // Evaluate latest valid revision per document with canonical cutoffDate and SLA settings
         const targetPendingDataset = mode === 'monthly' ? monthlyWorkingData : cumulativeWorkingData;
-        const presPendingItems = targetPendingDataset
-            .filter(d => isEntityOverdue(d, undefined, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
-            .filter(d => {
-                const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
-                if (seenPendingRefs.has(refKey)) return false;
-                seenPendingRefs.add(refKey);
-                return true;
-            })
+        const pendingRevMap = processRevisionEngine(
+            targetPendingDataset.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+            cutoffDate
+        );
+        const presPendingItems = Array.from(pendingRevMap.values())
+            .map(g => g.latest)
+            .filter(d => getStatusCodeCategory(d) === 'PENDING' && isEntityOverdue(d, cutoffDate, projectInfo))
             .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
 
         const allPendingPages: SubmittalRow[][] = [];
@@ -943,7 +1057,10 @@ export const generatePptxReport = async (
                     ];
                     if (showRefCol) bodyRow.push({ text: String(row.docNo || "-"), options: { fill: fillBg, align: "center" } });
                     if (showTradeCol) bodyRow.push({ text: String(row.trade || "-"), options: { fill: fillBg, align: "center" } });
-                    if (showRemarksCol) bodyRow.push({ text: isArabic ? `متأخر منذ ${row.delayDays} يوم` : `Overdue ${row.delayDays} days`, options: { fill: fillBg, align: "center", color: "C00000", bold: true } });
+                    if (showRemarksCol) {
+                        const rowSla = resolveSLAThresholdDays(row, projectInfo);
+                        bodyRow.push({ text: isArabic ? `${row.delayDays} يوم منقضٍ (متأخر عن SLA ${rowSla}ي)` : `${row.delayDays}d elapsed (past ${rowSla}d SLA)`, options: { fill: fillBg, align: "center", color: "C00000", bold: true } });
+                    }
                     tableDataRows.push(bodyRow);
                 });
 

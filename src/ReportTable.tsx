@@ -539,19 +539,24 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
       };
   }, [filteredData, contextDataset, contextRevisionMap]);
 
-  // Top 5 Oldest Pending Overdue Items
+  // Top 5 Active Overdue Bottleneck Items (aligned with KPI overdue SSOT: latest Pending + Rejected/Open)
   const topOverdueItems = useMemo(() => {
-     return [...filteredData]
-        .filter(d => isEntityOverdue(d, undefined, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+     const revMap = processRevisionEngine(filteredData);
+     return Array.from(revMap.values())
+        .map(g => g.latest)
+        .filter(d => {
+          const cat = getStatusCodeCategory(d);
+          return isEntityOverdue(d, undefined, projectInfo) && (cat === 'PENDING' || cat === 'REJECTED_OPEN') && !d.documentType?.includes('LTR');
+        })
         .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
         .slice(0, 5);
-  }, [filteredData]);
+  }, [filteredData, projectInfo]);
 
   // Action Owner Resolver for Bottlenecks
   const getResponsibleParty = (item: SubmittalRow) => {
-      if (item.workflowStage === 'Pending') {
+      if (getStatusCodeCategory(item) === 'PENDING') {
           return item.consultant || projectInfo?.consultantName || (language === 'ar' ? 'الاستشاري (ACE)' : 'Consultant (ACE)');
-      } else if (item.workflowStage?.toLowerCase().includes('reject') || item.workflowStage?.toLowerCase().includes('resubmit')) {
+      } else if (getStatusCodeCategory(item) === 'REJECTED_OPEN' || item.workflowStage?.toLowerCase().includes('reject') || item.workflowStage?.toLowerCase().includes('resubmit')) {
           return item.contractor || projectInfo?.contractorName || (language === 'ar' ? 'المقاول الرئيسي (Innovo)' : 'Contractor (Innovo)');
       } else {
           return item.contractor || projectInfo?.contractorName || (language === 'ar' ? 'المقاول الرئيسي (Innovo)' : 'Contractor (Innovo)');
@@ -2524,7 +2529,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
               <h3 className="text-xs font-bold text-rose-700 mb-2 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                   {language === 'ar' 
-                    ? (topOverdueItems.length >= 5 ? 'أكبر 5 مستندات معلقة متأخرة والمسؤول عنها (بؤر التكدس الحرجة)' : `المستندات المعلقة المتأخرة والمسؤول عنها (${topOverdueItems.length})`) 
+                    ? (topOverdueItems.length >= 5 ? 'أكبر 5 معاملات نشطة متأخرة والمسؤول عنها (بؤر التكدس الحرجة)' : `المعاملات النشطة المتأخرة والمسؤول عنها (${topOverdueItems.length})`) 
                     : (topOverdueItems.length >= 5 ? 'Top 5 Critical Overdue Bottlenecks & Responsible Party' : `Critical Overdue Bottlenecks (${topOverdueItems.length} Item${topOverdueItems.length > 1 ? 's' : ''}) & Responsible Party`)}
               </h3>
               <div className="overflow-x-auto">
@@ -2543,7 +2548,7 @@ export default function ReportTable({ data, filterFn, title, projectInfo, rawDat
                       <tbody>
                           {topOverdueItems.map((item, index) => {
                               const responsible = getResponsibleParty(item);
-                              const isConsultantResponsible = item.workflowStage === 'Pending';
+                              const isConsultantResponsible = getStatusCodeCategory(item) === 'PENDING';
                               return (
                                   <tr key={item.id} className="border-b border-slate-100 hover:bg-rose-50/10 transition-colors">
                                       <td className="px-3 py-1.5 text-xs font-bold text-rose-700 text-center">#{index + 1}</td>

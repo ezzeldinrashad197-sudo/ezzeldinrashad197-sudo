@@ -463,6 +463,20 @@ export function processUniqueSubmittalEngine(
 
 /**
  * Helper to compute Dual-Grain Management Report KPIs for any subset of rows (e.g., a single register/discipline slice).
+ *
+ * Official Dual-Grain Contract:
+ * - Unique Submittal Current-State Grain (`unique*`):
+ *   Evaluated once per unique `getSubmissionIdentityKey(row)` at its winning/latest revision.
+ *   Invariant: `uniqueApproved + uniqueRejected + uniquePending === totalSubmittals`.
+ *   Note: `uniqueRejectedClosed` is a sub-classification inside `uniqueApproved` (latest revision has REJECTED_CLOSED);
+ *   it must NEVER be added to `uniqueApproved + uniqueRejected + uniquePending` as doing so double-counts a submittal.
+ * - Physical Register Row Grain (`row*`):
+ *   Evaluated once per valid physical row using that row's own recorded status (`getStatusCodeCategory(row)`).
+ *   Invariant: `rowApproved + rowRejected + rowPending + rowUnclassified === totalSheets === rev00 + furtherRev`.
+ * - Dual-Grain Bridge:
+ *   `supersededRows === totalSheets - totalSubmittals` computed strictly over valid (`!isExcludedRow`) source rows.
+ * - Top-level compatibility aliases (`approved`, `rejected`, `pending`, `unclassified`, `rejectedOpen`, `rejectedClosed`):
+ *   Preserved on the physical-row grain for existing presentation/row-reconciliation callers.
  */
 export function resolveUniqueSubmittalStats(
   periodRows: SubmittalRow[],
@@ -472,6 +486,7 @@ export function resolveUniqueSubmittalStats(
   rev00: number;
   furtherRev: number;
   totalSheets: number;
+  supersededRows: number;
   approved: number;
   rejected: number;
   pending: number;
@@ -505,7 +520,6 @@ export function resolveUniqueSubmittalStats(
   validRows.forEach(r => {
     const rawRev = extractRevisionRaw(r);
     const isRev0 = isRevision0(rawRev, r.isRev0);
-    const isFurther = !isRev0 && isFurtherRevision(rawRev, r.isRev0);
     if (isRev0) {
       rev00++;
     } else {
@@ -549,17 +563,23 @@ export function resolveUniqueSubmittalStats(
       uniquePending++;
     } else {
       uniqueApproved++;
+      // Sub-flag for latest revision holding REJECTED_CLOSED (already counted in uniqueApproved)
       if (group.hasHistoricalClosedRejectionAtLatest) {
         uniqueRejectedClosed++;
       }
     }
   });
 
+  const totalSubmittals = targetSubKeys.size;
+  const totalSheets = rev00 + furtherRev;
+  const supersededRows = Math.max(0, validRows.length - totalSubmittals);
+
   return {
-    totalSubmittals: targetSubKeys.size,
+    totalSubmittals,
     rev00,
     furtherRev,
-    totalSheets: rev00 + furtherRev,
+    totalSheets,
+    supersededRows,
     approved: rowApproved,
     rejected: rowRejected,
     pending: rowPending,
@@ -1205,14 +1225,28 @@ export interface SourceRegisterPopulationEntry {
   rev00: number;
   furtherRev: number;
   totalSheets: number;
+  supersededRows: number;
   approved: number;
   rejected: number;
   pending: number;
+  uniqueApproved: number;
+  uniqueRejected: number;
+  uniquePending: number;
+  uniqueRejectedOpen: number;
+  uniqueRejectedClosed: number;
+  rowApproved: number;
+  rowRejected: number;
+  rowPending: number;
+  rowUnclassified: number;
+  rowRejectedOpen: number;
+  rowRejectedClosed: number;
   sourceFiles: string[];
   sourceSheets: string[];
   reconciledWithManagementReport: boolean;
   reconciledWithExecutiveSummary: boolean;
+  reconciledWithRowStatus: boolean;
   formattedSummary: string;
+  rowFormattedSummary: string;
 }
 
 export interface NonSubmittalRegisterPopulationEntry {
@@ -1236,10 +1270,23 @@ export interface SourcePopulationAuditReport {
     rev00: number;
     furtherRev: number;
     totalSheets: number;
+    supersededRows: number;
     approved: number;
     rejected: number;
     pending: number;
+    uniqueApproved: number;
+    uniqueRejected: number;
+    uniquePending: number;
+    uniqueRejectedOpen: number;
+    uniqueRejectedClosed: number;
+    rowApproved: number;
+    rowRejected: number;
+    rowPending: number;
+    rowUnclassified: number;
+    rowRejectedOpen: number;
+    rowRejectedClosed: number;
     formattedSummary: string;
+    rowFormattedSummary: string;
   };
   acceptanceChecks: {
     check1_allCanonicalRegistersEnumerated: boolean;
@@ -1333,23 +1380,39 @@ export function auditOfficialSourcePopulation(
     const execSubStats = resolveUniqueSubmittalStats(bucketRows, contextRows);
     const mgmtRow = officialReport.rows.find(r => r.discipline === regKey);
 
+    // Unique-Submittal Status Grain compared against Official Management Report (buildManagementReportOutput)
     const reconciledWithManagementReport = Boolean(
       mgmtRow &&
         mgmtRow.totalSubmittals === execSubStats.totalSubmittals &&
         mgmtRow.rev00 === execSubStats.rev00 &&
         mgmtRow.furtherRev === execSubStats.furtherRev &&
         mgmtRow.totalSheets === execSubStats.totalSheets &&
-        mgmtRow.approved === execSubStats.approved &&
-        mgmtRow.rejected === execSubStats.rejected &&
-        mgmtRow.pending === execSubStats.pending &&
+        mgmtRow.approved === execSubStats.uniqueApproved &&
+        mgmtRow.rejected === execSubStats.uniqueRejected &&
+        mgmtRow.pending === execSubStats.uniquePending &&
         mgmtRow.totalSheets === bucketRows.length
     );
 
-    const reconciledWithExecutiveSummary =
+    // Separate Grain Closure Checks:
+    // 1. Unique-Submittal Closure: totalSubmittals === uniqueApproved + uniqueRejected + uniquePending
+    //    (uniqueRejectedClosed is NOT added to avoid double-counting approved submittals)
+    // 2. Physical-Row Closure: totalSheets === rev00 + furtherRev === rowApproved + rowRejected + rowPending + rowUnclassified
+    // 3. Bridge Identity: totalSheets - totalSubmittals === supersededRows
+    const uniqueStatusClosure =
       execSubStats.totalSubmittals ===
-        execSubStats.approved + execSubStats.rejected + execSubStats.pending &&
+      execSubStats.uniqueApproved + execSubStats.uniqueRejected + execSubStats.uniquePending;
+    const rowStatusSum =
+      execSubStats.rowApproved +
+      execSubStats.rowRejected +
+      execSubStats.rowPending +
+      execSubStats.rowUnclassified;
+    const reconciledWithRowStatus =
       execSubStats.totalSheets === execSubStats.rev00 + execSubStats.furtherRev &&
-      execSubStats.totalSheets === bucketRows.length;
+      execSubStats.totalSheets === bucketRows.length &&
+      rowStatusSum === execSubStats.totalSheets &&
+      execSubStats.totalSheets - execSubStats.totalSubmittals === execSubStats.supersededRows;
+
+    const reconciledWithExecutiveSummary = uniqueStatusClosure && reconciledWithRowStatus;
 
     const filesSet = new Set<string>();
     const sheetsSet = new Set<string>();
@@ -1371,14 +1434,28 @@ export function auditOfficialSourcePopulation(
       rev00: execSubStats.rev00,
       furtherRev: execSubStats.furtherRev,
       totalSheets: execSubStats.totalSheets,
-      approved: execSubStats.approved,
-      rejected: execSubStats.rejected,
-      pending: execSubStats.pending,
+      supersededRows: execSubStats.supersededRows,
+      approved: execSubStats.uniqueApproved,
+      rejected: execSubStats.uniqueRejected,
+      pending: execSubStats.uniquePending,
+      uniqueApproved: execSubStats.uniqueApproved,
+      uniqueRejected: execSubStats.uniqueRejected,
+      uniquePending: execSubStats.uniquePending,
+      uniqueRejectedOpen: execSubStats.uniqueRejectedOpen,
+      uniqueRejectedClosed: execSubStats.uniqueRejectedClosed,
+      rowApproved: execSubStats.rowApproved,
+      rowRejected: execSubStats.rowRejected,
+      rowPending: execSubStats.rowPending,
+      rowUnclassified: execSubStats.rowUnclassified,
+      rowRejectedOpen: execSubStats.rowRejectedOpen,
+      rowRejectedClosed: execSubStats.rowRejectedClosed,
       sourceFiles: Array.from(filesSet),
       sourceSheets: Array.from(sheetsSet),
       reconciledWithManagementReport,
       reconciledWithExecutiveSummary,
-      formattedSummary: `${execSubStats.totalSubmittals} / ${execSubStats.rev00} / ${execSubStats.furtherRev} / ${execSubStats.totalSheets} / ${execSubStats.approved} / ${execSubStats.rejected} / ${execSubStats.pending}`
+      reconciledWithRowStatus,
+      formattedSummary: `${execSubStats.totalSubmittals} / ${execSubStats.rev00} / ${execSubStats.furtherRev} / ${execSubStats.totalSheets} / ${execSubStats.uniqueApproved} / ${execSubStats.uniqueRejected} / ${execSubStats.uniquePending}`,
+      rowFormattedSummary: `${execSubStats.rowApproved} / ${execSubStats.rowRejected} / ${execSubStats.rowPending} / ${execSubStats.rowUnclassified}`
     };
   });
 
@@ -1395,16 +1472,39 @@ export function auditOfficialSourcePopulation(
     (officialSubmittalRowsCount + nonSubmittalRegisterRowsCount + explicitlyExcludedRowsCount);
 
   const gt = officialReport.grandTotal;
+  const totalSupersededRows = canonicalRegisters.reduce((s, c) => s + c.supersededRows, 0);
+  const totalUniqueRejectedOpen = canonicalRegisters.reduce((s, c) => s + c.uniqueRejectedOpen, 0);
+  const totalUniqueRejectedClosed = canonicalRegisters.reduce((s, c) => s + c.uniqueRejectedClosed, 0);
+  const totalRowApproved = canonicalRegisters.reduce((s, c) => s + c.rowApproved, 0);
+  const totalRowRejected = canonicalRegisters.reduce((s, c) => s + c.rowRejected, 0);
+  const totalRowPending = canonicalRegisters.reduce((s, c) => s + c.rowPending, 0);
+  const totalRowUnclassified = canonicalRegisters.reduce((s, c) => s + c.rowUnclassified, 0);
+  const totalRowRejectedOpen = canonicalRegisters.reduce((s, c) => s + c.rowRejectedOpen, 0);
+  const totalRowRejectedClosed = canonicalRegisters.reduce((s, c) => s + c.rowRejectedClosed, 0);
+
   const grandTotal = {
     rawRowCount: officialSubmittalRowsCount,
     totalSubmittals: gt.totalSubmittals,
     rev00: gt.rev00,
     furtherRev: gt.furtherRev,
     totalSheets: gt.totalSheets,
+    supersededRows: totalSupersededRows,
     approved: gt.approved,
     rejected: gt.rejected,
     pending: gt.pending,
-    formattedSummary: `${gt.totalSubmittals} / ${gt.rev00} / ${gt.furtherRev} / ${gt.totalSheets} / ${gt.approved} / ${gt.rejected} / ${gt.pending}`
+    uniqueApproved: gt.approved,
+    uniqueRejected: gt.rejected,
+    uniquePending: gt.pending,
+    uniqueRejectedOpen: totalUniqueRejectedOpen,
+    uniqueRejectedClosed: totalUniqueRejectedClosed,
+    rowApproved: totalRowApproved,
+    rowRejected: totalRowRejected,
+    rowPending: totalRowPending,
+    rowUnclassified: totalRowUnclassified,
+    rowRejectedOpen: totalRowRejectedOpen,
+    rowRejectedClosed: totalRowRejectedClosed,
+    formattedSummary: `${gt.totalSubmittals} / ${gt.rev00} / ${gt.furtherRev} / ${gt.totalSheets} / ${gt.approved} / ${gt.rejected} / ${gt.pending}`,
+    rowFormattedSummary: `${totalRowApproved} / ${totalRowRejected} / ${totalRowPending} / ${totalRowUnclassified}`
   };
 
   // Check 1: Every canonical official register returned by resolveOfficialSubmittalRegister(row) is enumerated
@@ -1412,14 +1512,14 @@ export function auditOfficialSourcePopulation(
     canonicalRegisters.length === officialReport.rows.length &&
     canonicalRegisters.every((c, idx) => c.canonicalRegister === officialReport.rows[idx]?.discipline);
 
-  // Check 2: Complete source population reconciled against Official Management Report
+  // Check 2: Complete source population reconciled against Official Management Report AND Physical-Row Status grain
   const sumRawRows = canonicalRegisters.reduce((acc, c) => acc + c.rawRowCount, 0);
   const check2_completeSourcePopulationReconciled =
     unaccountedRowsCount === 0 &&
     sumRawRows === officialSubmittalRowsCount &&
     officialReport.grandTotal.totalSheets === officialSubmittalRowsCount &&
     officialReport.isFullyReconciled &&
-    canonicalRegisters.every(c => c.reconciledWithManagementReport);
+    canonicalRegisters.every(c => c.reconciledWithManagementReport && c.reconciledWithRowStatus);
 
   // Check 3: No official register is excluded because its discipline is outside STR/ARCH/MECH/ELEC/INFRA/LAND
   const check3_noRegisterExcludedOutsideSixDisciplines =
@@ -1437,31 +1537,46 @@ export function auditOfficialSourcePopulation(
       c => c.canonicalRegister === `${c.parentRegister}-${c.canonicalDiscipline}` || c.canonicalRegister.startsWith(`${c.parentRegister}-`)
     );
 
-  // Check 5: If WIR-SURVEY and WIR-LANDSCAPE are present with the STS-P1.17 160/161 population, verify exact figures;
+  // Check 5: If WIR-SURVEY and WIR-LANDSCAPE are present with the STS-P1.17 160/161 population, verify exact Dual-Grain figures;
   // otherwise verify exact Dual-Grain equations for all loaded registers
   const wirSurveyEntry = canonicalRegisters.find(c => c.canonicalRegister === 'WIR-SURVEY');
   const wirLandscapeEntry = canonicalRegisters.find(c => c.canonicalRegister === 'WIR-LANDSCAPE');
-  let check5_targetWirSurveyAndLandscapeFiguresVerified = officialReport.isFullyReconciled;
+  let check5_targetWirSurveyAndLandscapeFiguresVerified =
+    officialReport.isFullyReconciled && canonicalRegisters.every(c => c.reconciledWithRowStatus);
   if (wirSurveyEntry && wirLandscapeEntry && canonicalRegisters.length === 2 && grandTotal.totalSheets === 161) {
     check5_targetWirSurveyAndLandscapeFiguresVerified =
       wirSurveyEntry.formattedSummary === '73 / 68 / 5 / 73 / 73 / 0 / 0' &&
+      wirSurveyEntry.rowFormattedSummary === '73 / 0 / 0 / 0' &&
       wirLandscapeEntry.formattedSummary === '87 / 80 / 8 / 88 / 75 / 8 / 4' &&
-      grandTotal.formattedSummary === '160 / 148 / 13 / 161 / 148 / 8 / 4';
+      wirLandscapeEntry.rowFormattedSummary === '75 / 9 / 4 / 0' &&
+      wirLandscapeEntry.supersededRows === 1 &&
+      grandTotal.formattedSummary === '160 / 148 / 13 / 161 / 148 / 8 / 4' &&
+      grandTotal.rowFormattedSummary === '148 / 9 / 4 / 0' &&
+      grandTotal.supersededRows === 1;
   }
 
-  // Check 6: Executive Summary and Official Management Report reflect the exact same population & figures
+  // Check 6: Executive Summary and Official Management Report reflect the exact same population & figures across both grains
   const execSumSubmittals = canonicalRegisters.reduce((s, c) => s + c.totalSubmittals, 0);
   const execSumSheets = canonicalRegisters.reduce((s, c) => s + c.totalSheets, 0);
-  const execSumApproved = canonicalRegisters.reduce((s, c) => s + c.approved, 0);
-  const execSumRejected = canonicalRegisters.reduce((s, c) => s + c.rejected, 0);
-  const execSumPending = canonicalRegisters.reduce((s, c) => s + c.pending, 0);
+  const execSumUniqueApproved = canonicalRegisters.reduce((s, c) => s + c.uniqueApproved, 0);
+  const execSumUniqueRejected = canonicalRegisters.reduce((s, c) => s + c.uniqueRejected, 0);
+  const execSumUniquePending = canonicalRegisters.reduce((s, c) => s + c.uniquePending, 0);
+  const execSumRowTotal = totalRowApproved + totalRowRejected + totalRowPending + totalRowUnclassified;
   const check6_executiveSummaryMatchesManagementReport =
     execSumSubmittals === officialReport.grandTotal.totalSubmittals &&
     execSumSheets === officialReport.grandTotal.totalSheets &&
-    execSumApproved === officialReport.grandTotal.approved &&
-    execSumRejected === officialReport.grandTotal.rejected &&
-    execSumPending === officialReport.grandTotal.pending &&
-    canonicalRegisters.every(c => c.reconciledWithExecutiveSummary && c.reconciledWithManagementReport);
+    execSumUniqueApproved === officialReport.grandTotal.approved &&
+    execSumUniqueRejected === officialReport.grandTotal.rejected &&
+    execSumUniquePending === officialReport.grandTotal.pending &&
+    execSumUniqueApproved + execSumUniqueRejected + execSumUniquePending === execSumSubmittals &&
+    execSumRowTotal === execSumSheets &&
+    execSumSheets - execSumSubmittals === totalSupersededRows &&
+    canonicalRegisters.every(
+      c =>
+        c.reconciledWithExecutiveSummary &&
+        c.reconciledWithManagementReport &&
+        c.reconciledWithRowStatus
+    );
 
   // Check 7: Monthly and Cumulative modes use the exact same population definition; only the date/period filter changes
   let check7_monthlyAndCumulativeSharePopulationDefinition = true;

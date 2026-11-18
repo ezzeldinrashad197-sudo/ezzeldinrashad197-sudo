@@ -1,13 +1,141 @@
 import pptxgen from "pptxgenjs";
 import { ProjectSettings, SubmittalRow } from "../types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType, isEntityOverdue } from "../utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, calculateProjectPerformanceHealth, getClosedOpenByDocType, isEntityOverdue, processRevisionEngine, getStatusCodeCategory } from "../utils/calculations";
 import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, resolveRowRegister, isExcludedRow } from "./managementReportOutput";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./ncr/ncrEngine";
 import { calculateTableLayout, getCanonicalHeader } from "./presentationLayoutEngine";
 import { getPresentationRegisterLabel } from "../components/presentation/PresHelpers";
 
+export interface TradeBreakdownRow {
+    trade: string;
+    uniqueRev00: number;
+    uniqueFurtherRev: number;
+    rev00Rows: number;
+    furtherRevRows: number;
+    totalRows: number;
+    approved: number;
+    rejected: number;
+    rejectedOpen: number;
+    rejectedClosed: number;
+    pending: number;
+    unclassified: number;
+    active: number;
+    count: number;
+}
+
+/**
+ * Canonical Discipline / Trade Breakdown compiler shared across Presentation UI, PPTX, and PDF.
+ * Uses strict canonical discipline resolution (resolveRowDiscipline) without substring/prefix matching
+ * and includes all active canonical disciplines dynamically (without omitting non-core or unclassified buckets).
+ */
+export const computeTradeBreakdown = (
+    dataset: SubmittalRow[],
+    fullDataset?: SubmittalRow[],
+    cutoffDate?: string | Date,
+    projectInfo?: ProjectSettings | null
+): TradeBreakdownRow[] => {
+    const cutoffStr = typeof cutoffDate === 'string'
+        ? cutoffDate
+        : (cutoffDate instanceof Date ? cutoffDate.toISOString().split('T')[0] : undefined);
+    const validRows = (dataset || []).filter(d => !isExcludedRow(d));
+    const refDataset = fullDataset && fullDataset.length > 0 ? fullDataset : validRows;
+
+    const preferredLabels: Record<string, string> = {
+        STR: 'STR',
+        ARCH: 'Arch',
+        MECH: 'Mech',
+        ELEC: 'Elec',
+        INFRA: 'Infra',
+        LANDSCAPE: 'Landscape',
+        SURVEY: 'SURVEY',
+        HSE: 'HSE',
+        GEN: 'GEN',
+        GENERAL: 'GEN'
+    };
+    const discOrder = ['STR', 'ARCH', 'MECH', 'ELEC', 'INFRA', 'LANDSCAPE', 'SURVEY', 'HSE', 'GEN'];
+
+    const buckets = new Map<string, { trade: string; rows: SubmittalRow[] }>();
+    validRows.forEach(d => {
+        const reg = resolveRowRegister(d);
+        const rawDisc = (resolveRowDiscipline(d, reg) || 'UNCLASSIFIED').trim();
+        const key = rawDisc.toUpperCase();
+        const displayLabel = preferredLabels[key] || rawDisc;
+        if (!buckets.has(key)) {
+            buckets.set(key, { trade: displayLabel, rows: [] });
+        }
+        buckets.get(key)!.rows.push(d);
+    });
+
+    const sortedKeys = Array.from(buckets.keys()).sort((a, b) => {
+        const aIsUnclass = a === 'UNCLASSIFIED' || a === 'UNKNOWN';
+        const bIsUnclass = b === 'UNCLASSIFIED' || b === 'UNKNOWN';
+        if (aIsUnclass && !bIsUnclass) return 1;
+        if (!aIsUnclass && bIsUnclass) return -1;
+        const idxA = discOrder.indexOf(a);
+        const idxB = discOrder.indexOf(b);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    return sortedKeys.map(key => {
+        const bucket = buckets.get(key)!;
+        const tRows = bucket.rows;
+        const s = calculateStats(tRows, refDataset, cutoffStr, projectInfo);
+        const subStats = resolveUniqueSubmittalStats(tRows, refDataset);
+        return {
+            trade: bucket.trade,
+            uniqueRev00: s.totalSubmittalsRev0 || 0,
+            uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
+            rev00Rows: subStats.rev00,
+            furtherRevRows: subStats.furtherRev,
+            totalRows: subStats.totalSheets,
+            approved: subStats.approved,
+            rejected: subStats.rejected,
+            rejectedOpen: subStats.rejectedOpen,
+            rejectedClosed: subStats.rejectedClosed,
+            pending: subStats.pending,
+            unclassified: subStats.unclassified || 0,
+            active: subStats.rejectedOpen + subStats.pending,
+            count: tRows.length
+        };
+    });
+};
+
+export const computeExactPpiBreakdown = (globalStats: {
+    approvalRate?: number;
+    overdue?: number;
+    totalSubmittedSheets?: number;
+    totalUniqueDrawings?: number;
+}) => {
+    const appRate = globalStats?.approvalRate || 0;
+    const totalOverdue = globalStats?.overdue || 0;
+    const totalSubmitted = globalStats?.totalSubmittedSheets || 0;
+    const totalBase = globalStats?.totalUniqueDrawings || totalSubmitted || 1;
+
+    const approvalPenaltyExact = appRate >= 80 ? 0 : Math.min(35, ((80 - appRate) / 80) * 35);
+    const overdueRatio = totalBase > 0 ? (totalOverdue / totalBase) : 0;
+    const pendingOverduePenaltyExact = Math.min(35, overdueRatio * 100 * 0.7);
+    const overdueDensityPenaltyExact = totalSubmitted > 0
+        ? Math.min(30, (totalOverdue / totalSubmitted) * 100 * 0.5)
+        : 0;
+    const rawScore = Math.max(0, Math.min(100, 100 - approvalPenaltyExact - pendingOverduePenaltyExact - overdueDensityPenaltyExact));
+
+    return {
+        approvalPenaltyExact: Number(approvalPenaltyExact.toFixed(1)),
+        pendingOverduePenaltyExact: Number(pendingOverduePenaltyExact.toFixed(1)),
+        overdueDensityPenaltyExact: Number(overdueDensityPenaltyExact.toFixed(1)),
+        rawScore: Number(rawScore.toFixed(1)),
+        roundedScore: Math.max(0, Math.min(100, Math.round(rawScore)))
+    };
+};
+
 // Compile statistics logic extracted from exportEngine
 export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[], cutoffDate?: string | Date) => {
+    const cutoffStr = typeof cutoffDate === 'string'
+        ? cutoffDate
+        : (cutoffDate instanceof Date ? cutoffDate.toISOString().split('T')[0] : undefined);
     if (bt === 'NCR') {
         const sourceData = fullDataset && fullDataset.length > 0 ? fullDataset : dataset;
         const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, cutoffDate);
@@ -35,6 +163,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
 
         const stats = sortedSubRegs.map(subReg => {
             const subData = docRows.filter(d => resolveOfficialSubmittalRegister(d) === subReg);
+            const s = calculateStats(subData, fullDataset || dataset, cutoffStr);
             const subStats = resolveUniqueSubmittalStats(subData, fullDataset || dataset);
             const tRows = subStats.totalSheets;
             const curUniq = subStats.totalSubmittals;
@@ -47,6 +176,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
                 TotalSubmittals: curUniq,
                 CurrentUnique: curUniq,
                 UniqueItems: curUniq,
+                UniqueRev00: s.totalSubmittalsRev0 || 0,
+                UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
                 Rev00: subStats.rev00,
                 FurtherRev: subStats.furtherRev,
                 TotalSheets: tRows,
@@ -59,6 +190,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
                 RejectedClosed: subStats.rejectedClosed,
                 Rejected: subStats.rejected,
                 Pending: subStats.pending,
+                Unclassified: subStats.unclassified || 0,
                 Total: tRows,
                 Closed: subStats.approved + subStats.rejectedClosed,
                 Open: subStats.rejectedOpen + subStats.pending
@@ -69,6 +201,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
             discipline: "TOTAL",
             TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
             TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
+            UniqueRev00: stats.reduce((acc, curr) => acc + Number((curr as any).UniqueRev00 || 0), 0),
+            UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number((curr as any).UniqueFurtherRev || 0), 0),
             Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
             FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
             TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
@@ -81,6 +215,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
             RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
             Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
             Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
+            Unclassified: stats.reduce((acc, curr) => acc + Number((curr as any).Unclassified || 0), 0),
             Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
             Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
             Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
@@ -122,7 +257,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
           const rDisc = resolveRowDiscipline(d, bt);
           return rDisc === disc;
       });
-      const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset)));
+      const s = bt === 'NCR' ? calculateNCRStats(dData, false) : (bt === 'SOR' ? calculateSORStats(dData, false) : (bt === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset, cutoffStr)));
       
       const isMonthlyReport = !!monthlyStart;
       const isSheetCountType = bt === 'SDW' || bt === 'SHD' || bt === 'ABD';
@@ -145,6 +280,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
           TotalSubmittals: subStats.totalSubmittals,
           CurrentUnique: subStats.totalSubmittals,
           UniqueItems: subStats.totalSubmittals,
+          UniqueRev00: s.totalSubmittalsRev0 || 0,
+          UniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
           Rev00: subStats.rev00,
           FurtherRev: subStats.furtherRev,
           TotalSheets: subStats.totalSheets,
@@ -169,6 +306,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         TotalSubmittals: curUniq,
         CurrentUnique: curUniq,
         UniqueItems: curUniq,
+        UniqueRev00: s.totalSubmittalsRev0 ?? s.totalSheetsRev0 ?? 0,
+        UniqueFurtherRev: s.totalSubmittalsFurtherRev ?? s.totalSheetsFurtherRev ?? 0,
         Rev00: s.totalSheetsRev0 || 0,
         FurtherRev: s.totalSheetsFurtherRev || 0,
         TotalSheets: tRows,
@@ -181,6 +320,7 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
         RejectedClosed: s.rejectedClosed,
         Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
         Pending: s.pending,
+        Unclassified: 0,
         Total: countForType,
         Closed: getClosedOpenByDocType(bt, s).closed,
         Open: getClosedOpenByDocType(bt, s).open,
@@ -191,6 +331,8 @@ export const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, mon
       discipline: "TOTAL",
       TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
       TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
+      UniqueRev00: stats.reduce((acc, curr) => acc + Number((curr as any).UniqueRev00 || 0), 0),
+      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number((curr as any).UniqueFurtherRev || 0), 0),
       Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
       FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
       TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
@@ -706,8 +848,16 @@ export const calculateExecutiveDashboardData = (
         Total: row.stats.totalSubmittedSheets || 0
     }));
 
-    const topOverdueItems = [...filteredData]
-        .filter(d => isEntityOverdue(d, cutoffDateStr, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
+    const revGroups = processRevisionEngine(
+        filteredData.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+        cutoffDateStr
+    );
+    const topOverdueItems = Array.from(revGroups.values())
+        .map(g => g.latest)
+        .filter(d => {
+            const cat = getStatusCodeCategory(d);
+            return isEntityOverdue(d, cutoffDateStr, projectInfo) && (cat === 'PENDING' || cat === 'REJECTED_OPEN');
+        })
         .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
         .slice(0, 5);
 
@@ -890,7 +1040,7 @@ export const addExecutiveOverviewSlide = (
         {
             title: isArabic ? "معاملات ذات أولوية حرجة" : "Critical Priority",
             val: String(dashData.globalCriticalCount || 0),
-            sub: isArabic ? "خاصية مشتقة / سمة أولوية" : "Derived Priority Attribute",
+            sub: isArabic ? "بنود موسومة بحرج (مستقلة عن SLA)" : "Tagged Critical (SLA Banner = Exposure)",
             valColor: (dashData.globalCriticalCount || 0) > 0 ? "BE123C" : "475569",
             bg: (dashData.globalCriticalCount || 0) > 0 ? "FFF1F2" : "F8FAFC"
         }
@@ -965,7 +1115,8 @@ export const addExecutiveOverviewSlide = (
         fontSize: 7.5, bold: true, color: slaColor, fontFace: font, align: isArabic ? "right" : "left"
     });
 
-    // Formula Breakdown Box
+    // Formula Breakdown Box (Exact unrounded display matching rounded PPI score)
+    const ppiExact = computeExactPpiBreakdown(dashData.globalStats);
     slide.addShape(pres.ShapeType.roundRect, {
         x: 0.5, y: botY + 1.22, w: 2.8, h: 0.92,
         fill: { color: "F8FAFC" },
@@ -975,9 +1126,9 @@ export const addExecutiveOverviewSlide = (
         x: 0.55, y: botY + 1.25, w: 2.7, h: 0.18,
         fontSize: 7, bold: true, color: "475569", fontFace: font, align: isArabic ? "right" : "left"
     });
-    slide.addText(`• P1 (Approval Penalty - 35%): -${dashData.healthData.breakdown.approvalPenalty}\n• P2 (Overdue Ratio - 35%): -${dashData.healthData.breakdown.pendingOverduePenalty}\n• P3 (Overdue Density - 30%): -${dashData.healthData.breakdown.overdueDensityPenalty}`, {
-        x: 0.55, y: botY + 1.43, w: 2.7, h: 0.65,
-        fontSize: 6.5, color: "64748B", fontFace: font
+    slide.addText(`• P1 (Approval Penalty - 35%): -${ppiExact.approvalPenaltyExact.toFixed(1)}\n• P2 (Overdue Ratio - 35%): -${ppiExact.pendingOverduePenaltyExact.toFixed(1)}\n• P3 (Overdue Density - 30%): -${ppiExact.overdueDensityPenaltyExact.toFixed(1)}\n• Score: 100 - ${(ppiExact.approvalPenaltyExact + ppiExact.pendingOverduePenaltyExact + ppiExact.overdueDensityPenaltyExact).toFixed(1)} = ${ppiExact.rawScore.toFixed(1)} -> ${dashData.healthData.score}/100`, {
+        x: 0.55, y: botY + 1.43, w: 2.7, h: 0.68,
+        fontSize: 6.2, color: "64748B", fontFace: font
     });
 
     // Right Observations Panel
@@ -1107,7 +1258,7 @@ export const addChartsAndBottlenecksSlide = (
         fill: { color: "FFF5F5" },
         line: { color: "FECDD3", width: 1 }
     });
-    slide.addText(isArabic ? "أكبر 5 مستندات معلقة متأخرة والمسؤول عنها (بؤر التكدس الحرجة):" : "TOP CRITICAL OVERDUE BOTTLENECKS & ACTION OWNERS:", {
+    slide.addText(isArabic ? "أكبر 5 معاملات نشطة متأخرة والمسؤول عنها (بؤر التكدس الحرجة):" : "TOP CRITICAL OVERDUE BOTTLENECKS & ACTION OWNERS:", {
         x: 0.5, y: 3.35, w: 9.0, h: 0.25,
         fontSize: 8.5, bold: true, color: "BE123C", fontFace: font, align: isArabic ? "right" : "left"
     });
@@ -1131,7 +1282,7 @@ export const addChartsAndBottlenecksSlide = (
         tableRows.push(headers);
 
         dashData.topOverdueItems.forEach((item, idx) => {
-            const responsible = item.workflowStage === 'Pending'
+            const responsible = getStatusCodeCategory(item) === 'PENDING'
                 ? (item.consultant || projectInfo?.consultantName || (isArabic ? 'الاستشاري المشرف' : 'Consultant'))
                 : (item.contractor || projectInfo?.contractorName || (isArabic ? 'المقاول الرئيسي' : 'Contractor'));
             const isEven = idx % 2 === 1;

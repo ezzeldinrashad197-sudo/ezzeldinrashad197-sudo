@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { SubmittalRow, ProjectSettings } from "./types";
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType, processRevisionEngine, getDocumentIdentityKey } from "./utils/calculations";
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getClosedOpenByDocType, processRevisionEngine, getDocumentIdentityKey, getStatusCodeCategory } from "./utils/calculations";
 import { isEntityOverdue } from "./analytics/calculationFoundation";
+import { resolveSLAThresholdDays } from "./analytics/slaEngine";
 import { extractRevisionRaw, isRevision0, isFurtherRevision } from "./analytics/revisionResolver";
 import { processNCRData, compileCanonicalNCRPresentationStats } from "./analytics/ncr/ncrEngine";
 import { resolveUniqueSubmittalStats, resolveOfficialSubmittalRegister, isOfficialSubmittalPopulationRow, isExcludedRow } from "./analytics/managementReportOutput";
 import { generateDisciplineReconciliationReport } from "./analytics/reconciliationEngine";
+import { compileStatsForBaseType as sharedCompileStatsForBaseType, computeTradeBreakdown } from "./analytics/exportHelpers";
 import { useLanguage } from "./utils/i18n";
 import {
   BarChart,
@@ -544,221 +546,26 @@ export default function Presentation({
   const [selectedView, setSelectedView] = useState<'all' | 'monthly' | 'cumulative' | 'registers' | 'appendices'>('all');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
-  // Helper compiler
+  // Helper compiler delegating directly to canonical shared SSOT compiler in exportHelpers.ts
   const compileStatsForBaseType = (dataset: SubmittalRow[], bt: string, monthlyStart?: string, fullDataset?: SubmittalRow[]) => {
-    if (bt === 'DOC') {
-      const docRows = dataset.filter(d => {
-        if (isExcludedRow(d)) return false;
-        const fam = resolveRowRegisterFamily(d);
-        if (fam === 'DOC') return true;
-        const reg = resolveRowRegister(d);
-        return reg.startsWith('DOC');
-      });
-
-      const subRegOrder = ['DOC-ARCH', 'DOC-MECH', 'DOC-ELEC', 'DOC-GENERAL'];
-      const presentSubRegs = Array.from(new Set(docRows.map(d => resolveRowRegister(d)).filter(Boolean)));
-      const sortedSubRegs: string[] = [];
-      subRegOrder.forEach(sr => {
-        if (presentSubRegs.includes(sr)) sortedSubRegs.push(sr);
-      });
-      presentSubRegs.forEach(sr => {
-        if (!sortedSubRegs.includes(sr) && sr.startsWith('DOC')) sortedSubRegs.push(sr);
-      });
-
-      const stats = sortedSubRegs.map(subReg => {
-        const subData = docRows.filter(d => resolveRowRegister(d) === subReg);
-        const subStats = resolveUniqueSubmittalStats(subData, fullDataset || dataset);
-        const subTitle = getRegisterTitle(subReg, language);
-        const displayLabel = subReg === 'DOC-GENERAL' ? 'DOC-GEN' : subReg;
-        return {
-          discipline: displayLabel,
-          rawDiscipline: subReg,
-          label: subTitle.name || displayLabel,
-          TotalSubmittals: subStats.totalSubmittals,
-          CurrentUnique: subStats.totalSubmittals,
-          Items: subStats.totalSubmittals,
-          UniqueRev00: subStats.rev00,
-          UniqueFurtherRev: subStats.furtherRev,
-          Rev00: subStats.rev00,
-          FurtherRev: subStats.furtherRev,
-          TotalSheets: subStats.totalSheets,
-          Rev00Rows: subStats.rev00,
-          FurtherRevRows: subStats.furtherRev,
-          TotalRows: subStats.totalSheets,
-          Approved: subStats.approved,
-          RejectedOpen: subStats.rejectedOpen,
-          RejectedClosed: subStats.rejectedClosed,
-          Rejected: subStats.rejected,
-          Pending: subStats.pending,
-          Total: subStats.totalSheets,
-          Closed: subStats.approved + subStats.rejectedClosed,
-          Open: subStats.rejectedOpen + subStats.pending,
-        };
-      });
-
-      const totalRow = {
-        discipline: language === 'ar' ? "الإجمالي الكلي" : "TOTAL",
-        CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
-        Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
-        TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
-        TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
-        UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || curr.Rev00 || 0), 0),
-        UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || curr.FurtherRev || 0), 0),
-        Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
-        FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
-        TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
-        Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
-        FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
-        Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
-        RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
-        RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
-        Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
-        Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
-        Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
-        Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
-        Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
-      };
-
-      return { stats, totalRow, hasData: totalRow.Total > 0 || docRows.length > 0 };
-    }
-
-    const typeData = dataset.filter(d => {
-      if (isExcludedRow(d)) return false;
-      const fam = resolveRowRegisterFamily(d);
-      if (fam === bt) return true;
-      const reg = resolveRowRegister(d);
-      return reg === bt || reg.startsWith(`${bt}-`);
-    });
-    const sampleRow = typeData[0];
+    const sampleRow = dataset.find(d => !isExcludedRow(d) && resolveRowRegisterFamily(d) === bt);
     const family = resolveRegisterFamilyFromKey(bt, sampleRow);
-
-    if (family === 'NCR') {
-      const ncrFullSource = data && data.length > 0 ? data : (fullDataset && fullDataset.length > 0 ? fullDataset : dataset);
-      const sourceData = bt === 'NCR' ? ncrFullSource : ncrFullSource.filter(d => resolveRowRegisterFamily(d) === 'NCR');
-      const { stats, totalRow, hasData } = compileCanonicalNCRPresentationStats(sourceData, monthlyStart, endDate);
-      return { stats, totalRow, hasData };
-    }
-
-    let disciplinesInThisType: string[] = [];
-    if (family === 'LTR') {
-      disciplinesInThisType = Array.from(new Set(typeData.map(d => d.stakeholder || 'GENERAL')));
-    } else {
-      const parsedDisciplines = Array.from(new Set(typeData.map(d => resolveRowDiscipline(d, family)).filter(Boolean)));
-      const activeDisciplines = parsedDisciplines.filter(d => d !== 'UNCLASSIFIED' && d !== 'UNKNOWN');
-      const discOrder = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY', 'HSE', 'GEN'];
-
-      activeDisciplines.sort((a, b) => {
-        const idxA = discOrder.findIndex(d => d.toLowerCase() === a.toLowerCase());
-        const idxB = discOrder.findIndex(d => d.toLowerCase() === b.toLowerCase());
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b);
-      });
-
-      disciplinesInThisType = activeDisciplines.length > 0 ? activeDisciplines : ['General'];
-    }
-
-    const stats = disciplinesInThisType.map((disc) => {
-      const dData = typeData.filter((d) => {
-        const rDisc = resolveRowDiscipline(d, family);
-        return rDisc === disc;
-      });
-
-      const s = family === 'NCR' ? calculateNCRStats(dData, false) : (family === 'SOR' ? calculateSORStats(dData, false) : (family === 'LTR' ? calculateLTRStats(dData, false) : calculateStats(dData, fullDataset || dataset, endDate, projectInfo)));
-      const isMonthlyReport = !!monthlyStart;
-      const isSheetCountType = family === 'SDW' || family === 'SHD' || family === 'ABD';
-      const totalWorkload = s.totalSubmittedSheets ?? ((s.totalSheetsRev0 || 0) + (s.totalSheetsFurtherRev || 0));
-      const countForType = isSheetCountType || family === 'RFI'
-        ? totalWorkload 
-        : (isMonthlyReport 
-            ? totalWorkload
-            : (s.totalUniqueDrawings !== undefined ? s.totalUniqueDrawings : totalWorkload));
-
-      if (family !== 'NCR' && family !== 'SOR' && family !== 'LTR') {
-        const subStats = resolveUniqueSubmittalStats(dData, fullDataset || dataset);
-        const isRfi = family === 'RFI';
-        return {
-          discipline: disc,
-          // Official Management KPIs at Unique Submittal Grain (Total Submittals = Approved + Rejected + Pending):
-          TotalSubmittals: subStats.totalSubmittals,
-          CurrentUnique: subStats.totalSubmittals,
-          Items: subStats.totalSubmittals,
-          UniqueRev00: subStats.rev00,
-          UniqueFurtherRev: subStats.furtherRev,
-          // Raw Excel Row Grain (Rev.00 | Further Rev. | Total Sheets):
-          Rev00: subStats.rev00,
-          FurtherRev: subStats.furtherRev,
-          TotalSheets: subStats.totalSheets,
-          Rev00Rows: subStats.rev00,
-          FurtherRevRows: subStats.furtherRev,
-          TotalRows: subStats.totalSheets,
-          Approved: isRfi ? subStats.uniqueApproved : subStats.approved,
-          RejectedOpen: isRfi ? subStats.uniqueRejectedOpen : subStats.rejectedOpen,
-          RejectedClosed: isRfi ? subStats.uniqueRejectedClosed : subStats.rejectedClosed,
-          Rejected: isRfi ? subStats.uniqueRejected : subStats.rejected,
-          Pending: isRfi ? subStats.uniquePending : subStats.pending,
-          Unclassified: isRfi ? 0 : (subStats.unclassified || 0),
-          Total: countForType,
-          Closed: isRfi ? getClosedOpenByDocType(family, s).closed : (subStats.approved + subStats.rejectedClosed),
-          Open: isRfi ? getClosedOpenByDocType(family, s).open : (subStats.rejectedOpen + subStats.pending),
-        };
+    const effectiveFull = family === 'NCR'
+      ? (data && data.length > 0 ? data : (fullDataset && fullDataset.length > 0 ? fullDataset : dataset))
+      : (fullDataset && fullDataset.length > 0 ? fullDataset : dataset);
+    const res = sharedCompileStatsForBaseType(dataset, family, monthlyStart, effectiveFull, endDate);
+    const localizedStats = res.stats.map((row: any) => {
+      if (family === 'DOC' && row.rawDiscipline) {
+        const subTitle = getRegisterTitle(row.rawDiscipline, language);
+        return { ...row, label: subTitle.name || row.label || row.discipline };
       }
-
-      const curUniq = s.totalUniqueDrawings !== undefined
-        ? s.totalUniqueDrawings
-        : ((s.approved || 0) + (s.rejectedOpen || 0) + (s.rejectedClosed || 0) + (s.pending || 0));
-
-      return {
-        discipline: disc,
-        TotalSubmittals: curUniq,
-        CurrentUnique: curUniq,
-        Items: curUniq,
-        UniqueRev00: s.totalSheetsRev0 || 0,
-        UniqueFurtherRev: s.totalSheetsFurtherRev || 0,
-        Rev00: s.totalSheetsRev0 || 0,
-        FurtherRev: s.totalSheetsFurtherRev || 0,
-        TotalSheets: s.totalSubmittedSheets || 0,
-        Rev00Rows: s.totalSheetsRev0 || 0,
-        FurtherRevRows: s.totalSheetsFurtherRev || 0,
-        TotalRows: s.totalSubmittedSheets || 0,
-        Approved: s.approved,
-        RejectedOpen: s.rejectedOpen,
-        RejectedClosed: s.rejectedClosed,
-        Rejected: (s.rejectedOpen || 0) + (s.rejectedClosed || 0),
-        Pending: s.pending,
-        Unclassified: 0,
-        Total: countForType,
-        Closed: getClosedOpenByDocType(family, s).closed,
-        Open: getClosedOpenByDocType(family, s).open,
-      };
+      return row;
     });
-
-    const totalRow = {
-      discipline: "TOTAL",
-      CurrentUnique: stats.reduce((acc, curr) => acc + Number(curr.CurrentUnique || 0), 0),
-      Items: stats.reduce((acc, curr) => acc + Number(curr.Items || 0), 0),
-      TotalSubmittals: stats.reduce((acc, curr) => acc + Number(curr.TotalSubmittals || 0), 0),
-      TotalSheets: stats.reduce((acc, curr) => acc + Number((curr as any).TotalSheets || curr.TotalRows || 0), 0),
-      UniqueRev00: stats.reduce((acc, curr) => acc + Number(curr.UniqueRev00 || curr.Rev00 || 0), 0),
-      UniqueFurtherRev: stats.reduce((acc, curr) => acc + Number(curr.UniqueFurtherRev || curr.FurtherRev || 0), 0),
-      Rev00Rows: stats.reduce((acc, curr) => acc + Number(curr.Rev00Rows || 0), 0),
-      FurtherRevRows: stats.reduce((acc, curr) => acc + Number(curr.FurtherRevRows || 0), 0),
-      TotalRows: stats.reduce((acc, curr) => acc + Number(curr.TotalRows || 0), 0),
-      Rev00: stats.reduce((acc, curr) => acc + Number(curr.Rev00), 0),
-      FurtherRev: stats.reduce((acc, curr) => acc + Number(curr.FurtherRev), 0),
-      Approved: stats.reduce((acc, curr) => acc + Number(curr.Approved), 0),
-      RejectedOpen: stats.reduce((acc, curr) => acc + Number(curr.RejectedOpen), 0),
-      RejectedClosed: stats.reduce((acc, curr) => acc + Number(curr.RejectedClosed), 0),
-      Rejected: stats.reduce((acc, curr) => acc + Number(curr.Rejected || 0), 0),
-      Pending: stats.reduce((acc, curr) => acc + Number(curr.Pending), 0),
-      Unclassified: stats.reduce((acc, curr) => acc + Number((curr as any).Unclassified || 0), 0),
-      Total: stats.reduce((acc, curr) => acc + Number(curr.Total), 0),
-      Closed: stats.reduce((acc, curr) => acc + Number(curr.Closed), 0),
-      Open: stats.reduce((acc, curr) => acc + Number(curr.Open), 0),
+    const localizedTotal = {
+      ...res.totalRow,
+      label: language === 'ar' ? "الإجمالي الكلي" : "TOTAL"
     };
-
-    return { stats, totalRow, hasData: totalRow.Total > 0 || typeData.length > 0 };
+    return { stats: localizedStats, totalRow: localizedTotal, hasData: res.hasData };
   };
 
   const baseTypes = useMemo(() => {
@@ -982,35 +789,37 @@ export default function Presentation({
 
   // Appendices Data Compilation
   const pendingItems = useMemo(() => {
-    const seen = new Set<string>();
-    return cumulativeData
-      .filter(d => isEntityOverdue(d, endDate, projectInfo) && d.workflowStage === 'Pending' && !d.documentType?.includes('LTR'))
-      .filter(d => {
-        const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
-        if (seen.has(refKey)) return false;
-        seen.add(refKey);
-        return true;
-      })
+    const revMap = processRevisionEngine(
+      cumulativeData.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+      endDate
+    );
+    return Array.from(revMap.values())
+      .map(g => g.latest)
+      .filter(d => getStatusCodeCategory(d) === 'PENDING' && isEntityOverdue(d, endDate, projectInfo))
       .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
-  }, [cumulativeData]);
+  }, [cumulativeData, endDate, projectInfo]);
 
   const rejectedItems = useMemo(() => {
+    const latestRevMap = processRevisionEngine(
+      cumulativeData.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+      endDate
+    );
     const seen = new Set<string>();
     return cumulativeData
-      .filter(d => d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+      .filter(d => !isExcludedRow(d) && d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
       .filter(d => {
         const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
         if (seen.has(refKey)) return false;
         seen.add(refKey);
         return true;
       })
-      .sort((a, b) => {
-        const aOverdue = isEntityOverdue(a, endDate, projectInfo) ? 1 : 0;
-        const bOverdue = isEntityOverdue(b, endDate, projectInfo) ? 1 : 0;
-        if (bOverdue !== aOverdue) return bOverdue - aOverdue;
-        return (b.delayDays || 0) - (a.delayDays || 0);
-      });
-  }, [cumulativeData]);
+      .map(d => {
+        const latestGroup = latestRevMap.get(getDocumentIdentityKey(d));
+        const latestCat = latestGroup ? getStatusCodeCategory(latestGroup.latest) : getStatusCodeCategory(d);
+        return Object.assign({}, d, { _isCurrentlyActiveOpen: latestCat === 'REJECTED_OPEN' });
+      })
+      .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
+  }, [cumulativeData, endDate]);
 
   const pendingPages = useMemo(() => {
     const pages = [];
@@ -1050,7 +859,7 @@ export default function Presentation({
         </div>
         <div className="w-full h-8 flex items-center justify-between px-12 shrink-0" style={{ backgroundColor: primaryColor, color: 'white', fontSize: '10px' }}>
           <div>[{pInfo.projectName}] | {language === 'ar' ? 'التحكم بالمستندات' : 'Document Control'} | [{new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}]</div>
-          <div className="text-[9px] text-[#cbd5e1]">{language === 'ar' ? 'تدقيق مستقل - دقة تقريبية' : 'INDEPENDENT AUDIT ENGINE - APPROXIMATE ACCURACY'}</div>
+          <div className="text-[9px] text-[#cbd5e1]">{language === 'ar' ? 'محرك التدقيق المستقل — تطابق معياري 100%' : 'INDEPENDENT AUDIT ENGINE — 100% RECONCILED'}</div>
           <div>{language === 'ar' ? 'سري وخاص' : 'CONFIDENTIAL'}</div>
         </div>
       </div>
@@ -1313,7 +1122,7 @@ export default function Presentation({
               <div className="p-6 rounded-xl border flex flex-col justify-between h-36 shadow-sm" style={{ backgroundColor: `${primaryColor}15`, borderColor: `${primaryColor}30` }}>
                 <span className="text-xs font-bold tracking-wider uppercase" style={{ color: primaryColor }}>{language === 'ar' ? 'إجمالي المعاملات' : 'Total Processed'}</span>
                 <span className="text-4xl font-extrabold" style={{ color: primaryColor }}>{overallMonthlyStats.total}</span>
-                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'خلال الشهر الجاري' : 'Current month records'}</span>
+                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'خلال الشهر الجاري — كافة السجلات' : 'Current month rows (All Registers)'}</span>
               </div>
               <div className="bg-[#e2f0d9] p-6 rounded-xl border border-emerald-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-emerald-800 tracking-wider uppercase">{language === 'ar' ? 'نسبة الموافقات' : 'Quality Approval'}</span>
@@ -1497,29 +1306,7 @@ export default function Presentation({
     }
 
     if (selectedComposerSections.has('monthly_trade_analysis')) {
-      const monthlyTrades = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'].map(trade => {
-        const tRows = monthlyData.filter(d => {
-          const reg = resolveRowRegister(d);
-          const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
-          return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
-        });
-        const s = calculateStats(tRows, monthlyData, endDate, projectInfo);
-        const subStats = resolveUniqueSubmittalStats(tRows, monthlyData);
-        return {
-          trade,
-          uniqueRev00: s.totalSubmittalsRev0 || 0,
-          uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
-          rev00Rows: subStats.rev00,
-          furtherRevRows: subStats.furtherRev,
-          totalRows: subStats.totalSheets,
-          approved: subStats.approved,
-          rejected: subStats.rejected,
-          pending: subStats.pending,
-          unclassified: subStats.unclassified || 0,
-          active: subStats.rejectedOpen + subStats.pending,
-          count: tRows.length
-        };
-      }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+      const monthlyTrades = computeTradeBreakdown(monthlyData, monthlyReferenceData, endDate, projectInfo);
 
       const hasMonthlyUnclassified = monthlyTrades.some(t => (t.unclassified || 0) > 0);
 
@@ -1886,7 +1673,7 @@ export default function Presentation({
               <div className="p-6 rounded-xl border flex flex-col justify-between h-36 shadow-sm" style={{ backgroundColor: `${primaryColor}15`, borderColor: `${primaryColor}30` }}>
                 <span className="text-xs font-bold tracking-wider uppercase" style={{ color: primaryColor }}>{language === 'ar' ? 'إجمالي التقديمات التراكمية' : 'Lifetime Processed'}</span>
                 <span className="text-4xl font-extrabold" style={{ color: primaryColor }}>{overallCumulativeStats.total}</span>
-                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'منذ تاريخ تأسيس المشروع' : 'Total project history'}</span>
+                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'بنود فريدة حالية — كافة السجلات' : 'Unique current items (All Registers)'}</span>
               </div>
               <div className="bg-[#e2f0d9] p-6 rounded-xl border border-emerald-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-emerald-800 tracking-wider uppercase">{language === 'ar' ? 'معدل الموافقات العام' : 'Lifetime Quality Index'}</span>
@@ -1896,7 +1683,7 @@ export default function Presentation({
               <div className="bg-[#fce4d6] p-6 rounded-xl border border-red-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-red-800 tracking-wider uppercase">{language === 'ar' ? 'المرفوضات النشطة' : 'Active Rejections'}</span>
                 <span className="text-4xl font-extrabold text-red-700">{overallCumulativeStats.rejectedOpen}</span>
-                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'تنتظر إعادة التقديم' : 'Overdue open rejections'}</span>
+                <span className="text-[10px] text-slate-500 font-medium">{language === 'ar' ? 'تنتظر إعادة التقديم' : 'Awaiting contractor resubmission'}</span>
               </div>
               <div className="bg-[#fff2cc] p-6 rounded-xl border border-amber-200 flex flex-col justify-between h-36 shadow-sm">
                 <span className="text-xs font-bold text-amber-800 tracking-wider uppercase">{language === 'ar' ? 'معدل الالتزام التراكمي' : 'Lifetime SLA Ratio'}</span>
@@ -2070,29 +1857,7 @@ export default function Presentation({
     }
 
     if (selectedComposerSections.has('cumulative_trade_analysis')) {
-      const cumulativeTrades = ['STR', 'Arch', 'Mech', 'Elec', 'Infra', 'Landscape', 'SURVEY'].map(trade => {
-        const tRows = cumulativeData.filter(d => {
-          const reg = resolveRowRegister(d);
-          const disc = (resolveRowDiscipline(d, reg) || '').toUpperCase();
-          return disc === trade.toUpperCase() || (d.trade || '').toUpperCase().startsWith(trade.toUpperCase());
-        });
-        const s = calculateStats(tRows, cumulativeData, endDate, projectInfo);
-        const subStats = resolveUniqueSubmittalStats(tRows, cumulativeData);
-        return {
-          trade,
-          uniqueRev00: s.totalSubmittalsRev0 || 0,
-          uniqueFurtherRev: s.totalSubmittalsFurtherRev || 0,
-          rev00Rows: subStats.rev00,
-          furtherRevRows: subStats.furtherRev,
-          totalRows: subStats.totalSheets,
-          approved: subStats.approved,
-          rejected: subStats.rejected,
-          pending: subStats.pending,
-          unclassified: subStats.unclassified || 0,
-          active: subStats.rejectedOpen + subStats.pending,
-          count: tRows.length
-        };
-      }).filter(t => t.count > 0 || ['STR', 'Arch', 'Mech', 'Elec'].includes(t.trade));
+      const cumulativeTrades = computeTradeBreakdown(cumulativeData, data, endDate, projectInfo);
 
       const hasCumulativeUnclassified = cumulativeTrades.some(t => (t.unclassified || 0) > 0);
 
@@ -2592,7 +2357,17 @@ export default function Presentation({
                         <td className="border border-[#cbd5e1] px-2 font-bold text-[#7a1515] whitespace-nowrap">{row.documentType}</td>
                         {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px] whitespace-nowrap">{row.docNo || '-'}</td>}
                         {showTradeCol && <td className="border border-[#cbd5e1] px-2 whitespace-nowrap">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">{row.delayDays ? (language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`) : (language === 'ar' ? 'بانتظار إعادة التقديم' : 'Awaiting Resubmission')}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">
+                          {(() => {
+                            const isActive = Boolean((row as any)._isCurrentlyActiveOpen);
+                            const tag = isActive
+                              ? (language === 'ar' ? 'مرفوض مفتوح نشط' : 'Active Open')
+                              : (language === 'ar' ? 'حدث تاريخي (مغلق/محدّث)' : 'Historical (Later Resolved)');
+                            return row.delayDays
+                              ? (language === 'ar' ? `${tag} — ${row.delayDays} يوم` : `${tag} — ${row.delayDays}d`)
+                              : tag;
+                          })()}
+                        </td>}
                       </tr>
                     ))}
                   </tbody>
@@ -2651,7 +2426,7 @@ export default function Presentation({
                         <td className="border border-[#cbd5e1] px-2 font-bold text-[#203864] whitespace-nowrap" style={{ color: primaryColor }}>{row.documentType}</td>
                         {showRefCol && <td className="border border-[#cbd5e1] px-2 font-mono text-[10px] truncate max-w-[150px] whitespace-nowrap">{row.docNo || '-'}</td>}
                         {showTradeCol && <td className="border border-[#cbd5e1] px-2 whitespace-nowrap">{getDiscName(row.trade, language) || '-'}</td>}
-                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">{language === 'ar' ? `متأخر لـ ${row.delayDays} يوم` : `Overdue by ${row.delayDays} days`}</td>}
+                        {showRemarksCol && <td className="border border-[#cbd5e1] px-2 text-red-600 font-medium whitespace-nowrap">{language === 'ar' ? `متأخر (${row.delayDays} يوم منقضٍ عن SLA ${resolveSLAThresholdDays(row, projectInfo)}ي)` : `${row.delayDays}d elapsed (past ${resolveSLAThresholdDays(row, projectInfo)}d SLA)`}</td>}
                       </tr>
                     ))}
                   </tbody>

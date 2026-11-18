@@ -1,6 +1,17 @@
 import { SubmittalRow, ProjectSettings } from '../types';
-import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline } from '../utils/calculations';
-import { calculateExecutiveDashboardData, compileStatsForBaseType, getRegisterTitle } from './exportHelpers';
+import { calculateStats, calculateNCRStats, calculateSORStats, calculateLTRStats, resolveRowDiscipline, getDocumentIdentityKey, getStatusCodeCategory, processRevisionEngine } from '../utils/calculations';
+import { isEntityOverdue } from './calculationFoundation';
+import { resolveSLAThresholdDays } from './slaEngine';
+import { isExcludedRow } from './managementReportOutput';
+import {
+  calculateExecutiveDashboardData,
+  compileStatsForBaseType,
+  computeExactPpiBreakdown,
+  computeTradeBreakdown,
+  ExecutiveDashboardData,
+  getRegisterTitle,
+  TradeBreakdownRow
+} from './exportHelpers';
 import { calculateTableLayout, getCanonicalHeader, TableLayoutResult } from './presentationLayoutEngine';
 
 export interface DisciplineMetricRow {
@@ -15,6 +26,7 @@ export interface DisciplineMetricRow {
   RejectedClosed: number;
   Rejected: number;
   Pending: number;
+  Unclassified?: number;
   Superseded: number;
   CurrentUnique: number;
   Total?: number;
@@ -44,6 +56,105 @@ export interface RegisterViewModel {
   };
 }
 
+export interface ExecutivePeriodSnapshot {
+  totalHistoricalRows: number;
+  totalUniqueItems: number;
+  supersededRows: number;
+  rev00Rows: number;
+  furtherRevRows: number;
+  approved: number;
+  rejectedOpen: number;
+  rejectedClosed: number;
+  totalRejected: number;
+  pending: number;
+  activeItems: number;
+  approvalRate: number;
+  overdueCount: number;
+  overduePending: number;
+  overdueRejectedOpen: number;
+  overdueRateOnActive: number;
+  avgDelay: number;
+  healthScore: number;
+  healthRating: string;
+  criticalPriorityCount: number;
+  ppiBreakdown: {
+    approvalPenaltyExact: number;
+    pendingOverduePenaltyExact: number;
+    overdueDensityPenaltyExact: number;
+    rawScore: number;
+    roundedScore: number;
+  };
+  executiveSummaryBrief: { en: string; ar: string };
+  statusDistribution: {
+    status: string;
+    labelEn: string;
+    labelAr: string;
+    count: number;
+    percentage: number;
+    color: string;
+  }[];
+  topOverdueItems: {
+    docNo: string;
+    documentType: string;
+    discipline: string;
+    delayDays: number;
+    actionOwner: string;
+    submissionDate: string;
+    statusCategory: string;
+  }[];
+  recommendations: {
+    id: string;
+    en: string;
+    ar: string;
+    priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    action: string;
+    actionAr: string;
+  }[];
+}
+
+export interface PrimaryDetailTableData {
+  layout: TableLayoutResult;
+  headers: { key: string; label: string }[];
+  rows: {
+    documentType: string;
+    priority: string;
+    criticalCount: number;
+    rev00Rows: number;
+    furtherRevRows: number;
+    totalRows: number;
+    uniqueRev00: number;
+    uniqueFurtherRev: number;
+    totalUnique: number;
+    approved: number;
+    rejectedOpen: number;
+    rejectedClosed: number;
+    pending: number;
+    superseded: number;
+    rowAppClosed: number;
+    rowRejOpen: number;
+    rowPending: number;
+  }[];
+  totalRow: {
+    documentType: string;
+    priority: string;
+    criticalCount: number;
+    rev00Rows: number;
+    furtherRevRows: number;
+    totalRows: number;
+    uniqueRev00: number;
+    uniqueFurtherRev: number;
+    totalUnique: number;
+    approved: number;
+    rejectedOpen: number;
+    rejectedClosed: number;
+    pending: number;
+    superseded: number;
+    rowAppClosed: number;
+    rowRejOpen: number;
+    rowPending: number;
+  };
+}
+
 export interface PresentationViewModel {
   metadata: {
     title: string;
@@ -51,6 +162,7 @@ export interface PresentationViewModel {
     projectName: string;
     contractorName: string;
     consultantName: string;
+    slaDays: number;
     dateStr: string;
     primaryColor: string;
     accentColor: string;
@@ -58,74 +170,38 @@ export interface PresentationViewModel {
     isArabic: boolean;
     mode: 'monthly' | 'cumulative' | 'presentation';
   };
-  executiveOverview: {
-    totalHistoricalRows: number;
-    totalUniqueItems: number;
-    supersededRows: number;
-    approved: number;
-    rejectedOpen: number;
-    rejectedClosed: number;
-    totalRejected: number;
-    pending: number;
-    activeItems: number;
-    approvalRate: number;
-    overdueCount: number;
-    overdueRateOnActive: number;
-    avgDelay: number;
-    healthScore: number;
-    executiveSummaryBrief: { en: string; ar: string };
-    statusDistribution: {
-      status: string;
-      labelEn: string;
-      labelAr: string;
-      count: number;
-      percentage: number;
-      color: string;
-    }[];
-  };
-  primaryDetailBreakdown: {
-    layout: TableLayoutResult;
-    headers: { key: string; label: string }[];
-    rows: {
-      documentType: string;
-      priority: string;
-      criticalCount: number;
-      rev00Rows: number;
-      furtherRevRows: number;
-      totalRows: number;
-      uniqueRev00: number;
-      uniqueFurtherRev: number;
-      totalUnique: number;
-      approved: number;
-      rejectedOpen: number;
-      rejectedClosed: number;
-      pending: number;
-      superseded: number;
-      rowAppClosed: number;
-      rowRejOpen: number;
-      rowPending: number;
-    }[];
-    totalRow: {
-      documentType: string;
-      priority: string;
-      criticalCount: number;
-      rev00Rows: number;
-      furtherRevRows: number;
-      totalRows: number;
-      uniqueRev00: number;
-      uniqueFurtherRev: number;
-      totalUnique: number;
-      approved: number;
-      rejectedOpen: number;
-      rejectedClosed: number;
-      pending: number;
-      superseded: number;
-      rowAppClosed: number;
-      rowRejOpen: number;
-      rowPending: number;
-    };
+  executiveOverview: ExecutivePeriodSnapshot;
+  monthlyExecutiveOverview?: ExecutivePeriodSnapshot;
+  cumulativeExecutiveOverview?: ExecutivePeriodSnapshot;
+  primaryDetailBreakdown: PrimaryDetailTableData;
+  monthlyPrimaryDetailBreakdown?: PrimaryDetailTableData;
+  cumulativePrimaryDetailBreakdown?: PrimaryDetailTableData;
+  tradeAnalysis: {
+    monthly: TradeBreakdownRow[];
+    cumulative: TradeBreakdownRow[];
   };
   registers: RegisterViewModel[];
+  appendices: {
+    pendingItems: {
+      docNo: string;
+      documentType: string;
+      trade: string;
+      rev: string;
+      delayDays: number;
+      submissionDate: string;
+      remarks: string;
+    }[];
+    rejectedItems: {
+      docNo: string;
+      documentType: string;
+      trade: string;
+      rev: string;
+      delayDays: number;
+      isCurrentlyActiveOpen: boolean;
+      submissionDate: string;
+      remarks: string;
+    }[];
+  };
   recommendations: {
     id: string;
     en: string;
@@ -137,36 +213,13 @@ export interface PresentationViewModel {
   rawDataset: SubmittalRow[];
 }
 
-/**
- * Builds the SSOT PresentationViewModel used identically by PPTX and PDF renderers.
- */
-export function buildPresentationViewModel(
-  data: SubmittalRow[],
+function buildSnapshotFromDash(
+  dashData: ExecutiveDashboardData,
   projectInfo: ProjectSettings | null,
-  modeOrOptions: 'monthly' | 'cumulative' | 'presentation' | any = 'presentation',
-  options?: any
-): PresentationViewModel {
-  const mode: 'monthly' | 'cumulative' | 'presentation' = (typeof modeOrOptions === 'string' && (modeOrOptions === 'monthly' || modeOrOptions === 'cumulative')) ? modeOrOptions : 'presentation';
-  const opts = typeof modeOrOptions === 'object' && modeOrOptions !== null ? modeOrOptions : (options || {});
-  const isArabic = !!opts?.arabicEnabled;
-  const fontFace = opts?.fontFace || "Arial";
-  const primaryColor = opts?.primaryColor ? opts.primaryColor.replace('#', '') : "203864";
-  const accentColor = opts?.accentColor ? opts.accentColor.replace('#', '') : "EAB308";
-
-  // Date Filters
-  const monthlyStart = opts?.monthlyStart || opts?.startDate;
-  const cutoffDate = opts?.monthlyEnd || opts?.endDate || opts?.cutoffDate;
-  const isMonthlyRow = (r: SubmittalRow) => !monthlyStart || !r.submissionDate || r.submissionDate >= monthlyStart;
-  const monthlyData = data.filter(isMonthlyRow);
-  const cumulativeData = data;
-
-  const activeDataset = mode === 'monthly' ? monthlyData : cumulativeData;
-
-  // 1. Executive Dashboard Data
-  const dashData = calculateExecutiveDashboardData(activeDataset, data, mode === 'monthly', isArabic ? 'ar' : 'en', cutoffDate);
+  isArabic: boolean
+): ExecutivePeriodSnapshot {
   const globalStats = dashData.globalStats;
-
-  const totalHistoricalRows = globalStats.totalSubmittedSheets || activeDataset.length;
+  const totalHistoricalRows = globalStats.totalSubmittedSheets || 0;
   const totalUniqueItems = globalStats.totalUniqueDrawings || totalHistoricalRows;
   const supersededRows = Math.max(0, totalHistoricalRows - totalUniqueItems);
 
@@ -180,9 +233,9 @@ export function buildPresentationViewModel(
   const overdueCount = globalStats.overdue || 0;
   const overdueRateOnActive = activeItems > 0 ? (overdueCount / activeItems) * 100 : 0;
   const avgDelay = globalStats.avgResponseTime || 0;
-  const healthScore = dashData.healthData?.score || 85;
+  const healthScore = dashData.healthData?.score ?? 85;
+  const ppiBreakdown = computeExactPpiBreakdown(globalStats);
 
-  // Status Distribution Array
   const statusDistribution = [
     {
       status: 'APPROVED',
@@ -226,7 +279,58 @@ export function buildPresentationViewModel(
     }
   ];
 
-  // 2. Primary Detail Breakdown Table (Slide 8/13)
+  const topOverdueItems = (dashData.topOverdueItems || []).map(item => {
+    const cat = getStatusCodeCategory(item);
+    const actionOwner = cat === 'PENDING'
+      ? (item.consultant || projectInfo?.consultantName || (isArabic ? 'الاستشاري المشرف' : 'Consultant'))
+      : (item.contractor || projectInfo?.contractorName || (isArabic ? 'المقاول الرئيسي' : 'Contractor'));
+    return {
+      docNo: item.docNo || '-',
+      documentType: item.documentType || '-',
+      discipline: item.trade || item.discipline || 'General',
+      delayDays: item.delayDays || 0,
+      actionOwner,
+      submissionDate: item.submissionDate || '-',
+      statusCategory: cat
+    };
+  });
+
+  return {
+    totalHistoricalRows,
+    totalUniqueItems,
+    supersededRows,
+    rev00Rows: globalStats.totalSheetsRev0 || 0,
+    furtherRevRows: globalStats.totalSheetsFurtherRev || 0,
+    approved,
+    rejectedOpen,
+    rejectedClosed,
+    totalRejected,
+    pending,
+    activeItems,
+    approvalRate,
+    overdueCount,
+    overduePending: globalStats.overduePending ?? 0,
+    overdueRejectedOpen: globalStats.overdueRejectedOpen ?? 0,
+    overdueRateOnActive,
+    avgDelay,
+    healthScore,
+    healthRating: dashData.healthData?.rating || 'STABLE',
+    criticalPriorityCount: dashData.globalCriticalCount || 0,
+    ppiBreakdown,
+    executiveSummaryBrief: dashData.executiveSummaryBrief,
+    statusDistribution,
+    topOverdueItems,
+    recommendations: (dashData.priorityRecommendations || []).map((rec: any) => ({
+      ...rec,
+      priority: (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(rec.priority) ? rec.priority : 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+    }))
+  };
+}
+
+function buildDetailBreakdownFromDash(
+  dashData: ExecutiveDashboardData,
+  isArabic: boolean
+): PrimaryDetailTableData {
   const detailHeaders = [
     { key: 'documentType', label: 'Log Type' },
     { key: 'priority', label: 'Priority' },
@@ -323,9 +427,69 @@ export function buildPresentationViewModel(
     rowPending: sumRowPending
   };
 
+  return {
+    layout: detailLayout,
+    headers: detailHeaders,
+    rows: detailRows,
+    totalRow: detailTotalRow
+  };
+}
+
+/**
+ * Builds the SSOT PresentationViewModel used identically by PPTX and PDF renderers.
+ */
+export function buildPresentationViewModel(
+  data: SubmittalRow[],
+  projectInfo: ProjectSettings | null,
+  modeOrOptions: 'monthly' | 'cumulative' | 'presentation' | any = 'presentation',
+  options?: any
+): PresentationViewModel {
+  const mode: 'monthly' | 'cumulative' | 'presentation' = (typeof modeOrOptions === 'string' && (modeOrOptions === 'monthly' || modeOrOptions === 'cumulative')) ? modeOrOptions : 'presentation';
+  const opts = typeof modeOrOptions === 'object' && modeOrOptions !== null ? modeOrOptions : (options || {});
+  const isArabic = !!opts?.arabicEnabled;
+  const fontFace = opts?.fontFace || "Arial";
+  const primaryColor = opts?.primaryColor ? opts.primaryColor.replace('#', '') : "203864";
+  const accentColor = opts?.accentColor ? opts.accentColor.replace('#', '') : "EAB308";
+
+  // Date Filters — enforce BOTH start lower bound and cutoff upper bound consistently
+  const monthlyStart = opts?.monthlyStart || opts?.startDate;
+  const cutoffDate = opts?.monthlyEnd || opts?.endDate || opts?.cutoffDate;
+  const isMonthlyRow = (r: SubmittalRow) => {
+    if (monthlyStart && r.submissionDate && r.submissionDate < monthlyStart) return false;
+    if (cutoffDate && r.submissionDate && r.submissionDate > cutoffDate) return false;
+    return true;
+  };
+  const monthlyData = data.filter(isMonthlyRow);
+  const cumulativeData = cutoffDate
+    ? data.filter(r => !r.submissionDate || r.submissionDate <= cutoffDate)
+    : data;
+
+  const activeDataset = mode === 'monthly' ? monthlyData : cumulativeData;
+
+  // 1. Executive Dashboard Data (passing projectInfo consistently for SLA accuracy)
+  const monthlyDashData = calculateExecutiveDashboardData(monthlyData, data, true, isArabic ? 'ar' : 'en', cutoffDate, projectInfo);
+  const cumulativeDashData = calculateExecutiveDashboardData(cumulativeData, data, false, isArabic ? 'ar' : 'en', cutoffDate, projectInfo);
+  const dashData = mode === 'monthly' ? monthlyDashData : cumulativeDashData;
+
+  const monthlyExecutiveOverview = buildSnapshotFromDash(monthlyDashData, projectInfo, isArabic);
+  const cumulativeExecutiveOverview = buildSnapshotFromDash(cumulativeDashData, projectInfo, isArabic);
+  const executiveOverview = mode === 'monthly' ? monthlyExecutiveOverview : cumulativeExecutiveOverview;
+
+  // 2. Primary Detail Breakdown Table (Slide 8/13)
+  const monthlyPrimaryDetailBreakdown = buildDetailBreakdownFromDash(monthlyDashData, isArabic);
+  const cumulativePrimaryDetailBreakdown = buildDetailBreakdownFromDash(cumulativeDashData, isArabic);
+  const primaryDetailBreakdown = mode === 'monthly' ? monthlyPrimaryDetailBreakdown : cumulativePrimaryDetailBreakdown;
+
   // 3. Register-Level Models
   const baseTypesOrder = ['SDW', 'SHD', 'ABD', 'MAR', 'DOC', 'WIR', 'MIR', 'RFI', 'NCR', 'SOR', 'LTR'];
-  const presentBaseTypes = Array.from(new Set(data.map(d => (d.documentType || d.logType || 'DOC').split('-')[0].trim().toUpperCase())));
+  const presentBaseTypes = Array.from(new Set(data.map(d => {
+    if (d.workflowFamily && d.workflowFamily !== 'UNKNOWN') {
+      const wf = d.workflowFamily.toUpperCase();
+      return wf === 'LETTER' ? 'LTR' : (wf === 'SHD' ? 'SDW' : wf);
+    }
+    const dt = (d.documentType || d.logType || 'DOC').split('-')[0].trim().toUpperCase();
+    return dt === 'SHD' ? 'SDW' : dt;
+  })));
   const sortedBaseTypes = baseTypesOrder.filter(bt => presentBaseTypes.includes(bt));
   presentBaseTypes.forEach(bt => {
     if (!sortedBaseTypes.includes(bt) && bt !== 'UNKNOWN' && bt !== 'UNCLASSIFIED') sortedBaseTypes.push(bt);
@@ -335,7 +499,6 @@ export function buildPresentationViewModel(
     const regTitle = getRegisterTitle(bt, isArabic ? 'ar' : 'en');
     const isRevBased = bt !== 'LTR' && bt !== 'RFI' && bt !== 'NCR' && bt !== 'SOR';
 
-    // Canonical column definitions (Official Management Table: Status | Total Submittals | Rev.00 | Further Rev. | Total Sheets | Approved | Rejected | Pending)
     let cols = [
       { label: bt === 'DOC' ? (isArabic ? "السجل / التصنيف" : "Register") : (isArabic ? "التخصص الفني" : "Discipline"), key: "discipline" },
       { label: "Total Submittals", key: "TotalSubmittals" },
@@ -391,10 +554,9 @@ export function buildPresentationViewModel(
 
     const layout = calculateTableLayout(cols, 5.5, false, isArabic ? 'ar' : 'en');
 
-    // Chart Data (Raw Excel Row Grain matching Rev.00 Rows and Further Rev. Rows in the table)
     const chartVal1Label = bt === 'LTR' ? "Sent" : "Rev.00 Rows";
     const chartVal2Label = bt === 'LTR' ? "Received" : "Further Rev. Rows";
-    
+
     const mChartData = [
       {
         name: chartVal1Label,
@@ -421,13 +583,14 @@ export function buildPresentationViewModel(
       }
     ];
 
-    // Map each discipline row to include clean Superseded count
     const enrichStatsRows = (rows: any[]) => rows.map(r => {
-      const tRows = Number(r.TotalRows || r.Total || 0);
-      const curUniq = Number(r.TotalSubmittals || r.TotalUnique || (Number(r.Approved || 0) + Number(r.RejectedOpen || 0) + Number(r.RejectedClosed || 0) + Number(r.Pending || 0)));
+      const tRows = Number(r.TotalRows ?? r.TotalSheets ?? r.Total ?? 0);
+      const curUniq = Number(r.TotalSubmittals ?? r.CurrentUnique ?? r.TotalUnique ?? ((Number(r.Approved || 0) + Number(r.RejectedOpen || 0) + Number(r.RejectedClosed || 0) + Number(r.Pending || 0))));
       const superRows = Math.max(0, tRows - curUniq);
       return {
         ...r,
+        UniqueRev00: Number(r.UniqueRev00 ?? r.Rev00 ?? 0),
+        UniqueFurtherRev: Number(r.UniqueFurtherRev ?? r.FurtherRev ?? 0),
         Superseded: superRows,
         CurrentUnique: curUniq
       };
@@ -459,6 +622,68 @@ export function buildPresentationViewModel(
     };
   });
 
+  // 4. Trade Breakdown (Monthly & Cumulative)
+  const monthlyTrades = computeTradeBreakdown(monthlyData, data, cutoffDate, projectInfo);
+  const cumulativeTrades = computeTradeBreakdown(cumulativeData, data, cutoffDate, projectInfo);
+
+  // 5. Appendices (Pending Overdue on latest valid revision + Rejected Historical Events sorted monotonically)
+  const slaDays = projectInfo?.slaDays?.default ?? 14;
+  const activeRevMap = processRevisionEngine(
+    activeDataset.filter(d => !isExcludedRow(d) && !d.documentType?.includes('LTR')),
+    cutoffDate
+  );
+
+  const pendingItems = Array.from(activeRevMap.values())
+    .map(g => g.latest)
+    .filter(d => getStatusCodeCategory(d) === 'PENDING' && isEntityOverdue(d, cutoffDate, projectInfo))
+    .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0))
+    .map(row => {
+      const rowSla = resolveSLAThresholdDays(row, projectInfo);
+      return {
+        docNo: row.docNo || '-',
+        documentType: row.documentType || '-',
+        trade: row.trade || row.discipline || '-',
+        rev: row.rev || '00',
+        delayDays: row.delayDays || 0,
+        submissionDate: row.submissionDate || '-',
+        remarks: isArabic
+          ? `${row.delayDays || 0} يوم منقضٍ (متأخر عن SLA ${rowSla}ي)`
+          : `${row.delayDays || 0}d elapsed (past ${rowSla}d SLA)`
+      };
+    });
+
+  const seenRejectedRefs = new Set<string>();
+  const rejectedItems = activeDataset
+    .filter(d => !isExcludedRow(d) && d.workflowStage === 'Rejected' && !d.documentType?.includes('LTR'))
+    .filter(d => {
+      const refKey = (d.docNo || d.id || `${d.documentType}-${d.trade}-${d.rev}`).toUpperCase().trim();
+      if (seenRejectedRefs.has(refKey)) return false;
+      seenRejectedRefs.add(refKey);
+      return true;
+    })
+    .map(d => {
+      const latestGroup = activeRevMap.get(getDocumentIdentityKey(d));
+      const latestCat = latestGroup ? getStatusCodeCategory(latestGroup.latest) : getStatusCodeCategory(d);
+      const isCurrentlyActiveOpen = latestCat === 'REJECTED_OPEN';
+      const statusTag = isCurrentlyActiveOpen
+        ? (isArabic ? 'مرفوض مفتوح نشط' : 'Active Open')
+        : (isArabic ? 'حدث تاريخي (مغلق/محدّث)' : 'Historical (Later Resolved)');
+      const remark = d.delayDays
+        ? (isArabic ? `${statusTag} — ${d.delayDays} يوم` : `${statusTag} — ${d.delayDays}d`)
+        : statusTag;
+      return {
+        docNo: d.docNo || '-',
+        documentType: d.documentType || '-',
+        trade: d.trade || d.discipline || '-',
+        rev: d.rev || '00',
+        delayDays: d.delayDays || 0,
+        isCurrentlyActiveOpen,
+        submissionDate: d.submissionDate || '-',
+        remarks: remark
+      };
+    })
+    .sort((a, b) => (b.delayDays || 0) - (a.delayDays || 0));
+
   return {
     metadata: {
       title: isArabic ? "مراقبة وإدارة الوثائق الهندسية" : "ENGINEERING DOCUMENT CONTROL",
@@ -470,6 +695,7 @@ export function buildPresentationViewModel(
       projectName: projectInfo?.projectName || "STRUCTUSIGHT ENTERPRISE",
       contractorName: projectInfo?.contractorName || "MAIN CONTRACTOR",
       consultantName: projectInfo?.consultantName || "LEAD CONSULTANT",
+      slaDays,
       dateStr: new Date().toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
       primaryColor,
       accentColor,
@@ -477,31 +703,21 @@ export function buildPresentationViewModel(
       isArabic,
       mode
     },
-    executiveOverview: {
-      totalHistoricalRows,
-      totalUniqueItems,
-      supersededRows,
-      approved,
-      rejectedOpen,
-      rejectedClosed,
-      totalRejected,
-      pending,
-      activeItems,
-      approvalRate,
-      overdueCount,
-      overdueRateOnActive,
-      avgDelay,
-      healthScore,
-      executiveSummaryBrief: dashData.executiveSummaryBrief,
-      statusDistribution
-    },
-    primaryDetailBreakdown: {
-      layout: detailLayout,
-      headers: detailHeaders,
-      rows: detailRows,
-      totalRow: detailTotalRow
+    executiveOverview,
+    monthlyExecutiveOverview,
+    cumulativeExecutiveOverview,
+    primaryDetailBreakdown,
+    monthlyPrimaryDetailBreakdown,
+    cumulativePrimaryDetailBreakdown,
+    tradeAnalysis: {
+      monthly: monthlyTrades,
+      cumulative: cumulativeTrades
     },
     registers,
+    appendices: {
+      pendingItems,
+      rejectedItems
+    },
     recommendations: (dashData.priorityRecommendations || []).map((rec: any) => ({
       ...rec,
       priority: (rec.priority === 'HIGH' || rec.priority === 'LOW' ? rec.priority : 'MEDIUM') as 'HIGH' | 'MEDIUM' | 'LOW'

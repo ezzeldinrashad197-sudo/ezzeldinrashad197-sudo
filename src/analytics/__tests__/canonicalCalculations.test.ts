@@ -32,6 +32,7 @@ import {
   buildManagementReportOutput,
   resolveOfficialSubmittalRegister,
   resolveRowRegister,
+  resolveUniqueSubmittalStats,
   auditOfficialSourcePopulation,
   exportOfficialManagementReportXlsx
 } from '../managementReportOutput';
@@ -1276,6 +1277,40 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
     }
     if (audit.unaccountedRowsCount !== 0 || audit.otherDisciplineExcludedCount !== 0) {
       throw new Error(`Expected 0 unaccounted/excluded rows, got unaccounted=${audit.unaccountedRowsCount}, otherExcluded=${audit.otherDisciplineExcludedCount}`);
+    }
+
+    const landAudit = audit.canonicalRegisters.find(c => c.canonicalRegister === 'WIR-LANDSCAPE');
+    if (
+      !landAudit ||
+      landAudit.totalSubmittals !== 87 ||
+      landAudit.totalSheets !== 88 ||
+      landAudit.supersededRows !== 1 ||
+      landAudit.uniqueApproved !== 75 ||
+      landAudit.uniqueRejected !== 8 ||
+      landAudit.uniquePending !== 4 ||
+      landAudit.uniqueRejectedClosed !== 0 ||
+      landAudit.rowApproved !== 75 ||
+      landAudit.rowRejected !== 9 ||
+      landAudit.rowPending !== 4 ||
+      landAudit.rowUnclassified !== 0 ||
+      landAudit.formattedSummary !== '87 / 80 / 8 / 88 / 75 / 8 / 4' ||
+      landAudit.rowFormattedSummary !== '75 / 9 / 4 / 0'
+    ) {
+      throw new Error(`WIR-LANDSCAPE dual-grain audit mismatch: ${JSON.stringify(landAudit)}`);
+    }
+    if (
+      audit.grandTotal.totalSubmittals !== 160 ||
+      audit.grandTotal.totalSheets !== 161 ||
+      audit.grandTotal.supersededRows !== 1 ||
+      audit.grandTotal.uniqueApproved !== 148 ||
+      audit.grandTotal.uniqueRejected !== 8 ||
+      audit.grandTotal.uniquePending !== 4 ||
+      audit.grandTotal.rowApproved !== 148 ||
+      audit.grandTotal.rowRejected !== 9 ||
+      audit.grandTotal.rowPending !== 4 ||
+      audit.grandTotal.rowUnclassified !== 0
+    ) {
+      throw new Error(`Grand total dual-grain audit mismatch: ${JSON.stringify(audit.grandTotal)}`);
     }
 
     // Check Executive Dashboard / PDF / PPTX data builder uses the exact same canonical registers
@@ -2536,6 +2571,166 @@ export function runCanonicalCalculationTests(): { name: string; passed: boolean;
       ncrVm.cumulativeStats.totalRow.Pending !== 1
     ) {
       throw new Error(`PresentationViewModel (PDF/PPTX) NCR totalRow mismatch: ${JSON.stringify(ncrVm?.cumulativeStats.totalRow)}`);
+    }
+  });
+
+  test('ER-037 (Dual-Grain Contract): resolveUniqueSubmittalStats separates unique*/row* statuses, preserves aliases, handles uniqueRejectedClosed without double-counting, and isolates excluded rows from supersededRows', () => {
+    // 1. Direct WIR-LANDSCAPE 87 unique / 88 physical-row dual-grain verification
+    const landRows: SubmittalRow[] = [
+      {
+        id: 'DG-LND-1-R0',
+        registerIdentity: 'WIR',
+        discipline: 'Landscape',
+        disciplineCode: 'LND',
+        submissionRef: 'DG-LND-SUB-1',
+        docNo: 'DG-LND-DOC-1',
+        rev: '00',
+        status: 'REJECTED_OPEN',
+        submissionDate: '2026-08-12',
+        documentType: 'WIR-LANDSCAPE'
+      } as SubmittalRow,
+      {
+        id: 'DG-LND-1-R1',
+        registerIdentity: 'WIR',
+        discipline: 'Landscape',
+        disciplineCode: 'LND',
+        submissionRef: 'DG-LND-SUB-1',
+        docNo: 'DG-LND-DOC-1',
+        rev: '01',
+        status: 'APPROVED',
+        submissionDate: '2026-09-21',
+        documentType: 'WIR-LANDSCAPE'
+      } as SubmittalRow
+    ];
+    for (let i = 2; i <= 87; i++) {
+      const isFurther = i > 80;
+      const status = i <= 75 ? 'APPROVED' : i <= 83 ? 'REJECTED_OPEN' : 'PENDING';
+      landRows.push({
+        id: `DG-LND-${i}`,
+        registerIdentity: 'WIR',
+        discipline: 'Landscape',
+        disciplineCode: 'LND',
+        submissionRef: `DG-LND-SUB-${i}`,
+        docNo: `DG-LND-DOC-${i}`,
+        rev: isFurther ? '01' : '00',
+        status,
+        submissionDate: '2026-09-14',
+        documentType: 'WIR-LANDSCAPE'
+      } as SubmittalRow);
+    }
+
+    const landStats = resolveUniqueSubmittalStats(landRows, landRows);
+    if (
+      landStats.totalSubmittals !== 87 ||
+      landStats.rev00 !== 80 ||
+      landStats.furtherRev !== 8 ||
+      landStats.totalSheets !== 88 ||
+      landStats.supersededRows !== 1 ||
+      landStats.uniqueApproved !== 75 ||
+      landStats.uniqueRejected !== 8 ||
+      landStats.uniquePending !== 4 ||
+      landStats.uniqueApproved + landStats.uniqueRejected + landStats.uniquePending !== landStats.totalSubmittals ||
+      landStats.rowApproved !== 75 ||
+      landStats.rowRejected !== 9 ||
+      landStats.rowPending !== 4 ||
+      landStats.rowUnclassified !== 0 ||
+      landStats.rowApproved + landStats.rowRejected + landStats.rowPending + landStats.rowUnclassified !== landStats.totalSheets ||
+      // Top-level compatibility aliases remain on physical-row grain
+      landStats.approved !== landStats.rowApproved ||
+      landStats.rejected !== landStats.rowRejected ||
+      landStats.pending !== landStats.rowPending ||
+      landStats.unclassified !== landStats.rowUnclassified
+    ) {
+      throw new Error(`WIR-LANDSCAPE resolveUniqueSubmittalStats dual-grain mismatch: ${JSON.stringify(landStats)}`);
+    }
+
+    // 2. uniqueRejectedClosed non-double-counting + UNCLASSIFIED preservation + excluded row isolation
+    const edgeRows: SubmittalRow[] = [
+      // Submittal A: single Rev00 with Code C - Closed (REJECTED_CLOSED -> counted in uniqueApproved AND uniqueRejectedClosed sub-flag)
+      {
+        id: 'DG-EDGE-1',
+        registerIdentity: 'SDW',
+        discipline: 'STR',
+        submissionRef: 'SDW-STR-SUB-001',
+        docNo: 'SDW-STR-001',
+        rev: '00',
+        status: 'CLOSED',
+        code: 'C',
+        workflowStage: 'CLOSED',
+        documentType: 'SDW-STR'
+      } as SubmittalRow,
+      // Submittal B: Rev00 REJECTED_OPEN -> Rev01 blank/UNCLASSIFIED (latest UNCLASSIFIED resolves to uniquePending=1; row status keeps 1 REJECTED_OPEN + 1 UNCLASSIFIED)
+      {
+        id: 'DG-EDGE-2-R0',
+        registerIdentity: 'SDW',
+        discipline: 'STR',
+        submissionRef: 'SDW-STR-SUB-002',
+        docNo: 'SDW-STR-002',
+        rev: '00',
+        status: 'Code C',
+        code: 'C',
+        documentType: 'SDW-STR'
+      } as SubmittalRow,
+      {
+        id: 'DG-EDGE-2-R1',
+        registerIdentity: 'SDW',
+        discipline: 'STR',
+        submissionRef: 'SDW-STR-SUB-002',
+        docNo: 'SDW-STR-002',
+        rev: '01',
+        status: '',
+        code: '',
+        documentType: 'SDW-STR'
+      } as SubmittalRow,
+      // Excluded/invalid placeholder row must NOT distort valid rows, totalSubmittals, or supersededRows
+      {
+        id: 'DG-EDGE-EXCLUDED',
+        registerIdentity: 'SDW',
+        discipline: 'STR',
+        submissionRef: 'SDW-STR-SUB-999',
+        docNo: 'SDW-STR-999',
+        rev: '00',
+        status: 'Code A',
+        excludeFromKPI: true,
+        documentType: 'SDW-STR'
+      } as SubmittalRow
+    ];
+
+    const edgeStats = resolveUniqueSubmittalStats(edgeRows, edgeRows);
+    if (
+      edgeStats.totalSubmittals !== 2 ||
+      edgeStats.rev00 !== 2 ||
+      edgeStats.furtherRev !== 1 ||
+      edgeStats.totalSheets !== 3 ||
+      edgeStats.supersededRows !== 1 ||
+      edgeStats.uniqueApproved !== 1 ||
+      edgeStats.uniqueRejected !== 0 ||
+      edgeStats.uniquePending !== 1 ||
+      edgeStats.uniqueRejectedClosed !== 1 ||
+      edgeStats.uniqueApproved + edgeStats.uniqueRejected + edgeStats.uniquePending !== edgeStats.totalSubmittals ||
+      edgeStats.rowApproved !== 0 ||
+      edgeStats.rowRejected !== 2 ||
+      edgeStats.rowRejectedClosed !== 1 ||
+      edgeStats.rowRejectedOpen !== 1 ||
+      edgeStats.rowPending !== 0 ||
+      edgeStats.rowUnclassified !== 1 ||
+      edgeStats.rowApproved + edgeStats.rowRejected + edgeStats.rowPending + edgeStats.rowUnclassified !== edgeStats.totalSheets
+    ) {
+      throw new Error(`Edge dual-grain / bridge / uniqueRejectedClosed mismatch: ${JSON.stringify(edgeStats)}`);
+    }
+
+    const edgeAudit = auditOfficialSourcePopulation(edgeRows, edgeRows);
+    if (
+      !edgeAudit.acceptanceChecks.allChecksPassed ||
+      edgeAudit.explicitlyExcludedRowsCount !== 1 ||
+      edgeAudit.officialSubmittalRowsCount !== 3 ||
+      edgeAudit.grandTotal.supersededRows !== 1 ||
+      edgeAudit.grandTotal.uniqueApproved !== 1 ||
+      edgeAudit.grandTotal.uniqueRejectedClosed !== 1 ||
+      edgeAudit.grandTotal.rowRejected !== 2 ||
+      edgeAudit.grandTotal.rowUnclassified !== 1
+    ) {
+      throw new Error(`Edge auditOfficialSourcePopulation mismatch: ${JSON.stringify(edgeAudit)}`);
     }
   });
 
