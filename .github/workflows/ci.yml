@@ -43,7 +43,7 @@ jobs:
         run: npm run test:auth
 
       - name: 'Gate 5: Real Firestore Security Rules Runtime Verification (Firebase Emulator)'
-        run: npx firebase emulators:exec --only firestore "npm run test:firestore-runtime"
+        run: npx firebase emulators:exec --project ai-studio-b1fedb55-c17f-4221-b883-f1ee17f1362f --only firestore "npm run test:firestore-runtime"
 
       - name: 'Gate 6: Sequence Population Integrity & Observation-Only Audit'
         run: npm run test:sequence
