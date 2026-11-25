@@ -39,10 +39,86 @@ import { UniversalRegisterEngine } from './components/UniversalRegisterEngine';
 import EILogGenerator from './components/EILogGenerator';
 import { normalizeData, calculateStats, calculateProjectPerformanceHealth } from './utils/calculations';
 
+export type AppTab =
+  | 'enterprise_dashboard'
+  | 'portfolio'
+  | 'master_register'
+  | 'validation'
+  | 'aging'
+  | 'sla'
+  | 'actions'
+  | 'monthly'
+  | 'cumulative'
+  | 'delay'
+  | 'rfi'
+  | 'presentation'
+  | 'insights'
+  | 'ncr'
+  | 'sor'
+  | 'ltr'
+  | 'trend_forecast'
+  | 'warehouse'
+  | 'monitoring'
+  | 'engineering_dataset'
+  | 'final_audit'
+  | 'mapping'
+  | 'calc_audit'
+  | 'universal_engine'
+  | 'ei_log';
+
+export const TAB_ROLE_PERMISSIONS: Record<AppTab, readonly string[] | null> = {
+  portfolio: ['executive', 'pd'],
+  enterprise_dashboard: ['executive', 'pd'],
+  master_register: null,
+  ei_log: null,
+  mapping: ['executive', 'pd', 'dc', 'em'],
+  universal_engine: ['executive', 'pd', 'dc', 'em'],
+  presentation: ['executive', 'pd', 'pm'],
+  insights: ['executive', 'pd', 'pm'],
+  trend_forecast: ['executive', 'pd', 'pm', 'em'],
+  warehouse: ['executive', 'pd', 'dc'],
+  monitoring: ['pd', 'executive', 'dc'],
+  validation: ['dc', 'qaqc', 'em'],
+  engineering_dataset: ['dc', 'qaqc', 'em', 'pd'],
+  final_audit: ['executive', 'pd', 'dc', 'em', 'qaqc', 'pm'],
+  calc_audit: ['executive', 'pd', 'dc', 'em', 'qaqc', 'pm'],
+  sla: ['dc', 'pm', 'pd', 'em'],
+  actions: ['pm', 'qaqc', 'dc', 'em'],
+  aging: ['dc', 'em', 'pd'],
+  monthly: ['dc', 'pm', 'em', 'pd', 'viewer'],
+  cumulative: ['dc', 'pm', 'em', 'pd', 'viewer'],
+  delay: null,
+  rfi: ['pm', 'dc', 'em', 'viewer'],
+  ncr: ['qaqc', 'dc', 'em', 'pm', 'viewer'],
+  sor: ['qaqc', 'dc', 'em', 'pm', 'viewer'],
+  ltr: ['dc', 'pm', 'viewer'],
+};
+
+export function hasRolePermission(
+  allowedRoles: readonly string[] | null,
+  activeRole: string,
+  isAuthenticated: boolean
+): boolean {
+  if (!isAuthenticated || !activeRole || activeRole === 'unresolved') return false;
+  if (allowedRoles === null) return true;
+  const rolesList = activeRole.split(',').map(r => r.trim().toLowerCase()).filter(Boolean);
+  if (rolesList.includes('all')) return true;
+  return allowedRoles.some(allowed => rolesList.includes(allowed.toLowerCase()));
+}
+
+export function canAccessTab(
+  tab: AppTab,
+  activeRole: string,
+  isAuthenticated: boolean
+): boolean {
+  if (!(tab in TAB_ROLE_PERMISSIONS)) return false;
+  return hasRolePermission(TAB_ROLE_PERMISSIONS[tab], activeRole, isAuthenticated);
+}
+
 export default function App() {
   const { t, language, setLanguage, isRtl } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'enterprise_dashboard' | 'portfolio' | 'master_register' | 'validation' | 'aging' | 'sla' | 'actions' | 'monthly' | 'cumulative' | 'delay' | 'rfi' | 'presentation' | 'insights' | 'ncr' | 'sor' | 'ltr' | 'trend_forecast' | 'warehouse' | 'monitoring' | 'engineering_dataset' | 'final_audit' | 'mapping' | 'calc_audit' | 'universal_engine' | 'ei_log'>('portfolio');
+  const [activeTab, setActiveTab] = useState<AppTab>('portfolio');
   const [activeRole, setActiveRole] = useState<string>('unresolved');
 
   const activeRoleRef = useRef(activeRole);
@@ -140,11 +216,8 @@ export default function App() {
             }
             
             // Force active tab compatibility
-            const rolesList = retrievedRole.split(',').map((r: string) => r.trim().toLowerCase());
-            if (!rolesList.includes('all') && !rolesList.includes('executive') && !rolesList.includes('pd')) {
-               if (currentTabVal === 'portfolio' || currentTabVal === 'enterprise_dashboard' || currentTabVal === 'monitoring') {
-                  setActiveTab('master_register');
-               }
+            if (!canAccessTab(currentTabVal, retrievedRole, true)) {
+               setActiveTab('master_register');
             }
           }
         }, (error) => {
@@ -169,12 +242,23 @@ export default function App() {
     };
   }, [isAuthenticated]);
   
-  const hasPermission = (allowedRoles: string[]) => {
-    if (!isAuthenticated || !activeRole || activeRole === 'unresolved') return false;
-    const rolesList = activeRole.split(',').map(r => r.trim().toLowerCase());
-    if (rolesList.includes('all')) return true;
-    return allowedRoles.some(allowed => rolesList.includes(allowed.toLowerCase()));
+  const hasPermission = (allowedRoles: readonly string[]) => {
+    return hasRolePermission(allowedRoles, activeRole, isAuthenticated);
   };
+
+  const navigateToTab = useCallback((tab: AppTab) => {
+    if (canAccessTab(tab, activeRole, isAuthenticated)) {
+      setActiveTab(tab);
+    } else {
+      setActiveTab('master_register');
+    }
+  }, [activeRole, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeRole && activeRole !== 'unresolved' && !canAccessTab(activeTab, activeRole, isAuthenticated)) {
+      setActiveTab('master_register');
+    }
+  }, [isAuthenticated, activeRole, activeTab]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showProjectConfig, setShowProjectConfig] = useState(false);
@@ -258,7 +342,7 @@ export default function App() {
   const [endDate, setEndDate] = useState(format(endOfMonth(today), 'yyyy-MM-dd'));
   const [data, setData] = useState<SubmittalRow[]>([]);
   // Custom Hooks
-  const { parseMessage, isError, isLoading, fileInputRef, handleFileUpload, setParseMessage, setIsError } = useUpload(setData, setActiveTab as any, setStartDate, setEndDate);
+  const { parseMessage, isError, isLoading, fileInputRef, handleFileUpload, setParseMessage, setIsError } = useUpload(setData, setActiveTab, setStartDate, setEndDate);
   const { filters, pendingFilters, setPendingFilters, applyFilters, resetFilters, isDirty, uniqueOpts, matchesFilters, filterMonthly, filterCumulative } = useFilters(data, startDate, endDate);
 
   const isExcludedFromGeneralStats = (row: SubmittalRow) => {
@@ -337,7 +421,7 @@ export default function App() {
     const translatedLabel = t(translationKey) !== translationKey ? t(translationKey) : label;
     return (
       <button 
-         onClick={() => setActiveTab(id)}
+         onClick={() => navigateToTab(id)}
          title={!sidebarOpen ? translatedLabel : undefined}
          className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all ${!sidebarOpen && 'justify-center'} ${
             activeTab === id 
@@ -445,8 +529,12 @@ export default function App() {
         
         <TabButton id="master_register" label="Master Register" icon={LayoutDashboard} />
         <TabButton id="ei_log" label="EI Log Generator" icon={FileSpreadsheet} />
-        <TabButton id="mapping" label="Workflow Mapping SSOT" icon={Network} />
-        <TabButton id="universal_engine" label="Universal Register Engine" icon={Layers} />
+        {hasPermission(TAB_ROLE_PERMISSIONS.mapping!) && (
+            <TabButton id="mapping" label="Workflow Mapping SSOT" icon={Network} />
+        )}
+        {hasPermission(TAB_ROLE_PERMISSIONS.universal_engine!) && (
+            <TabButton id="universal_engine" label="Universal Register Engine" icon={Layers} />
+        )}
             
             {hasPermission(['executive', 'pd', 'pm']) && (
                 <TabButton id="presentation" label="Executive Monthly Report" icon={PresentationIcon} />
@@ -501,10 +589,6 @@ export default function App() {
                 <TabButton id="aging" label="Advanced Aging Analysis" icon={Clock} />
             )}
 
-            <div className="px-3 mt-6 mb-2">
-                <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest">{t('sidebar_technical_modules')}</span>
-            </div>
-            
             {hasPermission(['dc', 'pm', 'em', 'pd', 'viewer']) && (
                <>
                 <TabButton id="monthly" label="Monthly Analytics" icon={CalendarDays} />
@@ -733,7 +817,20 @@ export default function App() {
                 </div>
                 )}
 
-                {data.length === 0 && activeTab !== 'portfolio' && activeTab !== 'monitoring' && activeTab !== 'mapping' && activeTab !== 'universal_engine' && activeTab !== 'ei_log' ? (
+                {!canAccessTab(activeTab, activeRole, isAuthenticated) ? (
+                <div className="h-[50vh] flex flex-col items-center justify-center text-[#94a3b8] border-2 border-dashed border-[#fecaca] bg-[#fef2f2]/40 rounded-2xl mx-10 mt-10 p-6 text-center">
+                    <ShieldAlert className="w-16 h-16 text-red-400 mb-4" />
+                    <h2 className="text-xl font-bold text-[#991b1b] mb-2">Access Restricted</h2>
+                    <p className="text-sm text-[#7f1d1d] mb-4">Your current role does not have authorization to access this module.</p>
+                    <button
+                      type="button"
+                      onClick={() => navigateToTab('master_register')}
+                      className="px-4 py-2 rounded-lg bg-[#0A192F] text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+                    >
+                      Return to Master Register
+                    </button>
+                </div>
+                ) : data.length === 0 && activeTab !== 'portfolio' && activeTab !== 'monitoring' && activeTab !== 'mapping' && activeTab !== 'universal_engine' && activeTab !== 'ei_log' ? (
                 <div className="h-[50vh] flex flex-col items-center justify-center text-[#94a3b8] border-2 border-dashed border-[#e2e8f0] rounded-2xl mx-10 mt-10">
                     <FileSpreadsheet className="w-20 h-20 text-slate-300 mb-4" />
                     <h2 className="text-xl font-bold text-[#475569] mb-2">No Data Available</h2>
@@ -741,31 +838,31 @@ export default function App() {
                 </div>
                 ) : (
                 <div className="transition-all">
-                  {activeTab === 'ei_log' && <EILogGenerator data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'universal_engine' && <UniversalRegisterEngine data={filteredData} />}
-                  {activeTab === 'portfolio' && <PortfolioCenter projects={projects} />}
-                  {activeTab === 'monitoring' && <EnterpriseMonitoringDashboard />}
-                  {activeTab === 'mapping' && <WorkflowMappingCenter data={data} onDataRefreshNeeded={() => setData(prev => normalizeData(prev))} />}
-                  {activeTab === 'enterprise_dashboard' && data.length > 0 && <EnterpriseDashboard data={filteredData} />}
-                  {activeTab === 'master_register' && data.length > 0 && <MasterRegister data={filteredData} projectInfo={activeProject} precomputedStats={filteredData.length === generalData.length && generalData.length === data.length ? (getGeneralStats() ?? undefined) : undefined} />}
-                  {activeTab === 'validation' && <DataValidationEngine data={filteredData} />}
-                  {activeTab === 'engineering_dataset' && <EngineeringItemDatasetView data={filteredData} />}
-                  {activeTab === 'aging' && <AdvancedAgingAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
-                  {activeTab === 'sla' && <SLAMonitoring data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'actions' && <ActionTracker data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'trend_forecast' && <TrendAndForecastEngine data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'warehouse' && <HistoricalDataWarehouse data={filteredData} projects={projects} />}
-                  {activeTab === 'final_audit' && <FinalAcceptanceAuditView data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} />}
-                  {activeTab === 'calc_audit' && <CalculationAuditCenter data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'monthly' && <ReportTable data={generalData} filterFn={filterMonthly} title="Monthly KPI Analytics" projectInfo={activeProject} rawDataset={data} />}
-                  {activeTab === 'cumulative' && <ReportTable data={generalData} filterFn={filterCumulative} title="Cumulative Performance Analytics" projectInfo={activeProject} rawDataset={data} precomputedGlobalStats={isAllGeneralCumulative ? (getGeneralStats() ?? undefined) : undefined} />}
-                  {activeTab === 'delay' && <DelayAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
-                  {activeTab === 'rfi' && <RFIAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'presentation' && <Presentation data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} endDate={endDate} />}
-                  {activeTab === 'insights' && <AIInsights data={filteredData} projectInfo={activeProject} />}
-                  {activeTab === 'ncr' && <NCRAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'sor' && <SORAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
-                  {activeTab === 'ltr' && <CorrespondenceAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'ei_log' && canAccessTab('ei_log', activeRole, isAuthenticated) && <EILogGenerator data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'universal_engine' && canAccessTab('universal_engine', activeRole, isAuthenticated) && <UniversalRegisterEngine data={filteredData} />}
+                  {activeTab === 'portfolio' && canAccessTab('portfolio', activeRole, isAuthenticated) && <PortfolioCenter projects={projects} />}
+                  {activeTab === 'monitoring' && canAccessTab('monitoring', activeRole, isAuthenticated) && <EnterpriseMonitoringDashboard />}
+                  {activeTab === 'mapping' && canAccessTab('mapping', activeRole, isAuthenticated) && <WorkflowMappingCenter data={data} onDataRefreshNeeded={() => setData(prev => normalizeData(prev))} />}
+                  {activeTab === 'enterprise_dashboard' && canAccessTab('enterprise_dashboard', activeRole, isAuthenticated) && data.length > 0 && <EnterpriseDashboard data={filteredData} />}
+                  {activeTab === 'master_register' && canAccessTab('master_register', activeRole, isAuthenticated) && data.length > 0 && <MasterRegister data={filteredData} projectInfo={activeProject} precomputedStats={filteredData.length === generalData.length && generalData.length === data.length ? (getGeneralStats() ?? undefined) : undefined} />}
+                  {activeTab === 'validation' && canAccessTab('validation', activeRole, isAuthenticated) && <DataValidationEngine data={filteredData} />}
+                  {activeTab === 'engineering_dataset' && canAccessTab('engineering_dataset', activeRole, isAuthenticated) && <EngineeringItemDatasetView data={filteredData} />}
+                  {activeTab === 'aging' && canAccessTab('aging', activeRole, isAuthenticated) && <AdvancedAgingAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
+                  {activeTab === 'sla' && canAccessTab('sla', activeRole, isAuthenticated) && <SLAMonitoring data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'actions' && canAccessTab('actions', activeRole, isAuthenticated) && <ActionTracker data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'trend_forecast' && canAccessTab('trend_forecast', activeRole, isAuthenticated) && <TrendAndForecastEngine data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'warehouse' && canAccessTab('warehouse', activeRole, isAuthenticated) && <HistoricalDataWarehouse data={filteredData} projects={projects} />}
+                  {activeTab === 'final_audit' && canAccessTab('final_audit', activeRole, isAuthenticated) && <FinalAcceptanceAuditView data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} />}
+                  {activeTab === 'calc_audit' && canAccessTab('calc_audit', activeRole, isAuthenticated) && <CalculationAuditCenter data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'monthly' && canAccessTab('monthly', activeRole, isAuthenticated) && <ReportTable data={generalData} filterFn={filterMonthly} title="Monthly KPI Analytics" projectInfo={activeProject} rawDataset={data} />}
+                  {activeTab === 'cumulative' && canAccessTab('cumulative', activeRole, isAuthenticated) && <ReportTable data={generalData} filterFn={filterCumulative} title="Cumulative Performance Analytics" projectInfo={activeProject} rawDataset={data} precomputedGlobalStats={isAllGeneralCumulative ? (getGeneralStats() ?? undefined) : undefined} />}
+                  {activeTab === 'delay' && canAccessTab('delay', activeRole, isAuthenticated) && <DelayAnalysis data={cumulativeFilteredData} projectInfo={activeProject} />}
+                  {activeTab === 'rfi' && canAccessTab('rfi', activeRole, isAuthenticated) && <RFIAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'presentation' && canAccessTab('presentation', activeRole, isAuthenticated) && <Presentation data={filteredData} filterMonthly={filterMonthly} filterCumulative={filterCumulative} projectInfo={activeProject} startDate={startDate} endDate={endDate} />}
+                  {activeTab === 'insights' && canAccessTab('insights', activeRole, isAuthenticated) && <AIInsights data={filteredData} projectInfo={activeProject} />}
+                  {activeTab === 'ncr' && canAccessTab('ncr', activeRole, isAuthenticated) && <NCRAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'sor' && canAccessTab('sor', activeRole, isAuthenticated) && <SORAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
+                  {activeTab === 'ltr' && canAccessTab('ltr', activeRole, isAuthenticated) && <CorrespondenceAnalytics data={filteredData} projectInfo={activeProject} monthlyStart={startDate} monthlyEnd={endDate} />}
                 </div>
                 )}
 

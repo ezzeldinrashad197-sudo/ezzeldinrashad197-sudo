@@ -7,7 +7,7 @@ import { useLanguage } from '../utils/i18n';
 
 export function useUpload(
   setData: (data: SubmittalRow[]) => void,
-  setActiveTab: (tab: 'dashboard' | 'monthly' | 'cumulative' | 'delay' | 'rfi' | 'presentation' | 'register' | 'insights' | 'ncr' | 'sor' | 'ltr') => void,
+  setActiveTab: (tab: 'master_register' | 'monthly' | 'cumulative' | 'delay' | 'rfi' | 'presentation' | 'insights' | 'ncr' | 'sor' | 'ltr') => void,
   setStartDate: (date: string) => void,
   setEndDate: (date: string) => void
 ) {
@@ -49,7 +49,7 @@ export function useUpload(
            setData(parsed);
            setParseMessage(t('upload_success_params').replace('{count}', String(parsed.length)));
            setIsError(false);
-           setActiveTab('dashboard');
+           setActiveTab('master_register');
            await logAuditContext("UPLOAD_SUCCESS", "log_file", { rows: parsed.length, fileNames: Array.from(files).map(f => f.name) });
        }
     } catch (err: any) {
